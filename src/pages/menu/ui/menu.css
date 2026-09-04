@@ -1,0 +1,51 @@
+.menu-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+}
+.menu-logo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(44px, 12vw, 84px);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  display: flex;
+  gap: 0.25em;
+}
+.menu-logo .l1 {
+  color: var(--c-cyan);
+  text-shadow: 0 0 18px var(--c-cyan), 0 0 50px rgba(0, 240, 255, 0.5);
+}
+.menu-logo .l2 {
+  color: var(--c-magenta);
+  text-shadow: 0 0 18px var(--c-magenta), 0 0 50px rgba(255, 43, 214, 0.5);
+}
+.menu-tagline {
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.menu-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.menu-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 720px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.35);
+  padding-top: 16px;
+}
+.menu-foot a {
+  color: rgba(255, 255, 255, 0.55);
+}
