@@ -8,3 +8,6 @@ coverage
 assets-src/music-raw/
 assets-src/voice-raw/
 *.log
+*.tsbuildinfo
+
+.vercel

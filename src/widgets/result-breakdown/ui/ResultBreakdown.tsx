@@ -22,7 +22,7 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
   useEffect(() => {
     if (result.rank === 'SS' || result.rank === 'S') voice.say('rank-s', true);
     else if (result.fullCombo) voice.say('full-combo', true);
-    else if (meta?.newRecord) voice.say('new-record', true);
+    else if (meta?.newRecord && result.rank !== 'D') voice.say('new-record', true);
     else voice.say('eshche-razok', true);
   }, [result, meta]);
 
@@ -53,7 +53,7 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
       <div className="result-acc">{(result.accuracy * 100).toFixed(2)}%</div>
 
       {result.fullCombo && <div className="result-badge result-fc">{dict.fullCombo}</div>}
-      {meta?.newRecord && <div className="result-badge result-record">{dict.newRecord}</div>}
+      {meta?.newRecord && result.rank !== 'D' && <div className="result-badge result-record">{dict.newRecord}</div>}
       {starsGained > 0 && (
         <div className="result-stars">
           <Stars value={meta!.starsAfter} size="md" /> <span>{fmt(dict.starsEarned, { n: starsGained })}</span>
