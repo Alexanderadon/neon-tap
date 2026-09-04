@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+*.local
+.vercel
+.DS_Store
+coverage
+assets-src/music-raw/
+assets-src/voice-raw/
+*.log

@@ -1,0 +1,40 @@
+{
+  "name": "neon-tap",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "NEON TAP — 4-lane browser rhythm game with automatic chart generation from any audio file",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && node scripts/check-fsd.mjs",
+    "typecheck": "tsc -b",
+    "assets:music": "tsx --tsconfig tsconfig.node.json scripts/prepare-music.ts",
+    "assets:voice": "tsx --tsconfig tsconfig.node.json scripts/generate-voice.ts",
+    "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-boundaries": "^5.0.1",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "ffmpeg-static": "^5.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
+  }
+}
