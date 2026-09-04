@@ -21,6 +21,10 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
 
   useEffect(() => {
+    if (result.failed) {
+      voice.say('ne-sdavaysya', true);
+      return;
+    }
     if (result.rank !== 'D') sfxRank();
     if (result.rank === 'SS' || result.rank === 'S') voice.say('rank-s', true);
     else if (result.fullCombo) voice.say('full-combo', true);
@@ -51,8 +55,17 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
         <div className="result-diff">{difficultyLabel}</div>
       </div>
 
-      <div className={`result-rank rank-${result.rank}`}>{result.rank}</div>
-      <div className="result-acc">{(result.accuracy * 100).toFixed(2)}%</div>
+      {result.failed ? (
+        <>
+          <div className="result-rank result-failed">{dict.failed}</div>
+          <div className="result-failed-hint">{dict.failedHint}</div>
+        </>
+      ) : (
+        <>
+          <div className={`result-rank rank-${result.rank}`}>{result.rank}</div>
+          <div className="result-acc">{(result.accuracy * 100).toFixed(2)}%</div>
+        </>
+      )}
 
       {result.fullCombo && <div className="result-badge result-fc">{dict.fullCombo}</div>}
       {meta?.newRecord && result.rank !== 'D' && <div className="result-badge result-record">{dict.newRecord}</div>}
@@ -79,7 +92,7 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
         </div>
       </div>
 
-      {result.notesToS > 0 && result.accuracy > 0.9 && (
+      {!result.failed && result.notesToS > 0 && result.accuracy > 0.9 && (
         <div className="result-nearmiss">
           {fmt(dict.toRankS, { n: result.notesToS, noun: plural(result.notesToS, ['ноты', 'нот', 'нот']) })}
         </div>

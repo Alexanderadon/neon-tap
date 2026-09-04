@@ -51,6 +51,18 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
         case 'combo-break':
           voice.say(e.combo >= 50 ? 'ne-sdavaysya' : 'mimo');
           break;
+        case 'life-lost':
+          if (e.hearts === 1) voice.say('ne-sdavaysya', true);
+          break;
+        case 'spell':
+          if (e.kind === 'slow') voice.say('ogon', true);
+          break;
+        case 'lanes':
+          if (e.lanes >= 5) voice.say('tak-derzhat');
+          break;
+        case 'fail':
+          setPaused(false);
+          break;
         case 'pause':
           setPaused(true);
           break;
@@ -84,6 +96,8 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
           userOffset: settings.audioOffsetMs / 1000,
           scrollSpeed: settings.scrollSpeed,
           touch: isTouchDevice(),
+          touchAssist: settings.touchAssist,
+          noFail: new URLSearchParams(window.location.search).has('nofail'),
           debug: settings.debugOverlay,
           onEvent,
         });

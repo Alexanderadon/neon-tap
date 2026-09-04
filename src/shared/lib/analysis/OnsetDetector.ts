@@ -24,9 +24,18 @@ export interface OnsetOptions {
 
 export interface OnsetResult {
   onsets: Onset[];
-  /** Raw spectral flux per frame — the onset-strength envelope used by the BPM estimator. */
+  /** Raw spectral flux per frame — the onset-strength envelope used by the BPM estimator and beat tracker. */
   flux: Float32Array;
+  /** Flux split by band: low (20–250 Hz), mid (250–2000 Hz), high (>2000 Hz). */
+  bandFlux: [Float32Array, Float32Array, Float32Array];
+  /** Mid-band (250–2000 Hz) magnitude per frame — sustained melodic energy, used for hold notes. */
+  midEnergy: Float32Array;
   hopSeconds: number;
+  frameCount: number;
+  /** Seconds at the (lag-corrected) centre of frame `f`; same convention as onset times. */
+  frameTime: (f: number) => number;
+  /** Inverse of frameTime. */
+  timeToFrame: (t: number) => number;
 }
 
 const BAND_EDGES_HZ = [20, 250, 2000] as const;
@@ -35,7 +44,7 @@ const BAND_EDGES_HZ = [20, 250, 2000] as const;
  * Spectral-flux onset detection.
  *
  * 1. STFT with Hann window (frame 1024, hop 512 by default).
- * 2. Flux = Σ max(0, |X_t[k]| − |X_{t−1}[k]|) over bins (half-wave rectified, log-compressed).
+ * 2. Flux = Σ max(0, log(1+10|X_t[k]|) − log(1+10|X_{t−1}[k]|)) over bins (half-wave rectified).
  * 3. Adaptive threshold: local mean × ratio. Peaks above it that are local maxima become onsets.
  */
 export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetResult {
@@ -46,6 +55,9 @@ export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetRe
   const minGap = opts.minGap ?? 0.05;
   const sr = opts.sampleRate;
   const hopSeconds = hop / sr;
+  // The flux peak lags the true attack by about half a hop.
+  const frameTime = (f: number): number => (f * hop + frameSize / 2) / sr - hopSeconds / 2;
+  const timeToFrame = (t: number): number => ((t + hopSeconds / 2) * sr - frameSize / 2) / hop;
 
   const fft = new RealFFT(frameSize);
   const bins = (frameSize >> 1) + 1;
@@ -55,7 +67,8 @@ export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetRe
 
   const frameCount = Math.max(0, Math.floor((samples.length - frameSize) / hop) + 1);
   const flux = new Float32Array(frameCount);
-  const bandFlux = [new Float32Array(frameCount), new Float32Array(frameCount), new Float32Array(frameCount)];
+  const bandFlux: [Float32Array, Float32Array, Float32Array] = [new Float32Array(frameCount), new Float32Array(frameCount), new Float32Array(frameCount)];
+  const midEnergy = new Float32Array(frameCount);
 
   const binHz = sr / frameSize;
   const lowStart = Math.max(1, Math.round(BAND_EDGES_HZ[0] / binHz));
@@ -69,7 +82,9 @@ export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetRe
     let low = 0;
     let mid = 0;
     let high = 0;
+    let midSum = 0;
     for (let k = lowStart; k < bins; k++) {
+      if (k >= midStart && k < highStart) midSum += cur[k];
       const d = Math.log1p(cur[k] * 10) - Math.log1p(prev[k] * 10);
       if (d > 0) {
         total += d;
@@ -82,6 +97,7 @@ export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetRe
     bandFlux[0][f] = low;
     bandFlux[1][f] = mid;
     bandFlux[2][f] = high;
+    midEnergy[f] = midSum;
     prev.set(cur);
     if (opts.onProgress && (f & 255) === 0) opts.onProgress(f / frameCount);
   }
@@ -104,8 +120,7 @@ export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetRe
     if (v < flux[f - 1] || v < flux[f + 1]) continue;
     if (f >= 2 && v < flux[f - 2]) continue;
     if (f + 2 < frameCount && v < flux[f + 2]) continue;
-    // Report the onset at the frame centre; the flux peak lags the true attack by ~half a hop.
-    const time = (f * hop + frameSize / 2) / sr - hopSeconds / 2;
+    const time = frameTime(f);
     if (time - lastOnsetTime < minGap) continue;
     lastOnsetTime = time;
     const l = bandFlux[0][f];
@@ -121,5 +136,5 @@ export function detectOnsets(samples: Float32Array, opts: OnsetOptions): OnsetRe
   if (max > 0) for (const o of onsets) o.strength /= max;
 
   opts.onProgress?.(1);
-  return { onsets, flux, hopSeconds };
+  return { onsets, flux, bandFlux, midEnergy, hopSeconds, frameCount, frameTime, timeToFrame };
 }

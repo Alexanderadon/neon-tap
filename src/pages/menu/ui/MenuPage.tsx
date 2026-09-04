@@ -27,11 +27,7 @@ export function MenuPage() {
       <footer className="menu-foot">
         <span>{dict.madeWith}</span>
         <span>
-          <a href="https://github.com/Alexanderadon/neon-tap" target="_blank" rel="noreferrer">
-            GitHub
-          </a>
-          {' · '}
-          <a href="https://github.com/Alexanderadon/neon-tap/blob/main/public/music/LICENSES.md" target="_blank" rel="noreferrer">
+          <a href={`${import.meta.env.BASE_URL}music/LICENSES.md`} target="_blank" rel="noreferrer">
             {dict.licenses}
           </a>
         </span>

@@ -72,6 +72,7 @@ export async function generateFromFile(file: File, onProgress: (p: GenerateProgr
       bpm: done.bpm,
       offset: done.offset,
       duration: audioBuffer.duration,
+      beats: done.beats,
       charts: done.charts,
     };
     return { chart, audioBuffer, onsets: done.onsets, confidence: done.confidence };

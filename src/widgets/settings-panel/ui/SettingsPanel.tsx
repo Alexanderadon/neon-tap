@@ -80,6 +80,14 @@ export function SettingsPanel() {
       </div>
 
       <label className="settings-check">
+        <input type="checkbox" checked={s.touchAssist} onChange={(e) => updateSettings({ touchAssist: e.target.checked })} />
+        <span>
+          {dict.settingsTouchAssist}
+          <span className="settings-hint"> · {dict.settingsTouchAssistHint}</span>
+        </span>
+      </label>
+
+      <label className="settings-check">
         <input type="checkbox" checked={s.debugOverlay} onChange={(e) => updateSettings({ debugOverlay: e.target.checked })} />
         <span>{dict.fps} / debug overlay</span>
       </label>

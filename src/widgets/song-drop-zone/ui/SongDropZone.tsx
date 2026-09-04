@@ -15,8 +15,9 @@ type State =
 
 const STAGE_WEIGHT: Record<GenerateProgress['stage'], [number, number]> = {
   decode: [0, 0.15],
-  onsets: [0.15, 0.8],
-  bpm: [0.8, 0.9],
+  onsets: [0.15, 0.7],
+  beats: [0.7, 0.8],
+  grid: [0.8, 0.9],
   charts: [0.9, 1],
 };
 

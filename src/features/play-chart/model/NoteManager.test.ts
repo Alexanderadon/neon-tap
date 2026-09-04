@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 
-function make(notes: Array<[number, number, number?]>) {
-  const nm = new NoteManager(50);
+function make(notes: Array<[number, number, number?]>, assistWindow = 0) {
+  const nm = new NoteManager(50, { assistWindow });
   const events: JudgeEvent[] = [];
   nm.onJudge = (e) => events.push(e);
-  nm.load(notes.map(([time, lane, duration = 0]) => ({ time, lane, duration })));
+  nm.load(notes.map(([time, lane, duration = 0]) => ({ time, lane, duration, spell: null, lanes: 4 })));
   return { nm, events };
 }
 
@@ -70,5 +70,31 @@ describe('NoteManager', () => {
     nm.reset();
     expect(nm.pool[0].state).toBe(NoteState.Pending);
     expect(nm.press(0, 1)).toBe('perfect');
+  });
+
+  describe('touch assist', () => {
+    it('arms an early press and judges Great when the note arrives', () => {
+      const { nm, events } = make([[1, 0]], 0.4);
+      expect(nm.press(0, 0.7)).toBeNull();
+      expect(nm.pool[0].armed).toBe(true);
+      nm.update(0.85, notHeld);
+      expect(nm.pool[0].state).toBe(NoteState.Pending);
+      nm.update(0.92, notHeld);
+      expect(nm.pool[0].state).toBe(NoteState.Hit);
+      expect(events).toEqual([expect.objectContaining({ judgement: 'great', tail: false })]);
+    });
+
+    it('does not arm presses further ahead than the assist window', () => {
+      const { nm } = make([[1, 0]], 0.4);
+      nm.press(0, 0.5);
+      expect(nm.pool[0].armed).toBe(false);
+    });
+
+    it('is off by default (desktop keeps strict timing)', () => {
+      const { nm } = make([[1, 0]]);
+      nm.press(0, 0.7);
+      nm.update(0.95, notHeld);
+      expect(nm.pool[0].state).toBe(NoteState.Pending);
+    });
   });
 });

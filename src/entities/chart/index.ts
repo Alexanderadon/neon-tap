@@ -1,2 +1,2 @@
-export type { ChartFile, ChartLevel, NoteTuple, ParsedNote } from './model/types';
-export { parseChartLevel, countJudgements } from './lib/parseChart';
+export type { ChartFile, ChartLevel, NoteTuple, SectionTuple, ParsedNote, Section, SpellKind } from './model/types';
+export { parseChartLevel, parseSections, lanesAt, countJudgements } from './lib/parseChart';
