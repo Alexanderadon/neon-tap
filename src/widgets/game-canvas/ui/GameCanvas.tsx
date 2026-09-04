@@ -127,6 +127,8 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
     };
     const onVisibility = () => {
       if (document.hidden) sessionRef.current?.pause();
+      // Coming back: iOS may have suspended the context; the audio gate re-appears if so.
+      else void audioEngine.ensureContext();
     };
     window.addEventListener('keydown', onKey);
     document.addEventListener('visibilitychange', onVisibility);

@@ -1,14 +1,13 @@
 import { useEffect } from 'react';
 import { navigate, useRouteKey, useScreen } from '@/shared/lib/router';
-import { audioEngine, preloadSfx } from '@/shared/lib/audio';
 import { getSettings } from '@/entities/settings';
-import { voice } from '@/features/voice-feedback';
 import { MenuPage } from '@/pages/menu';
 import { GamePage } from '@/pages/game';
 import { ResultPage } from '@/pages/result';
 import { CalibrationPage } from '@/pages/calibration';
 import { SettingsPage } from '@/pages/settings';
 import { CustomSongPage } from '@/pages/custom';
+import { AudioGate } from '@/widgets/audio-gate';
 
 /** Screen router: the game has no URLs on purpose — restart must never trigger navigation. */
 export function App() {
@@ -20,40 +19,33 @@ export function App() {
     if (!getSettings().calibrated) navigate('calibration');
   }, []);
 
-  // Warm up audio on the first gesture: unlock the AudioContext and decode SFX + voice clips
-  // so the first button click and the first note already have real sounds.
-  useEffect(() => {
-    const warm = () => {
-      window.removeEventListener('pointerdown', warm);
-      window.removeEventListener('keydown', warm);
-      void audioEngine.ensureContext().then(() => {
-        const s = getSettings();
-        audioEngine.setVolumes({ music: s.musicVolume, sfx: s.sfxVolume, voice: s.voiceVolume });
-        voice.setVoice(s.voice);
-        void preloadSfx();
-        void voice.preload();
-      });
-    };
-    window.addEventListener('pointerdown', warm, { once: true });
-    window.addEventListener('keydown', warm, { once: true });
-    return () => {
-      window.removeEventListener('pointerdown', warm);
-      window.removeEventListener('keydown', warm);
-    };
-  }, []);
-
+  let page;
   switch (screen) {
     case 'game':
-      return <GamePage key={key} />;
+      page = <GamePage key={key} />;
+      break;
     case 'result':
-      return <ResultPage key={key} />;
+      page = <ResultPage key={key} />;
+      break;
     case 'calibration':
-      return <CalibrationPage key={key} />;
+      page = <CalibrationPage key={key} />;
+      break;
     case 'settings':
-      return <SettingsPage key={key} />;
+      page = <SettingsPage key={key} />;
+      break;
     case 'custom':
-      return <CustomSongPage key={key} />;
+      page = <CustomSongPage key={key} />;
+      break;
     default:
-      return <MenuPage key={key} />;
+      page = <MenuPage key={key} />;
   }
+
+  // The audio gate sits above every screen: the first tap unlocks sound (mobile autoplay policy)
+  // and it comes back whenever the AudioContext gets suspended.
+  return (
+    <>
+      {page}
+      <AudioGate />
+    </>
+  );
 }
