@@ -515,7 +515,8 @@ export function rateStars(notes: readonly NoteTuple[]): number {
     peak = Math.max(peak, (i - j + 1) / 2);
   }
   const holds = notes.filter((n) => n.length === 3).length / notes.length;
-  const raw = 0.6 + avgNps * 0.85 + peak * 0.22 + holds * 1.0;
+  // Single-chart mode: 1 nps ≈ ★3, 2.3 nps ≈ ★6, 3+ nps ≈ ★8+.
+  const raw = 0.3 + avgNps * 2.0 + peak * 0.3 + holds * 0.8;
   return Math.max(1, Math.min(10, Math.round(raw)));
 }
 

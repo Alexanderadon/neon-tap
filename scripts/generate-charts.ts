@@ -60,7 +60,7 @@ for (const t of tracks) {
   built.push({ track: t, analysis, duration, chart: makeChart(t, analysis, duration, charts) });
   console.log(`${t.id.padEnd(18)} analysed in ${Date.now() - t0} ms  (bpm ${analysis.bpm}, bars ${analysis.barCount}, hard ★${charts.hard.stars})`);
 }
-built.sort((a, b) => a.chart.charts.hard.stars - b.chart.charts.hard.stars || a.chart.charts.normal.stars - b.chart.charts.normal.stars || a.chart.bpm - b.chart.bpm);
+built.sort((a, b) => a.chart.charts.normal.stars - b.chart.charts.normal.stars || a.chart.charts.normal.notes.length - b.chart.charts.normal.notes.length || a.chart.bpm - b.chart.bpm);
 
 // Pass 2: regenerate with the world's lane-variation policy and write everything out.
 const perWorld = Math.ceil(built.length / WORLD_IDS.length);
