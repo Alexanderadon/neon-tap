@@ -1,6 +1,6 @@
 export const ru = {
   appTitle: 'NEON TAP',
-  tagline: 'ритм в четыре полосы',
+  tagline: 'ритм по слуху · 3–5 полос',
   play: 'Играть',
   retry: 'Ещё раз',
   toMenu: 'В меню',
@@ -29,6 +29,11 @@ export const ru = {
   },
   twoFingers: 'все карты проходятся двумя пальцами',
   notesShort: 'нот',
+  tagLanes: 'смена полос',
+  tagCircles: 'круги',
+  tagRolls: 'дроби',
+  tagSlides: 'слайды',
+  tagHolds: 'холды',
   worlds: {
     launch: 'Запуск',
     pulse: 'Пульс',
@@ -100,7 +105,7 @@ export const ru = {
   audioGateIos: 'iPhone: если тишина — переключи боковой тумблер беззвучного режима. Android: проверь громкость медиа.',
   settingsAutoOffset: 'Автоподстройка задержки',
   settingsAutoOffsetHint: 'игра сама сдвигает offset по твоим попаданиям',
-  mechanicsHint: 'Круги — тапни по кругу (на ПК пробел), когда кольцо сомкнётся · песочные часы — slow-mo · сердце — +жизнь · полосы меняются в припевах',
+  mechanicsHint: 'Круги — тап по кругу (ПК: пробел) · дробь ×N — отбей несколько раз · слайд — веди палец за нотой · часы — slow-mo · сердце — +жизнь',
   settingsTouchAssist: 'Тач-помощь: нажатие заранее',
   settingsTouchAssistHint: 'на телефоне нота засчитается, если нажать до 0,4 с раньше',
   customReady: 'Готово: {bpm} BPM, {onsets} ударов',

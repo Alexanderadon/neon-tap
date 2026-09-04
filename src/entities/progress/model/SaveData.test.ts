@@ -11,29 +11,34 @@ const res = (rank: BestResult['rank'], score = 1000): BestResult => ({
 });
 
 describe('SaveData', () => {
-  it('migrates unversioned blobs and rejects garbage', () => {
+  it('migrates v1 (three charts per track) to v2 keeping the best result', () => {
+    const v1 = { version: 1, tracks: { a: { easy: res('B', 900), hard: res('A', 500) }, b: { normal: res('D', 50) } }, plays: 3 };
+    const out = migrate(v1);
+    expect(out.version).toBe(2);
+    expect(out.tracks.a.rank).toBe('A');
+    expect(out.tracks.b.rank).toBe('D');
+    expect(out.plays).toBe(3);
     expect(migrate(null)).toEqual(EMPTY_SAVE);
-    expect(migrate({ tracks: { a: { easy: res('A') } } })).toEqual({ version: 1, tracks: { a: { easy: res('A') } }, plays: 0 });
     expect(migrate('nope')).toEqual(EMPTY_SAVE);
   });
 
-  it('awards stars by best rank over difficulties', () => {
+  it('awards stars by rank', () => {
     expect(starsForTrack(undefined)).toBe(0);
-    expect(starsForTrack({ easy: res('D') })).toBe(0);
-    expect(starsForTrack({ easy: res('C') })).toBe(1);
-    expect(starsForTrack({ easy: res('B'), hard: res('A') })).toBe(2);
-    expect(starsForTrack({ normal: res('SS') })).toBe(3);
+    expect(starsForTrack(res('D'))).toBe(0);
+    expect(starsForTrack(res('C'))).toBe(1);
+    expect(starsForTrack(res('A'))).toBe(2);
+    expect(starsForTrack(res('SS'))).toBe(3);
   });
 
   it('merges results keeping the best score and rank', () => {
     let save = { ...EMPTY_SAVE, tracks: {} };
-    let r = mergeResult(save, 't', 'easy', res('B', 500));
+    let r = mergeResult(save, 't', res('B', 500));
     expect(r.newRecord).toBe(true);
     save = r.save;
-    r = mergeResult(save, 't', 'easy', res('A', 400));
+    r = mergeResult(save, 't', res('A', 400));
     expect(r.newRecord).toBe(false);
-    expect(r.save.tracks.t.easy?.score).toBe(500);
-    expect(r.save.tracks.t.easy?.rank).toBe('A');
+    expect(r.save.tracks.t.score).toBe(500);
+    expect(r.save.tracks.t.rank).toBe('A');
     expect(r.save.plays).toBe(2);
     expect(totalStars(r.save)).toBe(2);
   });

@@ -1,4 +1,4 @@
-import { OFFSET_RANGE_MS, SCROLL_SPEED_RANGE } from '@/shared/config/constants';
+import { OFFSET_RANGE_MS } from '@/shared/config/constants';
 import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
@@ -8,7 +8,6 @@ export interface Settings {
   version: 1;
   /** Calibrated audio offset in milliseconds (positive = audio arrives late). */
   audioOffsetMs: number;
-  scrollSpeed: number;
   musicVolume: number;
   sfxVolume: number;
   voiceVolume: number;
@@ -28,7 +27,6 @@ const KEY = 'neon-tap:settings';
 const DEFAULTS: Settings = {
   version: 1,
   audioOffsetMs: 0,
-  scrollSpeed: 1.2,
   musicVolume: 0.9,
   sfxVolume: 0.7,
   voiceVolume: 0.9,
@@ -48,8 +46,6 @@ function load(): Settings {
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
     const merged = { ...DEFAULTS, ...parsed, version: 1 as const };
-    // Players from before the difficulty rebalance keep their old (faster) speed only if they changed it.
-    if ((parsed.calibrationVersion ?? 0) < 2 && parsed.scrollSpeed === 1.5) merged.scrollSpeed = DEFAULTS.scrollSpeed;
     return sanitize(merged);
   } catch {
     return DEFAULTS;
@@ -60,7 +56,6 @@ function sanitize(s: Settings): Settings {
   return {
     ...s,
     audioOffsetMs: clamp(Math.round(s.audioOffsetMs), OFFSET_RANGE_MS.min, OFFSET_RANGE_MS.max),
-    scrollSpeed: clamp(s.scrollSpeed, SCROLL_SPEED_RANGE.min, SCROLL_SPEED_RANGE.max),
     musicVolume: clamp(s.musicVolume, 0, 1),
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),

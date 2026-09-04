@@ -22,6 +22,9 @@ const SAMPLES = [
   'milestone',
   'ui',
   'rank',
+  'lanes-open',
+  'lanes-close',
+  'lanes-glitch',
 ] as const;
 
 export const sfxBank = new SampleBank(`${import.meta.env.BASE_URL}sfx/`);
@@ -63,6 +66,27 @@ export function sfxMilestone(): void {
 /** Rank reveal on the result screen. */
 export function sfxRank(): void {
   if (!sfxBank.play('rank', { gain: 0.9 })) fallbackTone(660, 0.3, 0.15, 'sine');
+}
+
+/** Lane count changes: a rising "maximize" when lanes spread apart, a falling "minimize" when they merge, with a glitch accent on top. */
+export function sfxLanes(open: boolean): void {
+  const played = sfxBank.play(open ? 'lanes-open' : 'lanes-close', { gain: 1 });
+  sfxBank.play('lanes-glitch', { gain: 0.45, rate: open ? 1.1 : 0.9 });
+  if (!played) {
+    const ctx = audioEngine.context;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(open ? 220 : 880, t);
+    osc.frequency.exponentialRampToValueAtTime(open ? 880 : 220, t + 0.35);
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.connect(gain).connect(audioEngine.sfxDestination);
+    osc.start(t);
+    osc.stop(t + 0.42);
+  }
 }
 
 /** Soft UI click for buttons. */

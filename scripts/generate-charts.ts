@@ -3,17 +3,14 @@
  *
  * Runs the exact same analysis pipeline the browser uses for custom songs
  * (src/shared/lib/analysis): onsets → tempo → DP beat tracking → 16th grid → per-bar rhythm
- * templates → lane-count sections. World assignment is data-driven: tracks are sorted by their
- * Hard-chart star rating and split 4 / 4 / 4 / 4 across the worlds (GDD §3).
- *
- * Lane-count variation is "late game" content: world 1 keeps 4 lanes, world 2 varies on Hard,
- * worlds 3–4 vary on Normal and Hard. Easy never varies.
+ * templates → holds / slides / rolls / circle windows / lane-count sections. One chart per song;
+ * the catalog is sorted easiest-first by the chart's star rating.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
-import { analyzeSong, generateAllDifficulties, type SongAnalysis } from '../src/shared/lib/analysis';
+import { analyzeSong, chartFeatures, composeChart } from '../src/shared/lib/analysis';
 import type { ChartFile } from '../src/shared/types/chart';
 
 interface RawTrack {
@@ -30,72 +27,19 @@ const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
 const RATE = 22050;
-const WORLD_IDS = ['launch', 'pulse', 'overload', 'core'] as const;
-const LANE_VARIATION_BY_WORLD = [
-  { normal: true, hard: true },
-  { normal: true, hard: true },
-  { normal: true, hard: true },
-  { normal: true, hard: true },
-] as const;
 
 mkdirSync(CHART_DIR, { recursive: true });
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
 
-interface Built {
-  track: RawTrack;
-  analysis: SongAnalysis;
-  duration: number;
-  chart: ChartFile;
-}
-
-// Pass 1: analyse and rate everything (with full variation) to decide the worlds.
-const built: Built[] = [];
+const built: ChartFile[] = [];
 for (const t of tracks) {
   const file = join(MUSIC_DIR, `${t.id}.mp3`);
   const t0 = Date.now();
   const samples = decodePcm(file, RATE);
   const duration = probeDuration(file);
   const analysis = analyzeSong(samples, RATE);
-  const charts = generateAllDifficulties(analysis, { seed: hash(t.id) });
-  built.push({ track: t, analysis, duration, chart: makeChart(t, analysis, duration, charts) });
-  console.log(`${t.id.padEnd(18)} analysed in ${Date.now() - t0} ms  (bpm ${analysis.bpm}, bars ${analysis.barCount}, hard ★${charts.hard.stars})`);
-}
-built.sort((a, b) => a.chart.charts.normal.stars - b.chart.charts.normal.stars || a.chart.charts.normal.notes.length - b.chart.charts.normal.notes.length || a.chart.bpm - b.chart.bpm);
-
-// Pass 2: regenerate with the world's lane-variation policy and write everything out.
-const perWorld = Math.ceil(built.length / WORLD_IDS.length);
-const catalog = built.map((b, i) => {
-  const worldIdx = Math.min(WORLD_IDS.length - 1, Math.floor(i / perWorld));
-  const policy = LANE_VARIATION_BY_WORLD[worldIdx];
-  const charts = generateAllDifficulties(b.analysis, { seed: hash(b.track.id), laneVariation: { easy: false, normal: policy.normal, hard: policy.hard } });
-  const chart = makeChart(b.track, b.analysis, b.duration, charts);
-  writeFileSync(join(CHART_DIR, `${b.track.id}.json`), JSON.stringify(chart));
-  const info = (d: 'easy' | 'normal' | 'hard') => {
-    const notes = charts[d].notes;
-    const holds = notes.filter((n) => n.length >= 3 && (n[2] as number) > 0).length;
-    const spells = notes.filter((n) => n.length === 4).length;
-    const lanes = (charts[d].sections ?? [[0, 4]]).map((s) => s[1]).join('→');
-    return `★${charts[d].stars} ${(notes.length / b.duration).toFixed(1)}/s h${holds} s${spells} [${lanes}]`;
-  };
-  console.log(`${WORLD_IDS[worldIdx].padEnd(9)} ${b.track.id.padEnd(18)} E ${info('easy')}  N ${info('normal')}  H ${info('hard')}`);
-  return {
-    id: chart.id,
-    title: chart.title,
-    artist: chart.artist,
-    license: chart.license,
-    sourceUrl: chart.sourceUrl,
-    world: WORLD_IDS[worldIdx],
-    bpm: chart.bpm,
-    duration: chart.duration,
-    stars: { easy: charts.easy.stars, normal: charts.normal.stars, hard: charts.hard.stars },
-    notes: { easy: charts.easy.notes.length, normal: charts.normal.notes.length, hard: charts.hard.notes.length },
-  };
-});
-writeFileSync(CATALOG, JSON.stringify(catalog, null, 2) + '\n');
-console.log(`catalog.json: ${catalog.length} tracks`);
-
-function makeChart(t: RawTrack, analysis: SongAnalysis, duration: number, charts: ChartFile['charts']): ChartFile {
-  return {
+  const chart = composeChart(analysis, { seed: hash(t.id) });
+  const file2: ChartFile = {
     id: t.id,
     title: t.title,
     artist: t.artist,
@@ -106,9 +50,33 @@ function makeChart(t: RawTrack, analysis: SongAnalysis, duration: number, charts
     offset: analysis.beats[0] ?? 0,
     duration: Math.round(duration * 100) / 100,
     beats: analysis.beats,
-    charts,
+    chart,
   };
+  writeFileSync(join(CHART_DIR, `${t.id}.json`), JSON.stringify(file2));
+  built.push(file2);
+  const f = chartFeatures(chart);
+  const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
+  console.log(
+    `${t.id.padEnd(18)} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
+      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${Date.now() - t0} ms`,
+  );
 }
+
+built.sort((a, b) => a.chart.stars - b.chart.stars || a.chart.notes.length - b.chart.notes.length || a.bpm - b.bpm);
+const catalog = built.map((c) => ({
+  id: c.id,
+  title: c.title,
+  artist: c.artist,
+  license: c.license,
+  sourceUrl: c.sourceUrl,
+  bpm: c.bpm,
+  duration: c.duration,
+  stars: c.chart.stars,
+  notes: c.chart.notes.length,
+  features: chartFeatures(c.chart),
+}));
+writeFileSync(CATALOG, JSON.stringify(catalog, null, 2) + '\n');
+console.log(`catalog.json: ${catalog.length} tracks`);
 
 function hash(s: string): number {
   let h = 2166136261;

@@ -8,8 +8,10 @@ export interface ParsedNote {
   /** 0 for tap notes. */
   duration: number;
   kind: NoteKind | null;
-  /** For circles: 1-based position inside its combo group (drawn inside the circle). 0 otherwise. */
+  /** For circles: 1-based position inside its combo group. 0 otherwise. */
   seq: number;
+  /** For rolls: required tap count. For slides: end lane. 0 otherwise. */
+  extra: number;
   /** Lane count of the section this note belongs to. */
   lanes: number;
 }

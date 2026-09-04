@@ -4,5 +4,5 @@ export { Clock } from './Clock';
 export { Conductor } from './Conductor';
 export { SampleBank } from './SampleBank';
 export type { PlayOptions } from './SampleBank';
-export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxRank, sfxUi } from './sfx';
+export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxRank, sfxUi, sfxLanes } from './sfx';
 export { unlockAudio, useAudioUnlocked, audioUnlockStore } from './unlock';

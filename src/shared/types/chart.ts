@@ -1,24 +1,30 @@
-import type { Difficulty } from '@/shared/config/constants';
-
 /**
- * Special note kinds. `slow` / `heart` are spells (catch = power-up);
- * `circle` is an osu!-style hit circle: it sits still on the playfield while an approach
- * ring shrinks onto it — tap when they meet (same timing windows as a lane note).
+ * Special note kinds.
+ *  - slow / heart: spells — catch (hit) the note to trigger the effect.
+ *  - circle: osu!-style hit circle, tapped on screen (or Space), never a lane key.
+ *  - roll: drum roll — tap the lane `extra` times before the bar runs out.
+ *  - slide: a hold that travels to lane `extra`; keep the finger on it and slide.
  */
-export type NoteKind = 'slow' | 'heart' | 'circle';
-/** @deprecated alias kept for readability where only spells are meant. */
+export type NoteKind = 'slow' | 'heart' | 'circle' | 'roll' | 'slide';
 export type SpellKind = 'slow' | 'heart';
 
 /**
- * `[timeSec, lane]` tap, `[timeSec, lane, durationSec]` hold,
- * `[timeSec, lane, 0, kind]` special note (spell or circle).
+ * `[timeSec, lane]` tap · `[timeSec, lane, durationSec]` hold ·
+ * `[timeSec, lane, 0, 'slow' | 'heart' | 'circle']` special tap ·
+ * `[timeSec, lane, durationSec, 'roll', taps]` drum roll ·
+ * `[timeSec, lane, durationSec, 'slide', endLane]` slide hold.
  */
-export type NoteTuple = [number, number] | [number, number, number] | [number, number, number, NoteKind];
+export type NoteTuple =
+  | [number, number]
+  | [number, number, number]
+  | [number, number, number, NoteKind]
+  | [number, number, number, NoteKind, number];
 
 /** `[timeSec, laneCount]` — from this time on the playfield has `laneCount` lanes. */
 export type SectionTuple = [number, number];
 
 export interface ChartLevel {
+  /** Difficulty rating 1–10 of the song itself. */
   stars: number;
   notes: NoteTuple[];
   /** Lane-count sections, ascending; the first starts at 0. Absent → 4 lanes throughout. */
@@ -36,7 +42,8 @@ export interface ChartFile {
   /** Seconds to the first downbeat. */
   offset: number;
   duration: number;
-  /** Tracked beat times in seconds (starting on a downbeat); drives the background pulse. */
+  /** Tracked beat times in seconds (starting on a downbeat). */
   beats?: number[];
-  charts: Record<Difficulty, ChartLevel>;
+  /** One chart per song — the music decides how hard it is. */
+  chart: ChartLevel;
 }

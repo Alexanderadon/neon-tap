@@ -57,6 +57,9 @@ Samples from the **Kenney** CC0 packs, converted to MP3 and peak-normalised (`sc
 | `sfx/milestone.mp3` | Kenney — Interface Sounds / `confirmation_002.ogg` | combo milestone chime |
 | `sfx/ui.mp3` | Kenney — UI Audio / `click2.ogg` | button click |
 | `sfx/rank.mp3` | Kenney — Interface Sounds / `confirmation_001.ogg` | result screen rank reveal |
+| `sfx/lanes-open.mp3` | Kenney — Interface Sounds / `maximize_006.ogg` | lane count grows (lanes spread apart) |
+| `sfx/lanes-close.mp3` | Kenney — Interface Sounds / `minimize_006.ogg` | lane count shrinks (lanes merge) |
+| `sfx/lanes-glitch.mp3` | Kenney — Interface Sounds / `glitch_002.ogg` | lane change accent (layered) |
 
 ## Voice
 

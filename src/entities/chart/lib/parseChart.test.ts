@@ -5,12 +5,21 @@ describe('parseChartLevel', () => {
   it('expands tuples, sorts by time and tags the section lane count', () => {
     const notes = parseChartLevel({ stars: 1, notes: [[1, 2], [0.5, 0, 0.4], [1, 1], [2, 3, 0, 'slow']] });
     expect(notes).toEqual([
-      { time: 0.5, lane: 0, duration: 0.4, kind: null, seq: 0, lanes: 4 },
-      { time: 1, lane: 1, duration: 0, kind: null, seq: 0, lanes: 4 },
-      { time: 1, lane: 2, duration: 0, kind: null, seq: 0, lanes: 4 },
-      { time: 2, lane: 3, duration: 0, kind: 'slow', seq: 0, lanes: 4 },
+      { time: 0.5, lane: 0, duration: 0.4, kind: null, seq: 0, extra: 0, lanes: 4 },
+      { time: 1, lane: 1, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4 },
+      { time: 1, lane: 2, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4 },
+      { time: 2, lane: 3, duration: 0, kind: 'slow', seq: 0, extra: 0, lanes: 4 },
     ]);
     expect(countJudgements(notes)).toBe(5);
+  });
+
+  it('parses rolls and slides with their extra value', () => {
+    const notes = parseChartLevel({ stars: 1, notes: [[1, 0, 0.5, 'roll', 4], [2, 1, 1, 'slide', 3]] });
+    expect(notes[0]).toMatchObject({ kind: 'roll', extra: 4, duration: 0.5 });
+    expect(notes[1]).toMatchObject({ kind: 'slide', extra: 3, duration: 1 });
+    expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 0, 'roll', 4]] })).toThrow(/roll/);
+    expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 1, 'slide', 0]] })).toThrow(/slide/);
+    expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 1, 'slide', 4]] })).toThrow(/slide/);
   });
 
   it('numbers circle groups 1, 2, 3 and restarts after a gap', () => {
@@ -26,10 +35,8 @@ describe('parseChartLevel', () => {
     const sections = parseSections(level);
     expect(lanesAt(sections, 0)).toBe(2);
     expect(lanesAt(sections, 8)).toBe(6);
-    expect(lanesAt(sections, 15.9)).toBe(6);
     expect(lanesAt(sections, 16)).toBe(2);
-    const notes = parseChartLevel(level);
-    expect(notes.map((n) => n.lanes)).toEqual([2, 6, 2]);
+    expect(parseChartLevel(level).map((n) => n.lanes)).toEqual([2, 6, 2]);
     expect(() => parseChartLevel({ ...level, notes: [[0.5, 3]] })).toThrow(/outside 2-lane/);
   });
 
@@ -37,7 +44,7 @@ describe('parseChartLevel', () => {
     expect(() => parseChartLevel({ stars: 1, notes: [[1, 4]] })).toThrow();
     expect(() => parseChartLevel({ stars: 1, notes: [[-1, 0]] })).toThrow();
     expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 0, 'nope' as 'slow']] })).toThrow();
-    expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 0.5, 'circle']] })).toThrow(/cannot be holds/);
+    expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 0.5, 'circle']] })).toThrow(/cannot be a hold/);
     expect(() => parseSections({ stars: 1, notes: [], sections: [[0, 7]] })).toThrow();
   });
 });

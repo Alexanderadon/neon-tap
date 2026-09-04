@@ -4,12 +4,12 @@ import { useSession } from '@/entities/play-session';
 import { GameCanvas } from '@/widgets/game-canvas';
 
 export function GamePage() {
-  const { chart, difficulty, source, audioBuffer } = useSession((s) => s);
+  const { chart, source, audioBuffer } = useSession((s) => s);
 
   useEffect(() => {
     if (!chart) navigate('menu');
   }, [chart]);
 
   if (!chart) return null;
-  return <GameCanvas chart={chart} difficulty={difficulty} source={source} audioBuffer={audioBuffer} />;
+  return <GameCanvas chart={chart} source={source} audioBuffer={audioBuffer} />;
 }

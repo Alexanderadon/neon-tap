@@ -2,7 +2,7 @@ import { LANE_COUNT, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 import { lowerBound } from '@/shared/lib/math';
 import type { ChartLevel, NoteTuple, ParsedNote, Section } from '../model/types';
 
-const KINDS = ['slow', 'heart', 'circle'] as const;
+const KINDS = ['slow', 'heart', 'circle', 'roll', 'slide'] as const;
 /** Circles closer than this form one numbered group (1, 2, 3 …). */
 const CIRCLE_GROUP_GAP = 2.5;
 
@@ -31,7 +31,6 @@ export function parseChartLevel(level: ChartLevel): ParsedNote[] {
   const sections = parseSections(level);
   const notes = level.notes.map((t, i) => parseNote(t, i, lanesAt(sections, t[0])));
   notes.sort((a, b) => a.time - b.time || a.lane - b.lane);
-  // Number circle groups.
   let lastCircle = -Infinity;
   let seq = 0;
   for (const n of notes) {
@@ -44,16 +43,20 @@ export function parseChartLevel(level: ChartLevel): ParsedNote[] {
 }
 
 function parseNote(t: NoteTuple, i: number, lanes: number): ParsedNote {
-  const [time, lane, duration = 0, kind] = t;
+  const [time, lane, duration = 0, kind, extra = 0] = t;
   if (!Number.isFinite(time) || time < 0) throw new Error(`note ${i}: bad time ${time}`);
   if (!Number.isInteger(lane) || lane < 0 || lane >= lanes) throw new Error(`note ${i}: lane ${lane} outside ${lanes}-lane section`);
   if (!Number.isFinite(duration) || duration < 0) throw new Error(`note ${i}: bad duration ${duration}`);
   if (kind !== undefined && !KINDS.includes(kind)) throw new Error(`note ${i}: bad kind ${String(kind)}`);
-  if (kind && duration > 0) throw new Error(`note ${i}: special notes cannot be holds`);
-  return { time, lane, duration, kind: kind ?? null, seq: 0, lanes };
+  if ((kind === 'slow' || kind === 'heart' || kind === 'circle') && duration > 0) throw new Error(`note ${i}: ${kind} cannot be a hold`);
+  if (kind === 'roll' && (duration <= 0 || !Number.isInteger(extra) || extra < 2)) throw new Error(`note ${i}: roll needs a duration and ≥ 2 taps`);
+  if (kind === 'slide' && (duration <= 0 || !Number.isInteger(extra) || extra < 0 || extra >= lanes || extra === lane)) {
+    throw new Error(`note ${i}: slide needs a duration and a different end lane inside the section`);
+  }
+  return { time, lane, duration, kind: kind ?? null, seq: 0, extra, lanes };
 }
 
-/** Number of judgements a chart yields: holds count twice (head + tail). */
+/** Number of judgements a chart yields: holds, rolls and slides count twice (head + tail). */
 export function countJudgements(notes: readonly ParsedNote[]): number {
   let n = 0;
   for (const note of notes) n += note.duration > 0 ? 2 : 1;

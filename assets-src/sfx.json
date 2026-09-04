@@ -1,8 +1,20 @@
 {
   "packs": {
-    "impact": { "name": "Kenney — Impact Sounds", "url": "https://kenney.nl/assets/impact-sounds", "license": "CC0 1.0", "dir": "kenney_impact-sounds/Audio" },
-    "interface": { "name": "Kenney — Interface Sounds", "url": "https://kenney.nl/assets/interface-sounds", "license": "CC0 1.0", "dir": "kenney_interface-sounds/Audio" },
-    "ui": { "name": "Kenney — UI Audio", "url": "https://kenney.nl/assets/ui-audio", "license": "CC0 1.0", "dir": "kenney_ui-audio/Audio" }
+    "impact": {
+      "name": "Kenney — Impact Sounds",
+      "url": "https://kenney.nl/assets/impact-sounds",
+      "license": "CC0 1.0",
+      "dir": "kenney_impact-sounds/Audio" },
+    "interface": {
+      "name": "Kenney — Interface Sounds",
+      "url": "https://kenney.nl/assets/interface-sounds",
+      "license": "CC0 1.0",
+      "dir": "kenney_interface-sounds/Audio" },
+    "ui": {
+      "name": "Kenney — UI Audio",
+      "url": "https://kenney.nl/assets/ui-audio",
+      "license": "CC0 1.0",
+      "dir": "kenney_ui-audio/Audio" }
   },
   "samples": {
     "hit-0": { "pack": "impact", "file": "impactGeneric_light_000.ogg", "role": "note hit (round-robin 1/5)" },
@@ -19,6 +31,9 @@
     "metronome-accent": { "pack": "interface", "file": "drop_001.ogg", "role": "calibration metronome downbeat" },
     "milestone": { "pack": "interface", "file": "confirmation_002.ogg", "role": "combo milestone chime" },
     "ui": { "pack": "ui", "file": "click2.ogg", "role": "button click" },
-    "rank": { "pack": "interface", "file": "confirmation_001.ogg", "role": "result screen rank reveal" }
+    "rank": { "pack": "interface", "file": "confirmation_001.ogg", "role": "result screen rank reveal" },
+    "lanes-open": { "pack": "interface", "file": "maximize_006.ogg", "role": "lane count grows (lanes spread apart)" },
+    "lanes-close": { "pack": "interface", "file": "minimize_006.ogg", "role": "lane count shrinks (lanes merge)" },
+    "lanes-glitch": { "pack": "interface", "file": "glitch_002.ogg", "role": "lane change accent (layered)" }
   }
 }

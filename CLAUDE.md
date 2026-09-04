@@ -46,17 +46,7 @@ npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
 
 ## Деплой
 
-Проект на Vercel: `neon-tap-2` (прежний `neon-tap` завис на стороне Vercel — все его новые деплои остаются в состоянии UNKNOWN; домен `neon-tap-virid.vercel.app` перевешен алиасом на `neon-tap-2`). Надёжный способ:
-
-```
-npm run build && vercel build --prod --yes && vercel deploy --prebuilt --prod --yes
-```
-
-Сборка делается локально, Vercel только загружает файлы. Не оборачивать `vercel deploy` в `timeout` — убитый CLI отменяет деплой. Если алиас слетит: `vercel alias set <deployment-url> neon-tap-virid.vercel.app`.
-
-## Деплой
-
-`bash scripts/deploy-fresh.sh` — локальная сборка, загрузка в НОВЫЙ проект Vercel и перенос домена `neon-tap-virid.vercel.app` на него. Обычный `vercel deploy` в существующий проект зависает в «Building…» после первого деплоя (баг на стороне Vercel), поэтому каждый релиз идёт в свежий проект. Старые проекты можно удалять в панели Vercel.
+`bash scripts/deploy-fresh.sh <имя-проекта>` — локальная сборка (`npm run build && vercel build`), загрузка prebuilt-сборки в **новый** проект Vercel, перенос домена `neon-tap-virid.vercel.app` на него и перелинковка репозитория. Обычный `vercel deploy` в существующий проект зависает в «Building…» после первого деплоя (баг на стороне Vercel), поэтому каждый релиз идёт в свежий проект (`neon-tap-7`, `neon-tap-8`, …). Не оборачивать `vercel deploy` в `timeout` — убитый CLI оставляет деплой в UNKNOWN. Старые проекты удаляются только в панели Vercel (CLI требует интерактивный TTY). Если алиас слетел: `vercel alias set <deployment-url> neon-tap-virid.vercel.app`.
 
 ## Dev-флаги
 
@@ -68,4 +58,7 @@ npm run build && vercel build --prod --yes && vercel deploy --prebuilt --prod --
 - Перед фазой — план в `docs/plans/<N>-<name>.md`, после фазы — коммит. Не раньше.
 - Проблемы с таймингом: не гадать. Включить debug overlay, смотреть `latency`, `worst ms`, `t`.
 - Изменил анализ (`shared/lib/analysis`) → перегенерируй карты `npm run assets:charts` и проверь
-  таблицу звёзд в выводе: кривая сложности должна оставаться монотонной по мирам.
+  таблицу в выводе: плотность 1.2–2.3 нот/с, звёзды с разбросом (сейчас ★4–7), дроби есть в большинстве
+  треков и не быстрее 6 нажатий/с, слайды только в соседнюю полосу.
+- Одна карта на песню (`chart`), без уровней сложности — сложность задаёт песня (`rateStars`).
+- Ничего не удалять (файлы, кеши, проекты) без явной просьбы автора.

@@ -10,7 +10,6 @@ export interface JudgementCounts {
 
 export interface PlayResult {
   trackId: string;
-  difficulty: 'easy' | 'normal' | 'hard';
   score: number;
   accuracy: number;
   rank: Rank;
