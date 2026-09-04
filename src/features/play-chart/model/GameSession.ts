@@ -1,4 +1,4 @@
-import { BASE_APPROACH_TIME, KEY_LAYOUTS } from '@/shared/config/constants';
+import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS } from '@/shared/config/constants';
 import { audioEngine, Clock, Conductor, sfxComboBreak, sfxHit, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
@@ -10,7 +10,8 @@ import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import type { Difficulty } from '@/shared/config/constants';
 import { NoteManager, type JudgeEvent } from './NoteManager';
 import { Lives } from './Lives';
-import { Renderer } from '../lib/Renderer';
+import { Renderer, circleY } from '../lib/Renderer';
+import { NoteState } from './NoteManager';
 import { laneAtPoint } from '../lib/layout';
 
 export type SessionEvent =
@@ -35,7 +36,6 @@ export interface SessionOptions {
   canvas: HTMLCanvasElement;
   /** Seconds; from calibration. */
   userOffset: number;
-  scrollSpeed: number;
   touch: boolean;
   /** Touch assist: early presses count (see NoteManager). */
   touchAssist: boolean;
@@ -56,8 +56,10 @@ const SLOW_RATE = 0.72;
 const SLOW_DURATION = 6;
 const SLOW_RAMP_IN = 0.35;
 const SLOW_RAMP_OUT = 0.5;
-/** Note speed multiplier per difficulty — Hard is visibly faster, Easy slower. */
-const SPEED_BY_DIFFICULTY: Record<Difficulty, number> = { easy: 0.75, normal: 0.9, hard: 1.05 };
+/** Per-song note speed: notes take this many beats to reach the line (clamped in seconds), so every song reads at its own tempo. */
+const APPROACH_BEATS = 3.5;
+const APPROACH_MIN = 1.3;
+const APPROACH_MAX = 2.4;
 /** Auto-offset: window of recent timing errors and the max correction it may apply, seconds. */
 const AUTO_WINDOW = 40;
 const AUTO_MAX = 0.08;
@@ -123,10 +125,14 @@ export class GameSession {
     this.renderer.setLanes(this.sections[0].lanes, true);
     this.input = new Input({
       audioNow: () => audioEngine.now(),
-      laneForKey: (code) => KEY_LAYOUTS[this.renderer.lanes]?.[code] ?? -1,
+      laneForKey: (code) => (code === CIRCLE_KEY ? CIRCLE_BUCKET : (KEY_LAYOUTS[this.renderer.lanes]?.[code] ?? -1)),
       laneAt: (x, y) => {
         const r = opts.canvas.getBoundingClientRect();
-        return laneAtPoint(this.renderer.layout, x - r.left, y - r.top, opts.touch);
+        const px = x - r.left;
+        const py = y - r.top;
+        // A tap on a visible circle hits the circle, not the lane under it.
+        if (this.circleAt(px, py)) return CIRCLE_BUCKET;
+        return laneAtPoint(this.renderer.layout, px, py, opts.touch);
       },
     });
     this.notes.onJudge = this.handleJudge;
@@ -135,7 +141,24 @@ export class GameSession {
   }
 
   get approachTime(): number {
-    return BASE_APPROACH_TIME / (this.opts.scrollSpeed * SPEED_BY_DIFFICULTY[this.opts.difficulty]);
+    return clamp((APPROACH_BEATS * 60) / Math.max(60, this.opts.chart.bpm), APPROACH_MIN, APPROACH_MAX);
+  }
+
+  /** Is there a pending circle under the pointer (generous radius) within its approach window? */
+  private circleAt(px: number, py: number): boolean {
+    const songTime = this.clock.songTime();
+    const pool = this.notes.pool;
+    for (let i = this.notes.firstActive; i < this.notes.count; i++) {
+      const n = pool[i];
+      if (n.time - songTime > this.approachTime) break;
+      if (n.kind !== 'circle' || n.state !== NoteState.Pending) continue;
+      const L = this.renderer.layoutFor(n.lanes);
+      const cx = L.laneX + (n.lane + 0.5) * L.laneWidth;
+      const cy = circleY(L, n.seq);
+      const r = Math.max(16, Math.min(L.laneWidth * 0.42, 40)) * 1.8;
+      if ((px - cx) ** 2 + (py - cy) ** 2 <= r * r) return true;
+    }
+    return false;
   }
 
   start(): void {

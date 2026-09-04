@@ -1,4 +1,4 @@
-import { HIT_WINDOWS, MAX_LANES } from '@/shared/config/constants';
+import { CIRCLE_BUCKET, HIT_WINDOWS, INPUT_SLOTS } from '@/shared/config/constants';
 import { judgeDelta, type Judgement } from '@/entities/score';
 import type { NoteKind, ParsedNote } from '@/entities/chart';
 
@@ -62,8 +62,8 @@ export class NoteManager {
   count = 0;
   /** Per-lane list of pool indices in time order. */
   private readonly laneNotes: Int32Array[] = [];
-  private readonly laneLen = new Int32Array(MAX_LANES);
-  private readonly laneCursor = new Int32Array(MAX_LANES);
+  private readonly laneLen = new Int32Array(INPUT_SLOTS);
+  private readonly laneCursor = new Int32Array(INPUT_SLOTS);
   /** Index of the first note that may still be on screen (advances monotonically). */
   firstActive = 0;
   onJudge: ((e: JudgeEvent) => void) | null = null;
@@ -74,7 +74,7 @@ export class NoteManager {
     for (let i = 0; i < capacity; i++) {
       this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, kind: null, seq: 0, lanes: 4, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0, armed: false, assisted: false });
     }
-    for (let l = 0; l < MAX_LANES; l++) this.laneNotes.push(new Int32Array(capacity));
+    for (let l = 0; l < INPUT_SLOTS; l++) this.laneNotes.push(new Int32Array(capacity));
   }
 
   load(notes: readonly ParsedNote[]): void {
@@ -99,8 +99,9 @@ export class NoteManager {
       n.hitDelta = 0;
       n.armed = false;
       n.assisted = false;
-      const lane = src.lane;
-      this.laneNotes[lane][this.laneLen[lane]++] = i;
+      // Circles are hit by tapping them (or Space), so they live in their own input bucket.
+      const bucket = src.kind === 'circle' ? CIRCLE_BUCKET : src.lane;
+      this.laneNotes[bucket][this.laneLen[bucket]++] = i;
     }
   }
 
@@ -126,7 +127,7 @@ export class NoteManager {
 
   /** Advance time: auto-miss overdue notes, fire armed notes, complete holds that are still held. */
   update(songTime: number, _isHeld: (lane: number) => boolean): void {
-    for (let lane = 0; lane < MAX_LANES; lane++) {
+    for (let lane = 0; lane < INPUT_SLOTS; lane++) {
       const list = this.laneNotes[lane];
       const len = this.laneLen[lane];
       let cursor = this.laneCursor[lane];

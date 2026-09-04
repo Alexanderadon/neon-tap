@@ -1,4 +1,4 @@
-import { OFFSET_RANGE_MS, SCROLL_SPEED_RANGE } from '@/shared/config/constants';
+import { OFFSET_RANGE_MS } from '@/shared/config/constants';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
@@ -48,15 +48,6 @@ export function SettingsPanel() {
         format={(v) => `${v > 0 ? '+' : ''}${v} ${dict.ms}`}
         hint={dict.settingsOffsetHint}
         onChange={(v) => updateSettings({ audioOffsetMs: v })}
-      />
-      <Slider
-        label={dict.settingsScroll}
-        value={s.scrollSpeed}
-        min={SCROLL_SPEED_RANGE.min}
-        max={SCROLL_SPEED_RANGE.max}
-        step={SCROLL_SPEED_RANGE.step}
-        format={(v) => `${v.toFixed(1)}×`}
-        onChange={(v) => updateSettings({ scrollSpeed: v })}
       />
       <Slider label={dict.settingsVolumeMusic} value={s.musicVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('musicVolume', v)} />
       <div className="settings-row">

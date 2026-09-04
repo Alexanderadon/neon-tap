@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type DragEvent } from 'react';
-import { DIFFICULTIES, type Difficulty } from '@/shared/config/constants';
+import { MAIN_DIFFICULTY } from '@/shared/config/constants';
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine } from '@/shared/lib/audio';
@@ -46,9 +46,9 @@ export function SongDropZone() {
     if (file) void handleFile(file);
   };
 
-  const play = (difficulty: Difficulty) => {
+  const play = () => {
     if (state.kind !== 'ready') return;
-    startSession(state.song.chart, difficulty, 'custom', state.song.audioBuffer);
+    startSession(state.song.chart, MAIN_DIFFICULTY, 'custom', state.song.audioBuffer);
     navigate('game');
   };
 
@@ -68,16 +68,13 @@ export function SongDropZone() {
       <div className="dropzone dropzone-ready">
         <div className="dropzone-title">{song.chart.title}</div>
         <div className="dropzone-meta">{fmt(dict.customReady, { bpm: song.chart.bpm, onsets: song.onsets })}</div>
-        <div className="dropzone-choose">{dict.customChoose}</div>
         <div className="dropzone-diffs">
-          {DIFFICULTIES.map((d) => (
-            <Button key={d} size="lg" onClick={() => play(d)}>
-              {dict.difficulty[d]} · ★ {song.chart.charts[d].stars}
-              <small>
-                {song.chart.charts[d].notes.length} · {(song.chart.charts[d].notes.length / song.chart.duration).toFixed(1)} {dict.notesPerSec}
-              </small>
-            </Button>
-          ))}
+          <Button size="xl" onClick={play}>
+            {dict.play} · ★ {song.chart.charts[MAIN_DIFFICULTY].stars}
+            <small>
+              {song.chart.charts[MAIN_DIFFICULTY].notes.length} · {(song.chart.charts[MAIN_DIFFICULTY].notes.length / song.chart.duration).toFixed(1)} {dict.notesPerSec}
+            </small>
+          </Button>
         </div>
         <Button variant="ghost" onClick={() => setState({ kind: 'idle' })}>
           {dict.customAnother}

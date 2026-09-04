@@ -106,6 +106,11 @@ export class Renderer {
     return this.current;
   }
 
+  /** Geometry for a given lane count (notes of other sections). */
+  layoutFor(n: number): Layout {
+    return this.set(n).layout;
+  }
+
   private set(n: number): LaneSet {
     let s = this.sets.get(n);
     if (!s) {
