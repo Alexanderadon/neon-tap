@@ -2,6 +2,8 @@ import { OFFSET_RANGE_MS, SCROLL_SPEED_RANGE } from '@/shared/config/constants';
 import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
+export type VoiceSetting = 'dmitry' | 'svetlana' | 'off';
+
 export interface Settings {
   version: 1;
   /** Calibrated audio offset in milliseconds (positive = audio arrives late). */
@@ -10,6 +12,7 @@ export interface Settings {
   musicVolume: number;
   sfxVolume: number;
   voiceVolume: number;
+  voice: VoiceSetting;
   calibrated: boolean;
   debugOverlay: boolean;
 }
@@ -22,10 +25,13 @@ const DEFAULTS: Settings = {
   scrollSpeed: 1.5,
   musicVolume: 0.9,
   sfxVolume: 0.7,
-  voiceVolume: 1,
+  voiceVolume: 0.9,
+  voice: 'dmitry',
   calibrated: false,
   debugOverlay: false,
 };
+
+const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
 
 function load(): Settings {
   try {
@@ -46,6 +52,7 @@ function sanitize(s: Settings): Settings {
     musicVolume: clamp(s.musicVolume, 0, 1),
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),
+    voice: VOICES.includes(s.voice) ? s.voice : DEFAULTS.voice,
   };
 }
 

@@ -14,6 +14,8 @@
     "typecheck": "tsc -b",
     "assets:music": "tsx --tsconfig tsconfig.node.json scripts/prepare-music.ts",
     "assets:voice": "tsx --tsconfig tsconfig.node.json scripts/generate-voice.ts",
+    "assets:sfx": "tsx --tsconfig tsconfig.node.json scripts/prepare-sfx.ts",
+    "assets:licenses": "tsx --tsconfig tsconfig.node.json scripts/write-licenses.ts",
     "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts"
   },
   "dependencies": {
@@ -31,6 +33,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
     "ffmpeg-static": "^5.2.0",
+    "msedge-tts": "^2.0.7",
     "tsx": "^4.19.2",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.18.2",

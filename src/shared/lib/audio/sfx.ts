@@ -1,111 +1,101 @@
 import { audioEngine } from './AudioEngine';
+import { SampleBank } from './SampleBank';
 
 /**
- * Synthesised sound effects — zero assets, zero network.
- * Every effect is a short oscillator/noise burst scheduled on the audio clock.
+ * Sound effects: CC0 samples (Kenney packs, see public/music/LICENSES.md) played through a
+ * SampleBank. If a sample failed to load, a minimal synthesised stand-in keeps the feedback
+ * loop intact — the game never goes silent because of a 404.
  */
-function ctxAndDest(): [AudioContext, AudioNode] | null {
-  const ctx = audioEngine.context;
-  if (!ctx) return null;
-  return [ctx, audioEngine.sfxDestination];
+const SAMPLES = [
+  'hit-0',
+  'hit-1',
+  'hit-2',
+  'hit-3',
+  'hit-4',
+  'miss-0',
+  'miss-1',
+  'miss-2',
+  'combo-break-0',
+  'combo-break-1',
+  'metronome',
+  'metronome-accent',
+  'milestone',
+  'ui',
+  'rank',
+] as const;
+
+export const sfxBank = new SampleBank(`${import.meta.env.BASE_URL}sfx/`);
+
+/** Call once after the AudioContext exists (first user gesture). Idempotent. */
+export function preloadSfx(): Promise<void> {
+  return sfxBank.load(SAMPLES);
 }
 
-let noiseBuffer: AudioBuffer | null = null;
-function getNoise(ctx: AudioContext): AudioBuffer {
-  if (noiseBuffer && noiseBuffer.sampleRate === ctx.sampleRate) return noiseBuffer;
-  const len = Math.floor(ctx.sampleRate * 0.3);
-  noiseBuffer = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-  return noiseBuffer;
-}
-
-/** Short clean tick on a hit; pitch varies with judgement quality. */
+/** Note hit; quality 0 = perfect, 1 = great, 2 = good. Softer + slightly lower for weaker hits. */
 export function sfxHit(quality: 0 | 1 | 2, when?: number): void {
-  const pair = ctxAndDest();
-  if (!pair) return;
-  const [ctx, dest] = pair;
-  const t = when ?? ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'triangle';
-  osc.frequency.value = [1400, 1100, 900][quality];
-  gain.gain.setValueAtTime(0.35, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-  osc.connect(gain).connect(dest);
-  osc.start(t);
-  osc.stop(t + 0.07);
+  const gain = [1, 0.8, 0.6][quality];
+  const rate = [1, 0.96, 0.9][quality];
+  if (!sfxBank.play('hit', { when, gain, rate })) fallbackTone(1200 * rate, 0.05, gain * 0.25, 'triangle', when);
 }
 
-/** "Glass" break on a miss / combo loss: noise burst through a falling filter. */
+/** Plain miss — a dull thud (the master lowpass duck does the rest). */
 export function sfxMiss(): void {
-  const pair = ctxAndDest();
-  if (!pair) return;
-  const [ctx, dest] = pair;
-  const t = ctx.currentTime;
-  const src = ctx.createBufferSource();
-  src.buffer = getNoise(ctx);
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.Q.value = 1.2;
-  filter.frequency.setValueAtTime(2600, t);
-  filter.frequency.exponentialRampToValueAtTime(300, t + 0.22);
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.5, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-  src.connect(filter).connect(gain).connect(dest);
-  src.start(t);
-  src.stop(t + 0.26);
+  if (!sfxBank.play('miss', { gain: 0.9 })) fallbackTone(140, 0.18, 0.3, 'sine');
 }
 
-/** Metronome click for the calibration screen. `accent` marks the downbeat. */
+/** Losing a combo: glass shatters (GDD §1.1). */
+export function sfxComboBreak(): void {
+  if (!sfxBank.play('combo-break', { gain: 0.9 })) fallbackNoise(0.25);
+}
+
+/** Metronome click for calibration, scheduled on the audio clock. */
 export function sfxClick(when: number, accent = false): void {
-  const pair = ctxAndDest();
-  if (!pair) return;
-  const [ctx, dest] = pair;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'square';
-  osc.frequency.value = accent ? 1800 : 1200;
-  gain.gain.setValueAtTime(0.4, when);
-  gain.gain.exponentialRampToValueAtTime(0.001, when + 0.04);
-  osc.connect(gain).connect(dest);
-  osc.start(when);
-  osc.stop(when + 0.05);
+  if (!sfxBank.play(accent ? 'metronome-accent' : 'metronome', { when, gain: accent ? 1 : 0.8 })) {
+    fallbackTone(accent ? 1800 : 1200, 0.04, 0.4, 'square', when);
+  }
 }
 
-/** Rising sweep for combo milestones. */
+/** Combo milestone chime. */
 export function sfxMilestone(): void {
-  const pair = ctxAndDest();
-  if (!pair) return;
-  const [ctx, dest] = pair;
-  const t = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(300, t);
-  osc.frequency.exponentialRampToValueAtTime(1600, t + 0.25);
-  gain.gain.setValueAtTime(0.15, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-  osc.connect(gain).connect(dest);
-  osc.start(t);
-  osc.stop(t + 0.32);
+  if (!sfxBank.play('milestone', { gain: 0.9 })) fallbackTone(880, 0.25, 0.15, 'sine');
 }
 
-/** Soft UI blip for buttons. */
+/** Rank reveal on the result screen. */
+export function sfxRank(): void {
+  if (!sfxBank.play('rank', { gain: 0.9 })) fallbackTone(660, 0.3, 0.15, 'sine');
+}
+
+/** Soft UI click for buttons. */
 export function sfxUi(): void {
-  const pair = ctxAndDest();
-  if (!pair) return;
-  const [ctx, dest] = pair;
-  const t = ctx.currentTime;
+  if (!sfxBank.play('ui', { gain: 0.7 })) fallbackTone(700, 0.06, 0.12, 'sine');
+}
+
+function fallbackTone(freq: number, dur: number, gainValue: number, type: OscillatorType, when?: number): void {
+  const ctx = audioEngine.context;
+  if (!ctx) return;
+  const t = Math.max(when ?? ctx.currentTime, ctx.currentTime);
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(660, t);
-  osc.frequency.exponentialRampToValueAtTime(990, t + 0.08);
-  gain.gain.setValueAtTime(0.2, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-  osc.connect(gain).connect(dest);
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(gainValue, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(gain).connect(audioEngine.sfxDestination);
   osc.start(t);
-  osc.stop(t + 0.11);
+  osc.stop(t + dur + 0.01);
+}
+
+function fallbackNoise(dur: number): void {
+  const ctx = audioEngine.context;
+  if (!ctx) return;
+  const len = Math.floor(ctx.sampleRate * dur);
+  const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.value = 0.3;
+  src.connect(gain).connect(audioEngine.sfxDestination);
+  src.start();
 }

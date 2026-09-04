@@ -5,7 +5,9 @@
 - [x] `assets-src/tracks.json` — единый реестр: id, автор, URL, лицензия, число повторов для коротких лупов.
 - [x] `scripts/prepare-music.ts` — обрезка до 150 с, loudnorm −14 LUFS, фейд, MP3 128 kbps; генерирует `public/music/LICENSES.md`.
 - [x] `scripts/generate-charts.ts` — три сложности на трек тем же пайплайном, раскладка по мирам сортировкой по звёздам Hard.
-- [x] `scripts/tts.ps1` + `scripts/generate-voice.ts` — русская озвучка.
+- [x] `scripts/generate-voice.ts` — русская озвучка нейро-TTS, два голоса.
+- [x] `scripts/prepare-sfx.ts` + `assets-src/sfx.json` — CC0-сэмплы Kenney вместо синтезированных пищалок; выбор по метрикам `scripts/analyze-samples.ts`.
+- [x] `scripts/write-licenses.ts` — единый отчёт по лицензиям музыки, сэмплов и голоса.
 
 ## Не сделано
 - Ручная чистка артефактов карт (дубли < 60 мс уже отсекаются квантованием + minGap; аккорды ограничены двумя нотами). Полный ручной прослушивающий проход 48 карт — следующий шаг.

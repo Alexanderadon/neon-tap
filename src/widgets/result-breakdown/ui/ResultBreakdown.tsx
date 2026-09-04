@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
+import { sfxRank } from '@/shared/lib/audio';
 import { Button, Stars } from '@/shared/ui';
 import type { PlayResult } from '@/entities/score';
 import type { PlaySession } from '@/entities/play-session';
@@ -20,6 +21,7 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
 
   useEffect(() => {
+    if (result.rank !== 'D') sfxRank();
     if (result.rank === 'SS' || result.rank === 'S') voice.say('rank-s', true);
     else if (result.fullCombo) voice.say('full-combo', true);
     else if (meta?.newRecord && result.rank !== 'D') voice.say('new-record', true);
