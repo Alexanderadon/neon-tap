@@ -9,7 +9,8 @@ import { computeLayout, type Layout } from './layout';
 export interface FrameState {
   songTime: number;
   approachTime: number;
-  beatPhase: number;
+  /** Audio-reactive pulse 0..1 — bass hits of the track itself, so every song flickers differently and in time. */
+  pulse: number;
   combo: number;
   /** Seconds since the combo last grew (Infinity when it hasn't). */
   comboAge: number;
@@ -324,9 +325,9 @@ export class Renderer {
       ctx.drawImage(cur.staticLayer, 0, 0, width, height);
     }
 
-    // Background pulse on the beat (stronger with more lanes = choruses); cyan wash while slowed.
-    const pulse = Math.max(0, 1 - s.beatPhase) ** 3;
-    const energy = 0.04 + 0.02 * Math.max(0, this.current - 3);
+    // Background pulse from the music's own bass hits (stronger with more lanes = choruses); cyan wash while slowed.
+    const pulse = s.pulse;
+    const energy = 0.035 + 0.015 * Math.max(0, this.current - 3);
     const slowTint = s.slowRemaining >= 0 ? 0.06 : 0;
     const alpha = energy * pulse + slowTint;
     if (alpha > 0.02) {
@@ -344,9 +345,9 @@ export class Renderer {
       }
     }
 
-    // Receptor pulse on the beat.
-    if (pulse > 0.05) {
-      ctx.globalAlpha = 0.35 * pulse;
+    // Receptors light up with the bass.
+    if (pulse > 0.1) {
+      ctx.globalAlpha = 0.25 * pulse;
       for (let lane = 0; lane < this.current; lane++) {
         const sp = cur.noteSprites[lane];
         const cx = laneX + (lane + 0.5) * laneWidth;
