@@ -44,6 +44,16 @@ npm run assets:charts    # public/music → public/charts + catalog.json (тот
 npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
 ```
 
+## Деплой
+
+Проект на Vercel: `neon-tap-2` (прежний `neon-tap` завис на стороне Vercel — все его новые деплои остаются в состоянии UNKNOWN; домен `neon-tap-virid.vercel.app` перевешен алиасом на `neon-tap-2`). Надёжный способ:
+
+```
+npm run build && vercel build --prod --yes && vercel deploy --prebuilt --prod --yes
+```
+
+Сборка делается локально, Vercel только загружает файлы. Не оборачивать `vercel deploy` в `timeout` — убитый CLI отменяет деплой. Если алиас слетит: `vercel alias set <deployment-url> neon-tap-virid.vercel.app`.
+
 ## Dev-флаги
 
 - `?nofail=1` в URL — сердца тратятся, но провала нет. Для проверки переходов полос, записи GIF и профилирования.

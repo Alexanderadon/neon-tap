@@ -12,3 +12,4 @@ assets-src/sfx-raw/
 *.tsbuildinfo
 
 .vercel
+.env*.local
