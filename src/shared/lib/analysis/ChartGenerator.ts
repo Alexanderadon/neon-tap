@@ -506,7 +506,7 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
         if (ev.kind === 'circle') {
           // Circles zig-zag across the whole field so a group reads as a path: left, right, centre, …
           const spread = [0, n - 1, Math.floor(n / 2), 1, n - 2, Math.floor(n / 2) - 1].filter((l, i, arr) => l >= 0 && l < n && arr.indexOf(l) === i);
-          circleIdx = ev.si - lastCircleSi > 8 ? 0 : circleIdx + 1;
+          circleIdx = ev.si - lastCircleSi > 24 ? 0 : circleIdx + 1; // a new window (> 1.5 bars away) restarts the zig-zag
           lastCircleSi = ev.si;
           lane = spread[circleIdx % spread.length];
         }
