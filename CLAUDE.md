@@ -54,6 +54,10 @@ npm run build && vercel build --prod --yes && vercel deploy --prebuilt --prod --
 
 Сборка делается локально, Vercel только загружает файлы. Не оборачивать `vercel deploy` в `timeout` — убитый CLI отменяет деплой. Если алиас слетит: `vercel alias set <deployment-url> neon-tap-virid.vercel.app`.
 
+## Деплой
+
+`bash scripts/deploy-fresh.sh` — локальная сборка, загрузка в НОВЫЙ проект Vercel и перенос домена `neon-tap-virid.vercel.app` на него. Обычный `vercel deploy` в существующий проект зависает в «Building…» после первого деплоя (баг на стороне Vercel), поэтому каждый релиз идёт в свежий проект. Старые проекты можно удалять в панели Vercel.
+
 ## Dev-флаги
 
 - `?nofail=1` в URL — сердца тратятся, но провала нет. Для проверки переходов полос, записи GIF и профилирования.
