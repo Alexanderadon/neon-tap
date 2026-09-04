@@ -16,6 +16,7 @@
     "assets:voice": "tsx --tsconfig tsconfig.node.json scripts/generate-voice.ts",
     "assets:sfx": "tsx --tsconfig tsconfig.node.json scripts/prepare-sfx.ts",
     "assets:licenses": "tsx --tsconfig tsconfig.node.json scripts/write-licenses.ts",
+    "assets:analyze": "tsx --tsconfig tsconfig.node.json scripts/analyze-tracks.ts",
     "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts"
   },
   "dependencies": {

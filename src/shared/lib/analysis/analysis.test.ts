@@ -87,6 +87,14 @@ describe('analyzeSong', () => {
   const { times, signal } = clickTrack();
   const analysis = analyzeSong(signal, SR);
 
+  it('keeps the true tempo when the estimator picks an octave (64 BPM clicks)', () => {
+    const beat = 60 / 64;
+    const slow = Array.from({ length: 40 }, (_, i) => 0.5 + i * beat);
+    const a = analyzeSong(synthesizeClicks(slow, 40, SR), SR);
+    expect(Math.abs(a.bpm - 64)).toBeLessThanOrEqual(2);
+    expect(a.beatConfidence).toBeGreaterThan(0.8);
+  });
+
   it('builds a 16-step grid per bar, starting on a downbeat, covering the track', () => {
     expect(analysis.beats[0]).toBeLessThanOrEqual(times[0] + 0.03);
     expect(analysis.beats[analysis.beats.length - 1]).toBeGreaterThanOrEqual(times[times.length - 1] - 0.03);
@@ -120,7 +128,19 @@ function fakeAnalysis(bars: number, pattern: (bar: number, step: number) => Part
     }
   }
   beats.push(bars * STEPS_PER_BAR * step);
-  return { bpm: 120, confidence: 1, beats, slots, barCount: bars, duration: bars * 2, onsetCount: 0 };
+  return { bpm: 120, confidence: 1, beats, slots, barCount: bars, duration: bars * 2, onsetCount: 0, beatConfidence: 1 };
+}
+
+/** Max simultaneous fingers a chart needs at any instant (notes starting + holds still active). */
+function maxFingers(notes: ReturnType<typeof composeChart>['notes']): number {
+  let worst = 0;
+  const starts = [...new Set(notes.map((n) => n[0]))];
+  for (const t of starts) {
+    const starting = notes.filter((n) => n[0] === t).length;
+    const holding = notes.filter((n) => n.length === 3 && (n[2] as number) > 0 && n[0] < t && n[0] + (n[2] as number) > t + 1e-6).length;
+    worst = Math.max(worst, starting + holding);
+  }
+  return worst;
 }
 
 const drumLoop = (bar: number, step: number): Partial<Slot> => {
@@ -212,6 +232,35 @@ describe('composeChart', () => {
     // Easy stays on 4 lanes; variation can be forced off.
     expect(composeChart(long, { difficulty: 'easy' }).sections).toEqual([[0, 4]]);
     expect(composeChart(long, { difficulty: 'hard', laneVariation: false }).sections).toEqual([[0, 4]]);
+  });
+
+  it('is playable with two thumbs: never more than 2 simultaneous notes/holds, no chords over a hold', () => {
+    const sustained = fakeAnalysis(32, (bar, step) => ({ ...drumLoop(bar, step), sustain: step % 4 === 0 ? 6 : 0, low: 0.2, mid: 0.7, high: 0.1 }));
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      expect(maxFingers(composeChart(sustained, { difficulty: d }).notes)).toBeLessThanOrEqual(2);
+      expect(maxFingers(composeChart(analysis, { difficulty: d }).notes)).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('opens intense phrases with numbered hit circles on the beat', () => {
+    const long = fakeAnalysis(32, (bar, step) => drumLoop(bar >= 8 && bar < 24 ? 8 : 0, step));
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      const { notes } = composeChart(long, { difficulty: d });
+      const circles = notes.filter((n) => n.length === 4 && n[3] === 'circle');
+      expect(circles.length).toBeGreaterThan(0);
+      for (const c of circles) expect(Math.abs(c[0] / 0.5 - Math.round(c[0] / 0.5))).toBeLessThan(1e-6); // on a beat (120 BPM)
+      // Circles in a group sit ≥ 1 beat apart and never share a time with another note.
+      for (const c of circles) expect(notes.filter((n) => n[0] === c[0]).length).toBe(1);
+    }
+  });
+
+  it('never puts a note where nothing is audible', () => {
+    const silentIntro = fakeAnalysis(16, (bar, step) => (bar < 4 ? { strength: 0.02 } : drumLoop(bar, step)));
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      const { notes } = composeChart(silentIntro, { difficulty: d });
+      expect(notes.filter((n) => n[0] < 8).length).toBe(0);
+      expect(notes.length).toBeGreaterThan(0);
+    }
   });
 
   it('places alternating slow / heart spell notes as plain taps', () => {

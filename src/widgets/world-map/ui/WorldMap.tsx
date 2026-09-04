@@ -24,6 +24,14 @@ export function WorldMap() {
           label={next ? fmt(dict.progressToUnlock, { have: stars, need: next.requiredStars }) : `${dict.allUnlocked} · ★ ${stars} / ${maxStars}`}
           color={next?.color ?? '#ffd700'}
         />
+        <div className="worldmap-legend">
+          {DIFFICULTIES.map((d) => (
+            <span key={d} className={`legend-${d}`}>
+              {dict.difficultyHint[d]}
+            </span>
+          ))}
+          <span className="legend-note">{dict.twoFingers}</span>
+        </div>
       </div>
       {WORLDS.map((world) => (
         <WorldSection key={world.id} world={world} unlocked={isWorldUnlocked(world, stars)} stars={stars} progress={save.tracks} />

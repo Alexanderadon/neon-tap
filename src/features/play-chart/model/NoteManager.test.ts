@@ -5,7 +5,7 @@ function make(notes: Array<[number, number, number?]>, assistWindow = 0) {
   const nm = new NoteManager(50, { assistWindow });
   const events: JudgeEvent[] = [];
   nm.onJudge = (e) => events.push(e);
-  nm.load(notes.map(([time, lane, duration = 0]) => ({ time, lane, duration, spell: null, lanes: 4 })));
+  nm.load(notes.map(([time, lane, duration = 0]) => ({ time, lane, duration, kind: null, seq: 0, lanes: 4 })));
   return { nm, events };
 }
 

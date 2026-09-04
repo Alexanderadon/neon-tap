@@ -50,6 +50,8 @@ const MILESTONES = [50, 100, 250, 500, 1000];
 const ASSIST_WINDOW = 0.4;
 export const MAX_HEARTS = 5;
 const SLOW_DURATION = 6;
+/** Note speed multiplier per difficulty — Hard is visibly faster, Easy slower. */
+const SPEED_BY_DIFFICULTY: Record<Difficulty, number> = { easy: 0.85, normal: 1, hard: 1.15 };
 /** Note speed while the slow spell is active (0.6 = 40 % slower). */
 const SLOW_FACTOR = 0.6;
 
@@ -117,7 +119,7 @@ export class GameSession {
   }
 
   get approachTime(): number {
-    return BASE_APPROACH_TIME / this.opts.scrollSpeed / this.slowFactor;
+    return BASE_APPROACH_TIME / (this.opts.scrollSpeed * SPEED_BY_DIFFICULTY[this.opts.difficulty]) / this.slowFactor;
   }
 
   start(): void {
@@ -200,7 +202,7 @@ export class GameSession {
     this.scoring.register(judgement);
     this.lastJudgement = judgement;
     this.lastJudgementAt = this.clock.songTime();
-    this.renderer.hitFeedback(note.lane, note.lanes, judgement);
+    this.renderer.hitFeedback(note.lane, note.lanes, judgement, note.kind === 'circle' ? note.seq : 0);
 
     if (judgement === 'miss') {
       audioEngine.missEffect();
@@ -227,7 +229,7 @@ export class GameSession {
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
     if (this.perfectStreak > 0 && this.perfectStreak % 25 === 0) this.opts.onEvent({ type: 'perfect-streak', streak: this.perfectStreak });
     if (this.lives.hit()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
-    if (note.spell && !tail) this.castSpell(note.spell, note.lane, note.lanes);
+    if ((note.kind === 'slow' || note.kind === 'heart') && !tail) this.castSpell(note.kind, note.lane, note.lanes);
     const combo = this.scoring.combo;
     if (MILESTONES.includes(combo)) {
       sfxMilestone();

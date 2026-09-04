@@ -1,62 +1,22 @@
 [
   {
-    "id": "cyber-march",
-    "title": "Cyber March",
-    "artist": "iamoneabe",
+    "id": "technological-menace",
+    "title": "Technological Menace",
+    "artist": "umplix",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/cyber-march",
+    "sourceUrl": "https://opengameart.org/content/technological-menace",
     "world": "launch",
-    "bpm": 133.5,
-    "duration": 150.05,
+    "bpm": 110.1,
+    "duration": 87.38,
     "stars": {
       "easy": 3,
       "normal": 4,
       "hard": 5
     },
     "notes": {
-      "easy": 219,
-      "normal": 386,
-      "hard": 430
-    }
-  },
-  {
-    "id": "dance-field",
-    "title": "Dance Field",
-    "artist": "centurionofwar",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/dance-field",
-    "world": "launch",
-    "bpm": 92.5,
-    "duration": 109.77,
-    "stars": {
-      "easy": 3,
-      "normal": 5,
-      "hard": 6
-    },
-    "notes": {
-      "easy": 164,
-      "normal": 319,
-      "hard": 479
-    }
-  },
-  {
-    "id": "mindstream",
-    "title": "MindStream",
-    "artist": "DST",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/mindstream",
-    "world": "launch",
-    "bpm": 99.6,
-    "duration": 150.05,
-    "stars": {
-      "easy": 3,
-      "normal": 5,
-      "hard": 6
-    },
-    "notes": {
-      "easy": 244,
-      "normal": 476,
-      "hard": 716
+      "easy": 135,
+      "normal": 214,
+      "hard": 232
     }
   },
   {
@@ -75,88 +35,88 @@
     },
     "notes": {
       "easy": 248,
-      "normal": 476,
-      "hard": 571
+      "normal": 462,
+      "hard": 542
     }
   },
   {
-    "id": "energetic-electro",
-    "title": "Energetic Electro Tune",
-    "artist": "tinyworlds",
+    "id": "apparatus-overlord",
+    "title": "Apparatus Overlord",
+    "artist": "vitalezzz",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/energetic-electro-tune",
-    "world": "pulse",
-    "bpm": 125.5,
-    "duration": 123.01,
+    "sourceUrl": "https://opengameart.org/content/apparatus-overlord",
+    "world": "launch",
+    "bpm": 120.1,
+    "duration": 150.05,
     "stars": {
       "easy": 3,
       "normal": 5,
       "hard": 6
     },
     "notes": {
-      "easy": 179,
-      "normal": 390,
-      "hard": 510
+      "easy": 242,
+      "normal": 504,
+      "hard": 717
     }
   },
   {
-    "id": "bouncer",
-    "title": "Bouncer",
-    "artist": "Of Far Different Nature",
+    "id": "the-9th-circle",
+    "title": "The 9th Circle",
+    "artist": "joth",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/bouncer-0",
-    "world": "pulse",
-    "bpm": 128.9,
-    "duration": 93.81,
+    "sourceUrl": "https://opengameart.org/content/the-9th-circle",
+    "world": "launch",
+    "bpm": 120.1,
+    "duration": 150.05,
     "stars": {
       "easy": 3,
       "normal": 5,
       "hard": 6
     },
     "notes": {
-      "easy": 168,
-      "normal": 271,
-      "hard": 349
+      "easy": 236,
+      "normal": 487,
+      "hard": 688
     }
   },
   {
-    "id": "hardstyler",
-    "title": "Hardstyler",
-    "artist": "Of Far Different Nature",
+    "id": "the-rift",
+    "title": "The Rift",
+    "artist": "vitalezzz",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/hardstyler",
-    "world": "pulse",
-    "bpm": 139.8,
-    "duration": 112.9,
+    "sourceUrl": "https://opengameart.org/content/the-rift",
+    "world": "launch",
+    "bpm": 129.4,
+    "duration": 150.05,
     "stars": {
       "easy": 3,
       "normal": 5,
       "hard": 6
     },
     "notes": {
-      "easy": 184,
-      "normal": 350,
-      "hard": 474
+      "easy": 215,
+      "normal": 425,
+      "hard": 551
     }
   },
   {
-    "id": "night-prowler",
-    "title": "Night Prowler",
-    "artist": "Section31",
+    "id": "silver-bullet",
+    "title": "Silver Bullet",
+    "artist": "vitalezzz",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/night-prowler",
-    "world": "pulse",
-    "bpm": 108.4,
-    "duration": 149.97,
+    "sourceUrl": "https://opengameart.org/content/silver-bullet",
+    "world": "launch",
+    "bpm": 113.2,
+    "duration": 150.05,
     "stars": {
       "easy": 3,
       "normal": 5,
       "hard": 7
     },
     "notes": {
-      "easy": 265,
-      "normal": 544,
-      "hard": 762
+      "easy": 263,
+      "normal": 526,
+      "hard": 735
     }
   },
   {
@@ -165,7 +125,7 @@
     "artist": "congusbongus",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/midnight-drive",
-    "world": "overload",
+    "world": "pulse",
     "bpm": 161,
     "duration": 150.05,
     "stars": {
@@ -175,8 +135,48 @@
     },
     "notes": {
       "easy": 315,
-      "normal": 700,
-      "hard": 809
+      "normal": 666,
+      "hard": 748
+    }
+  },
+  {
+    "id": "hot-roadway",
+    "title": "Hot Roadway",
+    "artist": "mintodog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hot-roadway",
+    "world": "pulse",
+    "bpm": 161.1,
+    "duration": 120.03,
+    "stars": {
+      "easy": 4,
+      "normal": 6,
+      "hard": 7
+    },
+    "notes": {
+      "easy": 262,
+      "normal": 552,
+      "hard": 647
+    }
+  },
+  {
+    "id": "elevate-instrument-tracks",
+    "title": "Elevate (+ instrument tracks)",
+    "artist": "fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "world": "pulse",
+    "bpm": 172.8,
+    "duration": 150.05,
+    "stars": {
+      "easy": 3,
+      "normal": 6,
+      "hard": 7
+    },
+    "notes": {
+      "easy": 324,
+      "normal": 615,
+      "hard": 725
     }
   },
   {
@@ -185,7 +185,7 @@
     "artist": "Section31",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/robotic-city",
-    "world": "overload",
+    "world": "pulse",
     "bpm": 129.5,
     "duration": 150.05,
     "stars": {
@@ -195,8 +195,8 @@
     },
     "notes": {
       "easy": 291,
-      "normal": 592,
-      "hard": 869
+      "normal": 581,
+      "hard": 845
     }
   },
   {
@@ -205,7 +205,7 @@
     "artist": "adiutorium",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/neon-hyperdrive",
-    "world": "overload",
+    "world": "pulse",
     "bpm": 139.8,
     "duration": 129.57,
     "stars": {
@@ -215,8 +215,28 @@
     },
     "notes": {
       "easy": 251,
-      "normal": 514,
-      "hard": 782
+      "normal": 500,
+      "hard": 753
+    }
+  },
+  {
+    "id": "chase",
+    "title": "Chase",
+    "artist": "adiutorium",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/chase-2",
+    "world": "pulse",
+    "bpm": 143.4,
+    "duration": 150.05,
+    "stars": {
+      "easy": 4,
+      "normal": 6,
+      "hard": 8
+    },
+    "notes": {
+      "easy": 280,
+      "normal": 578,
+      "hard": 826
     }
   },
   {
@@ -235,28 +255,28 @@
     },
     "notes": {
       "easy": 286,
-      "normal": 567,
-      "hard": 901
+      "normal": 563,
+      "hard": 880
     }
   },
   {
-    "id": "chase",
-    "title": "Chase",
-    "artist": "adiutorium",
+    "id": "achilles",
+    "title": "Achilles",
+    "artist": "zane-little-music",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/chase-2",
-    "world": "core",
-    "bpm": 143.4,
+    "sourceUrl": "https://opengameart.org/content/achilles",
+    "world": "overload",
+    "bpm": 143.7,
     "duration": 150.05,
     "stars": {
-      "easy": 4,
+      "easy": 3,
       "normal": 6,
-      "hard": 9
+      "hard": 8
     },
     "notes": {
-      "easy": 280,
-      "normal": 589,
-      "hard": 847
+      "easy": 303,
+      "normal": 609,
+      "hard": 917
     }
   },
   {
@@ -265,7 +285,7 @@
     "artist": "joth",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/black-diamond",
-    "world": "core",
+    "world": "overload",
     "bpm": 143.5,
     "duration": 150.05,
     "stars": {
@@ -275,28 +295,8 @@
     },
     "notes": {
       "easy": 323,
-      "normal": 675,
-      "hard": 1019
-    }
-  },
-  {
-    "id": "city-loop",
-    "title": "City Loop",
-    "artist": "wipics",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/city-loop-0",
-    "world": "core",
-    "bpm": 147.3,
-    "duration": 112.82,
-    "stars": {
-      "easy": 3,
-      "normal": 6,
-      "hard": 9
-    },
-    "notes": {
-      "easy": 214,
-      "normal": 424,
-      "hard": 721
+      "normal": 655,
+      "hard": 999
     }
   },
   {
@@ -305,7 +305,7 @@
     "artist": "mmry",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/lunar-arrow",
-    "world": "core",
+    "world": "overload",
     "bpm": 152.6,
     "duration": 127.35,
     "stars": {
@@ -315,8 +315,108 @@
     },
     "notes": {
       "easy": 228,
-      "normal": 436,
-      "hard": 713
+      "normal": 433,
+      "hard": 705
+    }
+  },
+  {
+    "id": "virtual-rush",
+    "title": "Virtual Rush",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/virtual-rush",
+    "world": "overload",
+    "bpm": 161.1,
+    "duration": 150.05,
+    "stars": {
+      "easy": 4,
+      "normal": 6,
+      "hard": 9
+    },
+    "notes": {
+      "easy": 300,
+      "normal": 599,
+      "hard": 937
+    }
+  },
+  {
+    "id": "shortcuts",
+    "title": "Shortcuts",
+    "artist": "zane-little-music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/shortcuts",
+    "world": "overload",
+    "bpm": 163,
+    "duration": 150.05,
+    "stars": {
+      "easy": 4,
+      "normal": 6,
+      "hard": 9
+    },
+    "notes": {
+      "easy": 331,
+      "normal": 677,
+      "hard": 973
+    }
+  },
+  {
+    "id": "night-prowler",
+    "title": "Night Prowler",
+    "artist": "Section31",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/night-prowler",
+    "world": "core",
+    "bpm": 216.8,
+    "duration": 149.97,
+    "stars": {
+      "easy": 3,
+      "normal": 7,
+      "hard": 9
+    },
+    "notes": {
+      "easy": 267,
+      "normal": 774,
+      "hard": 1026
+    }
+  },
+  {
+    "id": "dance-field",
+    "title": "Dance Field",
+    "artist": "centurionofwar",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/dance-field",
+    "world": "core",
+    "bpm": 185,
+    "duration": 109.77,
+    "stars": {
+      "easy": 3,
+      "normal": 6,
+      "hard": 10
+    },
+    "notes": {
+      "easy": 156,
+      "normal": 490,
+      "hard": 842
+    }
+  },
+  {
+    "id": "mindstream",
+    "title": "MindStream",
+    "artist": "DST",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/mindstream",
+    "world": "core",
+    "bpm": 199.2,
+    "duration": 150.05,
+    "stars": {
+      "easy": 3,
+      "normal": 7,
+      "hard": 10
+    },
+    "notes": {
+      "easy": 246,
+      "normal": 722,
+      "hard": 1161
     }
   }
 ]
