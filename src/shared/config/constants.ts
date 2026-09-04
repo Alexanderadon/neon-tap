@@ -63,5 +63,11 @@ export const CALIBRATION_TAPS = 16;
 export const DIFFICULTIES = ['easy', 'normal', 'hard'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
+/**
+ * Progression gate. `true` = every world and track is playable from the start (current state, by
+ * the author's request while the game is tuned); flip to `false` to restore the star thresholds.
+ */
+export const UNLOCK_ALL_WORLDS = true;
+
 /** Max notes per second per difficulty (GDD §4, autogenerator step 8). */
 export const DENSITY_LIMIT: Record<Difficulty, number> = { easy: 3, normal: 6, hard: 10 };
