@@ -95,7 +95,6 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
           audioBuffer: buffer,
           canvas: canvasRef.current,
           userOffset: settings.audioOffsetMs / 1000,
-          scrollSpeed: settings.scrollSpeed,
           touch: isTouchDevice(),
           touchAssist: settings.touchAssist,
           autoOffset: settings.autoOffset,

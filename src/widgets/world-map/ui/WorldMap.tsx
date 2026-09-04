@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DIFFICULTIES, type Difficulty } from '@/shared/config/constants';
+import { MAIN_DIFFICULTY } from '@/shared/config/constants';
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { ProgressBar, Stars } from '@/shared/ui';
@@ -25,11 +25,6 @@ export function WorldMap() {
           color={next?.color ?? '#ffd700'}
         />
         <div className="worldmap-legend">
-          {DIFFICULTIES.map((d) => (
-            <span key={d} className={`legend-${d}`}>
-              {dict.difficultyHint[d]}
-            </span>
-          ))}
           <span className="legend-note">{dict.mechanicsHint}</span>
           <span className="legend-note">{dict.twoFingers}</span>
         </div>
@@ -62,18 +57,19 @@ function WorldSection({ world, unlocked, stars, progress }: { world: World; unlo
 }
 
 function TrackCard({ track, locked, progress }: { track: TrackMeta; locked: boolean; progress: TrackProgress | undefined }) {
-  const [busy, setBusy] = useState<Difficulty | null>(null);
+  const [busy, setBusy] = useState(false);
   const earned = starsForTrack(progress);
+  const best = progress?.[MAIN_DIFFICULTY];
 
-  const play = async (difficulty: Difficulty) => {
+  const play = async () => {
     if (locked || busy) return;
-    setBusy(difficulty);
+    setBusy(true);
     try {
       const chart = await loadChart(track.id);
-      startSession(chart, difficulty, 'catalog');
+      startSession(chart, MAIN_DIFFICULTY, 'catalog');
       navigate('game');
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -86,17 +82,12 @@ function TrackCard({ track, locked, progress }: { track: TrackMeta; locked: bool
         </div>
         <Stars value={earned} />
       </div>
-      <div className="track-diffs">
-        {DIFFICULTIES.map((d) => {
-          const best = progress?.[d];
-          return (
-            <button key={d} className={`diff diff-${d}`} disabled={locked || busy !== null} onClick={() => play(d)}>
-              <span className="diff-name">{dict.difficulty[d]}</span>
-              <span className="diff-stars">★ {track.stars[d]}</span>
-              {best && <span className={`diff-rank rank-${best.rank}`}>{best.rank}</span>}
-            </button>
-          );
-        })}
+      <div className="track-diffs track-diffs-single">
+        <button className="diff diff-normal" disabled={locked || busy} onClick={() => void play()}>
+          <span className="diff-name">{dict.play}</span>
+          <span className="diff-stars">★ {track.stars[MAIN_DIFFICULTY]} · {track.notes[MAIN_DIFFICULTY]} {dict.notesShort}</span>
+          {best && <span className={`diff-rank rank-${best.rank}`}>{best.rank}</span>}
+        </button>
       </div>
     </article>
   );

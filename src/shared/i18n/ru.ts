@@ -28,6 +28,7 @@ export const ru = {
     hard: 'Хард — шестнадцатые, аккорды, 2–6 полос, ноты быстрее',
   },
   twoFingers: 'все карты проходятся двумя пальцами',
+  notesShort: 'нот',
   worlds: {
     launch: 'Запуск',
     pulse: 'Пульс',
@@ -50,7 +51,7 @@ export const ru = {
   fullCombo: 'FULL COMBO',
   starsEarned: '+{n} ★',
   pressRToRetry: 'R — ещё раз · Esc — в меню',
-  hotkeys: 'D F J K или стрелки',
+  hotkeys: 'D F J K или стрелки · пробел — круги',
   touchHint: 'Тапай по четырём зонам внизу экрана',
   calibrationTitle: 'Калибровка задержки',
   calibrationIntro:
@@ -99,7 +100,7 @@ export const ru = {
   audioGateIos: 'iPhone: если тишина — переключи боковой тумблер беззвучного режима. Android: проверь громкость медиа.',
   settingsAutoOffset: 'Автоподстройка задержки',
   settingsAutoOffsetHint: 'игра сама сдвигает offset по твоим попаданиям',
-  mechanicsHint: 'Круги — тап, когда кольцо сомкнётся · песочные часы — slow-mo · сердце — +жизнь · полосы меняются в припевах',
+  mechanicsHint: 'Круги — тапни по кругу (на ПК пробел), когда кольцо сомкнётся · песочные часы — slow-mo · сердце — +жизнь · полосы меняются в припевах',
   settingsTouchAssist: 'Тач-помощь: нажатие заранее',
   settingsTouchAssistHint: 'на телефоне нота засчитается, если нажать до 0,4 с раньше',
   customReady: 'Готово: {bpm} BPM, {onsets} ударов',

@@ -1,4 +1,4 @@
-import { MAX_LANES } from '@/shared/config/constants';
+import { INPUT_SLOTS } from '@/shared/config/constants';
 
 export interface LaneEvent {
   lane: number;
@@ -28,7 +28,7 @@ interface Options {
  * Key → lane mapping is delegated so the playfield can change its lane count mid-song.
  */
 export class Input {
-  private readonly held = new Uint8Array(MAX_LANES);
+  private readonly held = new Uint8Array(INPUT_SLOTS);
   private readonly keyLane = new Map<string, number>();
   private readonly pointerLane = new Map<number, number>();
   private target: HTMLElement | null = null;
@@ -125,7 +125,7 @@ export class Input {
 
   private releaseAll = (): void => {
     const t = this.opts.audioNow();
-    for (let lane = 0; lane < MAX_LANES; lane++) this.release(lane, t);
+    for (let lane = 0; lane < INPUT_SLOTS; lane++) this.release(lane, t);
     this.keyLane.clear();
     this.pointerLane.clear();
   };

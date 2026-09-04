@@ -35,7 +35,7 @@
     },
     "notes": {
       "easy": 139,
-      "normal": 273,
+      "normal": 235,
       "hard": 290
     }
   },
@@ -55,7 +55,7 @@
     },
     "notes": {
       "easy": 66,
-      "normal": 124,
+      "normal": 113,
       "hard": 194
     }
   },
@@ -75,7 +75,7 @@
     },
     "notes": {
       "easy": 62,
-      "normal": 144,
+      "normal": 147,
       "hard": 309
     }
   },
@@ -95,7 +95,7 @@
     },
     "notes": {
       "easy": 62,
-      "normal": 154,
+      "normal": 127,
       "hard": 180
     }
   },
@@ -115,7 +115,7 @@
     },
     "notes": {
       "easy": 108,
-      "normal": 314,
+      "normal": 241,
       "hard": 399
     }
   },
@@ -135,7 +135,7 @@
     },
     "notes": {
       "easy": 78,
-      "normal": 215,
+      "normal": 173,
       "hard": 269
     }
   },
@@ -155,7 +155,7 @@
     },
     "notes": {
       "easy": 88,
-      "normal": 275,
+      "normal": 223,
       "hard": 337
     }
   },
@@ -175,7 +175,7 @@
     },
     "notes": {
       "easy": 104,
-      "normal": 178,
+      "normal": 163,
       "hard": 193
     }
   },
@@ -195,7 +195,7 @@
     },
     "notes": {
       "easy": 58,
-      "normal": 139,
+      "normal": 131,
       "hard": 180
     }
   },
@@ -215,7 +215,7 @@
     },
     "notes": {
       "easy": 58,
-      "normal": 140,
+      "normal": 131,
       "hard": 179
     }
   },
@@ -235,7 +235,7 @@
     },
     "notes": {
       "easy": 54,
-      "normal": 127,
+      "normal": 117,
       "hard": 170
     }
   },
@@ -255,7 +255,7 @@
     },
     "notes": {
       "easy": 106,
-      "normal": 243,
+      "normal": 200,
       "hard": 344
     }
   },
@@ -275,7 +275,7 @@
     },
     "notes": {
       "easy": 74,
-      "normal": 213,
+      "normal": 206,
       "hard": 315
     }
   },
@@ -295,8 +295,28 @@
     },
     "notes": {
       "easy": 102,
-      "normal": 240,
+      "normal": 202,
       "hard": 336
+    }
+  },
+  {
+    "id": "midnight-drive",
+    "title": "Midnight Drive",
+    "artist": "congusbongus",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/midnight-drive",
+    "world": "overload",
+    "bpm": 161,
+    "duration": 150.05,
+    "stars": {
+      "easy": 2,
+      "normal": 3,
+      "hard": 5
+    },
+    "notes": {
+      "easy": 136,
+      "normal": 264,
+      "hard": 465
     }
   },
   {
@@ -315,7 +335,7 @@
     },
     "notes": {
       "easy": 94,
-      "normal": 222,
+      "normal": 159,
       "hard": 353
     }
   },
@@ -335,28 +355,8 @@
     },
     "notes": {
       "easy": 149,
-      "normal": 229,
+      "normal": 200,
       "hard": 252
-    }
-  },
-  {
-    "id": "midnight-drive",
-    "title": "Midnight Drive",
-    "artist": "congusbongus",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/midnight-drive",
-    "world": "overload",
-    "bpm": 161,
-    "duration": 150.05,
-    "stars": {
-      "easy": 2,
-      "normal": 4,
-      "hard": 5
-    },
-    "notes": {
-      "easy": 136,
-      "normal": 307,
-      "hard": 465
     }
   },
   {
@@ -375,7 +375,7 @@
     },
     "notes": {
       "easy": 138,
-      "normal": 240,
+      "normal": 217,
       "hard": 302
     }
   },
@@ -395,7 +395,7 @@
     },
     "notes": {
       "easy": 208,
-      "normal": 333,
+      "normal": 241,
       "hard": 390
     }
   },
@@ -410,12 +410,12 @@
     "duration": 150.05,
     "stars": {
       "easy": 2,
-      "normal": 4,
+      "normal": 3,
       "hard": 6
     },
     "notes": {
       "easy": 146,
-      "normal": 349,
+      "normal": 246,
       "hard": 617
     }
   }

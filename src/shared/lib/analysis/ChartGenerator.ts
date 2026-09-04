@@ -50,14 +50,14 @@ export const TEMPLATES: readonly Template[] = [
 
 const ALLOWED: Record<Difficulty, readonly Category[]> = {
   easy: ['rest', 'base', 'sync'],
-  normal: ['rest', 'base', 'sync', 'eighth', 'fill', 'gallop'],
+  normal: ['rest', 'base', 'sync', 'eighth', 'fill'],
   hard: ['rest', 'base', 'sync', 'eighth', 'fill', 'gallop', 'stream'],
 };
 
 /** Max notes per bar by [quiet, medium, intense]. */
 const MAX_NOTES: Record<Difficulty, readonly [number, number, number]> = {
   easy: [2, 3, 4],
-  normal: [3, 6, 8],
+  normal: [2, 4, 6],
   hard: [4, 8, 12],
 };
 

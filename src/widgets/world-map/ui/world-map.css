@@ -99,6 +99,9 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
+.track-diffs-single {
+  grid-template-columns: 1fr;
+}
 .diff {
   position: relative;
   display: flex;

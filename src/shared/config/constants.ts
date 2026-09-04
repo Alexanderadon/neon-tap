@@ -17,7 +17,7 @@ export const KEY_LAYOUTS: Record<number, Record<string, number>> = {
   2: { KeyF: 0, KeyJ: 1, KeyD: 0, KeyK: 1, KeyS: 0, KeyL: 1, ArrowLeft: 0, ArrowRight: 1, ArrowDown: 0, ArrowUp: 1 },
   3: { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 2, KeyS: 0, KeyL: 2, Space: 1, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 1, ArrowRight: 2 },
   4: { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3, KeyS: 0, KeyL: 3, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3 },
-  5: { KeyD: 0, KeyF: 1, Space: 2, KeyJ: 3, KeyK: 4, KeyS: 0, KeyL: 4, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 3, ArrowRight: 4 },
+  5: { KeyD: 0, KeyF: 1, KeyG: 2, KeyH: 2, KeyJ: 3, KeyK: 4, KeyS: 0, KeyL: 4, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 3, ArrowRight: 4 },
   6: { KeyS: 0, KeyD: 1, KeyF: 2, KeyJ: 3, KeyK: 4, KeyL: 5, ArrowLeft: 1, ArrowDown: 2, ArrowUp: 3, ArrowRight: 4 },
 };
 
@@ -26,9 +26,15 @@ export const KEY_LABELS: Record<number, readonly string[]> = {
   2: ['F', 'J'],
   3: ['D', 'F', 'J'],
   4: ['D', 'F', 'J', 'K'],
-  5: ['D', 'F', '␣', 'J', 'K'],
+  5: ['D', 'F', 'G', 'J', 'K'],
   6: ['S', 'D', 'F', 'J', 'K', 'L'],
 };
+
+/** Hit circles live outside the lanes: tapped on screen, or Space on a keyboard. */
+export const CIRCLE_BUCKET = 7;
+export const CIRCLE_KEY = 'Space';
+/** Input slots: lanes 0..5 plus the circle bucket. */
+export const INPUT_SLOTS = 8;
 
 /** Legacy 4-lane bindings (kept for the calibration screen and tests). */
 export const KEY_BINDINGS: Record<string, number> = KEY_LAYOUTS[4];
@@ -72,4 +78,7 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 export const UNLOCK_ALL_WORLDS = true;
 
 /** Max notes per second per difficulty (GDD §4, autogenerator step 8). */
-export const DENSITY_LIMIT: Record<Difficulty, number> = { easy: 2, normal: 4, hard: 7 };
+export const DENSITY_LIMIT: Record<Difficulty, number> = { easy: 2, normal: 3.5, hard: 7 };
+
+/** One chart per song: the song's own energy sets its difficulty. Internally that chart is the 'normal' profile. */
+export const MAIN_DIFFICULTY: Difficulty = 'normal';
