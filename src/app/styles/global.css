@@ -1,0 +1,46 @@
+:root {
+  --c-bg: #05060a;
+  --c-cyan: #00f0ff;
+  --c-magenta: #ff2bd6;
+  --c-lime: #b6ff00;
+  --c-orange: #ff8a00;
+  --font-display: 'Unbounded', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--c-bg);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+body::before {
+  /* CRT scanlines */
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+  z-index: 9999;
+  mix-blend-mode: overlay;
+}
+a {
+  color: var(--c-cyan);
+}
+button {
+  font: inherit;
+}
+::selection {
+  background: rgba(0, 240, 255, 0.3);
+}
