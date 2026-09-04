@@ -15,8 +15,8 @@
     },
     "notes": {
       "easy": 37,
-      "normal": 55,
-      "hard": 65
+      "normal": 57,
+      "hard": 66
     }
   },
   {
@@ -100,12 +100,32 @@
     }
   },
   {
+    "id": "lunar-arrow",
+    "title": "Lunar Arrow",
+    "artist": "mmry",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/lunar-arrow",
+    "world": "launch",
+    "bpm": 152.6,
+    "duration": 127.35,
+    "stars": {
+      "easy": 2,
+      "normal": 4,
+      "hard": 6
+    },
+    "notes": {
+      "easy": 60,
+      "normal": 133,
+      "hard": 185
+    }
+  },
+  {
     "id": "the-rift",
     "title": "The Rift",
     "artist": "vitalezzz",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/the-rift",
-    "world": "launch",
+    "world": "pulse",
     "bpm": 129.4,
     "duration": 150.05,
     "stars": {
@@ -114,9 +134,9 @@
       "hard": 5
     },
     "notes": {
-      "easy": 62,
-      "normal": 127,
-      "hard": 180
+      "easy": 70,
+      "normal": 141,
+      "hard": 198
     }
   },
   {
@@ -174,9 +194,9 @@
       "hard": 7
     },
     "notes": {
-      "easy": 78,
-      "normal": 173,
-      "hard": 269
+      "easy": 82,
+      "normal": 177,
+      "hard": 273
     }
   },
   {
@@ -200,26 +220,6 @@
     }
   },
   {
-    "id": "elevate-instrument-tracks",
-    "title": "Elevate (+ instrument tracks)",
-    "artist": "fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
-    "world": "pulse",
-    "bpm": 172.8,
-    "duration": 150.05,
-    "stars": {
-      "easy": 2,
-      "normal": 4,
-      "hard": 7
-    },
-    "notes": {
-      "easy": 74,
-      "normal": 206,
-      "hard": 315
-    }
-  },
-  {
     "id": "black-diamond",
     "title": "Black Diamond",
     "artist": "joth",
@@ -240,26 +240,6 @@
     }
   },
   {
-    "id": "lunar-arrow",
-    "title": "Lunar Arrow",
-    "artist": "mmry",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/lunar-arrow",
-    "world": "overload",
-    "bpm": 152.6,
-    "duration": 127.35,
-    "stars": {
-      "easy": 2,
-      "normal": 5,
-      "hard": 7
-    },
-    "notes": {
-      "easy": 58,
-      "normal": 131,
-      "hard": 179
-    }
-  },
-  {
     "id": "silver-bullet",
     "title": "Silver Bullet",
     "artist": "vitalezzz",
@@ -276,7 +256,7 @@
     "notes": {
       "easy": 149,
       "normal": 200,
-      "hard": 252
+      "hard": 256
     }
   },
   {
@@ -291,12 +271,12 @@
     "stars": {
       "easy": 3,
       "normal": 5,
-      "hard": 8
+      "hard": 7
     },
     "notes": {
-      "easy": 102,
-      "normal": 202,
-      "hard": 336
+      "easy": 104,
+      "normal": 204,
+      "hard": 348
     }
   },
   {
@@ -365,7 +345,7 @@
     "artist": "Section31",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/night-prowler",
-    "world": "core",
+    "world": "overload",
     "bpm": 216.8,
     "duration": 149.97,
     "stars": {
@@ -375,8 +355,8 @@
     },
     "notes": {
       "easy": 208,
-      "normal": 241,
-      "hard": 390
+      "normal": 243,
+      "hard": 393
     }
   },
   {
@@ -400,6 +380,26 @@
     }
   },
   {
+    "id": "elevate-instrument-tracks",
+    "title": "Elevate (+ instrument tracks)",
+    "artist": "fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "world": "core",
+    "bpm": 172.8,
+    "duration": 150.05,
+    "stars": {
+      "easy": 3,
+      "normal": 5,
+      "hard": 7
+    },
+    "notes": {
+      "easy": 114,
+      "normal": 249,
+      "hard": 357
+    }
+  },
+  {
     "id": "midnight-drive",
     "title": "Midnight Drive",
     "artist": "congusbongus",
@@ -410,13 +410,13 @@
     "duration": 150.05,
     "stars": {
       "easy": 3,
-      "normal": 6,
-      "hard": 10
+      "normal": 5,
+      "hard": 9
     },
     "notes": {
-      "easy": 136,
-      "normal": 264,
-      "hard": 465
+      "easy": 138,
+      "normal": 265,
+      "hard": 473
     }
   }
 ]

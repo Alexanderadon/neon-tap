@@ -226,11 +226,22 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   const barSeconds = (60 / analysis.bpm) * 4;
   const allowed = TEMPLATES.filter((t) => ALLOWED[difficulty].includes(t.category) && t.count / barSeconds <= DENSITY_LIMIT[difficulty]);
 
+  // Quiet phrases (intros, breakdowns) are boosted so their own peaks still get sparse notes;
+  // true silence stays empty thanks to the absolute floor below.
+  const boost = new Map<number, number>();
+  for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
+    const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
+    const peak = percentile(phrase.flatMap((b) => b.slots.map(salience)), 0.9);
+    const factor = peak > 0.02 ? Math.min(3, Math.max(1, 0.35 / peak)) : 1;
+    for (const b of phrase) boost.set(b.index, factor);
+  }
+
   // 1. Rhythm per bar — a template, minus notes on slots where nothing is audible.
   const events: Event[] = [];
   for (const bar of bars) {
     const maxNotes = Math.min(MAX_NOTES[difficulty][bar.intensity], MAX_NOTES_BY_LANES[bar.lanes] ?? 16);
-    const strength = bar.slots.map(salience);
+    const k = boost.get(bar.index) ?? 1;
+    const strength = bar.slots.map((s) => Math.min(1, salience(s) * k));
     const phraseEnd = bar.index % 4 === 3;
     const scored = allowed
       .filter((t) => t.count <= maxNotes)
@@ -240,7 +251,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     const pool = scored.filter((x) => x.s >= scored[0].s - 0.12);
     const pick = pool[Math.floor(random() * pool.length)].t;
     for (let step = 0; step < bar.slots.length; step++) {
-      if (pick.mask[step] === '1' && salience(bar.slots[step]) >= MIN_NOTE_STRENGTH) {
+      if (pick.mask[step] === '1' && strength[step] >= MIN_NOTE_STRENGTH && bar.slots[step].strength >= 0.03) {
         events.push({ si: bar.start + step, bar, step, size: 1, hold: 0, kind: null });
       }
     }
