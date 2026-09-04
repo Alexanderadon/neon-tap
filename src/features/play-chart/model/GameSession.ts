@@ -1,5 +1,5 @@
 import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS } from '@/shared/config/constants';
-import { audioEngine, Clock, Conductor, sfxComboBreak, sfxHit, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
+import { audioEngine, Clock, sfxComboBreak, sfxHit, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
 import { FpsMeter } from '@/shared/lib/render';
@@ -70,7 +70,6 @@ const AUTO_MAX = 0.08;
  */
 export class GameSession {
   private readonly clock: Clock;
-  private readonly conductor: Conductor;
   private readonly notes: NoteManager;
   private readonly renderer: Renderer;
   private readonly input: Input;
@@ -100,10 +99,10 @@ export class GameSession {
   private readonly deltas: number[] = [];
   private autoAdjust = 0;
   private hitsSeen = 0;
+  private bassEnv = 0;
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
-    this.conductor = new Conductor(opts.chart.bpm, opts.chart.offset, 4, opts.chart.beats);
     this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0 });
     const level = opts.chart.charts[opts.difficulty];
     const parsed = parseChartLevel(level);
@@ -219,6 +218,11 @@ export class GameSession {
 
   get isPaused(): boolean {
     return this.paused;
+  }
+
+  /** Dev: current song time (for the `window.__neon` hook in no-fail sessions). */
+  get songTime(): number {
+    return this.clock.songTime();
   }
 
   /** Dev: trigger the slow-motion spell now (only exposed in no-fail sessions). */
@@ -355,12 +359,18 @@ export class GameSession {
       if (songTime >= this.endTime) this.finish();
     }
 
+    // Audio-reactive pulse: bass envelope with instant attack and ~150 ms decay, gated so sustained
+    // bass does not glow permanently — only hits above the running floor light up.
+    const bass = this.paused ? 0 : audioEngine.bassLevel();
+    this.bassEnv = Math.max(bass, this.bassEnv - dt * 6);
+    const pulse = Math.max(0, Math.min(1, (this.bassEnv - 0.45) / 0.4));
+
     const s = this.scoring;
     const slowLeft = this.slowUntil > 0 ? this.slowUntil - songTime : 0;
     this.renderer.draw(this.notes, {
       songTime,
       approachTime: this.approachTime,
-      beatPhase: this.conductor.beatPhase(songTime),
+      pulse,
       combo: s.combo,
       comboAge: this.comboGrewAt < 0 ? Infinity : songTime - this.comboGrewAt,
       score: s.score,

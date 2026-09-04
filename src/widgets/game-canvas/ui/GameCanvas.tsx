@@ -105,6 +105,8 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
         sessionRef.current = session;
         setStatus('ready');
         session.start();
+        // Dev hook for automated checks: `?nofail=1` exposes the session on window.
+        if (new URLSearchParams(window.location.search).has('nofail')) (window as unknown as { __neon: GameSession }).__neon = session;
       } catch (err) {
         console.error(err);
         if (!cancelled) setStatus('error');

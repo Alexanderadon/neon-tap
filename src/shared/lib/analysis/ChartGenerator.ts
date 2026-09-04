@@ -92,8 +92,11 @@ const MAX_CHORD = 2;
 const SPELL_EVERY_BARS = 8;
 const SPELL_ORDER: readonly SpellKind[] = ['slow', 'heart'];
 
-/** Circles per phrase-start bar by difficulty. */
-const CIRCLES_PER_BAR: Record<Difficulty, number> = { easy: 2, normal: 3, hard: 4 };
+/** Circle windows: the first bars of an intense phrase hold ONLY circles (no lane notes), on the strongest hits. */
+const CIRCLE_WINDOW_BARS = 2;
+const CIRCLES_PER_WINDOW: Record<Difficulty, number> = { easy: 3, normal: 4, hard: 5 };
+const CIRCLE_MIN_GAP_SLOTS = 4; // one beat
+const CIRCLE_MIN_SALIENCE = 0.3;
 
 /** Lane-count sections: one decision per 8-bar phrase, pools by [quiet, medium, intense]. */
 const PHRASE_BARS = 8;
@@ -265,29 +268,42 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   events.length = 0;
   events.push(...filtered);
 
-  // 1b. Spell notes: the first note of every 8th bar (from bar 4) alternates slow / heart.
+  // 1b. Circle windows: when an intense phrase (chorus / drop) starts, its first bars switch to
+  // osu!-style hit circles ONLY — lane notes are cleared there (plus one beat before), and the
+  // circles sit on the strongest hits of the window, at least a beat apart. Modes never mix.
+  for (const bar of bars) {
+    if (bar.index % PHRASE_BARS !== 0 || bar.intensity !== 2 || bar.index < 4) continue;
+    const windowBars = bars.slice(bar.index, bar.index + CIRCLE_WINDOW_BARS);
+    const startSi = bar.start;
+    const endSi = windowBars[windowBars.length - 1].start + windowBars[windowBars.length - 1].slots.length;
+    for (let i = events.length - 1; i >= 0; i--) {
+      const e = events[i];
+      if ((e.si >= startSi - 4 && e.si < endSi) || e.kind) {
+        if (e.si >= startSi - 4 && e.si < endSi) events.splice(i, 1);
+      }
+    }
+    const candidates: number[] = [];
+    for (let si = startSi; si < endSi; si++) if (salience(slots[si]) >= CIRCLE_MIN_SALIENCE) candidates.push(si);
+    candidates.sort((a, b) => salience(slots[b]) - salience(slots[a]));
+    const chosen: number[] = [];
+    for (const si of candidates) {
+      if (chosen.length >= CIRCLES_PER_WINDOW[difficulty]) break;
+      if (chosen.some((c) => Math.abs(c - si) < CIRCLE_MIN_GAP_SLOTS)) continue;
+      chosen.push(si);
+    }
+    for (const si of chosen) {
+      const b = windowBars.find((wb) => si >= wb.start && si < wb.start + wb.slots.length) ?? bar;
+      events.push({ si, bar: b, step: si - b.start, size: 1, hold: 0, kind: 'circle' });
+    }
+  }
+  events.sort((a, b) => a.si - b.si);
+
+  // 1c. Spell notes: the first lane note of every 8th bar (from bar 4) alternates slow / heart.
   let spellCount = 0;
   for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
-    const ev = events.find((e) => e.bar.index === b) ?? events.find((e) => e.bar.index === b + 1);
+    const ev = events.find((e) => e.bar.index === b && !e.kind) ?? events.find((e) => e.bar.index === b + 1 && !e.kind);
     if (!ev) continue;
     ev.kind = SPELL_ORDER[spellCount++ % SPELL_ORDER.length];
-  }
-
-  // 1c. Circles: at the start of an intense phrase (chorus / drop) the on-beat notes of the first
-  // bar become osu!-style hit circles — a sudden change of interaction right where the music peaks.
-  for (const bar of bars) {
-    const phraseStart = bar.index % PHRASE_BARS === 0 || (difficulty === 'hard' && bar.index % PHRASE_BARS === PHRASE_BARS / 2);
-    if (!phraseStart || bar.intensity !== 2 || bar.index < 4) continue;
-    let placed = 0;
-    let lastSi = -100;
-    for (const ev of events) {
-      if (ev.bar !== bar) continue;
-      if (ev.step % 4 !== 0 || ev.kind || ev.si - lastSi < 4) continue;
-      ev.kind = 'circle';
-      placed++;
-      lastSi = ev.si;
-      if (placed >= CIRCLES_PER_BAR[difficulty]) break;
-    }
   }
 
   // 2. Holds on sustained melodic sounds, chords on strong downbeats — under the two-finger rule.
@@ -436,6 +452,8 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
   let motion: Motion | null = null;
   let motionBar = -1;
   let lastLanes = -1;
+  let circleIdx = -1;
+  let lastCircleSi = -100;
 
   for (const ev of events) {
     const slot = slots[ev.si];
@@ -483,9 +501,15 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
         let pool = candidates.filter((l) => group.includes(l));
         if (!pool.length) pool = candidates;
         const fresh = pool.filter((l) => l !== lastLane);
-        // Circles always move to a fresh lane so a group reads as a path.
-        const choose = fresh.length && (ev.kind === 'circle' || random() < 0.8) ? fresh : pool;
+        const choose = fresh.length && random() < 0.8 ? fresh : pool;
         lane = choose[Math.floor(random() * choose.length)];
+        if (ev.kind === 'circle') {
+          // Circles zig-zag across the whole field so a group reads as a path: left, right, centre, …
+          const spread = [0, n - 1, Math.floor(n / 2), 1, n - 2, Math.floor(n / 2) - 1].filter((l, i, arr) => l >= 0 && l < n && arr.indexOf(l) === i);
+          circleIdx = ev.si - lastCircleSi > 8 ? 0 : circleIdx + 1;
+          lastCircleSi = ev.si;
+          lane = spread[circleIdx % spread.length];
+        }
       }
       lanes = [lane];
     }

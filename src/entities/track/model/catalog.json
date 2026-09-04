@@ -20,6 +20,26 @@
     }
   },
   {
+    "id": "virtual-rush",
+    "title": "Virtual Rush",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/virtual-rush",
+    "world": "launch",
+    "bpm": 161.1,
+    "duration": 150.05,
+    "stars": {
+      "easy": 2,
+      "normal": 3,
+      "hard": 5
+    },
+    "notes": {
+      "easy": 55,
+      "normal": 108,
+      "hard": 152
+    }
+  },
+  {
     "id": "apparatus-overlord",
     "title": "Apparatus Overlord",
     "artist": "vitalezzz",
@@ -35,28 +55,8 @@
     },
     "notes": {
       "easy": 66,
-      "normal": 113,
-      "hard": 194
-    }
-  },
-  {
-    "id": "virtual-rush",
-    "title": "Virtual Rush",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/virtual-rush",
-    "world": "launch",
-    "bpm": 161.1,
-    "duration": 150.05,
-    "stars": {
-      "easy": 2,
-      "normal": 3,
-      "hard": 5
-    },
-    "notes": {
-      "easy": 54,
-      "normal": 117,
-      "hard": 170
+      "normal": 112,
+      "hard": 198
     }
   },
   {
@@ -75,8 +75,8 @@
     },
     "notes": {
       "easy": 58,
-      "normal": 131,
-      "hard": 180
+      "normal": 130,
+      "hard": 173
     }
   },
   {
@@ -91,12 +91,12 @@
     "stars": {
       "easy": 2,
       "normal": 3,
-      "hard": 7
+      "hard": 6
     },
     "notes": {
-      "easy": 62,
-      "normal": 147,
-      "hard": 309
+      "easy": 63,
+      "normal": 140,
+      "hard": 268
     }
   },
   {
@@ -114,9 +114,9 @@
       "hard": 6
     },
     "notes": {
-      "easy": 60,
-      "normal": 133,
-      "hard": 185
+      "easy": 59,
+      "normal": 121,
+      "hard": 163
     }
   },
   {
@@ -129,34 +129,14 @@
     "bpm": 129.4,
     "duration": 150.05,
     "stars": {
-      "easy": 2,
+      "easy": 3,
       "normal": 4,
       "hard": 5
     },
     "notes": {
-      "easy": 70,
-      "normal": 141,
-      "hard": 198
-    }
-  },
-  {
-    "id": "dance-field",
-    "title": "Dance Field",
-    "artist": "centurionofwar",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/dance-field",
-    "world": "pulse",
-    "bpm": 185,
-    "duration": 109.77,
-    "stars": {
-      "easy": 3,
-      "normal": 4,
-      "hard": 9
-    },
-    "notes": {
-      "easy": 94,
-      "normal": 159,
-      "hard": 353
+      "easy": 69,
+      "normal": 127,
+      "hard": 174
     }
   },
   {
@@ -174,9 +154,29 @@
       "hard": 6
     },
     "notes": {
-      "easy": 104,
-      "normal": 163,
-      "hard": 193
+      "easy": 100,
+      "normal": 155,
+      "hard": 179
+    }
+  },
+  {
+    "id": "dance-field",
+    "title": "Dance Field",
+    "artist": "centurionofwar",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/dance-field",
+    "world": "pulse",
+    "bpm": 185,
+    "duration": 109.77,
+    "stars": {
+      "easy": 3,
+      "normal": 4,
+      "hard": 9
+    },
+    "notes": {
+      "easy": 93,
+      "normal": 158,
+      "hard": 346
     }
   },
   {
@@ -194,9 +194,29 @@
       "hard": 7
     },
     "notes": {
-      "easy": 82,
-      "normal": 177,
-      "hard": 273
+      "easy": 84,
+      "normal": 168,
+      "hard": 258
+    }
+  },
+  {
+    "id": "chase",
+    "title": "Chase",
+    "artist": "adiutorium",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/chase-2",
+    "world": "pulse",
+    "bpm": 143.4,
+    "duration": 150.05,
+    "stars": {
+      "easy": 3,
+      "normal": 4,
+      "hard": 7
+    },
+    "notes": {
+      "easy": 101,
+      "normal": 193,
+      "hard": 315
     }
   },
   {
@@ -214,9 +234,9 @@
       "hard": 7
     },
     "notes": {
-      "easy": 106,
-      "normal": 200,
-      "hard": 344
+      "easy": 110,
+      "normal": 194,
+      "hard": 316
     }
   },
   {
@@ -225,18 +245,58 @@
     "artist": "joth",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/black-diamond",
-    "world": "pulse",
+    "world": "overload",
     "bpm": 143.5,
     "duration": 150.05,
     "stars": {
       "easy": 2,
       "normal": 4,
-      "hard": 7
+      "hard": 6
     },
     "notes": {
       "easy": 88,
-      "normal": 223,
-      "hard": 337
+      "normal": 212,
+      "hard": 323
+    }
+  },
+  {
+    "id": "robotic-city",
+    "title": "Robotic City",
+    "artist": "Section31",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/robotic-city",
+    "world": "overload",
+    "bpm": 129.5,
+    "duration": 150.05,
+    "stars": {
+      "easy": 3,
+      "normal": 4,
+      "hard": 7
+    },
+    "notes": {
+      "easy": 105,
+      "normal": 218,
+      "hard": 357
+    }
+  },
+  {
+    "id": "elevate-instrument-tracks",
+    "title": "Elevate (+ instrument tracks)",
+    "artist": "fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "world": "overload",
+    "bpm": 172.8,
+    "duration": 150.05,
+    "stars": {
+      "easy": 3,
+      "normal": 4,
+      "hard": 7
+    },
+    "notes": {
+      "easy": 113,
+      "normal": 222,
+      "hard": 317
     }
   },
   {
@@ -254,29 +314,9 @@
       "hard": 6
     },
     "notes": {
-      "easy": 149,
-      "normal": 200,
-      "hard": 256
-    }
-  },
-  {
-    "id": "chase",
-    "title": "Chase",
-    "artist": "adiutorium",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/chase-2",
-    "world": "overload",
-    "bpm": 143.4,
-    "duration": 150.05,
-    "stars": {
-      "easy": 3,
-      "normal": 5,
-      "hard": 7
-    },
-    "notes": {
-      "easy": 104,
-      "normal": 204,
-      "hard": 348
+      "easy": 140,
+      "normal": 184,
+      "hard": 241
     }
   },
   {
@@ -294,9 +334,9 @@
       "hard": 7
     },
     "notes": {
-      "easy": 138,
-      "normal": 217,
-      "hard": 302
+      "easy": 135,
+      "normal": 210,
+      "hard": 282
     }
   },
   {
@@ -314,29 +354,9 @@
       "hard": 6
     },
     "notes": {
-      "easy": 139,
-      "normal": 235,
-      "hard": 290
-    }
-  },
-  {
-    "id": "robotic-city",
-    "title": "Robotic City",
-    "artist": "Section31",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/robotic-city",
-    "world": "overload",
-    "bpm": 129.5,
-    "duration": 150.05,
-    "stars": {
-      "easy": 3,
-      "normal": 5,
-      "hard": 7
-    },
-    "notes": {
-      "easy": 108,
-      "normal": 241,
-      "hard": 399
+      "easy": 132,
+      "normal": 219,
+      "hard": 270
     }
   },
   {
@@ -345,7 +365,7 @@
     "artist": "Section31",
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/night-prowler",
-    "world": "overload",
+    "world": "core",
     "bpm": 216.8,
     "duration": 149.97,
     "stars": {
@@ -354,9 +374,9 @@
       "hard": 7
     },
     "notes": {
-      "easy": 208,
-      "normal": 243,
-      "hard": 393
+      "easy": 204,
+      "normal": 240,
+      "hard": 384
     }
   },
   {
@@ -375,28 +395,8 @@
     },
     "notes": {
       "easy": 146,
-      "normal": 246,
-      "hard": 617
-    }
-  },
-  {
-    "id": "elevate-instrument-tracks",
-    "title": "Elevate (+ instrument tracks)",
-    "artist": "fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
-    "world": "core",
-    "bpm": 172.8,
-    "duration": 150.05,
-    "stars": {
-      "easy": 3,
-      "normal": 5,
-      "hard": 7
-    },
-    "notes": {
-      "easy": 114,
-      "normal": 249,
-      "hard": 357
+      "normal": 242,
+      "hard": 592
     }
   },
   {
@@ -411,12 +411,12 @@
     "stars": {
       "easy": 3,
       "normal": 5,
-      "hard": 9
+      "hard": 8
     },
     "notes": {
-      "easy": 138,
-      "normal": 265,
-      "hard": 473
+      "easy": 134,
+      "normal": 252,
+      "hard": 440
     }
   }
 ]

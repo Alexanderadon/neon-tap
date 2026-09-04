@@ -26,6 +26,8 @@ export class AudioEngine {
   private sfxGain!: GainNode;
   private voiceGain!: GainNode;
   private lowpass!: BiquadFilterNode;
+  private analyser: AnalyserNode | null = null;
+  private spectrum: Uint8Array<ArrayBuffer> | null = null;
   private source: AudioBufferSourceNode | null = null;
   private startTime = 0;
   private pausePosition: number | null = null;
@@ -47,6 +49,12 @@ export class AudioEngine {
       this.lowpass.Q.value = 0.7;
       this.lowpass.connect(this.musicGain);
       this.musicGain.connect(this.master);
+      // Analyser taps the music bus for audio-reactive visuals (bass pulse). Not in the audible path.
+      this.analyser = this.ctx.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.analyser.smoothingTimeConstant = 0.4;
+      this.musicGain.connect(this.analyser);
+      this.spectrum = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
       this.sfxGain.connect(this.master);
       this.voiceGain.connect(this.master);
       this.master.connect(this.ctx.destination);
@@ -70,6 +78,14 @@ export class AudioEngine {
     if (!this.ctx) return 0;
     const c = this.ctx as AudioContext & { outputLatency?: number };
     return (c.outputLatency ?? 0) + (c.baseLatency ?? 0);
+  }
+
+  /** Bass energy of what is playing right now, 0..1 (bins up to ~500 Hz). Cheap: one getByteFrequencyData per frame. */
+  bassLevel(): number {
+    if (!this.analyser || !this.spectrum) return 0;
+    this.analyser.getByteFrequencyData(this.spectrum);
+    const s = this.spectrum;
+    return (s[0] + s[1] + s[2]) / (3 * 255);
   }
 
   get sfxDestination(): AudioNode {
