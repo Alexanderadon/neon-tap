@@ -26,7 +26,7 @@ export interface FrameState {
   lastJudgement: Judgement | null;
   lastJudgementAge: number;
   comboBreakAge: number;
-  debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number } | null;
+  debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
 const JUDGEMENT_COLOR: Record<Judgement, string> = {
@@ -622,7 +622,7 @@ export class Renderer {
       ctx.font = `400 11px monospace`;
       ctx.fillStyle = s.debug.fps < 50 ? '#ff2bd6' : '#b6ff00';
       ctx.fillText(
-        `${s.debug.fps} fps · worst ${s.debug.worstMs} ms · notes ${s.debug.visibleNotes} · particles ${this.particles.alive} · lanes ${this.current} · latency ${s.debug.latencyMs} ms · t ${s.songTime.toFixed(3)}`,
+        `${s.debug.fps} fps · worst ${s.debug.worstMs} ms · notes ${s.debug.visibleNotes} · particles ${this.particles.alive} · lanes ${this.current} · latency ${s.debug.latencyMs} ms · offset ${s.debug.offsetMs} ms · rate ${s.debug.rate.toFixed(2)} · t ${s.songTime.toFixed(3)}`,
         10,
         height - 14,
       );

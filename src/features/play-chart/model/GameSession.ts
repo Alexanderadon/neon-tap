@@ -1,7 +1,7 @@
 import { BASE_APPROACH_TIME, KEY_LAYOUTS } from '@/shared/config/constants';
 import { audioEngine, Clock, Conductor, sfxComboBreak, sfxHit, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
-import { lowerBound } from '@/shared/lib/math';
+import { clamp, lowerBound, median } from '@/shared/lib/math';
 import { FpsMeter } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
@@ -24,7 +24,7 @@ export type SessionEvent =
   | { type: 'spell'; kind: SpellKind }
   | { type: 'lanes'; lanes: number }
   | { type: 'fail' }
-  | { type: 'finish'; result: PlayResult }
+  | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
   | { type: 'pause' }
   | { type: 'resume' };
 
@@ -39,6 +39,8 @@ export interface SessionOptions {
   touch: boolean;
   /** Touch assist: early presses count (see NoteManager). */
   touchAssist: boolean;
+  /** Learn the player's latency from their hits and nudge the offset while playing. */
+  autoOffset: boolean;
   /** Dev/demo flag (`?nofail=1`): hearts still drain but the run never fails. */
   noFail?: boolean;
   debug: boolean;
@@ -49,11 +51,16 @@ const LEAD_IN = 2.0;
 const MILESTONES = [50, 100, 250, 500, 1000];
 const ASSIST_WINDOW = 0.4;
 export const MAX_HEARTS = 5;
+/** Slow-motion spell: the whole song (music + notes + judgement) runs at this rate for SLOW_DURATION song-seconds. */
+const SLOW_RATE = 0.72;
 const SLOW_DURATION = 6;
+const SLOW_RAMP_IN = 0.35;
+const SLOW_RAMP_OUT = 0.5;
 /** Note speed multiplier per difficulty — Hard is visibly faster, Easy slower. */
-const SPEED_BY_DIFFICULTY: Record<Difficulty, number> = { easy: 0.85, normal: 1, hard: 1.15 };
-/** Note speed while the slow spell is active (0.6 = 40 % slower). */
-const SLOW_FACTOR = 0.6;
+const SPEED_BY_DIFFICULTY: Record<Difficulty, number> = { easy: 0.75, normal: 0.9, hard: 1.05 };
+/** Auto-offset: window of recent timing errors and the max correction it may apply, seconds. */
+const AUTO_WINDOW = 40;
+const AUTO_MAX = 0.08;
 
 /**
  * Owns one play-through: audio, clock, notes, scoring, lives, spells, input and rendering.
@@ -81,12 +88,16 @@ export class GameSession {
   private comboGrewAt = -1;
   private heartLostAt = -1;
   private slowUntil = -1;
-  private slowFactor = 1;
+  private slowReleasing = false;
   private perfectStreak = 0;
   private endTime = 0;
   private resizeObserver: ResizeObserver | null = null;
   private readonly sections: Section[];
-  private readonly sectionTimes: number[];
+  /** When each section's lane count takes over: as soon as the previous section's last note is gone, but no later than one approach before the section starts. */
+  private readonly switchTimes: number[];
+  private readonly deltas: number[] = [];
+  private autoAdjust = 0;
+  private hitsSeen = 0;
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
@@ -95,8 +106,13 @@ export class GameSession {
     const level = opts.chart.charts[opts.difficulty];
     const parsed = parseChartLevel(level);
     this.sections = parseSections(level);
-    this.sectionTimes = this.sections.map((s) => s.time);
     this.notes.load(parsed);
+    this.switchTimes = this.sections.map((sec, i) => {
+      if (i === 0) return 0;
+      let lastEnd = -Infinity;
+      for (const n of parsed) if (n.time < sec.time) lastEnd = Math.max(lastEnd, n.time + n.duration);
+      return Math.max(sec.time - this.approachTime, lastEnd + 0.15);
+    });
     this.scoring = new Scoring(countJudgements(parsed));
     this.endTime = Math.min(opts.audioBuffer.duration, this.notes.lastTime + 1.5);
     this.renderer = new Renderer(
@@ -119,7 +135,7 @@ export class GameSession {
   }
 
   get approachTime(): number {
-    return BASE_APPROACH_TIME / (this.opts.scrollSpeed * SPEED_BY_DIFFICULTY[this.opts.difficulty]) / this.slowFactor;
+    return BASE_APPROACH_TIME / (this.opts.scrollSpeed * SPEED_BY_DIFFICULTY[this.opts.difficulty]);
   }
 
   start(): void {
@@ -146,7 +162,7 @@ export class GameSession {
     this.comboGrewAt = -1;
     this.heartLostAt = -1;
     this.slowUntil = -1;
-    this.slowFactor = 1;
+    this.slowReleasing = false;
     this.perfectStreak = 0;
     this.renderer.setLanes(this.sections[0].lanes, true);
     const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN);
@@ -160,16 +176,20 @@ export class GameSession {
   pause(): void {
     if (!this.started || this.paused || this.finished) return;
     this.paused = true;
-    audioEngine.pause();
     this.clock.pause();
+    audioEngine.pause();
     this.opts.onEvent({ type: 'pause' });
   }
 
   resume(): void {
     if (!this.paused) return;
-    const pos = Math.max(0, audioEngine.position() - 1);
+    // Rewind slightly so the player can re-enter the flow; the slow spell ends on resume.
+    const pos = Math.max(0, this.clock.position() - 1);
     const startTime = audioEngine.play(this.opts.audioBuffer, pos, () => this.finish(), 0.3);
-    this.clock.start(startTime);
+    this.clock.start(startTime, pos);
+    this.slowUntil = -1;
+    this.slowReleasing = false;
+    audioEngine.tapeEffect(false, 0.01);
     this.paused = false;
     this.opts.onEvent({ type: 'resume' });
   }
@@ -224,7 +244,10 @@ export class GameSession {
       return;
     }
 
-    if (!tail) sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
+    if (!tail) {
+      sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
+      if (!note.assisted) this.learnOffset(note.hitDelta);
+    }
     this.comboGrewAt = this.lastJudgementAt;
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
     if (this.perfectStreak > 0 && this.perfectStreak % 25 === 0) this.opts.onEvent({ type: 'perfect-streak', streak: this.perfectStreak });
@@ -239,11 +262,38 @@ export class GameSession {
     this.opts.onEvent({ type: 'judge', judgement, combo });
   };
 
+  /**
+   * Auto-offset: players on phones/Bluetooth are consistently early or late. The median of the
+   * last 40 timing errors is folded into the clock offset (half-steps, capped at ±80 ms) so the
+   * chart drifts onto the player's ear instead of the other way round.
+   */
+  private learnOffset(delta: number): void {
+    if (!this.opts.autoOffset) return;
+    this.deltas.push(delta);
+    if (this.deltas.length > AUTO_WINDOW) this.deltas.shift();
+    this.hitsSeen++;
+    if (this.hitsSeen % 10 !== 0 || this.deltas.length < 20) return;
+    const m = median(this.deltas);
+    if (Math.abs(m) < 0.012) return;
+    const next = clamp(this.autoAdjust + m * 0.5, -AUTO_MAX, AUTO_MAX);
+    const applied = next - this.autoAdjust;
+    this.autoAdjust = next;
+    // A positive delta means the player is late → the audio reaches them late → raise the offset.
+    this.clock.userOffset += applied;
+    for (let i = 0; i < this.deltas.length; i++) this.deltas[i] -= applied;
+  }
+
   private castSpell(kind: SpellKind, lane: number, lanes: number): void {
     this.renderer.spellFeedback(lane, lanes, kind);
     sfxRank();
-    if (kind === 'slow') this.slowUntil = this.clock.songTime() + SLOW_DURATION;
-    else if (this.lives.gain()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
+    if (kind === 'slow') {
+      const now = audioEngine.now();
+      this.slowUntil = this.clock.songTime() + SLOW_DURATION;
+      this.slowReleasing = false;
+      this.clock.setRate(SLOW_RATE, SLOW_RAMP_IN, now);
+      audioEngine.setPlaybackRate(SLOW_RATE, SLOW_RAMP_IN);
+      audioEngine.tapeEffect(true, SLOW_RAMP_IN);
+    } else if (this.lives.gain()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
     this.opts.onEvent({ type: 'spell', kind });
   }
 
@@ -256,21 +306,28 @@ export class GameSession {
     const songTime = this.clock.songTime();
     if (!this.paused && !this.finished) {
       // Lane-count sections: switch (with the transition FX) when the song reaches a new one.
-      const si = Math.max(0, lowerBound(this.sectionTimes, songTime + 1e-9) - 1);
+      const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
       const lanes = this.sections[si].lanes;
       if (lanes !== this.renderer.lanes) {
         this.renderer.setLanes(lanes, songTime <= 0);
         this.opts.onEvent({ type: 'lanes', lanes });
       }
+      // Slow-motion release: ramp music and clock back to full speed together.
+      if (this.slowUntil > 0 && !this.slowReleasing && songTime >= this.slowUntil - SLOW_RAMP_OUT * SLOW_RATE) {
+        this.slowReleasing = true;
+        const t = audioEngine.now();
+        this.clock.setRate(1, SLOW_RAMP_OUT, t);
+        audioEngine.setPlaybackRate(1, SLOW_RAMP_OUT);
+        audioEngine.tapeEffect(false, SLOW_RAMP_OUT);
+      }
+      if (this.slowUntil > 0 && songTime >= this.slowUntil) this.slowUntil = -1;
       this.notes.update(songTime, this.isHeld);
-      const target = songTime < this.slowUntil ? SLOW_FACTOR : 1;
-      this.slowFactor += (target - this.slowFactor) * Math.min(1, dt * 6);
       this.renderer.update(dt);
       if (songTime >= this.endTime) this.finish();
     }
 
     const s = this.scoring;
-    const slowLeft = this.slowUntil - songTime;
+    const slowLeft = this.slowUntil > 0 ? this.slowUntil - songTime : 0;
     this.renderer.draw(this.notes, {
       songTime,
       approachTime: this.approachTime,
@@ -289,7 +346,14 @@ export class GameSession {
       lastJudgementAge: this.lastJudgementAt < 0 ? 1 : songTime - this.lastJudgementAt,
       comboBreakAge: this.comboBreakAt < 0 ? -1 : songTime - this.comboBreakAt,
       debug: this.opts.debug
-        ? { fps: this.fps.fps, worstMs: this.fps.worstMs, latencyMs: Math.round(audioEngine.outputLatency() * 1000), visibleNotes: this.renderer.visibleNotes }
+        ? {
+            fps: this.fps.fps,
+            worstMs: this.fps.worstMs,
+            latencyMs: Math.round(audioEngine.outputLatency() * 1000),
+            visibleNotes: this.renderer.visibleNotes,
+            offsetMs: Math.round(this.clock.userOffset * 1000),
+            rate: this.clock.rateAt(),
+          }
         : null,
     });
 
@@ -310,7 +374,6 @@ export class GameSession {
     this.failed = true;
     audioEngine.missEffect();
     this.opts.onEvent({ type: 'fail' });
-    // Let the "you lost" moment land, then hand over to the result screen.
     window.setTimeout(() => this.finish(), 900);
     this.finished = true;
     audioEngine.stop();
@@ -320,7 +383,6 @@ export class GameSession {
     if (this.destroyed) return;
     if (this.finished && !this.failed) return;
     this.finished = true;
-    // Flush any remaining pending notes as misses so totals add up.
     if (!this.failed) this.notes.update(Number.POSITIVE_INFINITY, () => false);
     const s = this.scoring;
     const result: PlayResult = {
@@ -337,7 +399,9 @@ export class GameSession {
       failed: this.failed,
       hearts: this.lives.hearts,
     };
-    this.failed = false; // guard against a second finish() from the timer
-    this.opts.onEvent({ type: 'finish', result });
+    // Hand the learned latency back so it can be persisted (only after enough evidence).
+    const autoOffsetMs = this.opts.autoOffset && this.hitsSeen >= 60 && Math.abs(this.autoAdjust) >= 0.01 ? Math.round(this.clock.userOffset * 1000) : null;
+    this.failed = false;
+    this.opts.onEvent({ type: 'finish', result, autoOffsetMs });
   }
 }

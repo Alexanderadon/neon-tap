@@ -33,6 +33,37 @@ describe('Clock', () => {
     expect(clock.toAudioTime(0.95)).toBeCloseTo(1, 6);
   });
 
+  it('integrates rate ramps exactly (slow-motion)', () => {
+    const time = fakeTime(0);
+    const clock = new Clock(time.now);
+    clock.start(0);
+    time.set(10);
+    clock.setRate(0.5, 2); // linear ramp 1 → 0.5 over [10, 12]
+    expect(clock.positionAt(10)).toBeCloseTo(10, 6);
+    expect(clock.positionAt(11)).toBeCloseTo(10 + 1 * 1 + (-0.5 * 1 * 1) / 4, 6); // 10.875
+    expect(clock.positionAt(12)).toBeCloseTo(10 + 1.5, 6); // mean rate 0.75 × 2 s
+    expect(clock.positionAt(14)).toBeCloseTo(11.5 + 2 * 0.5, 6);
+    expect(clock.rateAt(11)).toBeCloseTo(0.75);
+    time.set(14);
+    clock.setRate(1, 1); // ramp back 0.5 → 1 over [14, 15]
+    expect(clock.positionAt(15)).toBeCloseTo(12.5 + 0.75, 6);
+    expect(clock.positionAt(16)).toBeCloseTo(13.25 + 1, 6);
+  });
+
+  it('keeps rate ramps consistent across pause/resume', () => {
+    const time = fakeTime(0);
+    const clock = new Clock(time.now);
+    clock.start(0);
+    time.set(5);
+    clock.setRate(0.5, 0);
+    time.set(6);
+    clock.pause();
+    time.set(20);
+    clock.resume();
+    time.set(21);
+    expect(clock.position()).toBeCloseTo(5 + 1 * 0.5 + 1 * 0.5, 6);
+  });
+
   it('freezes on pause and resumes at the same position', () => {
     const time = fakeTime(0);
     const clock = new Clock(time.now);

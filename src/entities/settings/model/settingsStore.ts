@@ -15,7 +15,11 @@ export interface Settings {
   voice: VoiceSetting;
   /** Touch devices: early presses (≤ 0.4 s) count as Great. */
   touchAssist: boolean;
+  /** Learn latency from the player's hits during play and persist it after a run. */
+  autoOffset: boolean;
   calibrated: boolean;
+  /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
+  calibrationVersion: number;
   debugOverlay: boolean;
 }
 
@@ -24,13 +28,15 @@ const KEY = 'neon-tap:settings';
 const DEFAULTS: Settings = {
   version: 1,
   audioOffsetMs: 0,
-  scrollSpeed: 1.5,
+  scrollSpeed: 1.2,
   musicVolume: 0.9,
   sfxVolume: 0.7,
   voiceVolume: 0.9,
   voice: 'dmitry',
   touchAssist: true,
+  autoOffset: true,
   calibrated: false,
+  calibrationVersion: 0,
   debugOverlay: false,
 };
 
@@ -41,7 +47,10 @@ function load(): Settings {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
-    return sanitize({ ...DEFAULTS, ...parsed, version: 1 });
+    const merged = { ...DEFAULTS, ...parsed, version: 1 as const };
+    // Players from before the difficulty rebalance keep their old (faster) speed only if they changed it.
+    if ((parsed.calibrationVersion ?? 0) < 2 && parsed.scrollSpeed === 1.5) merged.scrollSpeed = DEFAULTS.scrollSpeed;
+    return sanitize(merged);
   } catch {
     return DEFAULTS;
   }

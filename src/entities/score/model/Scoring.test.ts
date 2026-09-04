@@ -4,10 +4,11 @@ import { Scoring, accuracyOf, judgeDelta, notesToReach, rankOf } from './Scoring
 describe('judgeDelta', () => {
   it('classifies by GDD windows', () => {
     expect(judgeDelta(0.03)).toBe('perfect');
-    expect(judgeDelta(-0.045)).toBe('perfect');
+    expect(judgeDelta(-0.05)).toBe('perfect');
     expect(judgeDelta(0.08)).toBe('great');
-    expect(judgeDelta(0.1)).toBe('good');
-    expect(judgeDelta(0.135)).toBe('good');
+    expect(judgeDelta(0.1)).toBe('great');
+    expect(judgeDelta(0.12)).toBe('good');
+    expect(judgeDelta(0.15)).toBe('good');
     expect(judgeDelta(0.2)).toBeNull();
   });
 });

@@ -30,6 +30,8 @@ export interface PooledNote {
   hitDelta: number;
   /** Touch assist: an early press was registered; the note is judged when it reaches the line. */
   armed: boolean;
+  /** True when the judgement came from touch assist (its delta is synthetic — skip for auto-offset). */
+  assisted: boolean;
 }
 
 export interface JudgeEvent {
@@ -70,7 +72,7 @@ export class NoteManager {
   constructor(capacity = POOL_SIZE, opts: NoteManagerOptions = {}) {
     this.assistWindow = opts.assistWindow ?? 0;
     for (let i = 0; i < capacity; i++) {
-      this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, kind: null, seq: 0, lanes: 4, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0, armed: false });
+      this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, kind: null, seq: 0, lanes: 4, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0, armed: false, assisted: false });
     }
     for (let l = 0; l < MAX_LANES; l++) this.laneNotes.push(new Int32Array(capacity));
   }
@@ -96,6 +98,7 @@ export class NoteManager {
       n.tailJudgement = null;
       n.hitDelta = 0;
       n.armed = false;
+      n.assisted = false;
       const lane = src.lane;
       this.laneNotes[lane][this.laneLen[lane]++] = i;
     }
@@ -109,6 +112,7 @@ export class NoteManager {
       n.tailJudgement = null;
       n.hitDelta = 0;
       n.armed = false;
+      n.assisted = false;
     }
     this.laneCursor.fill(0);
     this.firstActive = 0;
@@ -130,6 +134,7 @@ export class NoteManager {
         const note = this.pool[list[cursor]];
         if (note.state === NoteState.Pending) {
           if (note.armed && songTime >= note.time - HIT_WINDOWS.great) {
+            note.assisted = true;
             this.hit(note, 'great', -HIT_WINDOWS.great);
             continue; // re-evaluate: Hit → skip, Holding → wait for the tail
           }

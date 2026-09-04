@@ -32,8 +32,8 @@ const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
 const RATE = 22050;
 const WORLD_IDS = ['launch', 'pulse', 'overload', 'core'] as const;
 const LANE_VARIATION_BY_WORLD = [
-  { normal: false, hard: false },
-  { normal: false, hard: true },
+  { normal: true, hard: true },
+  { normal: true, hard: true },
   { normal: true, hard: true },
   { normal: true, hard: true },
 ] as const;

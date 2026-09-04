@@ -27,7 +27,6 @@ export class AudioEngine {
   private voiceGain!: GainNode;
   private lowpass!: BiquadFilterNode;
   private source: AudioBufferSourceNode | null = null;
-  private buffer: AudioBuffer | null = null;
   private startTime = 0;
   private pausePosition: number | null = null;
   private volumes: Volumes = { master: 1, music: 0.9, sfx: 0.8, voice: 1 };
@@ -112,7 +111,6 @@ export class AudioEngine {
     const ctx = this.ctx;
     if (!ctx) throw new Error('AudioContext not initialised');
     this.stop();
-    this.buffer = buffer;
     this.onEnded = onEnded ?? null;
     const src = ctx.createBufferSource();
     src.buffer = buffer;
@@ -147,14 +145,6 @@ export class AudioEngine {
     src.stop();
   }
 
-  /** Resume from the paused position; returns the new startTime for the Clock. */
-  resume(): number | null {
-    if (this.pausePosition === null || !this.buffer) return null;
-    const pos = this.pausePosition;
-    const cb = this.onEnded ?? undefined;
-    return this.play(this.buffer, pos, cb);
-  }
-
   stop(): void {
     if (this.source) {
       const src = this.source;
@@ -172,6 +162,32 @@ export class AudioEngine {
 
   get isPlaying(): boolean {
     return this.source !== null;
+  }
+
+  /** Ramp the music playback rate (slow-motion spell). Linear, so the Clock can integrate it exactly. */
+  setPlaybackRate(rate: number, duration = 0): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.source) return;
+    const t = ctx.currentTime;
+    const p = this.source.playbackRate;
+    p.cancelScheduledValues(t);
+    p.setValueAtTime(p.value, t);
+    p.linearRampToValueAtTime(rate, t + Math.max(0.001, duration));
+  }
+
+  /** "Tape stop" colour for slow-motion: muffle + duck while slowed, open back up on release. */
+  tapeEffect(on: boolean, duration = 0.35): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const f = this.lowpass.frequency;
+    const g = this.musicGain.gain;
+    f.cancelScheduledValues(t);
+    f.setValueAtTime(Math.max(200, f.value), t);
+    f.exponentialRampToValueAtTime(on ? 1400 : LOWPASS_OPEN_HZ, t + duration);
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(this.volumes.music * (on ? 0.7 : 1), t + duration);
   }
 
   /** "Miss breaks the music": muffle + duck the master for 250 ms (GDD §1.2). */

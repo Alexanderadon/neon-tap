@@ -5,7 +5,7 @@ import { dict } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
 import type { ChartFile } from '@/shared/types/chart';
 import type { Difficulty } from '@/shared/config/constants';
-import { getSettings } from '@/entities/settings';
+import { getSettings, updateSettings } from '@/entities/settings';
 import { GameSession, type SessionEvent } from '@/features/play-chart';
 import { saveResult } from '@/features/save-result';
 import { voice, praise } from '@/features/voice-feedback';
@@ -70,6 +70,7 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
           setPaused(false);
           break;
         case 'finish':
+          if (e.autoOffsetMs !== null) updateSettings({ audioOffsetMs: e.autoOffsetMs });
           saveResult(e.result, source);
           navigate('result');
           break;
@@ -97,6 +98,7 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
           scrollSpeed: settings.scrollSpeed,
           touch: isTouchDevice(),
           touchAssist: settings.touchAssist,
+          autoOffset: settings.autoOffset,
           noFail: new URLSearchParams(window.location.search).has('nofail'),
           debug: settings.debugOverlay,
           onEvent,
