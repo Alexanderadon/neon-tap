@@ -1,18 +1,171 @@
 [
-  { "id": "midnight-drive", "title": "Midnight Drive", "artist": "congusbongus", "raw": "midnight-drive.ogg", "sourceUrl": "https://opengameart.org/content/midnight-drive", "license": "CC0 1.0" },
-  { "id": "city-loop", "loops": 2, "title": "City Loop", "artist": "wipics", "raw": "city-loop.mp3", "sourceUrl": "https://opengameart.org/content/city-loop-0", "license": "CC0 1.0" },
-  { "id": "energetic-electro", "title": "Energetic Electro Tune", "artist": "tinyworlds", "raw": "energetic-electro.ogg", "sourceUrl": "https://opengameart.org/content/energetic-electro-tune", "license": "CC0 1.0" },
-  { "id": "neon-hyperdrive", "title": "Neon Hyperdrive", "artist": "adiutorium", "raw": "neon-hyperdrive.mp3", "sourceUrl": "https://opengameart.org/content/neon-hyperdrive", "license": "CC0 1.0" },
-  { "id": "robotic-city", "title": "Robotic City", "artist": "Section31", "raw": "robotic-city.ogg", "sourceUrl": "https://opengameart.org/content/robotic-city", "license": "CC0 1.0" },
-  { "id": "night-prowler", "title": "Night Prowler", "artist": "Section31", "raw": "night-prowler.ogg", "sourceUrl": "https://opengameart.org/content/night-prowler", "license": "CC0 1.0" },
-  { "id": "black-diamond", "title": "Black Diamond", "artist": "joth", "raw": "black-diamond.mp3", "sourceUrl": "https://opengameart.org/content/black-diamond", "license": "CC0 1.0" },
-  { "id": "dance-field", "loops": 2, "title": "Dance Field", "artist": "centurionofwar", "raw": "dance-field.mp3", "sourceUrl": "https://opengameart.org/content/dance-field", "license": "CC0 1.0" },
-  { "id": "hardstyler", "loops": 4, "title": "Hardstyler", "artist": "Of Far Different Nature", "raw": "hardstyler.mp3", "sourceUrl": "https://opengameart.org/content/hardstyler", "license": "CC0 1.0" },
-  { "id": "bouncer", "title": "Bouncer", "artist": "Of Far Different Nature", "raw": "bouncer.mp3", "sourceUrl": "https://opengameart.org/content/bouncer-0", "license": "CC0 1.0" },
-  { "id": "action-track", "title": "Action Track", "artist": "lushogames", "raw": "action-track.mp3", "sourceUrl": "https://opengameart.org/content/action-track", "license": "CC0 1.0" },
-  { "id": "chase", "title": "Chase", "artist": "adiutorium", "raw": "chase.mp3", "sourceUrl": "https://opengameart.org/content/chase-2", "license": "CC0 1.0" },
-  { "id": "mindstream", "title": "MindStream", "artist": "DST", "raw": "mindstream.mp3", "sourceUrl": "https://opengameart.org/content/mindstream", "license": "CC0 1.0" },
-  { "id": "lunar-arrow", "title": "Lunar Arrow", "artist": "mmry", "raw": "lunar-arrow.mp3", "sourceUrl": "https://opengameart.org/content/lunar-arrow", "license": "CC0 1.0" },
-  { "id": "cyber-march", "title": "Cyber March", "artist": "iamoneabe", "raw": "cyber-march.mp3", "sourceUrl": "https://opengameart.org/content/cyber-march", "license": "CC0 1.0" },
-  { "id": "the-lab", "title": "The Lab", "artist": "tricksntraps", "raw": "the-lab.wav", "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1", "license": "CC0 1.0" }
+  {
+    "id": "midnight-drive",
+    "title": "Midnight Drive",
+    "artist": "congusbongus",
+    "raw": "midnight-drive.ogg",
+    "sourceUrl": "https://opengameart.org/content/midnight-drive",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "neon-hyperdrive",
+    "title": "Neon Hyperdrive",
+    "artist": "adiutorium",
+    "raw": "neon-hyperdrive.mp3",
+    "sourceUrl": "https://opengameart.org/content/neon-hyperdrive",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "robotic-city",
+    "title": "Robotic City",
+    "artist": "Section31",
+    "raw": "robotic-city.ogg",
+    "sourceUrl": "https://opengameart.org/content/robotic-city",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "night-prowler",
+    "title": "Night Prowler",
+    "artist": "Section31",
+    "raw": "night-prowler.ogg",
+    "sourceUrl": "https://opengameart.org/content/night-prowler",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "black-diamond",
+    "title": "Black Diamond",
+    "artist": "joth",
+    "raw": "black-diamond.mp3",
+    "sourceUrl": "https://opengameart.org/content/black-diamond",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "dance-field",
+    "loops": 2,
+    "title": "Dance Field",
+    "artist": "centurionofwar",
+    "raw": "dance-field.mp3",
+    "sourceUrl": "https://opengameart.org/content/dance-field",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "action-track",
+    "title": "Action Track",
+    "artist": "lushogames",
+    "raw": "action-track.mp3",
+    "sourceUrl": "https://opengameart.org/content/action-track",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "chase",
+    "title": "Chase",
+    "artist": "adiutorium",
+    "raw": "chase.mp3",
+    "sourceUrl": "https://opengameart.org/content/chase-2",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "mindstream",
+    "title": "MindStream",
+    "artist": "DST",
+    "raw": "mindstream.mp3",
+    "sourceUrl": "https://opengameart.org/content/mindstream",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "lunar-arrow",
+    "title": "Lunar Arrow",
+    "artist": "mmry",
+    "raw": "lunar-arrow.mp3",
+    "sourceUrl": "https://opengameart.org/content/lunar-arrow",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "the-lab",
+    "title": "The Lab",
+    "artist": "tricksntraps",
+    "raw": "the-lab.wav",
+    "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "the-rift",
+    "title": "The Rift",
+    "artist": "vitalezzz",
+    "raw": "the-rift.mp3",
+    "sourceUrl": "https://opengameart.org/content/the-rift",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "achilles",
+    "title": "Achilles",
+    "artist": "zane-little-music",
+    "raw": "achilles.mp3",
+    "sourceUrl": "https://opengameart.org/content/achilles",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "silver-bullet",
+    "title": "Silver Bullet",
+    "artist": "vitalezzz",
+    "raw": "silver-bullet.mp3",
+    "sourceUrl": "https://opengameart.org/content/silver-bullet",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "apparatus-overlord",
+    "title": "Apparatus Overlord",
+    "artist": "vitalezzz",
+    "raw": "apparatus-overlord.mp3",
+    "sourceUrl": "https://opengameart.org/content/apparatus-overlord",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "shortcuts",
+    "title": "Shortcuts",
+    "artist": "zane-little-music",
+    "raw": "shortcuts.mp3",
+    "sourceUrl": "https://opengameart.org/content/shortcuts",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "technological-menace",
+    "title": "Technological Menace",
+    "artist": "umplix",
+    "raw": "technological-menace.mp3",
+    "sourceUrl": "https://opengameart.org/content/technological-menace",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "the-9th-circle",
+    "title": "The 9th Circle",
+    "artist": "joth",
+    "raw": "the-9th-circle.mp3",
+    "sourceUrl": "https://opengameart.org/content/the-9th-circle",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "hot-roadway",
+    "title": "Hot Roadway",
+    "artist": "mintodog",
+    "raw": "hot-roadway.ogg",
+    "sourceUrl": "https://opengameart.org/content/hot-roadway",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "virtual-rush",
+    "title": "Virtual Rush",
+    "artist": "vitalezzz",
+    "raw": "virtual-rush.mp3",
+    "sourceUrl": "https://opengameart.org/content/virtual-rush",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "elevate-instrument-tracks",
+    "title": "Elevate (+ instrument tracks)",
+    "artist": "fupi",
+    "raw": "elevate-instrument-tracks.ogg",
+    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "license": "CC0 1.0"
+  }
 ]

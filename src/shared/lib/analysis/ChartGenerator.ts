@@ -1,6 +1,6 @@
 import { DENSITY_LIMIT, DIFFICULTIES, LANE_COUNT, type Difficulty } from '@/shared/config/constants';
 import { percentile } from '@/shared/lib/math';
-import type { ChartLevel, NoteTuple, SectionTuple, SpellKind } from '@/shared/types/chart';
+import type { ChartLevel, NoteKind, NoteTuple, SectionTuple, SpellKind } from '@/shared/types/chart';
 import { STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
 
 /**
@@ -10,7 +10,8 @@ import { STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
  * that best matches where the music actually hits, bounded by difficulty and by the bar's
  * intensity. Sustained melodic sounds become hold notes, strong downbeats become chords,
  * sixteenth runs move across lanes as stairs / trills / zigzags. Every 8-bar phrase may
- * change the number of lanes (2–6) with the music's energy. Everything sits on the grid.
+ * change the number of lanes (2–6) with the music's energy; intense phrases open with
+ * osu!-style hit circles. Everything sits on the grid, and everything is playable with two thumbs.
  */
 
 export type Category = 'rest' | 'base' | 'sync' | 'eighth' | 'fill' | 'gallop' | 'stream';
@@ -63,14 +64,25 @@ const MAX_NOTES: Record<Difficulty, readonly [number, number, number]> = {
 /** Fewer lanes → fewer notes per bar, or 2-lane streams turn into trill hell. */
 const MAX_NOTES_BY_LANES: Record<number, number> = { 2: 8, 3: 12 };
 
+/** Template notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
+const MIN_NOTE_STRENGTH = 0.06;
+
 const HOLD_CHANCE = [0.85, 0.55, 0.3] as const; // by intensity
 const HOLD_BUDGET: Record<Difficulty, number> = { easy: 3, normal: 2, hard: 2 };
 const MAX_HOLD_SLOTS: Record<Difficulty, number> = { easy: 16, normal: 8, hard: 8 };
-const MAX_ACTIVE_HOLDS = 2;
+/**
+ * Two-finger rule (phones are played with two thumbs): at most ONE hold at a time, chords only
+ * while nothing is held, never more than two simultaneous notes.
+ */
+const MAX_ACTIVE_HOLDS = 1;
+const MAX_CHORD = 2;
 
 /** A spell note every this many bars, starting at bar 4 (after the intro). */
 const SPELL_EVERY_BARS = 8;
 const SPELL_ORDER: readonly SpellKind[] = ['slow', 'heart'];
+
+/** Circles per phrase-start bar by difficulty. */
+const CIRCLES_PER_BAR: Record<Difficulty, number> = { easy: 2, normal: 3, hard: 4 };
 
 /** Lane-count sections: one decision per 8-bar phrase, pools by [quiet, medium, intense]. */
 const PHRASE_BARS = 8;
@@ -105,7 +117,7 @@ interface Event {
   step: number;
   size: number; // chord size
   hold: number; // slots, 0 = tap
-  spell: SpellKind | null;
+  kind: NoteKind | null;
 }
 
 /** Tiny deterministic PRNG (mulberry32). */
@@ -203,7 +215,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   const barSeconds = (60 / analysis.bpm) * 4;
   const allowed = TEMPLATES.filter((t) => ALLOWED[difficulty].includes(t.category) && t.count / barSeconds <= DENSITY_LIMIT[difficulty]);
 
-  // 1. Rhythm per bar.
+  // 1. Rhythm per bar — a template, minus notes on slots where nothing is audible.
   const events: Event[] = [];
   for (const bar of bars) {
     const maxNotes = Math.min(MAX_NOTES[difficulty][bar.intensity], MAX_NOTES_BY_LANES[bar.lanes] ?? 16);
@@ -217,7 +229,9 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     const pool = scored.filter((x) => x.s >= scored[0].s - 0.12);
     const pick = pool[Math.floor(random() * pool.length)].t;
     for (let step = 0; step < bar.slots.length; step++) {
-      if (pick.mask[step] === '1') events.push({ si: bar.start + step, bar, step, size: 1, hold: 0, spell: null });
+      if (pick.mask[step] === '1' && bar.slots[step].strength >= MIN_NOTE_STRENGTH) {
+        events.push({ si: bar.start + step, bar, step, size: 1, hold: 0, kind: null });
+      }
     }
   }
 
@@ -226,10 +240,27 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
     const ev = events.find((e) => e.bar.index === b) ?? events.find((e) => e.bar.index === b + 1);
     if (!ev) continue;
-    ev.spell = SPELL_ORDER[spellCount++ % SPELL_ORDER.length];
+    ev.kind = SPELL_ORDER[spellCount++ % SPELL_ORDER.length];
   }
 
-  // 2. Holds on sustained melodic sounds, chords on strong downbeats.
+  // 1c. Circles: at the start of an intense phrase (chorus / drop) the on-beat notes of the first
+  // bar become osu!-style hit circles — a sudden change of interaction right where the music peaks.
+  for (const bar of bars) {
+    const phraseStart = bar.index % PHRASE_BARS === 0 || (difficulty === 'hard' && bar.index % PHRASE_BARS === PHRASE_BARS / 2);
+    if (!phraseStart || bar.intensity !== 2 || bar.index < 4) continue;
+    let placed = 0;
+    let lastSi = -100;
+    for (const ev of events) {
+      if (ev.bar !== bar) continue;
+      if (ev.step % 4 !== 0 || ev.kind || ev.si - lastSi < 4) continue;
+      ev.kind = 'circle';
+      placed++;
+      lastSi = ev.si;
+      if (placed >= CIRCLES_PER_BAR[difficulty]) break;
+    }
+  }
+
+  // 2. Holds on sustained melodic sounds, chords on strong downbeats — under the two-finger rule.
   const holdBudget = new Map<number, number>();
   const chordBudget = new Map<number, number>();
   const activeHoldEnds: number[] = [];
@@ -241,11 +272,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     const intensity = ev.bar.intensity;
 
     while (activeHoldEnds.length && activeHoldEnds[0] <= ev.si) activeHoldEnds.shift();
-    if (ev.spell) continue; // spells stay plain taps
+    if (ev.kind) continue; // spells and circles stay plain taps
     const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET[difficulty];
     const melodic = slot.low < 0.55;
-    const maxActive = Math.min(MAX_ACTIVE_HOLDS, ev.bar.lanes - 1);
-    if (slot.sustain >= 2 && melodic && budget > 0 && activeHoldEnds.length < maxActive && random() < HOLD_CHANCE[intensity]) {
+    if (slot.sustain >= 2 && melodic && budget > 0 && activeHoldEnds.length < MAX_ACTIVE_HOLDS && random() < HOLD_CHANCE[intensity]) {
       let dur = Math.min(slot.sustain, MAX_HOLD_SLOTS[difficulty]);
       if (difficulty === 'easy') dur = Math.min(dur, gapNext - 1);
       if (dur >= 2) {
@@ -258,6 +288,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     }
 
     if (difficulty === 'easy') continue;
+    if (activeHoldEnds.length) continue; // two-finger rule: one thumb is busy holding
     const onDown = ev.step === 0 || ev.step === 8;
     const accent = slot.strength >= 0.9;
     const inStream = gapPrev <= 1 || gapNext <= 1;
@@ -266,8 +297,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     if (!wantChord || chords >= (difficulty === 'hard' ? 4 : 2)) continue;
     if (difficulty === 'normal' && inStream) continue;
     if (difficulty === 'hard' && inStream && ev.step !== 0) continue;
-    const triple = difficulty === 'hard' && intensity === 2 && ev.step === 0 && slot.strength >= 0.95 && ev.bar.lanes >= 4;
-    ev.size = triple ? 3 : 2;
+    ev.size = MAX_CHORD;
     chordBudget.set(ev.bar.index, chords + 1);
   }
 
@@ -380,13 +410,7 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
     let lanes: number[];
     if (ev.size >= 2) {
       const pair = chordPairs(n, ev.step === 0).find((p) => p.every((l) => candidates.includes(l)));
-      if (pair) {
-        lanes = [...pair];
-        if (ev.size === 3) {
-          const extra = candidates.find((l) => !lanes.includes(l));
-          if (extra !== undefined) lanes.push(extra);
-        }
-      } else lanes = [candidates[Math.floor(random() * candidates.length)]]; // no clean pair → single note
+      lanes = pair ? [...pair] : [candidates[Math.floor(random() * candidates.length)]]; // no clean pair → single note
     } else {
       let lane: number;
       if (gap <= 1 && motion) {
@@ -405,7 +429,8 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
         let pool = candidates.filter((l) => group.includes(l));
         if (!pool.length) pool = candidates;
         const fresh = pool.filter((l) => l !== lastLane);
-        const choose = fresh.length && random() < 0.8 ? fresh : pool;
+        // Circles always move to a fresh lane so a group reads as a path.
+        const choose = fresh.length && (ev.kind === 'circle' || random() < 0.8) ? fresh : pool;
         lane = choose[Math.floor(random() * choose.length)];
       }
       lanes = [lane];
@@ -418,7 +443,7 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
         const dur = round3(slots[endIdx].time - slot.time);
         notes.push([time, lane, dur]);
         heldUntil[lane] = endIdx;
-      } else if (ev.spell) notes.push([time, lane, 0, ev.spell]);
+      } else if (ev.kind) notes.push([time, lane, 0, ev.kind]);
       else notes.push([time, lane]);
     }
     for (let l = 0; l < 8; l++) laneRun[l] = lanes.includes(l) ? laneRun[l] + 1 : 0;

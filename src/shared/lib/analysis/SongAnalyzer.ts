@@ -1,4 +1,4 @@
-import { median, percentile } from '@/shared/lib/math';
+import { lowerBound, median, percentile } from '@/shared/lib/math';
 import { detectOnsets } from './OnsetDetector';
 import { estimateBpm } from './BpmEstimator';
 import { estimateDownbeatPhase, trackBeats } from './BeatTracker';
@@ -32,14 +32,16 @@ export interface SongAnalysis {
   barCount: number;
   duration: number;
   onsetCount: number;
+  /** Share of tracked beats that land on an audible hit (0..1) — rhythm clarity of the grid. */
+  beatConfidence: number;
 }
 
 export type AnalysisStage = 'onsets' | 'beats' | 'grid';
 
 /**
- * Full musical analysis: onsets → tempo → beat tracking → downbeats → sixteenth grid with
- * per-slot onset strength, band colour and sustain. Everything downstream (chart composition)
- * works on this grid, which is why every note lands exactly on the beat.
+ * Full musical analysis: onsets → tempo → beat tracking (with an octave check) → downbeats →
+ * sixteenth grid with per-slot onset strength, band colour and sustain. Everything downstream
+ * (chart composition) works on this grid, which is why every note lands exactly on the beat.
  */
 export function analyzeSong(samples: Float32Array, sampleRate: number, onProgress?: (stage: AnalysisStage, fraction: number) => void): SongAnalysis {
   const det = detectOnsets(samples, { sampleRate, onProgress: (f) => onProgress?.('onsets', f) });
@@ -47,8 +49,40 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
   const est = estimateBpm(det.flux, det.hopSeconds);
   onProgress?.('beats', 0);
 
-  let beatFrames = trackBeats(det.flux, det.hopSeconds, est.bpm);
-  const nominalPeriod = 60 / est.bpm / det.hopSeconds;
+  // Tempo octave check: the autocorrelation may lock onto half/double tempo. Track beats for
+  // bpm, 2·bpm and bpm/2 and keep the grid whose beats sit on hits AND cover the strong onsets.
+  let maxFlux = 0;
+  for (let i = 0; i < det.frameCount; i++) if (det.flux[i] > maxFlux) maxFlux = det.flux[i];
+  const strongOnsets = det.onsets.filter((o) => o.strength >= 0.5).map((o) => o.time);
+  let bpm = est.bpm;
+  let beatFrames: number[] = [];
+  let bestScore = -1;
+  for (const candidate of [est.bpm, est.bpm * 2, est.bpm / 2]) {
+    if (candidate < 60 || candidate > 220) continue;
+    const frames = trackBeats(det.flux, det.hopSeconds, candidate);
+    if (frames.length < 4) continue;
+    const times = frames.map(det.frameTime);
+    let sum = 0;
+    for (const f of frames) sum += det.flux[Math.round(f)] / (maxFlux || 1);
+    const meanStrength = sum / frames.length;
+    let covered = 0;
+    for (const t of strongOnsets) {
+      const i = lowerBound(times, t);
+      const d = Math.min(i < times.length ? Math.abs(times[i] - t) : Infinity, i > 0 ? Math.abs(times[i - 1] - t) : Infinity);
+      if (d <= 0.06) covered++;
+    }
+    const coverage = strongOnsets.length ? covered / strongOnsets.length : 1;
+    const score = meanStrength * coverage;
+    // The estimator's own tempo wins ties; an octave needs to be clearly better to replace it.
+    if (score > bestScore * (bestScore < 0 ? 1 : 1.1)) {
+      bestScore = score;
+      bpm = candidate;
+      beatFrames = frames;
+    }
+  }
+  bpm = Math.round(bpm * 10) / 10;
+
+  const nominalPeriod = 60 / bpm / det.hopSeconds;
   if (beatFrames.length < 4) {
     // Tracking failed (silence / noise): fall back to a regular grid from the tempo estimate.
     beatFrames = [];
@@ -132,13 +166,17 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
   }
   onProgress?.('grid', 1);
 
+  const onBeat = slots.filter((s) => s.step % STEPS_PER_BEAT === 0);
+  const beatConfidence = onBeat.length ? onBeat.filter((s) => s.strength >= 0.3).length / onBeat.length : 0;
+
   return {
-    bpm: est.bpm,
+    bpm,
     confidence: est.confidence,
     beats: aligned.map((f) => Math.round(det.frameTime(f) * 1000) / 1000),
     slots,
     barCount: slots.length ? slots[slots.length - 1].bar + 1 : 0,
     duration,
     onsetCount: det.onsets.length,
+    beatConfidence,
   };
 }

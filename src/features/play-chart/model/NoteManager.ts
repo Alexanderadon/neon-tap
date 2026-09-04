@@ -1,6 +1,6 @@
 import { HIT_WINDOWS, MAX_LANES } from '@/shared/config/constants';
 import { judgeDelta, type Judgement } from '@/entities/score';
-import type { ParsedNote, SpellKind } from '@/entities/chart';
+import type { NoteKind, ParsedNote } from '@/entities/chart';
 
 export const enum NoteState {
   Pending = 0,
@@ -17,7 +17,9 @@ export interface PooledNote {
   lane: number;
   duration: number;
   endTime: number;
-  spell: SpellKind | null;
+  kind: NoteKind | null;
+  /** Circle group number (1-based) for kind === 'circle', else 0. */
+  seq: number;
   /** Lane count of the section this note belongs to (for rendering geometry). */
   lanes: number;
   state: NoteState;
@@ -68,7 +70,7 @@ export class NoteManager {
   constructor(capacity = POOL_SIZE, opts: NoteManagerOptions = {}) {
     this.assistWindow = opts.assistWindow ?? 0;
     for (let i = 0; i < capacity; i++) {
-      this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, spell: null, lanes: 4, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0, armed: false });
+      this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, kind: null, seq: 0, lanes: 4, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0, armed: false });
     }
     for (let l = 0; l < MAX_LANES; l++) this.laneNotes.push(new Int32Array(capacity));
   }
@@ -86,7 +88,8 @@ export class NoteManager {
       n.lane = src.lane;
       n.duration = src.duration;
       n.endTime = src.time + src.duration;
-      n.spell = src.spell;
+      n.kind = src.kind;
+      n.seq = src.seq;
       n.lanes = src.lanes;
       n.state = NoteState.Pending;
       n.judgement = null;

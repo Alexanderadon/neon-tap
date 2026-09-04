@@ -3,7 +3,7 @@ import { hexToRgba, renderBeam, renderGlowDot, renderHeart, renderNoteSprite, re
 import { ParticlePool, ScreenShake, LaneFlash } from '@/shared/lib/render';
 import type { Judgement } from '@/entities/score';
 import type { SpellKind } from '@/entities/chart';
-import { NoteState, type NoteManager } from '../model/NoteManager';
+import { NoteState, type NoteManager, type PooledNote } from '../model/NoteManager';
 import { computeLayout, type Layout } from './layout';
 
 export interface FrameState {
@@ -52,6 +52,11 @@ interface LaneSet {
   spells: Record<SpellKind, NoteSprite>;
 }
 
+/** Circles hang in the upper part of the field; three staggered heights so a group reads as a path. */
+export function circleY(L: Layout, seq: number): number {
+  return L.hitY * [0.34, 0.5, 0.42][(Math.max(1, seq) - 1) % 3];
+}
+
 /**
  * Canvas 2D renderer. Static geometry (lanes, hit line, vignette) is rasterised once per lane
  * count into an offscreen layer; per-frame work is sprite blits + a few fills. No allocations
@@ -70,7 +75,7 @@ export class Renderer {
   private heartOn!: NoteSprite;
   private heartOff!: NoteSprite;
   private heartSize = 18;
-  // Expanding rings on perfect hits (SoA pool).
+  // Expanding rings on perfect hits / circle hits (SoA pool).
   private readonly ringX = new Float32Array(RING_POOL);
   private readonly ringY = new Float32Array(RING_POOL);
   private readonly ringAge = new Float32Array(RING_POOL).fill(1);
@@ -227,9 +232,11 @@ export class Renderer {
     return layer;
   }
 
-  /** Visual feedback for a judgement at the hit line (in the note's own lane geometry). */
-  hitFeedback(lane: number, lanes: number, judgement: Judgement): void {
-    const { laneX, laneWidth, hitY } = this.set(lanes).layout;
+  /** Visual feedback for a judgement at the hit line (or at a circle when `circleSeq` > 0), in the note's own lane geometry. */
+  hitFeedback(lane: number, lanes: number, judgement: Judgement, circleSeq = 0): void {
+    const L = this.set(lanes).layout;
+    const { laneX, laneWidth } = L;
+    const y = circleSeq > 0 ? circleY(L, circleSeq) : L.hitY;
     const cx = laneX + (lane + 0.5) * laneWidth;
     if (judgement === 'miss') {
       this.shake.trigger(3);
@@ -237,16 +244,18 @@ export class Renderer {
     }
     this.flash.trigger(lane);
     const color = lane % LANE_COLORS.length;
-    const count = judgement === 'perfect' ? 10 : judgement === 'great' ? 7 : 4;
-    this.particles.emit(cx, hitY, count, color, 260, 5, 0.45);
-    if (judgement === 'perfect') {
-      const i = this.ringCursor;
-      this.ringCursor = (this.ringCursor + 1) % RING_POOL;
-      this.ringX[i] = cx;
-      this.ringY[i] = hitY;
-      this.ringAge[i] = 0;
-      this.ringColor[i] = color;
-    }
+    const count = (judgement === 'perfect' ? 10 : judgement === 'great' ? 7 : 4) * (circleSeq > 0 ? 3 : 1);
+    this.particles.emit(cx, y, count, color, circleSeq > 0 ? 380 : 260, 5, 0.45);
+    if (judgement === 'perfect' || circleSeq > 0) this.ring(cx, y, color);
+  }
+
+  private ring(x: number, y: number, color: number): void {
+    const i = this.ringCursor;
+    this.ringCursor = (this.ringCursor + 1) % RING_POOL;
+    this.ringX[i] = x;
+    this.ringY[i] = y;
+    this.ringAge[i] = 0;
+    this.ringColor[i] = color;
   }
 
   /** Catching a spell: a big burst in the spell's colour. */
@@ -353,6 +362,11 @@ export class Renderer {
       const set = n.lanes === this.current ? cur : this.set(n.lanes);
       const lw = set.layout.laneWidth;
       const cx = set.layout.laneX + (n.lane + 0.5) * lw;
+      if (n.kind === 'circle') {
+        this.drawCircle(set, n, cx, s);
+        visible++;
+        continue;
+      }
       const y = hitY - (n.time - s.songTime) * pxPerSec;
       if (n.duration > 0) {
         const yEnd = hitY - (n.endTime - s.songTime) * pxPerSec;
@@ -373,8 +387,8 @@ export class Renderer {
       }
       if (y < -60 || y > height + 60) continue;
       if (n.state === NoteState.Missed) ctx.globalAlpha = 0.3;
-      if (n.spell) {
-        const sp = set.spells[n.spell];
+      if (n.kind === 'slow' || n.kind === 'heart') {
+        const sp = set.spells[n.kind];
         const bob = 1 + 0.06 * Math.sin(s.songTime * 6 + i);
         ctx.save();
         ctx.translate(cx, y);
@@ -396,7 +410,7 @@ export class Renderer {
     }
     this.visibleNotes = visible;
 
-    // Perfect rings.
+    // Perfect / circle rings.
     ctx.lineWidth = 2;
     for (let i = 0; i < RING_POOL; i++) {
       const a = this.ringAge[i];
@@ -435,20 +449,62 @@ export class Renderer {
     this.drawHud(s);
   }
 
+  /**
+   * osu!-style hit circle: sits still at a fixed height in its lane while an approach ring shrinks
+   * onto it. Tap (or press the lane key) when the ring meets the circle. Numbered within its group.
+   */
+  private drawCircle(set: LaneSet, n: PooledNote, cx: number, s: FrameState): void {
+    const ctx = this.ctx;
+    const L = set.layout;
+    const cy = circleY(L, n.seq);
+    const r = Math.max(16, Math.min(L.laneWidth * 0.42, 40));
+    const dt = n.time - s.songTime;
+    if (dt > s.approachTime || dt < -0.4) return;
+    const t = Math.max(0, Math.min(1, dt / s.approachTime));
+    const color = LANE_COLORS[n.lane % LANE_COLORS.length];
+    const missed = n.state === NoteState.Missed;
+    const fade = dt < 0 ? Math.max(0, 1 + dt / 0.4) : 1;
+    const base = (missed ? 0.3 : 1) * fade;
+    ctx.globalAlpha = base;
+    const dot = this.glowDots[n.lane % LANE_COLORS.length];
+    ctx.drawImage(dot.canvas, cx - r * 1.6, cy - r * 1.6, r * 3.2, r * 3.2);
+    ctx.fillStyle = 'rgba(5,6,10,0.92)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = Math.max(3, r * 0.14);
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    if (!missed) {
+      // Approach ring: 2.6 r → r as the note arrives.
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = (0.35 + 0.65 * (1 - t)) * fade;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * (1 + 1.6 * t), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = base;
+    }
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 ${Math.round(r * 1.1)}px ${FONT}`;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(String(n.seq || 1), cx, cy + 1);
+    ctx.globalAlpha = 1;
+  }
+
   /** Lane-count change: white flash, scan line, glitch bands and a "×N" pop. */
   private drawTransitionFx(to: number, t: number): void {
     const ctx = this.ctx;
     const { width, height, laneX, laneAreaWidth } = this.layout;
     ctx.fillStyle = `rgba(255,255,255,${(0.55 * Math.max(0, 1 - t * 4)).toFixed(3)})`;
     ctx.fillRect(0, 0, width, height);
-    // Scan line sweeping down.
     const sy = t * height;
     const grad = ctx.createLinearGradient(0, sy - 40, 0, sy + 4);
     grad.addColorStop(0, 'rgba(0,240,255,0)');
     grad.addColorStop(1, 'rgba(0,240,255,0.7)');
     ctx.fillStyle = grad;
     ctx.fillRect(laneX, sy - 40, laneAreaWidth, 44);
-    // Glitch bands.
     if (t < 0.6) {
       for (let i = 0; i < 6; i++) {
         const y = ((i * 977 + Math.floor(t * 40) * 131) % height) | 0;
@@ -458,7 +514,6 @@ export class Renderer {
         ctx.fillRect(laneX + dx, y, laneAreaWidth, h);
       }
     }
-    // "×N" pop.
     const pop = Math.min(1, t * 2.5);
     const scale = 2.6 - 1.6 * (1 - (1 - pop) ** 3);
     ctx.textAlign = 'center';

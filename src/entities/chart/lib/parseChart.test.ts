@@ -5,12 +5,20 @@ describe('parseChartLevel', () => {
   it('expands tuples, sorts by time and tags the section lane count', () => {
     const notes = parseChartLevel({ stars: 1, notes: [[1, 2], [0.5, 0, 0.4], [1, 1], [2, 3, 0, 'slow']] });
     expect(notes).toEqual([
-      { time: 0.5, lane: 0, duration: 0.4, spell: null, lanes: 4 },
-      { time: 1, lane: 1, duration: 0, spell: null, lanes: 4 },
-      { time: 1, lane: 2, duration: 0, spell: null, lanes: 4 },
-      { time: 2, lane: 3, duration: 0, spell: 'slow', lanes: 4 },
+      { time: 0.5, lane: 0, duration: 0.4, kind: null, seq: 0, lanes: 4 },
+      { time: 1, lane: 1, duration: 0, kind: null, seq: 0, lanes: 4 },
+      { time: 1, lane: 2, duration: 0, kind: null, seq: 0, lanes: 4 },
+      { time: 2, lane: 3, duration: 0, kind: 'slow', seq: 0, lanes: 4 },
     ]);
     expect(countJudgements(notes)).toBe(5);
+  });
+
+  it('numbers circle groups 1, 2, 3 and restarts after a gap', () => {
+    const notes = parseChartLevel({
+      stars: 1,
+      notes: [[1, 0, 0, 'circle'], [1.5, 2, 0, 'circle'], [2, 1, 0, 'circle'], [10, 3, 0, 'circle'], [10.5, 0, 0, 'circle']],
+    });
+    expect(notes.map((n) => n.seq)).toEqual([1, 2, 3, 1, 2]);
   });
 
   it('resolves lane counts from sections and validates lanes against them', () => {
@@ -25,10 +33,11 @@ describe('parseChartLevel', () => {
     expect(() => parseChartLevel({ ...level, notes: [[0.5, 3]] })).toThrow(/outside 2-lane/);
   });
 
-  it('rejects invalid lanes, spells and sections', () => {
+  it('rejects invalid lanes, kinds, hold-specials and sections', () => {
     expect(() => parseChartLevel({ stars: 1, notes: [[1, 4]] })).toThrow();
     expect(() => parseChartLevel({ stars: 1, notes: [[-1, 0]] })).toThrow();
     expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 0, 'nope' as 'slow']] })).toThrow();
+    expect(() => parseChartLevel({ stars: 1, notes: [[1, 0, 0.5, 'circle']] })).toThrow(/cannot be holds/);
     expect(() => parseSections({ stars: 1, notes: [], sections: [[0, 7]] })).toThrow();
   });
 });
