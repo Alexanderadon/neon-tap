@@ -122,8 +122,9 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
         e.preventDefault();
         if (s.isPaused) s.resume();
         else s.pause();
-      } else if (e.code === 'F3') {
+      } else if (e.code === 'F9') {
         e.preventDefault();
+        s.debugSlow();
       }
     };
     const onVisibility = () => {

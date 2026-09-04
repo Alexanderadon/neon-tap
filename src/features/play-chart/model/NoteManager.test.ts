@@ -98,3 +98,16 @@ describe('NoteManager', () => {
     });
   });
 });
+
+describe('circles', () => {
+  it('are hit only from the circle bucket, never by lane keys', () => {
+    const nm = new NoteManager(50);
+    const events: JudgeEvent[] = [];
+    nm.onJudge = (e) => events.push(e);
+    nm.load([{ time: 1, lane: 2, duration: 0, kind: 'circle', seq: 1, lanes: 4 }]);
+    expect(nm.press(2, 1.0)).toBeNull(); // lane key under the circle does nothing
+    expect(nm.pool[0].state).toBe(NoteState.Pending);
+    expect(nm.press(7, 1.02)).toBe('perfect'); // CIRCLE_BUCKET
+    expect(events).toHaveLength(1);
+  });
+});

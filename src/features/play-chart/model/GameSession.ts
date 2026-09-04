@@ -221,6 +221,12 @@ export class GameSession {
     return this.paused;
   }
 
+  /** Dev: trigger the slow-motion spell now (only exposed in no-fail sessions). */
+  debugSlow(): void {
+    if (!this.opts.noFail || !this.started || this.paused || this.finished) return;
+    this.castSpell('slow', 0, this.renderer.lanes);
+  }
+
   destroy(): void {
     this.destroyed = true;
     cancelAnimationFrame(this.raf);
