@@ -4,11 +4,22 @@
  * All note logic derives from `audioContext.currentTime` (passed in as `now`), never from
  * `performance.now()` — the latter drifts relative to the audio hardware clock and desyncs
  * within ~30 s. `requestAnimationFrame` is used for drawing only.
+ *
+ * Playback rate can change (slow-motion spell): song position is the integral of the rate over
+ * audio time, with linear ramps integrated analytically so clock and music stay sample-locked.
  */
 export class Clock {
   private startTime = 0;
   private pausedAt: number | null = null;
   private running = false;
+  // Rate model: position(t) = anchorP + ∫ rate over [anchorA, t]; rate ramps linearly from
+  // rateFrom to rateTo over [rampStart, rampEnd] and is constant outside.
+  private anchorA = 0;
+  private anchorP = 0;
+  private rateFrom = 1;
+  private rateTo = 1;
+  private rampStart = 0;
+  private rampEnd = 0;
 
   constructor(
     private readonly now: () => number,
@@ -16,11 +27,15 @@ export class Clock {
     public userOffset = 0,
   ) {}
 
-  /** `startTime` is the audio-clock instant that corresponds to song position 0. */
-  start(startTime: number): void {
+  /** `startTime` is the audio-clock instant that corresponds to song position `position` (default 0). */
+  start(startTime: number, position = 0): void {
     this.startTime = startTime;
     this.pausedAt = null;
     this.running = true;
+    this.anchorA = startTime;
+    this.anchorP = position;
+    this.rateFrom = this.rateTo = 1;
+    this.rampStart = this.rampEnd = startTime;
   }
 
   pause(): void {
@@ -28,10 +43,14 @@ export class Clock {
     this.pausedAt = this.now();
   }
 
-  /** Resume at the same song position: shift startTime by the pause duration. */
+  /** Resume at the same song position: shift every audio-time anchor by the pause duration. */
   resume(): void {
     if (this.pausedAt === null) return;
-    this.startTime += this.now() - this.pausedAt;
+    const gap = this.now() - this.pausedAt;
+    this.startTime += gap;
+    this.anchorA += gap;
+    this.rampStart += gap;
+    this.rampEnd += gap;
     this.pausedAt = null;
   }
 
@@ -48,20 +67,57 @@ export class Clock {
     return this.pausedAt !== null;
   }
 
+  /** Current playback rate at audio time `t` (default now). */
+  rateAt(t = this.now()): number {
+    if (t <= this.rampStart) return this.rateFrom;
+    if (t >= this.rampEnd) return this.rateTo;
+    return this.rateFrom + ((this.rateTo - this.rateFrom) * (t - this.rampStart)) / (this.rampEnd - this.rampStart);
+  }
+
+  /** Ramp the rate linearly to `rate` over `duration` seconds starting at audio time `at` (default now). */
+  setRate(rate: number, duration = 0, at = this.now()): void {
+    const p = this.positionAt(at);
+    const r = this.rateAt(at);
+    this.anchorA = at;
+    this.anchorP = p;
+    this.rateFrom = r;
+    this.rateTo = rate;
+    this.rampStart = at;
+    this.rampEnd = at + Math.max(0, duration);
+  }
+
+  /** Song position (seconds of audio buffer) at audio time `t`, ignoring the user offset. */
+  positionAt(t: number): number {
+    if (!this.running) return 0;
+    if (t <= this.rampStart) return this.anchorP + (t - this.anchorA) * this.rateFrom;
+    const base = this.anchorP + (this.rampStart - this.anchorA) * this.rateFrom;
+    const T = this.rampEnd - this.rampStart;
+    if (T > 0 && t < this.rampEnd) {
+      const u = t - this.rampStart;
+      return base + this.rateFrom * u + ((this.rateTo - this.rateFrom) * u * u) / (2 * T);
+    }
+    const atEnd = base + ((this.rateFrom + this.rateTo) / 2) * T;
+    return atEnd + (t - this.rampEnd) * this.rateTo;
+  }
+
+  /** Song position now (buffer seconds, no offset) — use for pausing/resuming the audio source. */
+  position(): number {
+    return this.positionAt(this.pausedAt ?? this.now());
+  }
+
   /** Song time in seconds, corrected by the user's calibrated offset. */
   songTime(): number {
     if (!this.running) return 0;
-    const now = this.pausedAt ?? this.now();
-    return now - this.startTime - this.userOffset;
+    return this.position() - this.userOffset;
   }
 
   /** Convert an absolute audio-clock timestamp (e.g. an input event) to song time. */
   toSongTime(audioTime: number): number {
-    return audioTime - this.startTime - this.userOffset;
+    return this.positionAt(audioTime) - this.userOffset;
   }
 
-  /** Convert song time to the absolute audio-clock instant. */
+  /** Convert song time to the absolute audio-clock instant (constant-rate approximation). */
   toAudioTime(songTime: number): number {
-    return songTime + this.startTime + this.userOffset;
+    return this.anchorA + (songTime + this.userOffset - this.anchorP) / this.rateAt();
   }
 }

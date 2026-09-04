@@ -56,20 +56,31 @@ const ALLOWED: Record<Difficulty, readonly Category[]> = {
 
 /** Max notes per bar by [quiet, medium, intense]. */
 const MAX_NOTES: Record<Difficulty, readonly [number, number, number]> = {
-  easy: [2, 4, 6],
-  normal: [4, 8, 12],
-  hard: [6, 12, 16],
+  easy: [2, 3, 4],
+  normal: [3, 6, 8],
+  hard: [4, 8, 12],
 };
+
+/** Slots of silence before a lane-count change so the player can move their hands (2 beats). */
+const SECTION_GAP_SLOTS = 8;
 
 /** Fewer lanes → fewer notes per bar, or 2-lane streams turn into trill hell. */
 const MAX_NOTES_BY_LANES: Record<number, number> = { 2: 8, 3: 12 };
 
 /** Template notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
-const MIN_NOTE_STRENGTH = 0.06;
+const MIN_NOTE_STRENGTH = 0.1;
 
-const HOLD_CHANCE = [0.85, 0.55, 0.3] as const; // by intensity
-const HOLD_BUDGET: Record<Difficulty, number> = { easy: 3, normal: 2, hard: 2 };
-const MAX_HOLD_SLOTS: Record<Difficulty, number> = { easy: 16, normal: 8, hard: 8 };
+/**
+ * Salience = what a listener would tap along to: kicks, snares and melody count fully,
+ * hi-hat-only ticks (energy almost all above 2 kHz) count much less.
+ */
+export function salience(s: Slot): number {
+  return s.strength * (0.5 + 0.5 * (1 - s.high));
+}
+
+const HOLD_CHANCE = [0.9, 0.7, 0.45] as const; // by intensity
+const HOLD_BUDGET: Record<Difficulty, number> = { easy: 3, normal: 3, hard: 3 };
+const MAX_HOLD_SLOTS: Record<Difficulty, number> = { easy: 16, normal: 16, hard: 16 };
 /**
  * Two-finger rule (phones are played with two thumbs): at most ONE hold at a time, chords only
  * while nothing is held, never more than two simultaneous notes.
@@ -195,8 +206,8 @@ export function scoreTemplate(t: Template, strength: readonly number[], intensit
   let s = 0;
   for (let i = 0; i < STEPS_PER_BAR; i++) {
     const v = strength[i] ?? 0;
-    if (t.mask[i] === '1') s += v - 0.3;
-    else s -= 0.5 * Math.max(0, v - 0.55);
+    if (t.mask[i] === '1') s += v - 0.4;
+    else s -= 0.8 * Math.max(0, v - 0.5);
   }
   s += 0.03 * t.count * (intensity - 1);
   if (phraseEnd && t.category === 'fill') s += 0.15;
@@ -219,7 +230,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   const events: Event[] = [];
   for (const bar of bars) {
     const maxNotes = Math.min(MAX_NOTES[difficulty][bar.intensity], MAX_NOTES_BY_LANES[bar.lanes] ?? 16);
-    const strength = bar.slots.map((s) => s.strength);
+    const strength = bar.slots.map(salience);
     const phraseEnd = bar.index % 4 === 3;
     const scored = allowed
       .filter((t) => t.count <= maxNotes)
@@ -229,11 +240,19 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     const pool = scored.filter((x) => x.s >= scored[0].s - 0.12);
     const pick = pool[Math.floor(random() * pool.length)].t;
     for (let step = 0; step < bar.slots.length; step++) {
-      if (pick.mask[step] === '1' && bar.slots[step].strength >= MIN_NOTE_STRENGTH) {
+      if (pick.mask[step] === '1' && salience(bar.slots[step]) >= MIN_NOTE_STRENGTH) {
         events.push({ si: bar.start + step, bar, step, size: 1, hold: 0, kind: null });
       }
     }
   }
+
+  // 1a. Breathing room before every lane-count change, and a hard per-second cap (sliding window).
+  const lastBarOfSection = new Set<number>();
+  for (let i = 0; i + 1 < bars.length; i++) if (bars[i + 1].lanes !== bars[i].lanes) lastBarOfSection.add(bars[i].index);
+  let filtered = events.filter((ev) => !(lastBarOfSection.has(ev.bar.index) && ev.step >= STEPS_PER_BAR - SECTION_GAP_SLOTS));
+  filtered = capDensity(filtered, slots, DENSITY_LIMIT[difficulty]);
+  events.length = 0;
+  events.push(...filtered);
 
   // 1b. Spell notes: the first note of every 8th bar (from bar 4) alternates slow / heart.
   let spellCount = 0;
@@ -278,6 +297,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     if (slot.sustain >= 2 && melodic && budget > 0 && activeHoldEnds.length < MAX_ACTIVE_HOLDS && random() < HOLD_CHANCE[intensity]) {
       let dur = Math.min(slot.sustain, MAX_HOLD_SLOTS[difficulty]);
       if (difficulty === 'easy') dur = Math.min(dur, gapNext - 1);
+      // A hold must end before the silence that precedes a lane-count change.
+      const barEnd = ev.bar.start + ev.bar.slots.length;
+      if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
+      else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd + STEPS_PER_BAR - SECTION_GAP_SLOTS - ev.si);
       if (dur >= 2) {
         ev.hold = dur;
         holdBudget.set(ev.bar.index, budget - 1);
@@ -304,6 +327,26 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   // 3. Lanes.
   const notes = assignLanes(events, slots, difficulty, random);
   return { stars: rateStars(notes), notes, sections };
+}
+
+/** Keep at most `limit` distinct note times in any 1-second window, dropping the least salient extras. */
+function capDensity(events: Event[], slots: readonly Slot[], limit: number): Event[] {
+  const kept: Event[] = [];
+  for (const ev of events) {
+    kept.push(ev);
+    const t = slots[ev.si].time;
+    const window = kept.filter((e) => slots[e.si].time > t - 1);
+    if (window.length <= limit) continue;
+    // Drop the weakest in the window (never the one on a downbeat if avoidable).
+    let weakest = window[0];
+    for (const e of window) {
+      const a = salience(slots[e.si]) + (e.step % 4 === 0 ? 0.3 : 0);
+      const b = salience(slots[weakest.si]) + (weakest.step % 4 === 0 ? 0.3 : 0);
+      if (a < b) weakest = e;
+    }
+    kept.splice(kept.indexOf(weakest), 1);
+  }
+  return kept;
 }
 
 type MotionKind = 'up' | 'down' | 'zigzag' | 'trill' | 'jack';

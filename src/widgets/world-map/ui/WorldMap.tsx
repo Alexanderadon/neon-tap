@@ -30,6 +30,7 @@ export function WorldMap() {
               {dict.difficultyHint[d]}
             </span>
           ))}
+          <span className="legend-note">{dict.mechanicsHint}</span>
           <span className="legend-note">{dict.twoFingers}</span>
         </div>
       </div>

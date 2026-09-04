@@ -80,6 +80,14 @@ export function SettingsPanel() {
       </div>
 
       <label className="settings-check">
+        <input type="checkbox" checked={s.autoOffset} onChange={(e) => updateSettings({ autoOffset: e.target.checked })} />
+        <span>
+          {dict.settingsAutoOffset}
+          <span className="settings-hint"> · {dict.settingsAutoOffsetHint}</span>
+        </span>
+      </label>
+
+      <label className="settings-check">
         <input type="checkbox" checked={s.touchAssist} onChange={(e) => updateSettings({ touchAssist: e.target.checked })} />
         <span>
           {dict.settingsTouchAssist}

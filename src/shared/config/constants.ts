@@ -1,5 +1,5 @@
 /** Judgement windows in seconds (GDD §4). Outside `good` → miss. */
-export const HIT_WINDOWS = { perfect: 0.045, great: 0.09, good: 0.135 } as const;
+export const HIT_WINDOWS = { perfect: 0.05, great: 0.1, good: 0.15 } as const;
 
 /** Default lane count; sections of a chart may switch between MIN_LANES and MAX_LANES. */
 export const LANE_COUNT = 4;
@@ -34,7 +34,7 @@ export const KEY_LABELS: Record<number, readonly string[]> = {
 export const KEY_BINDINGS: Record<string, number> = KEY_LAYOUTS[4];
 
 /** Seconds a note needs to travel the full lane at scroll speed 1.0×. */
-export const BASE_APPROACH_TIME = 1.6;
+export const BASE_APPROACH_TIME = 1.9;
 
 export const SCROLL_SPEED_RANGE = { min: 1, max: 3, step: 0.1 } as const;
 export const OFFSET_RANGE_MS = { min: -300, max: 300 } as const;
@@ -58,6 +58,8 @@ export const RANK_THRESHOLDS = [
 ] as const;
 
 export const CALIBRATION_BPM = 120;
+/** Bump to force every player through calibration again (v2: mobile audio was silent before, offsets were garbage). */
+export const CALIBRATION_VERSION = 2;
 export const CALIBRATION_TAPS = 16;
 
 export const DIFFICULTIES = ['easy', 'normal', 'hard'] as const;
@@ -70,4 +72,4 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 export const UNLOCK_ALL_WORLDS = true;
 
 /** Max notes per second per difficulty (GDD §4, autogenerator step 8). */
-export const DENSITY_LIMIT: Record<Difficulty, number> = { easy: 3, normal: 6, hard: 10 };
+export const DENSITY_LIMIT: Record<Difficulty, number> = { easy: 2, normal: 4, hard: 7 };

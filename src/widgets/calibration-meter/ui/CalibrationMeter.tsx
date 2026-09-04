@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CALIBRATION_TAPS } from '@/shared/config/constants';
+import { CALIBRATION_TAPS, CALIBRATION_VERSION } from '@/shared/config/constants';
 import { dict, fmt } from '@/shared/i18n';
 import { audioEngine, preloadSfx, sfxClick } from '@/shared/lib/audio';
 import { Button } from '@/shared/ui';
@@ -83,7 +83,7 @@ export function CalibrationMeter({ onDone }: Props) {
   }, [phase]);
 
   const save = () => {
-    updateSettings({ audioOffsetMs: offsetMs, calibrated: true });
+    updateSettings({ audioOffsetMs: offsetMs, calibrated: true, calibrationVersion: CALIBRATION_VERSION });
     onDone();
   };
 
@@ -98,7 +98,7 @@ export function CalibrationMeter({ onDone }: Props) {
           <Button
             variant="ghost"
             onClick={() => {
-              updateSettings({ calibrated: true });
+              updateSettings({ calibrated: true, calibrationVersion: CALIBRATION_VERSION });
               onDone();
             }}
           >

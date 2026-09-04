@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { navigate, useRouteKey, useScreen } from '@/shared/lib/router';
 import { getSettings } from '@/entities/settings';
+import { CALIBRATION_VERSION } from '@/shared/config/constants';
 import { MenuPage } from '@/pages/menu';
 import { GamePage } from '@/pages/game';
 import { ResultPage } from '@/pages/result';
@@ -16,7 +17,8 @@ export function App() {
 
   // First launch → latency calibration (GDD §4, critical requirement 2).
   useEffect(() => {
-    if (!getSettings().calibrated) navigate('calibration');
+    const s = getSettings();
+    if (!s.calibrated || s.calibrationVersion < CALIBRATION_VERSION) navigate('calibration');
   }, []);
 
   let page;
