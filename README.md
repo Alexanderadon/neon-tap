@@ -71,11 +71,11 @@ npm run lint       # eslint + проверка FSD
 npm run build
 ```
 
-Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:voice`, `assets:charts` — см. `CLAUDE.md`.
+Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses` — см. `CLAUDE.md`.
 
 ## Лицензии на музыку
 
-Все 16 встроенных треков — **CC0 1.0** с OpenGameArt.org, авторы и ссылки в [`public/music/LICENSES.md`](public/music/LICENSES.md). Реестр источников — `assets-src/tracks.json`, из него скриптом генерируются и файлы, и отчёт. Озвучка синтезирована локально (Windows SAPI), звуковые эффекты синтезируются в рантайме Web Audio — сэмплов в репозитории нет.
+Все 16 встроенных треков — **CC0 1.0** с OpenGameArt.org, авторы и ссылки в [`public/music/LICENSES.md`](public/music/LICENSES.md). Звуковые эффекты — CC0-сэмплы из паков Kenney (удары по нотам — round-robin из 5 вариаций, чтобы не было «пулемёта»). Озвучка — нейросетевые голоса ru-RU Dmitry / Svetlana, выбираются в настройках. Реестры источников — `assets-src/tracks.json` и `assets-src/sfx.json`, из них скриптами генерируются и файлы, и отчёт по лицензиям.
 
 Пользовательские файлы для «Своей музыки» обрабатываются в браузере и никуда не отправляются.
 

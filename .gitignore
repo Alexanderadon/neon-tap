@@ -7,6 +7,7 @@ dist-ssr
 coverage
 assets-src/music-raw/
 assets-src/voice-raw/
+assets-src/sfx-raw/
 *.log
 *.tsbuildinfo
 

@@ -1,0 +1,24 @@
+{
+  "packs": {
+    "impact": { "name": "Kenney — Impact Sounds", "url": "https://kenney.nl/assets/impact-sounds", "license": "CC0 1.0", "dir": "kenney_impact-sounds/Audio" },
+    "interface": { "name": "Kenney — Interface Sounds", "url": "https://kenney.nl/assets/interface-sounds", "license": "CC0 1.0", "dir": "kenney_interface-sounds/Audio" },
+    "ui": { "name": "Kenney — UI Audio", "url": "https://kenney.nl/assets/ui-audio", "license": "CC0 1.0", "dir": "kenney_ui-audio/Audio" }
+  },
+  "samples": {
+    "hit-0": { "pack": "impact", "file": "impactGeneric_light_000.ogg", "role": "note hit (round-robin 1/5)" },
+    "hit-1": { "pack": "impact", "file": "impactGeneric_light_001.ogg", "role": "note hit (round-robin 2/5)" },
+    "hit-2": { "pack": "impact", "file": "impactGeneric_light_002.ogg", "role": "note hit (round-robin 3/5)" },
+    "hit-3": { "pack": "impact", "file": "impactGeneric_light_003.ogg", "role": "note hit (round-robin 4/5)" },
+    "hit-4": { "pack": "impact", "file": "impactGeneric_light_004.ogg", "role": "note hit (round-robin 5/5)" },
+    "miss-0": { "pack": "impact", "file": "impactSoft_heavy_000.ogg", "role": "miss thud (round-robin 1/3)" },
+    "miss-1": { "pack": "impact", "file": "impactSoft_heavy_002.ogg", "role": "miss thud (round-robin 2/3)" },
+    "miss-2": { "pack": "impact", "file": "impactSoft_heavy_004.ogg", "role": "miss thud (round-robin 3/3)" },
+    "combo-break-0": { "pack": "impact", "file": "impactGlass_medium_001.ogg", "role": "combo shatters (1/2)" },
+    "combo-break-1": { "pack": "impact", "file": "impactGlass_medium_003.ogg", "role": "combo shatters (2/2)" },
+    "metronome": { "pack": "interface", "file": "click_001.ogg", "role": "calibration metronome" },
+    "metronome-accent": { "pack": "interface", "file": "drop_001.ogg", "role": "calibration metronome downbeat" },
+    "milestone": { "pack": "interface", "file": "confirmation_002.ogg", "role": "combo milestone chime" },
+    "ui": { "pack": "ui", "file": "click2.ogg", "role": "button click" },
+    "rank": { "pack": "interface", "file": "confirmation_001.ogg", "role": "result screen rank reveal" }
+  }
+}

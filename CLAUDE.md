@@ -23,8 +23,9 @@ React 18 + TypeScript (strict) + Vite. Архитектура — **Feature-Slic
 6. Каждый модуль в `shared/lib/*`, `entities/*/model` и `features/*/model` покрыт юнит-тестами
    (vitest, `src/**/*.test.ts`) до интеграции в UI.
 7. Русский текст в UI — только через словарь `shared/i18n/ru.ts`, не хардкодом.
-8. Каждый трек в `public/music/` имеет строку в `public/music/LICENSES.md` с URL источника.
-   Источник правды — `assets-src/tracks.json`; `LICENSES.md` генерируется скриптом.
+8. Каждый трек в `public/music/` и каждый сэмпл в `public/sfx/` имеет строку в `public/music/LICENSES.md`
+   с URL источника. Источники правды — `assets-src/tracks.json` и `assets-src/sfx.json`;
+   `LICENSES.md` генерируется `npm run assets:licenses`. Звуки не синтезировать «на слух» — брать CC0-сэмплы.
 9. Публичный API слайса — только через его `index.ts`. Глубокие импорты `@/features/x/model/...`
    из другого слоя запрещены.
 
@@ -36,9 +37,11 @@ npm test               # vitest
 npm run lint           # eslint + FSD-проверка
 npm run typecheck      # tsc -b
 npm run build          # production-сборка в dist/
-npm run assets:music   # assets-src/music-raw → public/music (ffmpeg-static)
-npm run assets:voice   # assets-src/voice-raw → public/voice
-npm run assets:charts  # public/music → public/charts + catalog.json (тот же пайплайн, что в браузере)
+npm run assets:music     # assets-src/music-raw → public/music (ffmpeg-static)
+npm run assets:sfx       # assets-src/sfx-raw (паки Kenney) → public/sfx по реестру assets-src/sfx.json
+npm run assets:voice     # нейро-TTS (msedge-tts) → public/voice/<dmitry|svetlana>; --force для перегенерации
+npm run assets:charts    # public/music → public/charts + catalog.json (тот же пайплайн, что в браузере)
+npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
 ```
 
 ## Порядок работы

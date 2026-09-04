@@ -1,11 +1,14 @@
 import { OFFSET_RANGE_MS, SCROLL_SPEED_RANGE } from '@/shared/config/constants';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { audioEngine } from '@/shared/lib/audio';
+import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
 import { Button, Slider } from '@/shared/ui';
-import { updateSettings, useSettings } from '@/entities/settings';
+import { updateSettings, useSettings, type VoiceSetting } from '@/entities/settings';
 import { resetProgress } from '@/entities/progress';
+import { voice } from '@/features/voice-feedback';
 import './settings.css';
+
+const VOICE_OPTIONS: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
 
 export function SettingsPanel() {
   const s = useSettings((x) => x);
@@ -13,6 +16,25 @@ export function SettingsPanel() {
   const setVolume = (key: 'musicVolume' | 'sfxVolume' | 'voiceVolume', v: number) => {
     updateSettings({ [key]: v });
     audioEngine.setVolumes({ music: key === 'musicVolume' ? v : s.musicVolume, sfx: key === 'sfxVolume' ? v : s.sfxVolume, voice: key === 'voiceVolume' ? v : s.voiceVolume });
+  };
+
+  const chooseVoice = async (id: VoiceSetting) => {
+    updateSettings({ voice: id });
+    await audioEngine.ensureContext();
+    voice.setVoice(id);
+    if (id !== 'off') {
+      await voice.preload();
+      voice.say('poehali', true);
+    }
+  };
+
+  const previewSfx = async () => {
+    await audioEngine.ensureContext();
+    await preloadSfx();
+    sfxHit(0);
+    setTimeout(() => sfxHit(1), 180);
+    setTimeout(() => sfxHit(0), 360);
+    setTimeout(() => sfxMiss(), 700);
   };
 
   return (
@@ -37,8 +59,25 @@ export function SettingsPanel() {
         onChange={(v) => updateSettings({ scrollSpeed: v })}
       />
       <Slider label={dict.settingsVolumeMusic} value={s.musicVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('musicVolume', v)} />
-      <Slider label={dict.settingsVolumeSfx} value={s.sfxVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('sfxVolume', v)} />
+      <div className="settings-row">
+        <Slider label={dict.settingsVolumeSfx} value={s.sfxVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('sfxVolume', v)} />
+        <Button variant="ghost" onClick={previewSfx}>
+          {dict.settingsPreview}
+        </Button>
+      </div>
       <Slider label={dict.settingsVolumeVoice} value={s.voiceVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('voiceVolume', v)} />
+
+      <div className="settings-group">
+        <div className="settings-group-label">{dict.settingsVoice}</div>
+        <div className="settings-segmented" role="radiogroup">
+          {VOICE_OPTIONS.map((id) => (
+            <button key={id} role="radio" aria-checked={s.voice === id} className={`seg ${s.voice === id ? 'seg-on' : ''}`} onClick={() => chooseVoice(id)}>
+              {dict.voices[id]}
+            </button>
+          ))}
+        </div>
+        <div className="settings-hint">{dict.settingsVoiceHint}</div>
+      </div>
 
       <label className="settings-check">
         <input type="checkbox" checked={s.debugOverlay} onChange={(e) => updateSettings({ debugOverlay: e.target.checked })} />

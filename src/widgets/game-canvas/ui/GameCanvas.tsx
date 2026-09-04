@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { audioEngine } from '@/shared/lib/audio';
+import { audioEngine, preloadSfx } from '@/shared/lib/audio';
 import { navigate } from '@/shared/lib/router';
 import { dict } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
@@ -69,8 +69,12 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
         await audioEngine.ensureContext();
         const settings = getSettings();
         audioEngine.setVolumes({ music: settings.musicVolume, sfx: settings.sfxVolume, voice: settings.voiceVolume });
-        void voice.preload();
-        const buffer = audioBuffer ?? (await audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`));
+        voice.setVoice(settings.voice);
+        const [buffer] = await Promise.all([
+          audioBuffer ?? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`),
+          preloadSfx(),
+          voice.preload(),
+        ]);
         if (cancelled || !canvasRef.current) return;
         session = new GameSession({
           chart,

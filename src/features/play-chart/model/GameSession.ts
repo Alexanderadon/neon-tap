@@ -1,5 +1,5 @@
 import { BASE_APPROACH_TIME } from '@/shared/config/constants';
-import { audioEngine, Clock, Conductor, sfxHit, sfxMiss, sfxMilestone } from '@/shared/lib/audio';
+import { audioEngine, Clock, Conductor, sfxComboBreak, sfxHit, sfxMiss, sfxMilestone } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { FpsMeter } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
@@ -165,8 +165,9 @@ export class GameSession {
 
     if (judgement === 'miss') {
       audioEngine.missEffect();
-      sfxMiss();
       this.perfectStreak = 0;
+      if (prevCombo >= 10) sfxComboBreak();
+      else sfxMiss();
       if (prevCombo >= 10) {
         this.comboBreakAt = this.lastJudgementAt;
         const L = this.renderer.layout;

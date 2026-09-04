@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CALIBRATION_TAPS } from '@/shared/config/constants';
 import { dict, fmt } from '@/shared/i18n';
-import { audioEngine, sfxClick } from '@/shared/lib/audio';
+import { audioEngine, preloadSfx, sfxClick } from '@/shared/lib/audio';
 import { Button } from '@/shared/ui';
 import { updateSettings } from '@/entities/settings';
 import { Calibration } from '@/features/calibrate-offset';
@@ -35,6 +35,7 @@ export function CalibrationMeter({ onDone }: Props) {
 
   const start = async () => {
     await audioEngine.ensureContext();
+    await preloadSfx();
     calib.current.reset();
     setCount(0);
     setLastMs(null);
