@@ -1,6 +1,6 @@
-import { HIT_WINDOWS, LANE_COUNT } from '@/shared/config/constants';
+import { HIT_WINDOWS, MAX_LANES } from '@/shared/config/constants';
 import { judgeDelta, type Judgement } from '@/entities/score';
-import type { ParsedNote } from '@/entities/chart';
+import type { ParsedNote, SpellKind } from '@/entities/chart';
 
 export const enum NoteState {
   Pending = 0,
@@ -17,12 +17,17 @@ export interface PooledNote {
   lane: number;
   duration: number;
   endTime: number;
+  spell: SpellKind | null;
+  /** Lane count of the section this note belongs to (for rendering geometry). */
+  lanes: number;
   state: NoteState;
   /** Head judgement, or `null` while pending. */
   judgement: Judgement | null;
   tailJudgement: Judgement | null;
   /** Signed timing error of the head hit, seconds (negative = early). */
   hitDelta: number;
+  /** Touch assist: an early press was registered; the note is judged when it reaches the line. */
+  armed: boolean;
 }
 
 export interface JudgeEvent {
@@ -30,6 +35,14 @@ export interface JudgeEvent {
   judgement: Judgement;
   /** True when this judgement is for a hold tail. */
   tail: boolean;
+}
+
+export interface NoteManagerOptions {
+  /**
+   * Touch assist (GDD: "на телефоне можно нажимать заранее"): a press up to this many seconds
+   * before a note arms it, and it is judged Great when it reaches the line. 0 = off.
+   */
+  assistWindow?: number;
 }
 
 const POOL_SIZE = 2000;
@@ -45,17 +58,19 @@ export class NoteManager {
   count = 0;
   /** Per-lane list of pool indices in time order. */
   private readonly laneNotes: Int32Array[] = [];
-  private readonly laneLen = new Int32Array(LANE_COUNT);
-  private readonly laneCursor = new Int32Array(LANE_COUNT);
+  private readonly laneLen = new Int32Array(MAX_LANES);
+  private readonly laneCursor = new Int32Array(MAX_LANES);
   /** Index of the first note that may still be on screen (advances monotonically). */
   firstActive = 0;
   onJudge: ((e: JudgeEvent) => void) | null = null;
+  readonly assistWindow: number;
 
-  constructor(capacity = POOL_SIZE) {
+  constructor(capacity = POOL_SIZE, opts: NoteManagerOptions = {}) {
+    this.assistWindow = opts.assistWindow ?? 0;
     for (let i = 0; i < capacity; i++) {
-      this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0 });
+      this.pool.push({ time: 0, lane: 0, duration: 0, endTime: 0, spell: null, lanes: 4, state: NoteState.Pending, judgement: null, tailJudgement: null, hitDelta: 0, armed: false });
     }
-    for (let l = 0; l < LANE_COUNT; l++) this.laneNotes.push(new Int32Array(capacity));
+    for (let l = 0; l < MAX_LANES; l++) this.laneNotes.push(new Int32Array(capacity));
   }
 
   load(notes: readonly ParsedNote[]): void {
@@ -71,10 +86,13 @@ export class NoteManager {
       n.lane = src.lane;
       n.duration = src.duration;
       n.endTime = src.time + src.duration;
+      n.spell = src.spell;
+      n.lanes = src.lanes;
       n.state = NoteState.Pending;
       n.judgement = null;
       n.tailJudgement = null;
       n.hitDelta = 0;
+      n.armed = false;
       const lane = src.lane;
       this.laneNotes[lane][this.laneLen[lane]++] = i;
     }
@@ -87,6 +105,7 @@ export class NoteManager {
       n.judgement = null;
       n.tailJudgement = null;
       n.hitDelta = 0;
+      n.armed = false;
     }
     this.laneCursor.fill(0);
     this.firstActive = 0;
@@ -98,15 +117,19 @@ export class NoteManager {
     return t;
   }
 
-  /** Advance time: auto-miss overdue notes, complete holds that are still held. */
-  update(songTime: number, isHeld: (lane: number) => boolean): void {
-    for (let lane = 0; lane < LANE_COUNT; lane++) {
+  /** Advance time: auto-miss overdue notes, fire armed notes, complete holds that are still held. */
+  update(songTime: number, _isHeld: (lane: number) => boolean): void {
+    for (let lane = 0; lane < MAX_LANES; lane++) {
       const list = this.laneNotes[lane];
       const len = this.laneLen[lane];
       let cursor = this.laneCursor[lane];
       while (cursor < len) {
         const note = this.pool[list[cursor]];
         if (note.state === NoteState.Pending) {
+          if (note.armed && songTime >= note.time - HIT_WINDOWS.great) {
+            this.hit(note, 'great', -HIT_WINDOWS.great);
+            continue; // re-evaluate: Hit → skip, Holding → wait for the tail
+          }
           if (songTime - note.time > HIT_WINDOWS.good) {
             note.state = NoteState.Missed;
             note.judgement = 'miss';
@@ -122,9 +145,8 @@ export class NoteManager {
         }
         if (note.state === NoteState.Holding) {
           if (songTime >= note.endTime) {
-            // Held to the end (or release came within the window and was handled by release()).
-            const j: Judgement = isHeld(lane) ? (note.judgement ?? 'perfect') : 'perfect';
-            this.finishHold(note, j);
+            // Held to the end (an early release would already have finished it via release()).
+            this.finishHold(note, note.judgement ?? 'perfect');
             cursor++;
             continue;
           }
@@ -150,13 +172,14 @@ export class NoteManager {
       const note = this.pool[list[i]];
       if (note.state !== NoteState.Pending) continue;
       const delta = songTime - note.time;
-      if (delta < -HIT_WINDOWS.good) return null; // next note is too far in the future
+      if (delta < -HIT_WINDOWS.good) {
+        // Too early for a judgement — with touch assist, remember the press instead.
+        if (this.assistWindow > 0 && -delta <= this.assistWindow && !note.armed) note.armed = true;
+        return null;
+      }
       const j = judgeDelta(delta);
       if (!j) continue; // overdue note — update() will miss it
-      note.hitDelta = delta;
-      note.judgement = j;
-      note.state = note.duration > 0 ? NoteState.Holding : NoteState.Hit;
-      this.emit(note, j, false);
+      this.hit(note, j, delta);
       return j;
     }
     return null;
@@ -178,6 +201,14 @@ export class NoteManager {
       this.finishHold(note, j && delta <= HIT_WINDOWS.good ? j : 'miss');
       return;
     }
+  }
+
+  private hit(note: PooledNote, j: Judgement, delta: number): void {
+    note.hitDelta = delta;
+    note.judgement = j;
+    note.armed = false;
+    note.state = note.duration > 0 ? NoteState.Holding : NoteState.Hit;
+    this.emit(note, j, false);
   }
 
   private finishHold(note: PooledNote, j: Judgement): void {

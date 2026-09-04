@@ -4,6 +4,7 @@ export function synthesizeClicks(
   durationSec: number,
   sampleRate = 22050,
   seed = 42,
+  gains?: readonly number[],
 ): Float32Array {
   const out = new Float32Array(Math.ceil(durationSec * sampleRate));
   let s = seed;
@@ -14,12 +15,13 @@ export function synthesizeClicks(
   // Quiet sustained pad so the signal is never perfectly silent.
   for (let i = 0; i < out.length; i++) out[i] = 0.02 * Math.sin((2 * Math.PI * 110 * i) / sampleRate);
   const burst = Math.floor(sampleRate * 0.03);
-  for (const t of times) {
+  times.forEach((t, idx) => {
     const start = Math.floor(t * sampleRate);
+    const gain = gains?.[idx] ?? 1;
     for (let i = 0; i < burst && start + i < out.length; i++) {
       const env = Math.exp(-i / (burst / 4));
-      out[start + i] += rand() * env * 1.6;
+      out[start + i] += rand() * env * 1.6 * gain;
     }
-  }
+  });
   return out;
 }

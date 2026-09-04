@@ -1,4 +1,4 @@
-import { KEY_BINDINGS, LANE_COUNT } from '@/shared/config/constants';
+import { MAX_LANES } from '@/shared/config/constants';
 
 export interface LaneEvent {
   lane: number;
@@ -14,18 +14,22 @@ export interface InputHandlers {
 interface Options {
   /** Returns the current audio-clock time. */
   audioNow: () => number;
+  /** Maps a key code to a lane index (or -1) — depends on the active lane count. */
+  laneForKey: (code: string) => number;
   /** Maps a pointer position to a lane index (or -1). */
   laneAt: (x: number, y: number) => number;
 }
 
 /**
- * Keyboard (D F J K / arrows) + pointer input, normalised to lane events stamped with audio time.
+ * Keyboard + pointer input, normalised to lane events stamped with audio time.
  *
  * Event timestamps are converted from `performance.now()` domain to the audio clock, which
  * compensates for the delay between the physical key press and the JS handler running.
+ * Key → lane mapping is delegated so the playfield can change its lane count mid-song.
  */
 export class Input {
-  private readonly held = new Uint8Array(LANE_COUNT);
+  private readonly held = new Uint8Array(MAX_LANES);
+  private readonly keyLane = new Map<string, number>();
   private readonly pointerLane = new Map<number, number>();
   private target: HTMLElement | null = null;
   private handlers: InputHandlers | null = null;
@@ -57,6 +61,7 @@ export class Input {
     this.target = null;
     this.handlers = null;
     this.held.fill(0);
+    this.keyLane.clear();
     this.pointerLane.clear();
   }
 
@@ -82,17 +87,22 @@ export class Input {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    const lane = KEY_BINDINGS[e.code];
-    if (lane === undefined) return;
+    const lane = this.opts.laneForKey(e.code);
+    if (lane < 0) return;
     e.preventDefault();
-    if (e.repeat) return;
+    if (e.repeat || this.keyLane.has(e.code)) return;
+    // Remember which lane this physical key took, so keyup releases the right lane even if
+    // the lane count changed while the key was down.
+    this.keyLane.set(e.code, lane);
     this.press(lane, this.eventAudioTime(e));
   };
 
   private onKeyUp = (e: KeyboardEvent): void => {
-    const lane = KEY_BINDINGS[e.code];
+    const lane = this.keyLane.get(e.code);
     if (lane === undefined) return;
     e.preventDefault();
+    this.keyLane.delete(e.code);
+    for (const l of this.keyLane.values()) if (l === lane) return; // another key still holds this lane
     this.release(lane, this.eventAudioTime(e));
   };
 
@@ -109,14 +119,14 @@ export class Input {
     const lane = this.pointerLane.get(e.pointerId);
     if (lane === undefined) return;
     this.pointerLane.delete(e.pointerId);
-    // Another pointer may still hold the same lane (two thumbs).
-    for (const l of this.pointerLane.values()) if (l === lane) return;
+    for (const l of this.pointerLane.values()) if (l === lane) return; // two thumbs on one lane
     this.release(lane, this.eventAudioTime(e));
   };
 
   private releaseAll = (): void => {
     const t = this.opts.audioNow();
-    for (let lane = 0; lane < LANE_COUNT; lane++) this.release(lane, t);
+    for (let lane = 0; lane < MAX_LANES; lane++) this.release(lane, t);
+    this.keyLane.clear();
     this.pointerLane.clear();
   };
 }

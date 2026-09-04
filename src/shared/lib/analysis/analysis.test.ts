@@ -2,11 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { RealFFT } from './fft';
 import { detectOnsets } from './OnsetDetector';
 import { estimateBpm } from './BpmEstimator';
-import { capDensity, generateAllDifficulties, generateChart, quantize } from './ChartGenerator';
+import { estimateDownbeatPhase, trackBeats } from './BeatTracker';
+import { analyzeSong, STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
+import { composeChart, generateAllDifficulties, scoreTemplate, TEMPLATES } from './ChartGenerator';
 import { synthesizeClicks } from './synthetic';
 import { DENSITY_LIMIT } from '@/shared/config/constants';
 
 const SR = 22050;
+const BPM = 128;
+const BEAT = 60 / BPM;
+
+/** 128 BPM click track with a louder downbeat every 4 beats, 32 s. */
+function clickTrack() {
+  const times: number[] = [];
+  const gains: number[] = [];
+  for (let i = 0; i < 64; i++) {
+    times.push(0.5 + i * BEAT);
+    gains.push(i % 4 === 0 ? 1 : 0.5);
+  }
+  return { times, signal: synthesizeClicks(times, 32, SR, 42, gains) };
+}
 
 describe('RealFFT', () => {
   it('finds the peak bin of a pure sine', () => {
@@ -25,92 +40,196 @@ describe('RealFFT', () => {
 
 describe('detectOnsets', () => {
   it('detects ≥ 90% of synthetic onsets within 30 ms', () => {
-    const bpm = 128;
-    const beat = 60 / bpm;
     const truth: number[] = [];
-    for (let i = 0; i < 60; i++) truth.push(1 + i * beat + (i % 3 === 0 ? beat / 2 : 0));
+    for (let i = 0; i < 60; i++) truth.push(1 + i * BEAT + (i % 3 === 0 ? BEAT / 2 : 0));
     const signal = synthesizeClicks(truth, 32, SR);
     const { onsets } = detectOnsets(signal, { sampleRate: SR });
     let hits = 0;
     for (const t of truth) if (onsets.some((o) => Math.abs(o.time - t) <= 0.03)) hits++;
     expect(hits / truth.length).toBeGreaterThanOrEqual(0.9);
-    // No flood of false positives either.
     expect(onsets.length).toBeLessThan(truth.length * 1.5);
-    for (const o of onsets) expect(o.strength).toBeGreaterThan(0);
   });
 });
 
 describe('estimateBpm', () => {
   it('recovers tempo of a 128 BPM click track within ±2 BPM', () => {
-    const beat = 60 / 128;
-    const truth = Array.from({ length: 64 }, (_, i) => 0.5 + i * beat);
-    const signal = synthesizeClicks(truth, 32, SR);
+    const { signal } = clickTrack();
     const { flux, hopSeconds } = detectOnsets(signal, { sampleRate: SR });
     const est = estimateBpm(flux, hopSeconds);
-    expect(Math.abs(est.bpm - 128)).toBeLessThanOrEqual(2);
+    expect(Math.abs(est.bpm - BPM)).toBeLessThanOrEqual(2);
     expect(est.confidence).toBeGreaterThan(0.2);
   });
 });
 
-describe('ChartGenerator', () => {
-  const bpm = 120;
-  const beat = 60 / bpm;
-  const onsets = Array.from({ length: 200 }, (_, i) => ({
-    time: i * beat * 0.25 + 0.01 * ((i % 5) - 2), // jittered 16ths
-    strength: 0.3 + ((i * 37) % 70) / 100,
-    bands: [(i % 3) / 2, ((i + 1) % 3) / 2, ((i + 2) % 3) / 2] as [number, number, number],
-  }));
+describe('trackBeats', () => {
+  it('locks onto every click within 30 ms and finds the downbeat', () => {
+    const { times, signal } = clickTrack();
+    const det = detectOnsets(signal, { sampleRate: SR });
+    const est = estimateBpm(det.flux, det.hopSeconds);
+    const beats = trackBeats(det.flux, det.hopSeconds, est.bpm).map(det.frameTime);
+    expect(Math.abs(beats.length - times.length)).toBeLessThanOrEqual(2);
+    let matched = 0;
+    for (const b of beats) if (times.some((t) => Math.abs(t - b) <= 0.03)) matched++;
+    expect(matched / beats.length).toBeGreaterThanOrEqual(0.95);
+    const intervals = beats.slice(1).map((b, i) => b - beats[i]);
+    const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    expect(Math.abs(mean - BEAT) / BEAT).toBeLessThan(0.01);
 
-  it('quantizes to the grid and merges duplicates', () => {
-    const q = quantize(onsets, bpm, 0, 4);
-    const step = beat / 4;
-    for (const c of q) expect(Math.abs(c.time / step - Math.round(c.time / step))).toBeLessThan(1e-6);
-    const slots = new Set(q.map((c) => Math.round(c.time / step)));
-    expect(slots.size).toBe(q.length);
+    const frames = trackBeats(det.flux, det.hopSeconds, est.bpm);
+    const phase = estimateDownbeatPhase(frames, det.bandFlux[0], det.flux);
+    const firstDownbeat = det.frameTime(frames[phase]);
+    const nearestTruthIdx = times.findIndex((t) => Math.abs(t - firstDownbeat) <= 0.03);
+    expect(nearestTruthIdx % 4).toBe(0);
+  });
+});
+
+describe('analyzeSong', () => {
+  const { times, signal } = clickTrack();
+  const analysis = analyzeSong(signal, SR);
+
+  it('builds a 16-step grid per bar, starting on a downbeat, covering the track', () => {
+    expect(analysis.beats[0]).toBeLessThanOrEqual(times[0] + 0.03);
+    expect(analysis.beats[analysis.beats.length - 1]).toBeGreaterThanOrEqual(times[times.length - 1] - 0.03);
+    for (let i = 1; i < analysis.slots.length; i++) expect(analysis.slots[i].time).toBeGreaterThan(analysis.slots[i - 1].time);
+    const bar1 = analysis.slots.filter((s) => s.bar === 1);
+    expect(bar1.length).toBe(STEPS_PER_BAR);
+    expect(bar1.map((s) => s.step)).toEqual(Array.from({ length: STEPS_PER_BAR }, (_, i) => i));
+    // Downbeat slots carry the loud clicks.
+    const downbeatStrength = analysis.slots.filter((s) => s.step === 0 && s.time > 1 && s.time < 30).map((s) => s.strength);
+    expect(Math.min(...downbeatStrength)).toBeGreaterThan(0.5);
   });
 
-  it('caps density at N notes per second', () => {
-    const dense = Array.from({ length: 100 }, (_, i) => ({ time: i * 0.05, strength: 1, bands: [1, 0, 0] as [number, number, number] }));
-    const capped = capDensity(dense, 6);
-    for (let i = 0; i < capped.length; i++) {
-      const windowCount = capped.filter((c) => c.time >= capped[i].time && c.time < capped[i].time + 1).length;
-      expect(windowCount).toBeLessThanOrEqual(6);
+  it('marks clicks as strong slots and silence as weak', () => {
+    const onBeat = analysis.slots.filter((s) => s.step % 4 === 0 && s.time > 1 && s.time < 30);
+    const offBeat = analysis.slots.filter((s) => s.step % 4 === 2 && s.time > 1 && s.time < 30);
+    const avg = (xs: Slot[]) => xs.reduce((a, s) => a + s.strength, 0) / xs.length;
+    expect(avg(onBeat)).toBeGreaterThan(0.4);
+    expect(avg(offBeat)).toBeLessThan(0.15);
+  });
+});
+
+/** Hand-built analysis: N bars of 16 slots at 120 BPM with a given strength/sustain pattern. */
+function fakeAnalysis(bars: number, pattern: (bar: number, step: number) => Partial<Slot>): SongAnalysis {
+  const slots: Slot[] = [];
+  const beats: number[] = [];
+  const step = 0.125; // 120 BPM sixteenth
+  for (let b = 0; b < bars; b++) {
+    for (let s = 0; s < STEPS_PER_BAR; s++) {
+      if (s % 4 === 0) beats.push((b * STEPS_PER_BAR + s) * step);
+      slots.push({ time: (b * STEPS_PER_BAR + s) * step, bar: b, step: s, strength: 0, low: 0.3, mid: 0.5, high: 0.2, sustain: 0, ...pattern(b, s) });
     }
-  });
+  }
+  beats.push(bars * STEPS_PER_BAR * step);
+  return { bpm: 120, confidence: 1, beats, slots, barCount: bars, duration: bars * 2, onsetCount: 0 };
+}
 
-  it('never puts more than 2 consecutive notes in one lane', () => {
-    for (const difficulty of ['easy', 'normal', 'hard'] as const) {
-      const { notes } = generateChart(onsets, { bpm, offset: 0, difficulty });
-      for (let i = 2; i < notes.length; i++) {
-        const same = notes[i][1] === notes[i - 1][1] && notes[i][1] === notes[i - 2][1];
-        expect(same).toBe(false);
-      }
-    }
-  });
+const drumLoop = (bar: number, step: number): Partial<Slot> => {
+  const intense = bar >= 8;
+  if (step % 4 === 0) return { strength: 1, low: 0.7, mid: 0.2, high: 0.1 };
+  if (step % 2 === 0) return { strength: intense ? 0.8 : 0.45, low: 0.1, mid: 0.3, high: 0.6 };
+  return { strength: intense ? 0.6 : 0.05, low: 0.1, mid: 0.3, high: 0.6 };
+};
 
-  it('respects per-difficulty density limits and keeps notes sorted', () => {
-    for (const difficulty of ['easy', 'normal', 'hard'] as const) {
-      const { notes } = generateChart(onsets, { bpm, offset: 0, difficulty });
+describe('composeChart', () => {
+  const analysis = fakeAnalysis(16, drumLoop);
+  const slotTimes = new Set(analysis.slots.map((s) => s.time));
+
+  it('puts every note exactly on a grid slot', () => {
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      const { notes } = composeChart(analysis, { difficulty: d });
       expect(notes.length).toBeGreaterThan(0);
-      for (let i = 1; i < notes.length; i++) expect(notes[i][0]).toBeGreaterThanOrEqual(notes[i - 1][0]);
+      for (const n of notes) expect(slotTimes.has(n[0])).toBe(true);
+    }
+  });
+
+  it('respects density limits, lane rules and chord validity', () => {
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      const { notes, sections } = composeChart(analysis, { difficulty: d });
+      const lanesAt = (t: number) => sections!.filter((s) => s[0] <= t + 1e-9).pop()![1];
       const starts = [...new Set(notes.map((n) => n[0]))];
+      for (const t of starts) expect(starts.filter((s) => s >= t && s < t + 1).length).toBeLessThanOrEqual(DENSITY_LIMIT[d]);
+      // No lane is used by more than 2 consecutive events (chords count as events).
+      const events = starts.map((t) => notes.filter((n) => n[0] === t).map((n) => n[1]));
+      for (let i = 2; i < events.length; i++) {
+        for (const lane of events[i]) expect(events[i - 1].includes(lane) && events[i - 2].includes(lane)).toBe(false);
+      }
+      // Chords never duplicate a lane; lanes are valid.
       for (const t of starts) {
-        const inWindow = starts.filter((s) => s >= t && s < t + 1).length;
-        expect(inWindow).toBeLessThanOrEqual(DENSITY_LIMIT[difficulty]);
+        const lanes = notes.filter((n) => n[0] === t).map((n) => n[1]);
+        expect(new Set(lanes).size).toBe(lanes.length);
+        for (const l of lanes) expect(l >= 0 && l < lanesAt(t)).toBe(true);
       }
     }
   });
 
-  it('produces monotonic star ratings across difficulties', () => {
-    const all = generateAllDifficulties(onsets, bpm, 0);
+  it('never starts a note in a lane that is still being held', () => {
+    const sustained = fakeAnalysis(8, (bar, step) => ({ ...drumLoop(bar, step), sustain: step % 4 === 0 ? 6 : 0, low: 0.2, mid: 0.7, high: 0.1 }));
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      const { notes } = composeChart(sustained, { difficulty: d });
+      const holds = notes.filter((n) => n.length === 3);
+      expect(holds.length).toBeGreaterThan(0);
+      for (const h of holds) {
+        const end = h[0] + (h[2] as number);
+        const clash = notes.some((n) => n !== h && n[1] === h[1] && n[0] > h[0] && n[0] < end - 1e-6);
+        expect(clash).toBe(false);
+      }
+    }
+  });
+
+  it('gets denser with intensity and difficulty, easy has no chords', () => {
+    const easy = composeChart(analysis, { difficulty: 'easy' }).notes;
+    const hard = composeChart(analysis, { difficulty: 'hard' }).notes;
+    expect(hard.length).toBeGreaterThan(easy.length);
+    const quietHard = hard.filter((n) => n[0] < 16).length;
+    const intenseHard = hard.filter((n) => n[0] >= 16).length;
+    expect(intenseHard).toBeGreaterThan(quietHard);
+    const easyStarts = easy.map((n) => n[0]);
+    expect(new Set(easyStarts).size).toBe(easyStarts.length);
+  });
+
+  it('is deterministic for the same seed and stars are monotonic', () => {
+    const a = composeChart(analysis, { difficulty: 'hard', seed: 7 });
+    const b = composeChart(analysis, { difficulty: 'hard', seed: 7 });
+    expect(a).toEqual(b);
+    const all = generateAllDifficulties(analysis);
     expect(all.easy.stars).toBeLessThan(all.normal.stars);
     expect(all.normal.stars).toBeLessThan(all.hard.stars);
-    expect(all.easy.notes.length).toBeLessThanOrEqual(all.hard.notes.length);
   });
 
-  it('is deterministic for the same seed', () => {
-    const a = generateChart(onsets, { bpm, offset: 0, difficulty: 'hard', seed: 7 });
-    const b = generateChart(onsets, { bpm, offset: 0, difficulty: 'hard', seed: 7 });
-    expect(a).toEqual(b);
+  it('changes the lane count per phrase on hard and keeps every note inside its section', () => {
+    const long = fakeAnalysis(48, (bar, step) => drumLoop(bar % 24 >= 8 ? 8 : 0, step)); // calm / intense / calm / intense…
+    const hard = composeChart(long, { difficulty: 'hard' });
+    const sections = hard.sections!;
+    expect(sections[0]).toEqual([0, 4]);
+    expect(new Set(sections.map((s) => s[1])).size).toBeGreaterThan(1);
+    for (let i = 1; i < sections.length; i++) expect(sections[i][0]).toBeGreaterThan(sections[i - 1][0]);
+    const lanesAt = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).pop()![1];
+    for (const n of hard.notes) expect(n[1]).toBeLessThan(lanesAt(n[0]));
+    // Intense phrases (bars 8–23) open up more lanes than calm ones (bars 24–31).
+    const intenseLanes = lanesAt(long.slots[10 * STEPS_PER_BAR].time);
+    const calmLanes = lanesAt(long.slots[26 * STEPS_PER_BAR].time);
+    expect(intenseLanes).toBeGreaterThan(calmLanes);
+    // Easy stays on 4 lanes; variation can be forced off.
+    expect(composeChart(long, { difficulty: 'easy' }).sections).toEqual([[0, 4]]);
+    expect(composeChart(long, { difficulty: 'hard', laneVariation: false }).sections).toEqual([[0, 4]]);
+  });
+
+  it('places alternating slow / heart spell notes as plain taps', () => {
+    const long = fakeAnalysis(24, drumLoop);
+    const { notes } = composeChart(long, { difficulty: 'normal' });
+    const spells = notes.filter((n) => n.length === 4);
+    expect(spells.length).toBeGreaterThanOrEqual(2);
+    expect(spells[0][3]).toBe('slow');
+    expect(spells[1][3]).toBe('heart');
+    for (const s of spells) expect(s[2]).toBe(0);
+  });
+
+  it('prefers templates that match the hits', () => {
+    const quarters = Array.from({ length: 16 }, (_, i) => (i % 4 === 0 ? 1 : 0));
+    const q = TEMPLATES.find((t) => t.id === 'quarter')!;
+    const e = TEMPLATES.find((t) => t.id === 'eighth')!;
+    const r = TEMPLATES.find((t) => t.id === 'rest')!;
+    expect(scoreTemplate(q, quarters, 1, false)).toBeGreaterThan(scoreTemplate(e, quarters, 1, false));
+    expect(scoreTemplate(q, quarters, 1, false)).toBeGreaterThan(scoreTemplate(r, quarters, 1, false));
   });
 });

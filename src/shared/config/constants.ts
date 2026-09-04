@@ -1,21 +1,37 @@
 /** Judgement windows in seconds (GDD §4). Outside `good` → miss. */
 export const HIT_WINDOWS = { perfect: 0.045, great: 0.09, good: 0.135 } as const;
 
+/** Default lane count; sections of a chart may switch between MIN_LANES and MAX_LANES. */
 export const LANE_COUNT = 4;
+export const MIN_LANES = 2;
+export const MAX_LANES = 6;
 
-/** Neon palette per lane: cyan / magenta / lime / orange. */
-export const LANE_COLORS = ['#00f0ff', '#ff2bd6', '#b6ff00', '#ff8a00'] as const;
+/** Neon palette per lane index: cyan / magenta / lime / orange / violet / yellow. */
+export const LANE_COLORS = ['#00f0ff', '#ff2bd6', '#b6ff00', '#ff8a00', '#b56bff', '#ffe600'] as const;
 
-export const KEY_BINDINGS: Record<string, number> = {
-  KeyD: 0,
-  KeyF: 1,
-  KeyJ: 2,
-  KeyK: 3,
-  ArrowLeft: 0,
-  ArrowDown: 1,
-  ArrowUp: 2,
-  ArrowRight: 3,
+/**
+ * Keyboard layouts per lane count. Both hands stay on D F / J K; extra lanes add Space (middle)
+ * and S / L (outer). Arrow keys mirror the 4-lane layout.
+ */
+export const KEY_LAYOUTS: Record<number, Record<string, number>> = {
+  2: { KeyF: 0, KeyJ: 1, KeyD: 0, KeyK: 1, KeyS: 0, KeyL: 1, ArrowLeft: 0, ArrowRight: 1, ArrowDown: 0, ArrowUp: 1 },
+  3: { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 2, KeyS: 0, KeyL: 2, Space: 1, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 1, ArrowRight: 2 },
+  4: { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3, KeyS: 0, KeyL: 3, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3 },
+  5: { KeyD: 0, KeyF: 1, Space: 2, KeyJ: 3, KeyK: 4, KeyS: 0, KeyL: 4, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 3, ArrowRight: 4 },
+  6: { KeyS: 0, KeyD: 1, KeyF: 2, KeyJ: 3, KeyK: 4, KeyL: 5, ArrowLeft: 1, ArrowDown: 2, ArrowUp: 3, ArrowRight: 4 },
 };
+
+/** Key caps shown under the receptors, per lane count. */
+export const KEY_LABELS: Record<number, readonly string[]> = {
+  2: ['F', 'J'],
+  3: ['D', 'F', 'J'],
+  4: ['D', 'F', 'J', 'K'],
+  5: ['D', 'F', '␣', 'J', 'K'],
+  6: ['S', 'D', 'F', 'J', 'K', 'L'],
+};
+
+/** Legacy 4-lane bindings (kept for the calibration screen and tests). */
+export const KEY_BINDINGS: Record<string, number> = KEY_LAYOUTS[4];
 
 /** Seconds a note needs to travel the full lane at scroll speed 1.0×. */
 export const BASE_APPROACH_TIME = 1.6;

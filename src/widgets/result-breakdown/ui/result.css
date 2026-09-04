@@ -44,6 +44,15 @@
   animation: rank-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   text-shadow: 0 0 30px currentColor, 0 0 70px currentColor;
 }
+.result-failed {
+  font-size: clamp(44px, 12vw, 80px);
+  color: var(--c-magenta);
+  letter-spacing: 0.08em;
+}
+.result-failed-hint {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+}
 .result-acc {
   font-family: var(--font-display);
   font-size: 26px;

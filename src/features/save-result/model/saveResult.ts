@@ -3,11 +3,11 @@ import { setSessionResult, type ChartSource } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
 
 /**
- * Persist a finished run (built-in tracks only — custom songs are session-only)
- * and stash result + celebration metadata for the result screen.
+ * Persist a finished run (built-in tracks only — custom songs are session-only, failed runs
+ * never count) and stash result + celebration metadata for the result screen.
  */
 export function saveResult(result: PlayResult, source: ChartSource): { newRecord: boolean; starsBefore: number; starsAfter: number } {
-  if (source !== 'catalog') {
+  if (source !== 'catalog' || result.failed) {
     const meta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
     setSessionResult(result, meta);
     return meta;

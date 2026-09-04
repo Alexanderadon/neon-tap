@@ -20,4 +20,8 @@ export interface PlayResult {
   fullCombo: boolean;
   /** Notes that would need to be Perfect to reach rank S (0 when already S or SS). */
   notesToS: number;
+  /** True when the player ran out of hearts — the run does not count. */
+  failed: boolean;
+  /** Hearts left at the end. */
+  hearts: number;
 }

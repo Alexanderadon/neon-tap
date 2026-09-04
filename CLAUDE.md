@@ -44,6 +44,11 @@ npm run assets:charts    # public/music → public/charts + catalog.json (тот
 npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
 ```
 
+## Dev-флаги
+
+- `?nofail=1` в URL — сердца тратятся, но провала нет. Для проверки переходов полос, записи GIF и профилирования.
+- Настройки → «FPS / debug overlay» — fps, худший кадр, число нот/частиц, активное число полос, латентность.
+
 ## Порядок работы
 
 - Перед фазой — план в `docs/plans/<N>-<name>.md`, после фазы — коммит. Не раньше.

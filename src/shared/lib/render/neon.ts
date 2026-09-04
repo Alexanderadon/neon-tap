@@ -87,6 +87,112 @@ export function renderBeam(color: string, width: number, height: number, dpr: nu
   return { canvas, pad: 0, width, height };
 }
 
+function heartPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
+  // s = half width
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s * 0.95);
+  ctx.bezierCurveTo(cx - s * 1.6, cy - s * 0.1, cx - s * 0.9, cy - s * 1.15, cx, cy - s * 0.45);
+  ctx.bezierCurveTo(cx + s * 0.9, cy - s * 1.15, cx + s * 1.6, cy - s * 0.1, cx, cy + s * 0.95);
+  ctx.closePath();
+}
+
+function hourglassPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
+  // s = half height
+  const w = s * 0.75;
+  ctx.beginPath();
+  ctx.moveTo(cx - w, cy - s);
+  ctx.lineTo(cx + w, cy - s);
+  ctx.lineTo(cx + w * 0.15, cy);
+  ctx.lineTo(cx + w, cy + s);
+  ctx.lineTo(cx - w, cy + s);
+  ctx.lineTo(cx - w * 0.15, cy);
+  ctx.closePath();
+}
+
+/** Neon heart for the HUD (filled = life, hollow = lost). */
+export function renderHeart(color: string, size: number, dpr: number, filled: boolean): NoteSprite {
+  const pad = Math.round(size * 0.6);
+  const total = size + pad * 2;
+  const canvas = makeCanvas(Math.ceil(total * dpr), Math.ceil(total * dpr));
+  const ctx = ctx2d(canvas);
+  ctx.scale(dpr, dpr);
+  const c = total / 2;
+  heartPath(ctx, c, c + size * 0.05, size * 0.42);
+  ctx.lineWidth = Math.max(1.5, size * 0.09);
+  if (filled) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = size * 0.6;
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.stroke();
+  }
+  return { canvas, pad, width: total, height: total };
+}
+
+/**
+ * Spell note: glowing ring with an icon inside — hourglass for "slow", heart for "+life".
+ * Hand-drawn vector paths so the style matches the rest of the neon UI.
+ */
+export function renderSpell(kind: 'slow' | 'heart', size: number, dpr: number): NoteSprite {
+  const color = kind === 'slow' ? '#00f0ff' : '#ff2bd6';
+  const pad = Math.round(size * 0.5);
+  const total = size + pad * 2;
+  const canvas = makeCanvas(Math.ceil(total * dpr), Math.ceil(total * dpr));
+  const ctx = ctx2d(canvas);
+  ctx.scale(dpr, dpr);
+  const c = total / 2;
+  const r = size / 2;
+
+  // Outer ring with glow.
+  ctx.shadowColor = color;
+  ctx.shadowBlur = size * 0.5;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, size * 0.1);
+  ctx.beginPath();
+  ctx.arc(c, c, r - ctx.lineWidth, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.stroke();
+  // Dark disc so the icon reads on top of the lane.
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(5,6,10,0.85)';
+  ctx.beginPath();
+  ctx.arc(c, c, r - ctx.lineWidth * 1.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Icon.
+  ctx.shadowColor = color;
+  ctx.shadowBlur = size * 0.35;
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1.5, size * 0.07);
+  ctx.lineJoin = 'round';
+  if (kind === 'slow') {
+    hourglassPath(ctx, c, c, r * 0.5);
+    ctx.fill();
+    ctx.stroke();
+    // Sand pile at the bottom.
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(c - r * 0.22, c + r * 0.48);
+    ctx.lineTo(c + r * 0.22, c + r * 0.48);
+    ctx.lineTo(c, c + r * 0.2);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    heartPath(ctx, c, c + r * 0.06, r * 0.42);
+    ctx.fill();
+    ctx.stroke();
+  }
+  return { canvas, pad, width: total, height: total };
+}
+
 export function hexToRgba(hex: string, alpha: number): string {
   const v = parseInt(hex.slice(1), 16);
   return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${alpha})`;

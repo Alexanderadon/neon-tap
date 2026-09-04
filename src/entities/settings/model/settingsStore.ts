@@ -13,6 +13,8 @@ export interface Settings {
   sfxVolume: number;
   voiceVolume: number;
   voice: VoiceSetting;
+  /** Touch devices: early presses (≤ 0.4 s) count as Great. */
+  touchAssist: boolean;
   calibrated: boolean;
   debugOverlay: boolean;
 }
@@ -27,6 +29,7 @@ const DEFAULTS: Settings = {
   sfxVolume: 0.7,
   voiceVolume: 0.9,
   voice: 'dmitry',
+  touchAssist: true,
   calibrated: false,
   debugOverlay: false,
 };
