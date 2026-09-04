@@ -1,20 +1,20 @@
-import { DENSITY_LIMIT, DIFFICULTIES, LANE_COUNT, type Difficulty } from '@/shared/config/constants';
+import { DENSITY_LIMIT, LANE_COUNT } from '@/shared/config/constants';
 import { percentile } from '@/shared/lib/math';
 import type { ChartLevel, NoteKind, NoteTuple, SectionTuple, SpellKind } from '@/shared/types/chart';
 import { STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
 
 /**
- * Chart composer: turns the analysed beat grid into playable, *musical* patterns.
+ * Chart composer: turns the analysed beat grid into ONE playable, musical chart per song.
  *
- * Per bar we pick a rhythm template (quarters, eighths, syncopation, gallop, fill, stream)
- * that best matches where the music actually hits, bounded by difficulty and by the bar's
- * intensity. Sustained melodic sounds become hold notes, strong downbeats become chords,
- * sixteenth runs move across lanes as stairs / trills / zigzags. Every 8-bar phrase may
- * change the number of lanes (2–6) with the music's energy; intense phrases open with
- * osu!-style hit circles. Everything sits on the grid, and everything is playable with two thumbs.
+ * Notes sit on the music's own hits: a sixteenth slot gets a note when it is a local peak of onset
+ * salience (kick, snare, strum, vocal attack…) that stands out against its phrase — played by ear,
+ * not by pattern — capped per bar by the bar's intensity. Then the song's own structure
+ * adds the mechanics: sustained melodic sounds → holds (some of them slides to a neighbouring
+ * lane), drum fills → rolls, chorus starts → circle-only windows, phrases → lane-count changes.
+ * Everything sits on the grid, and everything is playable with two thumbs.
  */
 
-export type Category = 'rest' | 'base' | 'sync' | 'eighth' | 'fill' | 'gallop' | 'stream';
+export type Category = 'rest' | 'base' | 'sync' | 'eighth' | 'fill';
 
 export interface Template {
   id: string;
@@ -41,34 +41,25 @@ export const TEMPLATES: readonly Template[] = [
   T('e-fill', '1010101010101111', 'fill'),
   T('q-fill', '1000100010001111', 'fill'),
   T('q-fill2', '1000100011111111', 'fill'),
-  T('gallop', '1011101110111011', 'gallop'),
-  T('gallop-r', '1101110111011101', 'gallop'),
-  T('run-half', '1010101011111111', 'stream'),
-  T('burst3', '1110111011101110', 'stream'),
-  T('stream', '1111111111111111', 'stream'),
 ];
 
-const ALLOWED: Record<Difficulty, readonly Category[]> = {
-  easy: ['rest', 'base', 'sync'],
-  normal: ['rest', 'base', 'sync', 'eighth', 'fill'],
-  hard: ['rest', 'base', 'sync', 'eighth', 'fill', 'gallop', 'stream'],
-};
-
-/** Max notes per bar by [quiet, medium, intense]. */
-const MAX_NOTES: Record<Difficulty, readonly [number, number, number]> = {
-  easy: [2, 3, 4],
-  normal: [2, 4, 6],
-  hard: [4, 8, 12],
-};
-
+/** Max notes per bar by intensity [quiet, medium, intense]. */
+const MAX_NOTES: readonly [number, number, number] = [2, 4, 6];
+/** Fewer lanes → fewer notes per bar. */
+const MAX_NOTES_BY_LANES: Record<number, number> = { 2: 4, 3: 5 };
 /** Slots of silence before a lane-count change so the player can move their hands (2 beats). */
 const SECTION_GAP_SLOTS = 8;
-
-/** Fewer lanes → fewer notes per bar, or 2-lane streams turn into trill hell. */
-const MAX_NOTES_BY_LANES: Record<number, number> = { 2: 8, 3: 12 };
-
-/** Template notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
+/** Notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
 const MIN_NOTE_STRENGTH = 0.1;
+/** A hit must reach this share of the phrase's 90th-percentile salience to earn a note. */
+const PEAK_REL_THRESHOLD = 0.42;
+/** No two plain notes closer than an eighth (consecutive sixteenths belong to rolls). */
+const MIN_GAP_SLOTS = 2;
+/** Absolute floor on raw onset strength: below this a slot is silence, whatever the phrase boost says. */
+const MIN_RAW_STRENGTH = 0.05;
+/** Quiet phrases are scaled so their own peaks reach this salience (enough to beat the template's per-note penalty). */
+const BOOST_TARGET = 0.65;
+const MAX_BOOST = 10;
 
 /**
  * Salience = what a listener would tap along to: kicks, snares and melody count fully,
@@ -79,14 +70,29 @@ export function salience(s: Slot): number {
 }
 
 const HOLD_CHANCE = [0.9, 0.7, 0.45] as const; // by intensity
-const HOLD_BUDGET: Record<Difficulty, number> = { easy: 3, normal: 3, hard: 3 };
-const MAX_HOLD_SLOTS: Record<Difficulty, number> = { easy: 16, normal: 16, hard: 16 };
-/**
- * Two-finger rule (phones are played with two thumbs): at most ONE hold at a time, chords only
- * while nothing is held, never more than two simultaneous notes.
- */
+const HOLD_BUDGET = 3;
+const MAX_HOLD_SLOTS = 16;
+/** Share of long holds (≥ 1 beat) that become slides into a neighbouring lane. */
+const SLIDE_CHANCE = 0.4;
+/** Two-finger rule: at most ONE hold-type note (hold / roll / slide) at a time, chords only while nothing is held. */
 const MAX_ACTIVE_HOLDS = 1;
 const MAX_CHORD = 2;
+/** Rolls: a fill of ≥ this many sixteenths becomes one roll note; taps are capped. */
+const ROLL_MIN_TAPS = 3;
+const ROLL_MAX_TAPS = 6;
+/** Every slot of a fill must be at least this audible (boosted salience), and the run this loud on average. */
+const ROLL_SLOT_SALIENCE = 0.18;
+const ROLL_MEAN_SALIENCE = 0.32;
+/** Off-sixteenths inside the fill must be this many times louder than off-sixteenths in the rest of the bar. */
+const ROLL_CONTRAST = 1.5;
+/** Streams: in intense bars, audible eighths on the second half become one 4-tap roll this often (with a 2-bar cooldown). */
+const ROLL_STREAM_CHANCE = 0.45;
+const ROLL_STREAM_MIN_STRENGTH = 0.35;
+const ROLL_COOLDOWN_BARS = 2;
+/** A roll never asks for more than this many taps per second (fast songs get fewer taps, or no roll at all). */
+const ROLL_MAX_TAPS_PER_SEC = 6;
+/** Sustained bass-heavy sounds (drops, rumbles) become rolls this often. */
+const ROLL_ON_BASS_CHANCE = 0.5;
 
 /** A spell note every this many bars, starting at bar 4 (after the intro). */
 const SPELL_EVERY_BARS = 8;
@@ -94,26 +100,17 @@ const SPELL_ORDER: readonly SpellKind[] = ['slow', 'heart'];
 
 /** Circle windows: the first bars of an intense phrase hold ONLY circles (no lane notes), on the strongest hits. */
 const CIRCLE_WINDOW_BARS = 2;
-const CIRCLES_PER_WINDOW: Record<Difficulty, number> = { easy: 3, normal: 4, hard: 5 };
+const CIRCLES_PER_WINDOW = 4;
 const CIRCLE_MIN_GAP_SLOTS = 4; // one beat
 const CIRCLE_MIN_SALIENCE = 0.3;
 
 /** Lane-count sections: one decision per 8-bar phrase, pools by [quiet, medium, intense]. */
 const PHRASE_BARS = 8;
-const LANE_POOLS: Record<Difficulty, readonly [readonly number[], readonly number[], readonly number[]]> = {
-  easy: [[4], [4], [4]],
-  normal: [[3], [4], [5]],
-  hard: [
-    [2, 3],
-    [3, 4],
-    [5, 6],
-  ],
-};
+const LANE_POOLS: readonly [readonly number[], readonly number[], readonly number[]] = [[3], [4], [5]];
 
 export interface ComposeOptions {
-  difficulty: Difficulty;
   seed?: number;
-  /** Let the lane count follow the music (2–6 lanes). Default: on for normal/hard. */
+  /** Let the lane count follow the music (3–5 lanes). Default on. */
   laneVariation?: boolean;
 }
 
@@ -132,6 +129,8 @@ interface Event {
   size: number; // chord size
   hold: number; // slots, 0 = tap
   kind: NoteKind | null;
+  /** Roll taps. */
+  taps: number;
 }
 
 /** Tiny deterministic PRNG (mulberry32). */
@@ -163,7 +162,12 @@ function groupBars(slots: readonly Slot[]): Bar[] {
 /** Bar intensity from smoothed mean onset strength: quantiles over the track with absolute floors. */
 export function rateIntensity(bars: Bar[]): void {
   const e = bars.map((b) => b.slots.reduce((acc, s) => acc + s.strength, 0) / Math.max(1, b.slots.length));
-  const sm = e.map((_, i) => 0.25 * (e[i - 1] ?? e[i]) + 0.5 * e[i] + 0.25 * (e[i + 1] ?? e[i]));
+  // Smooth within an 8-bar phrase only: a chorus starting at bar 8 must not be dragged down by the intro.
+  const sm = e.map((_, i) => {
+    const prev = i % PHRASE_BARS === 0 ? e[i] : (e[i - 1] ?? e[i]);
+    const next = i % PHRASE_BARS === PHRASE_BARS - 1 ? e[i] : (e[i + 1] ?? e[i]);
+    return 0.25 * prev + 0.5 * e[i] + 0.25 * next;
+  });
   const q35 = percentile(sm, 0.35);
   const q70 = percentile(sm, 0.7);
   for (let i = 0; i < bars.length; i++) {
@@ -173,11 +177,11 @@ export function rateIntensity(bars: Bar[]): void {
 }
 
 /**
- * Lane count per 8-bar phrase: calm parts shrink to 2–3 lanes, choruses open up to 5–6.
+ * Lane count per 8-bar phrase: calm parts shrink to 3 lanes, choruses open up to 5.
  * The intro always starts on 4 lanes; a phrase with the same energy as the previous one
  * usually keeps its lane count so a chorus reads as one block.
  */
-export function planSections(bars: Bar[], difficulty: Difficulty, variation: boolean, random: () => number): SectionTuple[] {
+export function planSections(bars: Bar[], variation: boolean, random: () => number): SectionTuple[] {
   for (const b of bars) b.lanes = LANE_COUNT;
   if (!variation || bars.length < PHRASE_BARS * 2) return [[0, LANE_COUNT]];
   const sections: SectionTuple[] = [];
@@ -190,7 +194,7 @@ export function planSections(bars: Bar[], difficulty: Difficulty, variation: boo
     if (p === 0) lanes = LANE_COUNT;
     else if (intensity === prevIntensity && random() < 0.7) lanes = prevLanes;
     else {
-      const pool = LANE_POOLS[difficulty][intensity];
+      const pool = LANE_POOLS[intensity];
       const fresh = pool.filter((n) => n !== prevLanes);
       const from = fresh.length ? fresh : pool;
       lanes = from[Math.floor(random() * from.length)];
@@ -217,17 +221,33 @@ export function scoreTemplate(t: Template, strength: readonly number[], intensit
   return s;
 }
 
-export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): ChartLevel {
-  const { difficulty } = opts;
+/** Keep at most `limit` distinct note times in any 1-second window, dropping the least salient extras. */
+function capDensity(events: Event[], slots: readonly Slot[], limit: number): Event[] {
+  const kept: Event[] = [];
+  for (const ev of events) {
+    kept.push(ev);
+    const t = slots[ev.si].time;
+    const window = kept.filter((e) => slots[e.si].time > t - 1);
+    if (window.length <= limit) continue;
+    let weakest = window[0];
+    for (const e of window) {
+      const a = salience(slots[e.si]) + (e.step % 4 === 0 ? 0.3 : 0) + (e.kind ? 1 : 0);
+      const b = salience(slots[weakest.si]) + (weakest.step % 4 === 0 ? 0.3 : 0) + (weakest.kind ? 1 : 0);
+      if (a < b) weakest = e;
+    }
+    kept.splice(kept.indexOf(weakest), 1);
+  }
+  return kept;
+}
+
+export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}): ChartLevel {
   const random = rng(opts.seed ?? 1337);
   const slots = analysis.slots;
   if (slots.length < STEPS_PER_BAR) return { stars: 1, notes: [], sections: [[0, LANE_COUNT]] };
 
   const bars = groupBars(slots);
   rateIntensity(bars);
-  const sections = planSections(bars, difficulty, opts.laneVariation ?? difficulty !== 'easy', random);
-  const barSeconds = (60 / analysis.bpm) * 4;
-  const allowed = TEMPLATES.filter((t) => ALLOWED[difficulty].includes(t.category) && t.count / barSeconds <= DENSITY_LIMIT[difficulty]);
+  const sections = planSections(bars, opts.laneVariation ?? true, random);
 
   // Quiet phrases (intros, breakdowns) are boosted so their own peaks still get sparse notes;
   // true silence stays empty thanks to the absolute floor below.
@@ -235,28 +255,108 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
     const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
     const peak = percentile(phrase.flatMap((b) => b.slots.map(salience)), 0.9);
-    const factor = peak > 0.02 ? Math.min(3, Math.max(1, 0.35 / peak)) : 1;
+    const factor = peak >= MIN_RAW_STRENGTH ? Math.min(MAX_BOOST, Math.max(1, BOOST_TARGET / peak)) : 1;
     for (const b of phrase) boost.set(b.index, factor);
   }
 
-  // 1. Rhythm per bar — a template, minus notes on slots where nothing is audible.
+  // 1. Notes on the music's own hits. A slot is a candidate when its (boosted) salience is a local
+  //    peak — the hit is here, not on the neighbouring sixteenth — and stands out against the
+  //    phrase. Beats and eighths are preferred over off-sixteenths; per-bar caps by intensity keep
+  //    it playable. Drum fills and chorus streams become rolls.
+  const sal = slots.map((s) => Math.min(1, salience(s) * (boost.get(s.bar) ?? 1)));
+  const thr = new Map<number, number>();
+  for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
+    const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
+    const peak = percentile(phrase.flatMap((b) => b.slots.map((_s, k) => sal[b.start + k])), 0.9);
+    for (const b of phrase) thr.set(b.index, Math.max(MIN_NOTE_STRENGTH, PEAK_REL_THRESHOLD * peak));
+  }
   const events: Event[] = [];
+  let lastRollBar = -10;
   for (const bar of bars) {
-    const maxNotes = Math.min(MAX_NOTES[difficulty][bar.intensity], MAX_NOTES_BY_LANES[bar.lanes] ?? 16);
-    const k = boost.get(bar.index) ?? 1;
-    const strength = bar.slots.map((s) => Math.min(1, salience(s) * k));
+    const maxNotes = Math.min(MAX_NOTES[bar.intensity], MAX_NOTES_BY_LANES[bar.lanes] ?? 16);
+    const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
     const phraseEnd = bar.index % 4 === 3;
-    const scored = allowed
-      .filter((t) => t.count <= maxNotes)
-      .map((t) => ({ t, s: scoreTemplate(t, strength, bar.intensity, phraseEnd) }))
-      .sort((a, b) => b.s - a.s);
-    if (!scored.length) continue;
-    const pool = scored.filter((x) => x.s >= scored[0].s - 0.12);
-    const pick = pool[Math.floor(random() * pool.length)].t;
-    for (let step = 0; step < bar.slots.length; step++) {
-      if (pick.mask[step] === '1' && strength[step] >= MIN_NOTE_STRENGTH && bar.slots[step].strength >= 0.03) {
-        events.push({ si: bar.start + step, bar, step, size: 1, hold: 0, kind: null });
+    // Drum fill → roll: the bar ends with one or two beats where EVERY sixteenth sounds and the
+    // off-sixteenths are clearly louder than in the rest of the bar (a fill, not a steady stream).
+    // Phrase ends (bar 4/8/…) need less evidence — that is where fills live.
+    let rollFrom = -1;
+    let rollTaps = 0;
+    if (bar.intensity >= 1) {
+      const floor = phraseEnd ? ROLL_SLOT_SALIENCE * 0.75 : ROLL_SLOT_SALIENCE;
+      const need = phraseEnd ? ROLL_MEAN_SALIENCE * 0.8 : ROLL_MEAN_SALIENCE;
+      for (const len of [8, 4]) {
+        const from = bar.slots.length - len;
+        if (from < ROLL_MIN_TAPS) continue;
+        let ok = true;
+        let sum = 0;
+        let offRun = 0;
+        let offRunN = 0;
+        for (let i = from; i < bar.slots.length; i++) {
+          if (strength[i] < floor) ok = false;
+          sum += strength[i];
+          if (i % 2 === 1) {
+            offRun += strength[i];
+            offRunN++;
+          }
+        }
+        if (!ok || sum / len < need) continue;
+        let offRest = 0;
+        let offRestN = 0;
+        for (let i = 1; i < from; i += 2) {
+          offRest += strength[i];
+          offRestN++;
+        }
+        const contrast = offRun / Math.max(1, offRunN) / Math.max(0.06, offRest / Math.max(1, offRestN));
+        if (contrast >= ROLL_CONTRAST) {
+          rollFrom = from;
+          rollTaps = Math.min(ROLL_MAX_TAPS, len);
+          break;
+        }
       }
+    }
+    // Stream → roll: a chorus bar whose second half has four audible eighths becomes "drum it" —
+    // the same four hits the player would tap anyway, but in one lane as a Taiko-style roll.
+    if (
+      rollFrom < 0 &&
+      bar.intensity === 2 &&
+      bar.index - lastRollBar >= ROLL_COOLDOWN_BARS &&
+      [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH) &&
+      random() < ROLL_STREAM_CHANCE
+    ) {
+      rollFrom = 8;
+      rollTaps = 4;
+    }
+    if (rollFrom >= 0) {
+      // Physical limit: taps per second. At 200+ BPM a one-beat fill is too short to roll — keep the taps.
+      const endIdx = Math.min(slots.length - 1, bar.start + bar.slots.length);
+      const dur = slots[endIdx].time - bar.slots[rollFrom].time;
+      rollTaps = Math.min(rollTaps, Math.floor(dur * ROLL_MAX_TAPS_PER_SEC));
+      if (rollTaps < ROLL_MIN_TAPS) rollFrom = -1;
+    }
+    if (rollFrom >= 0) lastRollBar = bar.index;
+    const floor = thr.get(bar.index) ?? MIN_NOTE_STRENGTH;
+    const cand: { step: number; score: number }[] = [];
+    for (let step = 0; step < bar.slots.length; step++) {
+      if (rollFrom >= 0 && step >= rollFrom) continue;
+      const gi = bar.start + step;
+      const v = sal[gi];
+      if (v < floor || bar.slots[step].strength < MIN_RAW_STRENGTH) continue;
+      if (v < (sal[gi - 1] ?? 0) || v < (sal[gi + 1] ?? 0)) continue;
+      const gridBonus = step % 4 === 0 ? 0.15 : step % 2 === 0 ? 0.05 : -0.12;
+      cand.push({ step, score: v + gridBonus + (step % 8 === 0 ? 0.03 : 0) });
+    }
+    cand.sort((a, b) => b.score - a.score);
+    const chosen: number[] = [];
+    for (const c of cand) {
+      if (chosen.length >= maxNotes) break;
+      if (chosen.some((st) => Math.abs(st - c.step) < MIN_GAP_SLOTS)) continue;
+      chosen.push(c.step);
+    }
+    chosen.sort((a, b) => a - b);
+    for (const step of chosen) events.push({ si: bar.start + step, bar, step, size: 1, hold: 0, kind: null, taps: 0 });
+    if (rollFrom >= 0 && rollFrom < bar.slots.length) {
+      const len = bar.slots.length - rollFrom;
+      events.push({ si: bar.start + rollFrom, bar, step: rollFrom, size: 1, hold: len, kind: 'roll', taps: Math.max(ROLL_MIN_TAPS, Math.min(rollTaps, len)) });
     }
   }
 
@@ -264,7 +364,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
   const lastBarOfSection = new Set<number>();
   for (let i = 0; i + 1 < bars.length; i++) if (bars[i + 1].lanes !== bars[i].lanes) lastBarOfSection.add(bars[i].index);
   let filtered = events.filter((ev) => !(lastBarOfSection.has(ev.bar.index) && ev.step >= STEPS_PER_BAR - SECTION_GAP_SLOTS));
-  filtered = capDensity(filtered, slots, DENSITY_LIMIT[difficulty]);
+  filtered = capDensity(filtered, slots, DENSITY_LIMIT);
   events.length = 0;
   events.push(...filtered);
 
@@ -278,8 +378,19 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     const endSi = windowBars[windowBars.length - 1].start + windowBars[windowBars.length - 1].slots.length;
     for (let i = events.length - 1; i >= 0; i--) {
       const e = events[i];
-      if ((e.si >= startSi - 4 && e.si < endSi) || e.kind) {
-        if (e.si >= startSi - 4 && e.si < endSi) events.splice(i, 1);
+      if (e.si >= startSi - 4 && e.si < endSi) events.splice(i, 1);
+      else if (e.hold > 0 && e.si < startSi - 4 && e.si + e.hold > startSi - 4) {
+        e.hold = Math.max(2, startSi - 4 - e.si);
+        if (e.kind === 'roll') {
+          // A shortened roll must not become a tap-rate impossibility: fewer taps, or a plain tap.
+          const dur = slots[Math.min(slots.length - 1, e.si + e.hold)].time - slots[e.si].time;
+          e.taps = Math.min(e.taps, Math.floor(dur * ROLL_MAX_TAPS_PER_SEC));
+          if (e.taps < ROLL_MIN_TAPS) {
+            e.kind = null;
+            e.hold = 0;
+            e.taps = 0;
+          }
+        }
       }
     }
     const candidates: number[] = [];
@@ -287,26 +398,27 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     candidates.sort((a, b) => salience(slots[b]) - salience(slots[a]));
     const chosen: number[] = [];
     for (const si of candidates) {
-      if (chosen.length >= CIRCLES_PER_WINDOW[difficulty]) break;
+      if (chosen.length >= CIRCLES_PER_WINDOW) break;
       if (chosen.some((c) => Math.abs(c - si) < CIRCLE_MIN_GAP_SLOTS)) continue;
       chosen.push(si);
     }
     for (const si of chosen) {
       const b = windowBars.find((wb) => si >= wb.start && si < wb.start + wb.slots.length) ?? bar;
-      events.push({ si, bar: b, step: si - b.start, size: 1, hold: 0, kind: 'circle' });
+      events.push({ si, bar: b, step: si - b.start, size: 1, hold: 0, kind: 'circle', taps: 0 });
     }
   }
   events.sort((a, b) => a.si - b.si);
 
-  // 1c. Spell notes: the first lane note of every 8th bar (from bar 4) alternates slow / heart.
+  // 1c. Spell notes: the first plain lane note of every 8th bar (from bar 4) alternates slow / heart.
   let spellCount = 0;
   for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
-    const ev = events.find((e) => e.bar.index === b && !e.kind) ?? events.find((e) => e.bar.index === b + 1 && !e.kind);
+    const ev = events.find((e) => e.bar.index === b && !e.kind && !e.hold) ?? events.find((e) => e.bar.index === b + 1 && !e.kind && !e.hold);
     if (!ev) continue;
     ev.kind = SPELL_ORDER[spellCount++ % SPELL_ORDER.length];
   }
 
-  // 2. Holds on sustained melodic sounds, chords on strong downbeats — under the two-finger rule.
+  // 2. Holds on sustained melodic sounds (some become slides), chords on strong downbeats —
+  //    under the two-finger rule.
   const holdBudget = new Map<number, number>();
   const chordBudget = new Map<number, number>();
   const activeHoldEnds: number[] = [];
@@ -318,18 +430,41 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
     const intensity = ev.bar.intensity;
 
     while (activeHoldEnds.length && activeHoldEnds[0] <= ev.si) activeHoldEnds.shift();
+    if (ev.kind === 'roll') {
+      if (activeHoldEnds.length) {
+        ev.kind = null;
+        ev.hold = 0;
+        ev.taps = 0;
+      } else {
+        activeHoldEnds.push(ev.si + ev.hold);
+        activeHoldEnds.sort((a, b) => a - b);
+      }
+      continue;
+    }
     if (ev.kind) continue; // spells and circles stay plain taps
-    const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET[difficulty];
+    const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET;
     const melodic = slot.low < 0.55;
+    const bassLen = Math.min(slot.sustain, gapNext, 8);
+    const bassDur = slots[Math.min(slots.length - 1, ev.si + bassLen)].time - slot.time;
+    const bassTaps = Math.min(ROLL_MAX_TAPS, Math.round(bassLen / 2) + 1, Math.floor(bassDur * ROLL_MAX_TAPS_PER_SEC));
+    if (slot.sustain >= 4 && !melodic && intensity >= 1 && budget > 0 && !activeHoldEnds.length && gapNext >= 4 && bassTaps >= ROLL_MIN_TAPS && random() < ROLL_ON_BASS_CHANCE) {
+      const len = bassLen;
+      ev.kind = 'roll';
+      ev.hold = len;
+      ev.taps = bassTaps;
+      holdBudget.set(ev.bar.index, budget - 1);
+      activeHoldEnds.push(ev.si + len);
+      activeHoldEnds.sort((a, b) => a - b);
+      continue;
+    }
     if (slot.sustain >= 2 && melodic && budget > 0 && activeHoldEnds.length < MAX_ACTIVE_HOLDS && random() < HOLD_CHANCE[intensity]) {
-      let dur = Math.min(slot.sustain, MAX_HOLD_SLOTS[difficulty]);
-      if (difficulty === 'easy') dur = Math.min(dur, gapNext - 1);
-      // A hold must end before the silence that precedes a lane-count change.
+      let dur = Math.min(slot.sustain, MAX_HOLD_SLOTS);
       const barEnd = ev.bar.start + ev.bar.slots.length;
       if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
       else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd + STEPS_PER_BAR - SECTION_GAP_SLOTS - ev.si);
       if (dur >= 2) {
         ev.hold = dur;
+        if (dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && random() < SLIDE_CHANCE) ev.kind = 'slide';
         holdBudget.set(ev.bar.index, budget - 1);
         activeHoldEnds.push(ev.si + dur);
         activeHoldEnds.sort((a, b) => a - b);
@@ -337,46 +472,27 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions): Char
       }
     }
 
-    if (difficulty === 'easy') continue;
-    if (activeHoldEnds.length) continue; // two-finger rule: one thumb is busy holding
+    if (activeHoldEnds.length) continue; // two-finger rule: one thumb is busy
     const onDown = ev.step === 0 || ev.step === 8;
     const accent = slot.strength >= 0.9;
     const inStream = gapPrev <= 1 || gapNext <= 1;
     const chords = chordBudget.get(ev.bar.index) ?? 0;
-    const wantChord = (intensity === 2 && onDown) || (intensity >= 1 && accent && onDown) || (difficulty === 'hard' && accent);
-    if (!wantChord || chords >= (difficulty === 'hard' ? 4 : 2)) continue;
-    if (difficulty === 'normal' && inStream) continue;
-    if (difficulty === 'hard' && inStream && ev.step !== 0) continue;
+    const wantChord = (intensity === 2 && onDown) || (intensity >= 1 && accent && onDown);
+    if (!wantChord || chords >= 2 || inStream) continue;
     ev.size = MAX_CHORD;
     chordBudget.set(ev.bar.index, chords + 1);
   }
 
+  // 2a. Nothing else while a slide is in progress — a moving thumb cannot tap.
+  const slideSpans = events.filter((e) => e.kind === 'slide').map((e) => [e.si, e.si + e.hold] as const);
+  const playable = events.filter((e) => e.kind === 'slide' || !slideSpans.some(([a, b]) => e.si > a && e.si < b));
+
   // 3. Lanes.
-  const notes = assignLanes(events, slots, difficulty, random);
-  return { stars: rateStars(notes), notes, sections };
+  const notes = assignLanes(playable, slots, random);
+  return { stars: rateStars(notes, analysis.bpm), notes, sections };
 }
 
-/** Keep at most `limit` distinct note times in any 1-second window, dropping the least salient extras. */
-function capDensity(events: Event[], slots: readonly Slot[], limit: number): Event[] {
-  const kept: Event[] = [];
-  for (const ev of events) {
-    kept.push(ev);
-    const t = slots[ev.si].time;
-    const window = kept.filter((e) => slots[e.si].time > t - 1);
-    if (window.length <= limit) continue;
-    // Drop the weakest in the window (never the one on a downbeat if avoidable).
-    let weakest = window[0];
-    for (const e of window) {
-      const a = salience(slots[e.si]) + (e.step % 4 === 0 ? 0.3 : 0);
-      const b = salience(slots[weakest.si]) + (weakest.step % 4 === 0 ? 0.3 : 0);
-      if (a < b) weakest = e;
-    }
-    kept.splice(kept.indexOf(weakest), 1);
-  }
-  return kept;
-}
-
-type MotionKind = 'up' | 'down' | 'zigzag' | 'trill' | 'jack';
+type MotionKind = 'up' | 'down' | 'zigzag' | 'trill';
 
 class Motion {
   private seq: number[];
@@ -399,11 +515,6 @@ class Motion {
         const left = up.filter((l) => l < n / 2);
         const right = up.filter((l) => l >= n / 2);
         this.seq = [left[Math.floor(random() * left.length)], right[Math.floor(random() * right.length)]];
-        break;
-      }
-      case 'jack': {
-        const j = up.flatMap((l) => [l, l]);
-        this.seq = random() < 0.5 ? j : j.reverse();
         break;
       }
     }
@@ -441,10 +552,10 @@ function bandLanes(n: number, band: 0 | 1 | 2): number[] {
   return out.length ? out : [band === 0 ? 0 : band === 2 ? n - 1 : Math.floor(n / 2)];
 }
 
-function assignLanes(events: readonly Event[], slots: readonly Slot[], difficulty: Difficulty, random: () => number): NoteTuple[] {
+function assignLanes(events: readonly Event[], slots: readonly Slot[], random: () => number): NoteTuple[] {
   const notes: NoteTuple[] = [];
   const heldUntil = new Array<number>(8).fill(-1);
-  /** Consecutive events that used each lane — the "≤ 2 in a row per lane" rule (GDD §4). */
+  /** Consecutive events that used each lane — the "≤ 2 in a row per lane" rule. */
   const laneRun = new Array<number>(8).fill(0);
   let lastLane = -1;
   let lastSi = -100;
@@ -453,17 +564,15 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
   let motionBar = -1;
   let lastLanes = -1;
   let circleIdx = -1;
+  let circleOffset = 0;
   let lastCircleSi = -100;
 
   for (const ev of events) {
     const slot = slots[ev.si];
     const n = ev.bar.lanes;
     if (n !== lastLanes) {
-      // Section change: old holds cannot carry over, runs restart.
       heldUntil.fill(-1);
-      laneRun.fill(0);
       lastLanes = n;
-      lastLane = -1;
     }
     const free: number[] = [];
     for (let l = 0; l < n; l++) if (heldUntil[l] < ev.si) free.push(l);
@@ -472,7 +581,7 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
 
     if (ev.bar.index !== motionBar) {
       motionBar = ev.bar.index;
-      const kinds: MotionKind[] = difficulty === 'hard' && ev.bar.intensity === 2 ? ['up', 'down', 'zigzag', 'trill', 'jack'] : ['up', 'down', 'zigzag', 'trill'];
+      const kinds: MotionKind[] = ['up', 'down', 'zigzag', 'trill'];
       motion = new Motion(kinds[Math.floor(random() * kinds.length)], n, random);
     }
 
@@ -482,7 +591,7 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
     let lanes: number[];
     if (ev.size >= 2) {
       const pair = chordPairs(n, ev.step === 0).find((p) => p.every((l) => candidates.includes(l)));
-      lanes = pair ? [...pair] : [candidates[Math.floor(random() * candidates.length)]]; // no clean pair → single note
+      lanes = pair ? [...pair] : [candidates[Math.floor(random() * candidates.length)]];
     } else {
       let lane: number;
       if (gap <= 1 && motion) {
@@ -506,9 +615,13 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
         if (ev.kind === 'circle') {
           // Circles zig-zag across the whole field so a group reads as a path: left, right, centre, …
           const spread = [0, n - 1, Math.floor(n / 2), 1, n - 2, Math.floor(n / 2) - 1].filter((l, i, arr) => l >= 0 && l < n && arr.indexOf(l) === i);
-          circleIdx = ev.si - lastCircleSi > 24 ? 0 : circleIdx + 1; // a new window (> 1.5 bars away) restarts the zig-zag
+          if (ev.si - lastCircleSi > 24) {
+            // New group: start the path on a lane the player has not just been hammering.
+            circleIdx = 0;
+            circleOffset = Math.max(0, spread.findIndex((l) => laneRun[l] < 2));
+          } else circleIdx++;
           lastCircleSi = ev.si;
-          lane = spread[circleIdx % spread.length];
+          lane = spread[(circleOffset + circleIdx) % spread.length];
         }
       }
       lanes = [lane];
@@ -519,8 +632,25 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
       if (ev.hold > 0) {
         const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);
         const dur = round3(slots[endIdx].time - slot.time);
-        notes.push([time, lane, dur]);
-        heldUntil[lane] = endIdx;
+        if (ev.kind === 'roll') {
+          notes.push([time, lane, dur, 'roll', ev.taps]);
+          heldUntil[lane] = endIdx;
+        } else if (ev.kind === 'slide') {
+          // Slide into the free lane next door (never across a lane); both lanes are blocked for the duration.
+          const options = [lane + 1, lane - 1].filter((l) => l >= 0 && l < n && heldUntil[l] < ev.si);
+          if (options.length) {
+            const end = options[Math.floor(random() * Math.min(2, options.length))];
+            notes.push([time, lane, dur, 'slide', end]);
+            heldUntil[lane] = endIdx;
+            heldUntil[end] = endIdx;
+          } else {
+            notes.push([time, lane, dur]);
+            heldUntil[lane] = endIdx;
+          }
+        } else {
+          notes.push([time, lane, dur]);
+          heldUntil[lane] = endIdx;
+        }
       } else if (ev.kind) notes.push([time, lane, 0, ev.kind]);
       else notes.push([time, lane]);
     }
@@ -537,8 +667,11 @@ function assignLanes(events: readonly Event[], slots: readonly Slot[], difficult
 
 const round3 = (v: number): number => Math.round(v * 1000) / 1000;
 
-/** Difficulty rating 1–10 from average and peak note density plus hold share. */
-export function rateStars(notes: readonly NoteTuple[]): number {
+/**
+ * Difficulty rating 1–10: average density, how much the peaks exceed it, share of hold-type notes,
+ * share of special mechanics (slides / rolls / circles) and tempo (faster songs scroll faster).
+ */
+export function rateStars(notes: readonly NoteTuple[], bpm = 120): number {
   if (notes.length < 2) return 1;
   const times = [...new Set(notes.map((n) => n[0]))];
   const span = Math.max(1, times[times.length - 1] - times[0]);
@@ -549,29 +682,21 @@ export function rateStars(notes: readonly NoteTuple[]): number {
     while (times[i] - times[j] > 2) j++;
     peak = Math.max(peak, (i - j + 1) / 2);
   }
-  const holds = notes.filter((n) => n.length === 3).length / notes.length;
-  // Single-chart mode: 1 nps ≈ ★3, 2.3 nps ≈ ★6, 3+ nps ≈ ★8+.
-  const raw = 0.3 + avgNps * 2.0 + peak * 0.3 + holds * 0.8;
+  const holds = notes.filter((n) => n.length >= 3 && (n[2] as number) > 0).length / notes.length;
+  const special = notes.filter((n) => n[3] === 'slide' || n[3] === 'roll' || n[3] === 'circle').length / notes.length;
+  const tempo = Math.max(0, Math.min(1, (bpm - 120) / 70));
+  const raw = avgNps * 2.4 + Math.max(0, peak - avgNps) * 0.6 + holds + special * 3 + tempo * 1.2 - 0.6;
   return Math.max(1, Math.min(10, Math.round(raw)));
 }
 
-export interface GenerateAllOptions {
-  seed?: number;
-  /** Per-difficulty override of lane variation (default: off for easy, on otherwise). */
-  laneVariation?: Partial<Record<Difficulty, boolean>>;
-}
-
-export function generateAllDifficulties(analysis: SongAnalysis, seedOrOpts: number | GenerateAllOptions = 1337): Record<Difficulty, ChartLevel> {
-  const opts = typeof seedOrOpts === 'number' ? { seed: seedOrOpts } : seedOrOpts;
-  const out = {} as Record<Difficulty, ChartLevel>;
-  for (const difficulty of DIFFICULTIES) {
-    out[difficulty] = composeChart(analysis, { difficulty, seed: opts.seed ?? 1337, laneVariation: opts.laneVariation?.[difficulty] });
-  }
-  // Stars must be monotonic across difficulties.
-  out.normal.stars = Math.max(out.normal.stars, out.easy.stars + 1);
-  out.hard.stars = Math.max(out.hard.stars, out.normal.stars + 1);
-  out.hard.stars = Math.min(10, out.hard.stars);
-  out.normal.stars = Math.min(9, out.normal.stars);
-  out.easy.stars = Math.min(8, out.easy.stars);
-  return out;
+/** Mechanic counts for the song card. */
+export function chartFeatures(level: ChartLevel): { circles: number; rolls: number; slides: number; holds: number; laneChanges: number } {
+  const kind = (k: NoteKind) => level.notes.filter((n) => n[3] === k).length;
+  return {
+    circles: kind('circle'),
+    rolls: kind('roll'),
+    slides: kind('slide'),
+    holds: level.notes.filter((n) => n.length === 3 && (n[2] as number) > 0).length,
+    laneChanges: Math.max(0, (level.sections?.length ?? 1) - 1),
+  };
 }

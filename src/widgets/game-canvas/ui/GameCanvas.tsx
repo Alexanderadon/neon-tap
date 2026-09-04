@@ -4,7 +4,6 @@ import { navigate } from '@/shared/lib/router';
 import { dict } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
 import type { ChartFile } from '@/shared/types/chart';
-import type { Difficulty } from '@/shared/config/constants';
 import { getSettings, updateSettings } from '@/entities/settings';
 import { GameSession, type SessionEvent } from '@/features/play-chart';
 import { saveResult } from '@/features/save-result';
@@ -14,7 +13,6 @@ import './game-canvas.css';
 
 interface Props {
   chart: ChartFile;
-  difficulty: Difficulty;
   source: ChartSource;
   /** Pre-decoded audio for custom songs. */
   audioBuffer: AudioBuffer | null;
@@ -23,7 +21,7 @@ interface Props {
 const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
 
 /** Hosts the canvas, owns the GameSession lifecycle and routes session events to voice/save. */
-export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
+export function GameCanvas({ chart, source, audioBuffer }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -91,7 +89,6 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
         if (cancelled || !canvasRef.current) return;
         session = new GameSession({
           chart,
-          difficulty,
           audioBuffer: buffer,
           canvas: canvasRef.current,
           userOffset: settings.audioOffsetMs / 1000,
@@ -144,7 +141,7 @@ export function GameCanvas({ chart, difficulty, source, audioBuffer }: Props) {
       session?.destroy();
       sessionRef.current = null;
     };
-  }, [chart, difficulty, source, audioBuffer]);
+  }, [chart, source, audioBuffer]);
 
   return (
     <div className="game-root">

@@ -2,7 +2,7 @@ import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine } from '@/shared/lib/audio';
 import { Button, Screen } from '@/shared/ui';
-import { WorldMap } from '@/widgets/world-map';
+import { TrackList } from '@/widgets/track-list';
 import './menu.css';
 
 export function MenuPage() {
@@ -23,7 +23,7 @@ export function MenuPage() {
           </Button>
         </nav>
       </header>
-      <WorldMap />
+      <TrackList />
       <footer className="menu-foot">
         <span>{dict.madeWith}</span>
         <span>

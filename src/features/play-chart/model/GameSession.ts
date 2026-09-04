@@ -1,5 +1,5 @@
-import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS } from '@/shared/config/constants';
-import { audioEngine, Clock, sfxComboBreak, sfxHit, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
+import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES } from '@/shared/config/constants';
+import { audioEngine, Clock, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
 import { FpsMeter } from '@/shared/lib/render';
@@ -7,11 +7,9 @@ import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type Section, type SpellKind } from '@/entities/chart';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
-import type { Difficulty } from '@/shared/config/constants';
-import { NoteManager, type JudgeEvent } from './NoteManager';
+import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 import { Lives } from './Lives';
 import { Renderer, circleY } from '../lib/Renderer';
-import { NoteState } from './NoteManager';
 import { laneAtPoint } from '../lib/layout';
 
 export type SessionEvent =
@@ -31,7 +29,6 @@ export type SessionEvent =
 
 export interface SessionOptions {
   chart: ChartFile;
-  difficulty: Difficulty;
   audioBuffer: AudioBuffer;
   canvas: HTMLCanvasElement;
   /** Seconds; from calibration. */
@@ -66,7 +63,7 @@ const AUTO_MAX = 0.08;
 
 /**
  * Owns one play-through: audio, clock, notes, scoring, lives, spells, input and rendering.
- * Restart = reset indices + `source.start()` — the track stays decoded in memory (GDD §1.4).
+ * Restart = reset indices + `source.start()` — the track stays decoded in memory.
  */
 export class GameSession {
   private readonly clock: Clock;
@@ -85,6 +82,7 @@ export class GameSession {
   private destroyed = false;
   private lastJudgement: Judgement | null = null;
   private lastJudgementAt = -1;
+  private lastGain = 0;
   private comboBreakAt = -1;
   private comboGrewAt = -1;
   private heartLostAt = -1;
@@ -104,7 +102,7 @@ export class GameSession {
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
     this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0 });
-    const level = opts.chart.charts[opts.difficulty];
+    const level = opts.chart.chart;
     const parsed = parseChartLevel(level);
     this.sections = parseSections(level);
     this.notes.load(parsed);
@@ -129,18 +127,26 @@ export class GameSession {
         const r = opts.canvas.getBoundingClientRect();
         const px = x - r.left;
         const py = y - r.top;
-        // A tap on a visible circle hits the circle, not the lane under it.
         if (this.circleAt(px, py)) return CIRCLE_BUCKET;
         return laneAtPoint(this.renderer.layout, px, py, opts.touch);
       },
     });
     this.notes.onJudge = this.handleJudge;
+    this.notes.onRollTap = (note) => {
+      sfxHit(1);
+      this.renderer.rollTap(note.lane, note.lanes, note.taps, note.extra);
+    };
     this.resizeObserver = new ResizeObserver(() => this.renderer.resize());
     this.resizeObserver.observe(opts.canvas);
   }
 
   get approachTime(): number {
     return clamp((APPROACH_BEATS * 60) / Math.max(60, this.opts.chart.bpm), APPROACH_MIN, APPROACH_MAX);
+  }
+
+  /** Dev: current song time (for the `window.__neon` hook in no-fail sessions). */
+  get songTime(): number {
+    return this.clock.songTime();
   }
 
   /** Is there a pending circle under the pointer (generous radius) within its approach window? */
@@ -180,6 +186,7 @@ export class GameSession {
     this.started = true;
     this.lastJudgement = null;
     this.lastJudgementAt = -1;
+    this.lastGain = 0;
     this.comboBreakAt = -1;
     this.comboGrewAt = -1;
     this.heartLostAt = -1;
@@ -205,7 +212,6 @@ export class GameSession {
 
   resume(): void {
     if (!this.paused) return;
-    // Rewind slightly so the player can re-enter the flow; the slow spell ends on resume.
     const pos = Math.max(0, this.clock.position() - 1);
     const startTime = audioEngine.play(this.opts.audioBuffer, pos, () => this.finish(), 0.3);
     this.clock.start(startTime, pos);
@@ -218,11 +224,6 @@ export class GameSession {
 
   get isPaused(): boolean {
     return this.paused;
-  }
-
-  /** Dev: current song time (for the `window.__neon` hook in no-fail sessions). */
-  get songTime(): number {
-    return this.clock.songTime();
   }
 
   /** Dev: trigger the slow-motion spell now (only exposed in no-fail sessions). */
@@ -239,8 +240,10 @@ export class GameSession {
     audioEngine.stop();
   }
 
-  private onPress = ({ lane, audioTime }: { lane: number; audioTime: number }): void => {
+  private onPress = ({ lane, audioTime, viaMove }: { lane: number; audioTime: number; viaMove?: boolean }): void => {
     if (!this.started || this.paused || this.finished) return;
+    if (lane < MAX_LANES) this.renderer.pressFeedback(lane);
+    if (viaMove) return; // a finger sliding into a lane is not a new tap
     this.notes.press(lane, this.clock.toSongTime(audioTime));
   };
 
@@ -252,7 +255,9 @@ export class GameSession {
   private handleJudge = ({ note, judgement, tail }: JudgeEvent): void => {
     if (this.finished) return;
     const prevCombo = this.scoring.combo;
+    const before = this.scoring.score;
     this.scoring.register(judgement);
+    this.lastGain = this.scoring.score - before;
     this.lastJudgement = judgement;
     this.lastJudgementAt = this.clock.songTime();
     this.renderer.hitFeedback(note.lane, note.lanes, judgement, note.kind === 'circle' ? note.seq : 0);
@@ -289,7 +294,7 @@ export class GameSession {
     const combo = this.scoring.combo;
     if (MILESTONES.includes(combo)) {
       sfxMilestone();
-      this.renderer.comboMilestone();
+      this.renderer.comboMilestone(combo);
       this.opts.onEvent({ type: 'combo-milestone', combo });
     }
     this.opts.onEvent({ type: 'judge', judgement, combo });
@@ -311,7 +316,6 @@ export class GameSession {
     const next = clamp(this.autoAdjust + m * 0.5, -AUTO_MAX, AUTO_MAX);
     const applied = next - this.autoAdjust;
     this.autoAdjust = next;
-    // A positive delta means the player is late → the audio reaches them late → raise the offset.
     this.clock.userOffset += applied;
     for (let i = 0; i < this.deltas.length; i++) this.deltas[i] -= applied;
   }
@@ -338,14 +342,13 @@ export class GameSession {
 
     const songTime = this.clock.songTime();
     if (!this.paused && !this.finished) {
-      // Lane-count sections: switch (with the transition FX) when the song reaches a new one.
       const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
       const lanes = this.sections[si].lanes;
       if (lanes !== this.renderer.lanes) {
+        if (songTime > 0) sfxLanes(lanes > this.renderer.lanes);
         this.renderer.setLanes(lanes, songTime <= 0);
         this.opts.onEvent({ type: 'lanes', lanes });
       }
-      // Slow-motion release: ramp music and clock back to full speed together.
       if (this.slowUntil > 0 && !this.slowReleasing && songTime >= this.slowUntil - SLOW_RAMP_OUT * SLOW_RATE) {
         this.slowReleasing = true;
         const t = audioEngine.now();
@@ -359,7 +362,7 @@ export class GameSession {
       if (songTime >= this.endTime) this.finish();
     }
 
-    // Audio-reactive pulse: bass envelope with instant attack and ~150 ms decay, gated so sustained
+    // Audio-reactive pulse: bass envelope with instant attack and quick decay, gated so sustained
     // bass does not glow permanently — only hits above the running floor light up.
     const bass = this.paused ? 0 : audioEngine.bassLevel();
     this.bassEnv = Math.max(bass, this.bassEnv - dt * 6);
@@ -383,6 +386,7 @@ export class GameSession {
       held: this.isHeld,
       lastJudgement: this.lastJudgement,
       lastJudgementAge: this.lastJudgementAt < 0 ? 1 : songTime - this.lastJudgementAt,
+      lastGain: this.lastGain,
       comboBreakAge: this.comboBreakAt < 0 ? -1 : songTime - this.comboBreakAt,
       debug: this.opts.debug
         ? {
@@ -426,7 +430,6 @@ export class GameSession {
     const s = this.scoring;
     const result: PlayResult = {
       trackId: this.opts.chart.id,
-      difficulty: this.opts.difficulty,
       score: s.score,
       accuracy: s.accuracy,
       rank: this.failed ? 'D' : s.rank,
@@ -438,7 +441,6 @@ export class GameSession {
       failed: this.failed,
       hearts: this.lives.hearts,
     };
-    // Hand the learned latency back so it can be persisted (only after enough evidence).
     const autoOffsetMs = this.opts.autoOffset && this.hitsSeen >= 60 && Math.abs(this.autoAdjust) >= 0.01 ? Math.round(this.clock.userOffset * 1000) : null;
     this.failed = false;
     this.opts.onEvent({ type: 'finish', result, autoOffsetMs });

@@ -4,6 +4,8 @@ export interface LaneEvent {
   lane: number;
   /** Absolute audio-clock time of the press/release. */
   audioTime: number;
+  /** True when the event comes from a finger sliding between lanes (not a fresh tap). */
+  viaMove?: boolean;
 }
 
 export interface InputHandlers {
@@ -26,6 +28,8 @@ interface Options {
  * Event timestamps are converted from `performance.now()` domain to the audio clock, which
  * compensates for the delay between the physical key press and the JS handler running.
  * Key → lane mapping is delegated so the playfield can change its lane count mid-song.
+ * A finger that slides into another lane releases the old lane and presses the new one
+ * with `viaMove` set, which is how slide notes are followed.
  */
 export class Input {
   private readonly held = new Uint8Array(INPUT_SLOTS);
@@ -44,6 +48,7 @@ export class Input {
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.releaseAll);
     target.addEventListener('pointerdown', this.onPointerDown, { passive: false });
+    target.addEventListener('pointermove', this.onPointerMove, { passive: false });
     target.addEventListener('pointerup', this.onPointerUp, { passive: false });
     target.addEventListener('pointercancel', this.onPointerUp, { passive: false });
     target.addEventListener('contextmenu', prevent);
@@ -55,6 +60,7 @@ export class Input {
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('blur', this.releaseAll);
     this.target.removeEventListener('pointerdown', this.onPointerDown);
+    this.target.removeEventListener('pointermove', this.onPointerMove);
     this.target.removeEventListener('pointerup', this.onPointerUp);
     this.target.removeEventListener('pointercancel', this.onPointerUp);
     this.target.removeEventListener('contextmenu', prevent);
@@ -74,16 +80,16 @@ export class Input {
     return this.opts.audioNow() - Math.min(ageSec, 0.1);
   }
 
-  private press(lane: number, audioTime: number): void {
+  private press(lane: number, audioTime: number, viaMove = false): void {
     if (this.held[lane]) return;
     this.held[lane] = 1;
-    this.handlers?.onPress({ lane, audioTime });
+    this.handlers?.onPress({ lane, audioTime, viaMove });
   }
 
-  private release(lane: number, audioTime: number): void {
+  private release(lane: number, audioTime: number, viaMove = false): void {
     if (!this.held[lane]) return;
     this.held[lane] = 0;
-    this.handlers?.onRelease({ lane, audioTime });
+    this.handlers?.onRelease({ lane, audioTime, viaMove });
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -112,6 +118,20 @@ export class Input {
     if (lane < 0) return;
     this.pointerLane.set(e.pointerId, lane);
     this.press(lane, this.eventAudioTime(e));
+  };
+
+  private onPointerMove = (e: PointerEvent): void => {
+    const old = this.pointerLane.get(e.pointerId);
+    if (old === undefined) return;
+    e.preventDefault();
+    const lane = this.opts.laneAt(e.clientX, e.clientY);
+    if (lane < 0 || lane === old) return;
+    this.pointerLane.set(e.pointerId, lane);
+    const t = this.eventAudioTime(e);
+    let stillHeld = false;
+    for (const l of this.pointerLane.values()) if (l === old) stillHeld = true;
+    if (!stillHeld) this.release(old, t, true);
+    this.press(lane, t, true);
   };
 
   private onPointerUp = (e: PointerEvent): void => {

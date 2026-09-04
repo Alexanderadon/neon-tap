@@ -13,3 +13,4 @@ assets-src/sfx-raw/
 
 .vercel
 .env*.local
+.tmp

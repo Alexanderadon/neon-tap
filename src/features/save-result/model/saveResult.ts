@@ -13,7 +13,7 @@ export function saveResult(result: PlayResult, source: ChartSource): { newRecord
     return meta;
   }
   const starsBefore = starsForTrack(progressStore.get().tracks[result.trackId]);
-  const newRecord = recordResult(result.trackId, result.difficulty, {
+  const newRecord = recordResult(result.trackId, {
     score: result.score,
     accuracy: result.accuracy,
     rank: result.rank,

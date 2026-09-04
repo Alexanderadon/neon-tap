@@ -1,4 +1,3 @@
-import type { Difficulty } from '@/shared/config/constants';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 import { EMPTY_SAVE, mergeResult, migrate, type BestResult, type SaveData } from './SaveData';
 
@@ -23,8 +22,8 @@ progressStore.subscribe(() => {
   }
 });
 
-export function recordResult(trackId: string, difficulty: Difficulty, result: BestResult): boolean {
-  const { save, newRecord } = mergeResult(progressStore.get(), trackId, difficulty, result);
+export function recordResult(trackId: string, result: BestResult): boolean {
+  const { save, newRecord } = mergeResult(progressStore.get(), trackId, result);
   progressStore.set(save);
   return newRecord;
 }

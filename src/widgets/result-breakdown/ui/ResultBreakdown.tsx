@@ -12,12 +12,12 @@ interface Props {
   result: PlayResult;
   meta: PlaySession['resultMeta'];
   title: string;
-  difficultyLabel: string;
+  subtitle: string;
   onRetry: () => void;
 }
 
 /** Result screen body: rank, breakdown, near-miss hint and a dominant RETRY (GDD §1.3). */
-export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry }: Props) {
+export function ResultBreakdown({ result, meta, title, subtitle, onRetry }: Props) {
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function ResultBreakdown({ result, meta, title, difficultyLabel, onRetry 
     <div className="result">
       <div className="result-track">
         <div className="result-title">{title}</div>
-        <div className="result-diff">{difficultyLabel}</div>
+        <div className="result-diff">{subtitle}</div>
       </div>
 
       {result.failed ? (

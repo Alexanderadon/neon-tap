@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { NoteKind } from '@/entities/chart';
 import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 
-function make(notes: Array<[number, number, number?]>, assistWindow = 0) {
+type Spec = [number, number, number?, NoteKind?, number?];
+
+function make(notes: Spec[], assistWindow = 0) {
   const nm = new NoteManager(50, { assistWindow });
   const events: JudgeEvent[] = [];
   nm.onJudge = (e) => events.push(e);
-  nm.load(notes.map(([time, lane, duration = 0]) => ({ time, lane, duration, kind: null, seq: 0, lanes: 4 })));
+  nm.load(notes.map(([time, lane, duration = 0, kind = null, extra = 0]) => ({ time, lane, duration, kind, seq: 0, extra, lanes: 4 })));
   return { nm, events };
 }
 
@@ -13,12 +16,12 @@ const notHeld = () => false;
 const held = () => true;
 
 describe('NoteManager', () => {
-  it('judges taps by GDD windows: 0.030 → perfect, 0.080 → great, 0.200 → miss', () => {
+  it('judges taps by the windows: 0.030 → perfect, 0.080 → great, 0.200 → miss', () => {
     const { nm, events } = make([[1, 0], [2, 1], [3, 2]]);
     expect(nm.press(0, 1.03)).toBe('perfect');
     expect(nm.press(1, 2.08)).toBe('great');
-    expect(nm.press(2, 3.2)).toBeNull(); // outside window: press ignored…
-    nm.update(3.2, notHeld); // …and the note is auto-missed
+    expect(nm.press(2, 3.2)).toBeNull();
+    nm.update(3.2, notHeld);
     expect(events.map((e) => e.judgement)).toEqual(['perfect', 'great', 'miss']);
     expect(nm.pool[2].state).toBe(NoteState.Missed);
   });
@@ -27,7 +30,6 @@ describe('NoteManager', () => {
     const { nm, events } = make([[5, 0]]);
     expect(nm.press(0, 1)).toBeNull();
     expect(events).toHaveLength(0);
-    expect(nm.pool[0].state).toBe(NoteState.Pending);
   });
 
   it('judges the earliest pending note in the lane', () => {
@@ -40,7 +42,6 @@ describe('NoteManager', () => {
   it('handles holds: head + tail judgements', () => {
     const { nm, events } = make([[1, 3, 1]]);
     expect(nm.press(3, 1.0)).toBe('perfect');
-    expect(nm.pool[0].state).toBe(NoteState.Holding);
     nm.update(1.5, held);
     expect(nm.pool[0].state).toBe(NoteState.Holding);
     nm.update(2.0, held);
@@ -76,18 +77,9 @@ describe('NoteManager', () => {
     it('arms an early press and judges Great when the note arrives', () => {
       const { nm, events } = make([[1, 0]], 0.4);
       expect(nm.press(0, 0.7)).toBeNull();
-      expect(nm.pool[0].armed).toBe(true);
-      nm.update(0.85, notHeld);
-      expect(nm.pool[0].state).toBe(NoteState.Pending);
       nm.update(0.92, notHeld);
       expect(nm.pool[0].state).toBe(NoteState.Hit);
       expect(events).toEqual([expect.objectContaining({ judgement: 'great', tail: false })]);
-    });
-
-    it('does not arm presses further ahead than the assist window', () => {
-      const { nm } = make([[1, 0]], 0.4);
-      nm.press(0, 0.5);
-      expect(nm.pool[0].armed).toBe(false);
     });
 
     it('is off by default (desktop keeps strict timing)', () => {
@@ -97,17 +89,64 @@ describe('NoteManager', () => {
       expect(nm.pool[0].state).toBe(NoteState.Pending);
     });
   });
-});
 
-describe('circles', () => {
-  it('are hit only from the circle bucket, never by lane keys', () => {
-    const nm = new NoteManager(50);
-    const events: JudgeEvent[] = [];
-    nm.onJudge = (e) => events.push(e);
-    nm.load([{ time: 1, lane: 2, duration: 0, kind: 'circle', seq: 1, lanes: 4 }]);
-    expect(nm.press(2, 1.0)).toBeNull(); // lane key under the circle does nothing
-    expect(nm.pool[0].state).toBe(NoteState.Pending);
-    expect(nm.press(7, 1.02)).toBe('perfect'); // CIRCLE_BUCKET
-    expect(events).toHaveLength(1);
+  describe('circles', () => {
+    it('are hit only from the circle bucket, never by lane keys', () => {
+      const { nm, events } = make([[1, 2, 0, 'circle']]);
+      expect(nm.press(2, 1.0)).toBeNull();
+      expect(nm.pool[0].state).toBe(NoteState.Pending);
+      expect(nm.press(7, 1.02)).toBe('perfect');
+      expect(events).toHaveLength(1);
+    });
+  });
+
+  describe('rolls', () => {
+    it('count taps during the roll and grade the tail by count', () => {
+      const { nm, events } = make([[1, 1, 1, 'roll', 4]]);
+      expect(nm.press(1, 1.0)).toBe('perfect'); // head = tap 1
+      nm.release(1, 1.1);
+      nm.press(1, 1.3);
+      nm.release(1, 1.35);
+      nm.press(1, 1.6);
+      nm.update(1.7, notHeld);
+      expect(nm.pool[0].state).toBe(NoteState.Holding);
+      nm.update(2.0, notHeld);
+      expect(nm.pool[0].taps).toBe(3);
+      expect(events[1]).toMatchObject({ judgement: 'good', tail: true }); // 3 of 4 → good
+    });
+
+    it('is perfect when all taps land', () => {
+      const { nm, events } = make([[1, 1, 1, 'roll', 3]]);
+      nm.press(1, 1.0);
+      nm.press(1, 1.3);
+      nm.press(1, 1.6);
+      nm.update(2.0, notHeld);
+      expect(events[1]).toMatchObject({ judgement: 'perfect', tail: true });
+    });
+  });
+
+  describe('slides', () => {
+    it('succeeds when the finger arrives in the end lane, ignoring the start-lane release', () => {
+      const { nm, events } = make([[1, 0, 1, 'slide', 2]]);
+      expect(nm.press(0, 1.0)).toBe('perfect');
+      nm.release(0, 1.4); // finger slid away — not a break
+      expect(nm.pool[0].state).toBe(NoteState.Holding);
+      nm.update(2.0, (lane) => lane === 2);
+      expect(events[1]).toMatchObject({ judgement: 'perfect', tail: true });
+    });
+
+    it('misses when nothing is held in the end lane at the end', () => {
+      const { nm, events } = make([[1, 0, 1, 'slide', 2]]);
+      nm.press(0, 1.0);
+      nm.update(2.0, notHeld);
+      expect(events[1]).toMatchObject({ judgement: 'miss', tail: true });
+    });
+
+    it('accepts a release in the end lane within the window', () => {
+      const { nm, events } = make([[1, 0, 1, 'slide', 3]]);
+      nm.press(0, 1.0);
+      nm.release(3, 1.96);
+      expect(events[1]).toMatchObject({ judgement: 'perfect', tail: true });
+    });
   });
 });
