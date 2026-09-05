@@ -46,6 +46,10 @@ export function App() {
     case 'tutorial':
       page = <TutorialPage key={key} />;
       break;
+    case 'shop':
+      // TODO(integrator): the shop stream delivers ShopPage; until it is wired the dock slot lands on the menu.
+      page = <MenuPage key={key} />;
+      break;
     default:
       page = <MenuPage key={key} />;
   }
