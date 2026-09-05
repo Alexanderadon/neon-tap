@@ -15,9 +15,16 @@ export interface Layout {
   portrait: boolean;
 }
 
+/**
+ * A single lane never spans the whole screen: one Magic-Tiles-style column in the middle.
+ * The touch zone still covers the whole bottom half (see `touchZoneWidth`).
+ */
+export const SINGLE_LANE_MAX_WIDTH = 220;
+
 export function computeLayout(width: number, height: number, touch: boolean, lanes = LANE_COUNT): Layout {
   const portrait = height > width;
-  const laneAreaWidth = portrait ? width : Math.min(width, Math.max(360, height * 0.62));
+  const fullArea = portrait ? width : Math.min(width, Math.max(360, height * 0.62));
+  const laneAreaWidth = lanes === 1 ? Math.min(fullArea, SINGLE_LANE_MAX_WIDTH) : fullArea;
   const laneWidth = laneAreaWidth / lanes;
   const hitY = Math.round(height * (touch ? 0.8 : 0.86));
   const noteHeight = Math.round(Math.min(34, Math.max(14, laneWidth * 0.26)));
@@ -47,7 +54,8 @@ export interface TouchZone {
 
 /**
  * Touch zones always span the full viewport width (not just the lane area), so in landscape the
- * zones are wider than the lanes above them. `laneAtPoint` uses exactly this split.
+ * zones are wider than the lanes above them, and a single lane's zone is the whole bottom half.
+ * `laneAtPoint` uses exactly this split.
  */
 export function touchZoneWidth(layout: Layout): number {
   return layout.width / layout.lanes;
