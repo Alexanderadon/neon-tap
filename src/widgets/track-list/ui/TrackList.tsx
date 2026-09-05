@@ -16,15 +16,26 @@ import {
   type BestResult,
 } from '@/entities/progress';
 import { startSession } from '@/entities/play-session';
+import { playsOf, useHistory } from '@/entities/history';
 import './track-list.css';
 
 const DAILY_TONE = '#ffd700';
+
+export interface TrackRef {
+  id: string;
+  title: string;
+}
+
+interface Props {
+  /** «Рекорды» on a card was tapped — the page decides how to show the attempt history. */
+  onRecords?: (track: TrackRef) => void;
+}
 
 /**
  * Flat song list, easiest first: the daily track pinned on top, then one card per song with its
  * rating, mechanics, your best rank and — past the free ones — the stars needed to open it.
  */
-export function TrackList() {
+export function TrackList({ onRecords }: Props = {}) {
   const save = useProgress((s) => s);
   const trackStars = totalStars(save, TRACK_IDS);
   const bonus = bonusStars(save);
@@ -45,9 +56,9 @@ export function TrackList() {
         <span className="tracklist-hint">{dict.mechanicsHint}</span>
       </div>
       <div className="tracklist-grid">
-        {daily && <TrackCard track={daily} best={save.tracks[daily.id]} daily={dailyDone ? 'done' : 'open'} streak={save.daily.streak} />}
+        {daily && <TrackCard track={daily} best={save.tracks[daily.id]} daily={dailyDone ? 'done' : 'open'} streak={save.daily.streak} onRecords={onRecords} />}
         {CATALOG.map((t, i) => (
-          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} need={unlocks[i].unlocked ? 0 : unlocks[i].need} />
+          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} need={unlocks[i].unlocked ? 0 : unlocks[i].need} onRecords={onRecords} />
         ))}
       </div>
     </div>
@@ -64,10 +75,12 @@ interface CardProps {
   /** Pinned daily-track card and whether today's bonus is already claimed. */
   daily?: 'open' | 'done';
   streak?: number;
+  onRecords?: (track: TrackRef) => void;
 }
 
-function TrackCard({ index, track, best, need = 0, daily, streak = 0 }: CardProps) {
+function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords }: CardProps) {
   const [busy, setBusy] = useState(false);
+  const plays = useHistory((h) => playsOf(h, track.id));
   const earned = starsForTrack(best);
   const locked = need > 0;
   const f = track.features;
@@ -114,6 +127,12 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0 }: CardProp
           {track.artist} · {Math.round(track.duration)} с
         </div>
         <div className="tcard-tags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
+        {onRecords && (
+          <button type="button" className="tcard-records" onClick={() => onRecords({ id: track.id, title: track.title })}>
+            {dict.records}
+            {plays > 0 && <span className="tcard-records-n">{plays}</span>}
+          </button>
+        )}
       </div>
       <div className="tcard-side">
         <div className="tcard-stars">★ {track.stars}</div>
