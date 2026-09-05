@@ -1,12 +1,13 @@
 /**
  * assets-src/music-raw/* → public/music/<id>.mp3
- * Trims to ≤ 150 s (GDD: 90–150 s sessions), normalises loudness, fades the cut, encodes 128 kbps.
+ * Trims to ≤ 150 s (GDD: 90–150 s sessions), normalises loudness, fades the cut, encodes 128 kbps
+ * (`encodeGameTrack` in ./ffmpeg — the same encoding `assets:local` uses for the author's own files).
  * Licenses report: `npm run assets:licenses`.
  */
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ffmpeg, probeDuration } from './ffmpeg';
+import { encodeGameTrack } from './ffmpeg';
 
 interface RawTrack {
   id: string;
@@ -22,7 +23,6 @@ interface RawTrack {
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const RAW_DIR = join(ROOT, 'assets-src', 'music-raw');
 const OUT_DIR = join(ROOT, 'public', 'music');
-const MAX_SEC = 150;
 
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
 mkdirSync(OUT_DIR, { recursive: true });
@@ -34,10 +34,6 @@ for (const t of tracks) {
     continue;
   }
   const out = join(OUT_DIR, `${t.id}.mp3`);
-  const dur = probeDuration(src) * (t.loops ?? 1);
-  const cut = Math.min(dur, MAX_SEC);
-  const fade = cut < dur ? `,afade=t=out:st=${(cut - 3).toFixed(2)}:d=3` : '';
-  const loops = t.loops ?? 1;
-  ffmpeg([...(loops > 1 ? ['-stream_loop', String(loops - 1)] : []), '-i', src, '-t', String(cut), '-af', `loudnorm=I=-14:TP=-1.5:LRA=11${fade}`, '-ac', '2', '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '128k', out]);
-  console.log(`${t.id}: ${dur.toFixed(1)}s → ${cut.toFixed(1)}s`);
+  const { duration, cut } = encodeGameTrack(src, out, { loops: t.loops });
+  console.log(`${t.id}: ${duration.toFixed(1)}s → ${cut.toFixed(1)}s`);
 }
