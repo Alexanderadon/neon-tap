@@ -18,6 +18,8 @@ interface RawTrack {
   title: string;
   artist: string;
   genre: Genre;
+  /** Premium track (shop item, paid with crystals) — copied into the chart file and the catalog. */
+  premium?: boolean;
   raw: string;
   sourceUrl: string;
   license: string;
@@ -48,6 +50,7 @@ for (const t of tracks) {
     license: t.license,
     sourceUrl: t.sourceUrl,
     genre: t.genre,
+    ...(t.premium ? { premium: true } : {}),
     audio: `music/${t.id}.mp3`,
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
@@ -60,7 +63,7 @@ for (const t of tracks) {
   const f = chartFeatures(chart);
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
-    `${t.id.padEnd(28)} ${t.genre.padEnd(10)} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
+    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
       `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${Date.now() - t0} ms`,
   );
 }
@@ -73,6 +76,7 @@ const catalog = built.map((c) => ({
   license: c.license,
   sourceUrl: c.sourceUrl,
   genre: c.genre,
+  ...(c.premium ? { premium: true } : {}),
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,
