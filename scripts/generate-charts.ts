@@ -11,12 +11,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
 import { analyzeSong, chartFeatures, composeChart } from '../src/shared/lib/analysis';
-import type { ChartFile } from '../src/shared/types/chart';
+import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
 
 interface RawTrack {
   id: string;
   title: string;
   artist: string;
+  genre: Genre;
   raw: string;
   sourceUrl: string;
   license: string;
@@ -33,6 +34,7 @@ const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 
 
 const built: ChartFile[] = [];
 for (const t of tracks) {
+  if (!GENRES.includes(t.genre)) throw new Error(`${t.id}: unknown genre "${t.genre}" (tracks.json)`);
   const file = join(MUSIC_DIR, `${t.id}.mp3`);
   const t0 = Date.now();
   const samples = decodePcm(file, RATE);
@@ -45,6 +47,7 @@ for (const t of tracks) {
     artist: t.artist,
     license: t.license,
     sourceUrl: t.sourceUrl,
+    genre: t.genre,
     audio: `music/${t.id}.mp3`,
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
@@ -57,7 +60,7 @@ for (const t of tracks) {
   const f = chartFeatures(chart);
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
-    `${t.id.padEnd(18)} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
+    `${t.id.padEnd(28)} ${t.genre.padEnd(10)} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
       `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${Date.now() - t0} ms`,
   );
 }
@@ -69,6 +72,7 @@ const catalog = built.map((c) => ({
   artist: c.artist,
   license: c.license,
   sourceUrl: c.sourceUrl,
+  genre: c.genre,
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,

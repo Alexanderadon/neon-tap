@@ -123,6 +123,22 @@ export const ru = {
   ready: 'Готов',
   bpm: 'BPM',
   unlockCustom: 'Открывается сразу — это главная фича проекта',
+  // --- content ---
+  genres: {
+    synthwave: 'синтвейв',
+    chiptune: 'чиптюн',
+    lofi: 'лоу-фай',
+    rock: 'рок',
+    orchestral: 'оркестр',
+    jazz: 'джаз · фанк',
+    dnb: 'драм-н-бейс',
+    techno: 'техно',
+    ambient: 'эмбиент',
+    acoustic: 'акустика',
+    world: 'этника',
+    electronic: 'электроника',
+  },
+  tempo: 'темп',
 } as const;
 
 export type Dictionary = typeof ru;
