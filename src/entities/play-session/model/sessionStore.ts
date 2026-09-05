@@ -13,6 +13,8 @@ export interface ResultMeta {
   dailyBonus?: boolean;
   /** Goal ids completed (and claimed) by this run. */
   goalsCompleted?: string[];
+  /** Crystals credited to the wallet by this run (absent when nothing was collected or the run failed). */
+  crystals?: number;
 }
 
 export interface PlaySession {

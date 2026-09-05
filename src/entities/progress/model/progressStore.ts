@@ -3,6 +3,7 @@ import type { SpellKind } from '@/shared/types/chart';
 import { addRun, addSpell, emptySave, mergeResult, migrate, type BestResult, type SaveData } from './SaveData';
 import { completeDaily, localDateString } from './daily';
 import { claimGoals, type Goal } from './goals';
+import { addCrystals, purchaseTrack, type PurchaseFailure } from './shop';
 
 const KEY = 'neon-tap:save';
 
@@ -55,6 +56,18 @@ export function claimCompletedGoals(): Goal[] {
   const { save, claimed } = claimGoals(progressStore.get());
   if (claimed.length) progressStore.set(save);
   return claimed;
+}
+
+/** Credit crystals collected in a finished, non-failed run. */
+export function recordCrystals(amount: number): void {
+  if (amount > 0) progressStore.set(addCrystals(progressStore.get(), amount));
+}
+
+/** Buy a track in the shop; false with the reason when it is owned already or the balance is short. */
+export function buyTrack(trackId: string, price: number): { ok: boolean; reason?: PurchaseFailure } {
+  const { save, ok, reason } = purchaseTrack(progressStore.get(), trackId, price);
+  if (ok) progressStore.set(save);
+  return { ok, reason };
 }
 
 export function resetProgress(): void {

@@ -286,6 +286,28 @@ export const ru = {
   fxModes: { auto: 'Авто', on: 'Вкл', off: 'Выкл' },
   // --- feel ---
   themeLabel: 'Визуальная тема',
+  // --- crystals ---
+  crystalsTitle: 'Кристаллы',
+  crystalsEarned: 'Кристаллы: +{n}',
+  crystalsNoun: ['кристалл', 'кристалла', 'кристаллов'],
+  shop: 'Магазин',
+  toShop: 'В магазин',
+  shopIntro: 'Кристаллы падают во время игры: несколько нот в каждом заходе становятся кристаллами — попади по ним. За них открываются закрытые и премиум-треки.',
+  shopEarnHint: 'кристаллы падают во время игры',
+  shopBalance: 'У тебя',
+  shopBuy: 'Купить',
+  shopBought: 'Куплено',
+  shopPremium: 'Премиум',
+  shopPremiumHint: 'только за кристаллы',
+  shopLockedHint: 'или ★ {n}',
+  shopNotEnough: 'не хватает {n}',
+  shopEmpty: 'Покупать нечего — всё уже открыто',
+  shopConfirmTitle: 'Купить трек?',
+  shopConfirmText: '«{title}» за {price} {noun}. Останется {left}.',
+  shopConfirmYes: 'Купить',
+  shopConfirmNo: 'Отмена',
+  shopBoughtToast: 'Трек открыт: {title}',
+  purchasedBadge: 'куплено',
 } as const;
 
 export type Dictionary = typeof ru;
