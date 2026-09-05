@@ -286,6 +286,18 @@ export const ru = {
   fxModes: { auto: 'Авто', on: 'Вкл', off: 'Выкл' },
   // --- feel ---
   themeLabel: 'Визуальная тема',
+  // --- pwa ---
+  updateAvailable: 'Доступно обновление',
+  updateNow: 'Обновить',
+  updateLater: 'Позже',
+  installTitle: 'Установить приложение',
+  installHint: 'На экран «Домой»: на весь экран, без адресной строки, работает офлайн.',
+  installButton: 'Установить',
+  installNotNow: 'Не сейчас',
+  installIosHint: 'В Safari: нажми «Поделиться», затем «На экран „Домой“».',
+  installIosShare: 'Поделиться',
+  installIosHome: 'На экран „Домой“',
+  installClose: 'Закрыть',
 } as const;
 
 export type Dictionary = typeof ru;
