@@ -139,6 +139,30 @@ export const ru = {
     electronic: 'электроника',
   },
   tempo: 'темп',
+  // --- progression ---
+  dailyTrack: 'ТРЕК ДНЯ',
+  dailyHint: '+1 ★ за прохождение · завтра будет другой',
+  dailyDone: 'сегодня пройден · +1 ★',
+  dailyBonus: 'Трек дня пройден: +1 ★',
+  dailyStreak: 'серия {n} дн.',
+  unlockNeed: 'нужно ★ {n}',
+  starsBreakdown: 'треки {tracks} / {max} · бонус +{bonus}',
+  goalsTitle: 'Цели',
+  goalsDone: '{done} / {total}',
+  goalReward: '+{n} ★',
+  goalCompleted: 'Цель выполнена: {title}',
+  goalsShow: 'Показать',
+  goalsHide: 'Свернуть',
+  goals: {
+    'pass-5': { title: 'Пройди 5 треков', desc: 'Любые встроенные треки с рангом C и выше' },
+    'rank-s-3': { title: 'Набери S на трёх песнях', desc: 'Точность 95 % и выше на трёх разных треках' },
+    'full-combo': { title: 'Полное комбо на любой песне', desc: 'Ни одного промаха от первой ноты до последней' },
+    'stars-20': { title: 'Собери 20 ★', desc: 'Звёзды за треки и за трек дня' },
+    'slow-10': { title: 'Поймай 10 замедлений', desc: 'Спелл «часы» — тапни его как обычную ноту' },
+    'combo-100': { title: 'Комбо 100', desc: 'Сто попаданий подряд в одном заходе' },
+    'daily-3': { title: 'Сыграй трек дня 3 дня', desc: 'Пройди трек дня в три разных дня' },
+    'star-6': { title: 'Сыграй трек ★6', desc: 'Пройди без провала трек сложности ★6 или выше' },
+  },
 } as const;
 
 export type Dictionary = typeof ru;

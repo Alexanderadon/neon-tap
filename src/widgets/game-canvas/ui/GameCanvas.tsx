@@ -7,6 +7,7 @@ import type { ChartFile } from '@/shared/types/chart';
 import { getSettings, updateSettings } from '@/entities/settings';
 import { GameSession, type SessionEvent } from '@/features/play-chart';
 import { saveResult } from '@/features/save-result';
+import { trackSpell } from '@/features/track-progress';
 import { voice, praise } from '@/features/voice-feedback';
 import type { ChartSource } from '@/entities/play-session';
 import './game-canvas.css';
@@ -53,6 +54,7 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
           if (e.hearts === 1) voice.say('ne-sdavaysya', true);
           break;
         case 'spell':
+          trackSpell(e.kind);
           if (e.kind === 'slow') voice.say('ogon', true);
           break;
         case 'lanes':
