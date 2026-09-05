@@ -1,36 +1,75 @@
 import { useState } from 'react';
-import { dict } from '@/shared/i18n';
+import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
+import { unlockAllActive } from '@/shared/config/devFlags';
 import { Stars } from '@/shared/ui';
-import { CATALOG, TRACK_IDS, TrackCover, loadChart, type TrackMeta } from '@/entities/track';
-import { starsForTrack, totalStars, useProgress, type BestResult } from '@/entities/progress';
+import { CATALOG, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
+import {
+  bonusStars,
+  dailyTrackId,
+  isDailyDone,
+  localDateString,
+  starsForTrack,
+  totalStars,
+  unlockStates,
+  useProgress,
+  type BestResult,
+} from '@/entities/progress';
 import { startSession } from '@/entities/play-session';
 import './track-list.css';
 
-/** Flat song list, easiest first: one card per song with its rating, mechanics and your best rank. */
+const DAILY_TONE = '#ffd700';
+
+/**
+ * Flat song list, easiest first: the daily track pinned on top, then one card per song with its
+ * rating, mechanics, your best rank and — past the free ones — the stars needed to open it.
+ */
 export function TrackList() {
   const save = useProgress((s) => s);
-  const stars = totalStars(save, TRACK_IDS);
+  const trackStars = totalStars(save, TRACK_IDS);
+  const bonus = bonusStars(save);
+  const stars = trackStars + bonus;
+  const today = localDateString();
+  const dailyId = dailyTrackId(today, TRACK_IDS);
+  const daily = dailyId ? findTrack(dailyId) : undefined;
+  const dailyDone = isDailyDone(save.daily, today);
+  const unlocks = unlockStates(TRACK_IDS, { stars, dailyId, unlockAll: unlockAllActive() });
+
   return (
     <div className="tracklist">
       <div className="tracklist-head">
         <span className="tracklist-total">
-          ★ {stars} / {CATALOG.length * 3}
+          ★ {stars}
+          <span className="tracklist-breakdown">{fmt(dict.starsBreakdown, { tracks: trackStars, max: CATALOG.length * 3, bonus })}</span>
         </span>
         <span className="tracklist-hint">{dict.mechanicsHint}</span>
       </div>
       <div className="tracklist-grid">
+        {daily && <TrackCard track={daily} best={save.tracks[daily.id]} daily={dailyDone ? 'done' : 'open'} streak={save.daily.streak} />}
         {CATALOG.map((t, i) => (
-          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} />
+          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} need={unlocks[i].unlocked ? 0 : unlocks[i].need} />
         ))}
       </div>
     </div>
   );
 }
 
-function TrackCard({ index, track, best }: { index: number; track: TrackMeta; best: BestResult | undefined }) {
+interface CardProps {
+  track: TrackMeta;
+  best: BestResult | undefined;
+  /** Position in the catalog (hidden on the daily card). */
+  index?: number;
+  /** Stars still required to open the track; 0 = playable. */
+  need?: number;
+  /** Pinned daily-track card and whether today's bonus is already claimed. */
+  daily?: 'open' | 'done';
+  streak?: number;
+}
+
+function TrackCard({ index, track, best, need = 0, daily, streak = 0 }: CardProps) {
   const [busy, setBusy] = useState(false);
   const earned = starsForTrack(best);
+  const locked = need > 0;
   const f = track.features;
   const tags = [
     f.laneChanges > 0 && dict.tagLanes,
@@ -41,7 +80,7 @@ function TrackCard({ index, track, best }: { index: number; track: TrackMeta; be
   ].filter(Boolean) as string[];
 
   const play = async () => {
-    if (busy) return;
+    if (busy || locked) return;
     setBusy(true);
     try {
       const chart = await loadChart(track.id);
@@ -52,11 +91,21 @@ function TrackCard({ index, track, best }: { index: number; track: TrackMeta; be
     }
   };
 
+  const cls = ['tcard', daily && 'tcard-daily', locked && 'tcard-locked'].filter(Boolean).join(' ');
   return (
-    <article className="tcard" style={{ ['--tone' as string]: toneFor(track.stars) }}>
-      <div className="tcard-num">{String(index).padStart(2, '0')}</div>
+    <article className={cls} style={{ ['--tone' as string]: daily ? DAILY_TONE : toneFor(track.stars) }} aria-disabled={locked || undefined}>
+      <div className="tcard-num" aria-hidden="true">
+        {daily ? '☀' : locked ? '🔒' : String(index).padStart(2, '0')}
+      </div>
       <TrackCover id={track.id} genre={track.genre} title={track.title} className="tcard-cover" />
       <div className="tcard-body">
+        {daily && (
+          <div className="tcard-daily-label">
+            <span className="tcard-daily-badge">{dict.dailyTrack}</span>
+            <span className="tcard-daily-hint">{daily === 'done' ? dict.dailyDone : dict.dailyHint}</span>
+            {daily === 'done' && streak >= 2 && <span className="tcard-daily-hint">{fmt(dict.dailyStreak, { n: streak })}</span>}
+          </div>
+        )}
         <div className="tcard-title">{track.title}</div>
         <div className="tcard-genre">
           {dict.genres[track.genre]} · {dict.tempo} {Math.round(track.bpm)} {dict.bpm}
@@ -70,9 +119,18 @@ function TrackCard({ index, track, best }: { index: number; track: TrackMeta; be
         <div className="tcard-stars">★ {track.stars}</div>
         <Stars value={earned} />
         {best && <div className={`tcard-rank rank-${best.rank}`}>{best.rank}</div>}
-        <button className="tcard-play" disabled={busy} onClick={() => void play()}>
-          {dict.play}
-        </button>
+        {locked ? (
+          <>
+            <div className="tcard-need">{fmt(dict.unlockNeed, { n: need })}</div>
+            <button className="tcard-play" disabled>
+              {dict.locked}
+            </button>
+          </>
+        ) : (
+          <button className="tcard-play" disabled={busy} onClick={() => void play()}>
+            {dict.play}
+          </button>
+        )}
       </div>
     </article>
   );
