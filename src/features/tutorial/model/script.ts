@@ -23,7 +23,7 @@ export interface TutorialStep {
 
 /**
  * The tutorial script in beat units of `public/charts/tutorial.json` (the beat grid of
- * "The 9th Circle", ~120 BPM). Each caption starts ~3 beats before its first note — notes take
+ * "Apparatus Overlord", ~120 BPM). Each caption starts ~3 beats before its first note — notes take
  * 3.5 beats to fall — and ends where the next one begins. Keep in sync with the chart.
  */
 export const TUTORIAL_PLAN: readonly { id: TutorialStepId; kind: TutorialKind; fromBeat: number; toBeat: number }[] = [
