@@ -5,10 +5,21 @@ import { Stars } from '@/shared/ui';
 import { CATALOG, TRACK_IDS, loadChart, type TrackMeta } from '@/entities/track';
 import { starsForTrack, totalStars, useProgress, type BestResult } from '@/entities/progress';
 import { startSession } from '@/entities/play-session';
+import { playsOf, useHistory } from '@/entities/history';
 import './track-list.css';
 
+export interface TrackRef {
+  id: string;
+  title: string;
+}
+
+interface Props {
+  /** «Рекорды» on a card was tapped — the page decides how to show the attempt history. */
+  onRecords?: (track: TrackRef) => void;
+}
+
 /** Flat song list, easiest first: one card per song with its rating, mechanics and your best rank. */
-export function TrackList() {
+export function TrackList({ onRecords }: Props = {}) {
   const save = useProgress((s) => s);
   const stars = totalStars(save, TRACK_IDS);
   return (
@@ -21,15 +32,23 @@ export function TrackList() {
       </div>
       <div className="tracklist-grid">
         {CATALOG.map((t, i) => (
-          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} />
+          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} onRecords={onRecords} />
         ))}
       </div>
     </div>
   );
 }
 
-function TrackCard({ index, track, best }: { index: number; track: TrackMeta; best: BestResult | undefined }) {
+interface CardProps {
+  index: number;
+  track: TrackMeta;
+  best: BestResult | undefined;
+  onRecords?: (track: TrackRef) => void;
+}
+
+function TrackCard({ index, track, best, onRecords }: CardProps) {
   const [busy, setBusy] = useState(false);
+  const plays = useHistory((h) => playsOf(h, track.id));
   const earned = starsForTrack(best);
   const f = track.features;
   const tags = [
@@ -61,6 +80,12 @@ function TrackCard({ index, track, best }: { index: number; track: TrackMeta; be
           {track.artist} · {track.bpm} {dict.bpm} · {Math.round(track.duration)} с
         </div>
         <div className="tcard-tags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
+        {onRecords && (
+          <button type="button" className="tcard-records" onClick={() => onRecords({ id: track.id, title: track.title })}>
+            {dict.records}
+            {plays > 0 && <span className="tcard-records-n">{plays}</span>}
+          </button>
+        )}
       </div>
       <div className="tcard-side">
         <div className="tcard-stars">★ {track.stars}</div>

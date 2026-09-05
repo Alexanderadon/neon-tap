@@ -1,11 +1,15 @@
+import { useCallback, useState } from 'react';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine } from '@/shared/lib/audio';
 import { Button, Screen } from '@/shared/ui';
-import { TrackList } from '@/widgets/track-list';
+import { TrackList, type TrackRef } from '@/widgets/track-list';
+import { HistoryModal } from '@/widgets/history-panel';
 import './menu.css';
 
 export function MenuPage() {
+  const [records, setRecords] = useState<TrackRef | null>(null);
+  const closeRecords = useCallback(() => setRecords(null), []);
   return (
     <Screen className="menu">
       <header className="menu-head" onClick={() => void audioEngine.ensureContext()}>
@@ -23,7 +27,8 @@ export function MenuPage() {
           </Button>
         </nav>
       </header>
-      <TrackList />
+      <TrackList onRecords={setRecords} />
+      <HistoryModal track={records} onClose={closeRecords} />
       <footer className="menu-foot">
         <span>{dict.madeWith}</span>
         <span>

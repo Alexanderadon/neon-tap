@@ -74,6 +74,30 @@
   border: 1px solid color-mix(in srgb, var(--tone) 50%, transparent);
   color: color-mix(in srgb, var(--tone) 85%, white);
 }
+.tcard-records {
+  margin-top: 6px;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.5);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tcard-records:hover,
+.tcard-records:focus-visible {
+  color: var(--c-cyan);
+  outline: none;
+}
+.tcard-records-n {
+  margin-left: 6px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
 .tcard-side {
   display: flex;
   flex-direction: column;

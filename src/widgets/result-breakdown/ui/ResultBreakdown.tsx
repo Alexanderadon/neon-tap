@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxRank } from '@/shared/lib/audio';
@@ -14,10 +14,12 @@ interface Props {
   title: string;
   subtitle: string;
   onRetry: () => void;
+  /** Optional compact line rendered right under the breakdown grid (e.g. attempt history). */
+  belowGrid?: ReactNode;
 }
 
 /** Result screen body: rank, breakdown, near-miss hint and a dominant RETRY (GDD §1.3). */
-export function ResultBreakdown({ result, meta, title, subtitle, onRetry }: Props) {
+export function ResultBreakdown({ result, meta, title, subtitle, onRetry, belowGrid }: Props) {
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
 
   useEffect(() => {
@@ -91,6 +93,7 @@ export function ResultBreakdown({ result, meta, title, subtitle, onRetry }: Prop
           <b>{result.score.toLocaleString('ru-RU')}</b>
         </div>
       </div>
+      {belowGrid}
 
       {!result.failed && result.notesToS > 0 && result.accuracy > 0.9 && (
         <div className="result-nearmiss">
