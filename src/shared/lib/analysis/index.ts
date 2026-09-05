@@ -6,5 +6,5 @@ export type { BpmEstimate } from './BpmEstimator';
 export { trackBeats, estimateDownbeatPhase } from './BeatTracker';
 export { analyzeSong, STEPS_PER_BAR, STEPS_PER_BEAT, BEATS_PER_BAR } from './SongAnalyzer';
 export type { Slot, SongAnalysis, AnalysisStage } from './SongAnalyzer';
-export { composeChart, rateStars, scoreTemplate, salience, chartFeatures, TEMPLATES } from './ChartGenerator';
-export type { ComposeOptions, Template, Category } from './ChartGenerator';
+export { composeChart, rateStars, scoreTemplate, salience, chartFeatures, patternSteps, circleSpread, TEMPLATES, PHRASE_BARS } from './ChartGenerator';
+export type { ComposeOptions, Template, Category, PhrasePattern } from './ChartGenerator';
