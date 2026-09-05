@@ -3,27 +3,41 @@
 }
 /*
  * Slow-moving neon grid behind the menu: a perspective floor of cyan lines scrolling towards the
- * viewer plus a magenta horizon glow. Pure gradients + one transform keyframe — no images, no JS.
+ * viewer plus a magenta horizon glow. Pure gradients + keyframes — no images, no JS.
+ *
+ * `.menu-bg` is a fixed, masked, clipping window; its pseudo-element is the grid, one tile (44px)
+ * taller than the window on each side and moved with `transform` only (compositor-driven — the
+ * layer is painted once, unlike an animated `background-position`, which repaints every frame).
+ * The grid repeats every 44px, so a 0 → 44px loop is seamless.
  */
-.menu::before {
-  content: '';
+.menu-bg {
   position: fixed;
   left: -20vw;
   right: -20vw;
   bottom: -10vh;
   height: 62vh;
   z-index: -1;
+  overflow: hidden;
   pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
+  opacity: 0.55;
+}
+.menu-bg::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -44px;
+  bottom: -44px;
   background-image:
     linear-gradient(rgba(0, 240, 255, 0.16) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.11) 1px, transparent 1px);
   background-size: 100% 44px, 64px 100%;
-  transform-origin: 50% 0;
+  transform-origin: 50% 44px;
   transform: perspective(520px) rotateX(64deg);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
+  will-change: transform;
   animation: menu-grid 4s linear infinite;
-  opacity: 0.55;
 }
 .menu::after {
   content: '';
@@ -41,10 +55,10 @@
 }
 @keyframes menu-grid {
   from {
-    background-position: 0 0, 0 0;
+    transform: perspective(520px) rotateX(64deg) translateY(0);
   }
   to {
-    background-position: 0 44px, 0 0;
+    transform: perspective(520px) rotateX(64deg) translateY(44px);
   }
 }
 @keyframes menu-horizon {
@@ -156,7 +170,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .menu::before,
+  .menu-bg::before,
   .menu::after,
   .menu-logo .l1,
   .menu-logo .l2,

@@ -2,6 +2,7 @@ import { COMBO_THRESHOLDS, KEY_LABELS, LANE_COUNT, MAX_LANES } from '@/shared/co
 import { SPECTRUM_BANDS } from '@/shared/lib/audio';
 import {
   DEFAULT_THEME,
+  goodJudgementColor,
   hexToRgba,
   renderBeam,
   renderGlowBar,
@@ -168,7 +169,8 @@ export class Renderer {
     this.laneCounts = [...new Set([...laneCounts, LANE_COUNT])];
     this.theme = theme;
     this.laneColors = Array.from({ length: MAX_LANES }, (_, i) => theme.laneColors[i % theme.laneColors.length]);
-    this.judgementColor = { perfect: '#ffffff', great: theme.accent, good: this.laneColors[2], miss: theme.glow };
+    // GOOD must never be white (PERFECT is), so themes with a white lane fall back to another lane colour.
+    this.judgementColor = { perfect: '#ffffff', great: theme.accent, good: goodJudgementColor(theme), miss: theme.glow };
     this.inkColor = theme.bg[0];
     this.discColor = hexToRgba(theme.bg[1], 0.92);
     this.resize();

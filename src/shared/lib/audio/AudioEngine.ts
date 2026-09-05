@@ -7,7 +7,7 @@
  *
  * The lowpass filter implements the "miss breaks the music" effect (GDD §1.2).
  */
-import { spectrumBands } from './spectrum';
+import { bassFromBins, spectrumBands } from './spectrum';
 
 export interface Volumes {
   master: number;
@@ -82,25 +82,30 @@ export class AudioEngine {
     return (c.outputLatency ?? 0) + (c.baseLatency ?? 0);
   }
 
-  /** Bass energy of what is playing right now, 0..1 (bins up to ~500 Hz). Cheap: one getByteFrequencyData per frame. */
+  /**
+   * Bass energy of what is playing right now, 0..1 (bins up to ~500 Hz). One analyser read; when
+   * the caller also needs the spectrum, use `spectrum()` alone — it returns the same value from the
+   * same read instead of sampling the analyser twice per frame.
+   */
   bassLevel(): number {
     if (!this.analyser || !this.spectrumBins) return 0;
     this.analyser.getByteFrequencyData(this.spectrumBins);
-    const s = this.spectrumBins;
-    return (s[0] + s[1] + s[2]) / (3 * 255);
+    return bassFromBins(this.spectrumBins);
   }
 
   /**
    * Fill `out` (caller-owned, reused every frame) with `out.length` log-spaced spectrum bands,
-   * 0..255, for the audio-reactive background. Zeroes when there is no context / analyser.
+   * 0..255, for the audio-reactive background, and return the bass level (0..1) of the same read.
+   * Zeroes / 0 when there is no context / analyser.
    */
-  spectrum(out: Uint8Array): void {
+  spectrum(out: Uint8Array): number {
     if (!this.analyser || !this.spectrumBins) {
       out.fill(0);
-      return;
+      return 0;
     }
     this.analyser.getByteFrequencyData(this.spectrumBins);
     spectrumBands(this.spectrumBins, out);
+    return bassFromBins(this.spectrumBins);
   }
 
   get sfxDestination(): AudioNode {

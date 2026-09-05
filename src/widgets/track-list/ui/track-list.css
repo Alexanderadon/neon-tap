@@ -41,8 +41,12 @@
   border-left: 3px solid var(--tone);
   transition: border-color 0.15s, background 0.15s, transform 0.15s ease, box-shadow 0.2s ease;
   transform-style: preserve-3d;
-  /* Cards stagger in one after another; `--i` is the card's index, set inline. */
-  animation: tcard-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  /*
+   * Cards stagger in one after another; `--i` is the card's index, set inline. Fill-mode is
+   * `backwards` on purpose: the `to` frame equals the normal computed style, and with `both`/
+   * `forwards` the animation's `transform: none` would outrank the hover/active tilt for ever.
+   */
+  animation: tcard-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   animation-delay: calc(0.12s + var(--i, 0) * 45ms);
 }
 @keyframes tcard-in {

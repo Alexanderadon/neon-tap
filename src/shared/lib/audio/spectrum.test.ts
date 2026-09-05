@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SPECTRUM_BANDS, bandLayout, spectrumBands } from './spectrum';
+import { SPECTRUM_BANDS, bandLayout, bassFromBins, spectrumBands } from './spectrum';
 
 describe('spectrum bands', () => {
   it('lays out 32 non-overlapping, monotone, log-ish bands over 128 bins', () => {
@@ -45,5 +45,18 @@ describe('spectrum bands', () => {
     }
     expect(out[0]).toBe(255);
     expect(out[31]).toBe(0);
+  });
+
+  it('bassFromBins averages the first three bins into 0..1 and tolerates short input', () => {
+    expect(bassFromBins(new Uint8Array(128).fill(255))).toBeCloseTo(1, 6);
+    expect(bassFromBins(new Uint8Array(128))).toBe(0);
+    const raw = new Uint8Array(128);
+    raw[0] = 255;
+    raw[1] = 255;
+    raw[2] = 0;
+    raw[3] = 255; // outside the bass window
+    expect(bassFromBins(raw)).toBeCloseTo(2 / 3, 6);
+    expect(bassFromBins(new Uint8Array([255]))).toBeCloseTo(1 / 3, 6);
+    expect(bassFromBins([])).toBe(0);
   });
 });

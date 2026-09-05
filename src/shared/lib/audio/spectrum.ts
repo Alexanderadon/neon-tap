@@ -36,6 +36,20 @@ export function bandLayout(bins: number, bands: number = SPECTRUM_BANDS): BandLa
   return { bins, bands, edges };
 }
 
+/** Raw analyser bins that make up the "bass" level (with fftSize 256 at 44.1 kHz: ~0..500 Hz). */
+const BASS_BINS = 3;
+
+/**
+ * Bass energy 0..1 from raw byte-frequency bins (mean of the first `BASS_BINS` bins). Pure, so the
+ * engine can derive it from the bins it has already read for the spectrum instead of reading the
+ * analyser twice per frame.
+ */
+export function bassFromBins(raw: ArrayLike<number>): number {
+  let sum = 0;
+  for (let b = 0; b < BASS_BINS; b++) sum += b < raw.length ? raw[b] : 0;
+  return sum / (BASS_BINS * 255);
+}
+
 /** Last layout used; the analyser size never changes at runtime, so this is a hit every frame (no string keys, no allocations). */
 let cached: BandLayout | null = null;
 
