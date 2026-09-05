@@ -286,6 +286,11 @@ export const ru = {
   fxModes: { auto: 'Авто', on: 'Вкл', off: 'Выкл' },
   // --- feel ---
   themeLabel: 'Визуальная тема',
+  // --- local-tracks ---
+  localBadge: 'ЛОКАЛЬНО',
+  localGenre: 'локальный трек',
+  localSection: 'Локальные треки',
+  localHint: 'Только на этом компьютере: не в сборке, не в онлайн-рекордах, не в сумме звёзд',
 } as const;
 
 export type Dictionary = typeof ru;

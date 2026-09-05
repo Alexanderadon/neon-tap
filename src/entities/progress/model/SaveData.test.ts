@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_SAVE, addRun, addSpell, emptySave, mergeResult, migrate, starsForTrack, totalStars, type BestResult } from './SaveData';
+import { registerLocalTrackIds, resetLocalTrackIds } from '@/shared/lib/local-tracks';
+import { EMPTY_SAVE, addRun, addSpell, countedTrackIds, emptySave, mergeResult, migrate, starsForTrack, totalStars, type BestResult } from './SaveData';
 
 const res = (rank: BestResult['rank'], score = 1000, maxCombo = 10): BestResult => ({
   score,
@@ -89,5 +90,21 @@ describe('SaveData', () => {
     expect(s2.counters.maxCombo).toBe(80);
     expect(s2.counters.maxTrackStars).toBe(7);
     expect(s1.counters.tracksPlayed).toBe(0);
+  });
+});
+
+describe('local tracks (dev-only) and totals', () => {
+  it('totalStars skips registered local ids unless the ids are given explicitly', () => {
+    registerLocalTrackIds(['my-local']);
+    try {
+      const save = { ...emptySave(), tracks: { a: res('S'), 'my-local': res('SS') } };
+      expect(countedTrackIds(save)).toEqual(['a']);
+      expect(totalStars(save)).toBe(3);
+      expect(totalStars(save, ['a', 'my-local'])).toBe(6);
+      expect(totalStars(save, ['my-local'])).toBe(3);
+    } finally {
+      resetLocalTrackIds();
+    }
+    expect(countedTrackIds({ ...emptySave(), tracks: { 'my-local': res('SS') } })).toEqual(['my-local']);
   });
 });

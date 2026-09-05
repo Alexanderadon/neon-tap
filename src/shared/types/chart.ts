@@ -48,14 +48,21 @@ export const GENRES = [
 ] as const;
 export type Genre = (typeof GENRES)[number];
 
+/**
+ * Pseudo-genre of a dev-only local track (`assets-src/music-local` → `npm run assets:local`).
+ * Deliberately not in `GENRES`: covers and themes fall back to their defaults for it.
+ */
+export const LOCAL_GENRE = 'local' as const;
+export type TrackGenre = Genre | typeof LOCAL_GENRE;
+
 export interface ChartFile {
   id: string;
   title: string;
   artist: string;
   license: string;
   sourceUrl: string;
-  /** Genre tag from the track registry; absent for user-supplied songs. */
-  genre?: Genre;
+  /** Genre tag from the track registry (or `'local'` for local tracks); absent for user-supplied songs. */
+  genre?: TrackGenre;
   audio: string;
   bpm: number;
   /** Seconds to the first downbeat. */

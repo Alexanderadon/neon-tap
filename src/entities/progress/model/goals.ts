@@ -1,5 +1,5 @@
 import { dict } from '@/shared/i18n';
-import { rankIndex, starsForTrack, totalStars, type SaveData } from './SaveData';
+import { countedTrackIds, rankIndex, starsForTrack, totalStars, type BestResult, type SaveData } from './SaveData';
 
 export type GoalId = keyof typeof dict.goals;
 
@@ -15,9 +15,11 @@ export interface Goal {
   progress: (save: SaveData) => number;
 }
 
-const passed = (save: SaveData) => Object.values(save.tracks).filter((b) => starsForTrack(b) > 0).length;
-const rankS = (save: SaveData) => Object.values(save.tracks).filter((b) => rankIndex(b.rank) >= rankIndex('S')).length;
-const fullCombos = (save: SaveData) => Object.values(save.tracks).filter((b) => b.fullCombo).length;
+/** Bests that count toward goals — dev-only local tracks are excluded (`shared/lib/local-tracks`). */
+const countedBests = (save: SaveData): BestResult[] => countedTrackIds(save).map((id) => save.tracks[id]);
+const passed = (save: SaveData) => countedBests(save).filter((b) => starsForTrack(b) > 0).length;
+const rankS = (save: SaveData) => countedBests(save).filter((b) => rankIndex(b.rank) >= rankIndex('S')).length;
+const fullCombos = (save: SaveData) => countedBests(save).filter((b) => b.fullCombo).length;
 /** Stars from tracks and daily bonuses — goal rewards are excluded so a goal never feeds itself. */
 const earnedStars = (save: SaveData) => totalStars(save) + save.daily.total;
 

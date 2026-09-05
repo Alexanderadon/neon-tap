@@ -1,6 +1,9 @@
 export { CATALOG, TRACK_IDS, findTrack } from './model/catalog';
 export type { TrackMeta } from './model/types';
-export { loadChart } from './api/loadChart';
+export { loadChart, chartPath } from './api/loadChart';
+export { loadLocalCatalog } from './api/loadLocalCatalog';
+export { localCatalogStore, setLocalCatalog, useLocalCatalog, isLocalTrack, mergeCatalogs, parseLocalCatalog } from './model/localCatalog';
+export type { LocalCatalogState } from './model/localCatalog';
 export { TrackCover } from './ui/TrackCover';
 export type { TrackCoverProps } from './ui/TrackCover';
 export { coverSpec, COVER_PALETTES, DEFAULT_GENRE, isGenre } from './model/cover';

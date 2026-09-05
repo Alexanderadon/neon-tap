@@ -35,7 +35,7 @@ export function ResultPage() {
         onRetry={retry}
         chart={chart}
         notes={notes}
-        belowGrid={source === 'catalog' ? <AttemptLine trackId={result.trackId} /> : undefined}
+        belowGrid={source !== 'custom' ? <AttemptLine trackId={result.trackId} /> : undefined}
         extraBottom={<OnlineLeaderboard result={result} source={source} />}
       />
     </Screen>

@@ -18,15 +18,16 @@ const NO_META: ResultMeta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
 
 /**
  * Persist a finished run and stash result + celebration metadata for the result screen.
- *  - every catalog run (failed too) lands in the local attempt history;
+ *  - every catalog / local run (failed too) lands in the local attempt history;
  *  - failed runs never count otherwise (no counters, no bests);
  *  - custom songs are session-only, but their combo/plays still feed the goals;
  *  - built-in tracks update the best result, the daily bonus (once per local day, rank ≥ C)
- *    and claim any goal the run completed.
- * `now` is injectable so the daily logic is testable.
+ *    and claim any goal the run completed;
+ *  - dev-only local tracks keep a best result and history like built-in ones, but never the daily
+ *    bonus or the "hardest built-in track" counter (and `entities/progress` leaves them out of totals).
  */
 export function saveResult(result: PlayResult, source: ChartSource, now: Date = new Date()): ResultMeta {
-  if (source === 'catalog') {
+  if (source !== 'custom') {
     recordAttempt(result.trackId, {
       at: now.toISOString(),
       score: result.score,
@@ -51,7 +52,7 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
   recordRun({ maxCombo: result.maxCombo, trackStars });
 
   let meta: ResultMeta;
-  if (source !== 'catalog') {
+  if (source === 'custom') {
     meta = { ...NO_META };
   } else {
     const starsBefore = starsForTrack(progressStore.get().tracks[result.trackId]);
@@ -66,7 +67,7 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
     const starsAfter = starsForTrack(progressStore.get().tracks[result.trackId]);
     const date = localDateString(now);
     const passed = rankIndex(result.rank) >= rankIndex('C');
-    const dailyBonus = passed && dailyTrackId(date, TRACK_IDS) === result.trackId ? completeDailyToday(date) : false;
+    const dailyBonus = source === 'catalog' && passed && dailyTrackId(date, TRACK_IDS) === result.trackId ? completeDailyToday(date) : false;
     meta = { newRecord, starsBefore, starsAfter, dailyBonus };
   }
 

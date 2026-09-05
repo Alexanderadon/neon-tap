@@ -2,7 +2,8 @@ import { createStore, useStore } from '@/shared/lib/store/createStore';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 
-export type ChartSource = 'catalog' | 'custom';
+/** `catalog` — built-in track · `custom` — drag & drop file (session-only) · `local` — dev-only track from `public/local`. */
+export type ChartSource = 'catalog' | 'custom' | 'local';
 
 /** Celebration metadata produced by the save feature for the result screen. */
 export interface ResultMeta {
