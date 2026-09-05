@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sparklinePoints, toPolyline } from './sparkline';
+import { sparklinePoints, toMarker, toPolyline } from './sparkline';
 
 describe('sparkline', () => {
   it('returns nothing for an empty series and centres a single value', () => {
@@ -26,5 +26,9 @@ describe('sparkline', () => {
 
   it('formats a polyline', () => {
     expect(toPolyline([{ x: 1.234, y: 5 }, { x: 10, y: 2.25 }])).toBe('1.2,5.0 10.0,2.3');
+  });
+
+  it('formats a zero-length marker path', () => {
+    expect(toMarker({ x: 1.234, y: 5 })).toBe('M1.2,5.0h0');
   });
 });
