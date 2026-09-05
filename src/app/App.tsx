@@ -9,6 +9,7 @@ import { CalibrationPage } from '@/pages/calibration';
 import { SettingsPage } from '@/pages/settings';
 import { CustomSongPage } from '@/pages/custom';
 import { TutorialPage } from '@/pages/tutorial';
+import { ShopPage } from '@/pages/shop';
 import { AudioGate } from '@/widgets/audio-gate';
 import { OrientationHint } from '@/widgets/orientation-hint';
 
@@ -45,6 +46,9 @@ export function App() {
       break;
     case 'tutorial':
       page = <TutorialPage key={key} />;
+      break;
+    case 'shop':
+      page = <ShopPage key={key} />;
       break;
     default:
       page = <MenuPage key={key} />;

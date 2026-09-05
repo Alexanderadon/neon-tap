@@ -1,0 +1,178 @@
+.shopgrid {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shopgrid-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+}
+.shopcard {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-left: 3px solid var(--tone);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.2s ease;
+  animation: shopcard-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(0.08s + var(--i, 0) * 40ms);
+}
+@keyframes shopcard-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.shopcard:hover,
+.shopcard:focus-within {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: color-mix(in srgb, var(--tone) 55%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 30%, transparent);
+}
+.shopcard-premium {
+  background: linear-gradient(90deg, rgba(255, 43, 214, 0.1), rgba(255, 43, 214, 0.03));
+}
+.shopcard-owned {
+  opacity: 0.6;
+}
+.shopcard-cover {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  display: block;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 25%, transparent);
+}
+.shopcard-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+}
+.shopcard-genre {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--tone) 80%, white);
+  margin-top: 2px;
+}
+.shopcard-artist {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 2px 0 4px;
+}
+.shopcard-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  min-height: 1em;
+}
+.shopcard-tag {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--tone);
+  color: #05060a;
+  margin-right: 4px;
+}
+.shopcard-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.shopcard-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 16px;
+  color: #7df9ff;
+  text-shadow: 0 0 10px rgba(125, 249, 255, 0.7);
+}
+.shopcard-price .crystal-icon {
+  filter: drop-shadow(0 0 4px rgba(125, 249, 255, 0.8));
+}
+.shopcard-bought {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 249, 255, 0.5);
+  color: #7df9ff;
+}
+.shopcard-short {
+  font-size: 11px;
+  color: var(--c-magenta);
+  white-space: nowrap;
+}
+.shop-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.shop-confirm-text {
+  margin: 0;
+  line-height: 1.5;
+}
+.shop-confirm-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.shopgrid-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(5, 6, 10, 0.92);
+  border: 1px solid rgba(125, 249, 255, 0.5);
+  color: #7df9ff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 0 24px rgba(125, 249, 255, 0.35);
+  white-space: nowrap;
+  animation: shopcard-in 0.3s ease-out both;
+}
+@media (max-width: 480px) {
+  .shopcard {
+    grid-template-columns: 52px 1fr auto;
+    gap: 10px;
+  }
+  .shopcard-cover {
+    width: 52px;
+    height: 52px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shopcard,
+  .shopgrid-toast {
+    animation: none;
+  }
+}
