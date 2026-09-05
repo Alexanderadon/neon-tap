@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { LANE_COLORS } from '@/shared/config/constants';
-import { DEFAULT_THEME, PALETTE_SIZE, SYNTHWAVE, THEMES, hashId, themeById, themeFor, themeForGenre } from './themes';
+import {
+  DEFAULT_THEME,
+  PALETTE_SIZE,
+  SYNTHWAVE,
+  THEMES,
+  goodJudgementColor,
+  hashId,
+  isNearWhite,
+  themeById,
+  themeFor,
+  themeForGenre,
+} from './themes';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const MOTIFS = ['grid', 'rings', 'bars', 'haze'];
@@ -63,6 +74,23 @@ describe('themes', () => {
     }
     expect(themeFor('jazz', 'achilles').id).toBe('jazz');
     expect(themeFor('nonsense-genre', 'achilles')).toBe(themeFor(undefined, 'achilles'));
+  });
+
+  it('GOOD judgement colour is never white and keeps the original lime for synthwave', () => {
+    expect(isNearWhite('#ffffff')).toBe(true);
+    expect(isNearWhite('#e6e6fa')).toBe(true);
+    expect(isNearWhite('#b6ff00')).toBe(false);
+    expect(isNearWhite('nope')).toBe(false);
+    expect(goodJudgementColor(SYNTHWAVE)).toBe('#b6ff00');
+    for (const t of THEMES) {
+      const c = goodJudgementColor(t);
+      expect(isNearWhite(c)).toBe(false);
+      expect(c).not.toBe('#ffffff');
+      expect([...t.laneColors, t.accent]).toContain(c);
+    }
+    // A theme whose lanes are all white falls back to the accent.
+    const allWhite = { ...SYNTHWAVE, laneColors: ['#ffffff', '#fefefe', '#ffffff', '#ffffff', '#ffffff'] as const, accent: '#00f0ff' };
+    expect(goodJudgementColor(allWhite)).toBe('#00f0ff');
   });
 
   it('id hash is stable and spreads ids over the themes', () => {

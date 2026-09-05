@@ -371,20 +371,26 @@ export class GameSession {
       if (songTime >= this.endTime) this.finish();
     }
 
+    // The analyser is read at most once per frame: on the full FX level `spectrum()` fills the
+    // skyline bands and returns the bass level of that same read; otherwise only the bass is read.
+    let bass = 0;
+    if (!this.paused) {
+      if (this.renderer.fxLevel === 'full' && !this.finished) {
+        // Music-synchronised background (skipped entirely on the low FX level): beat pulses from
+        // the tracked beats and the spectrum skyline from the analyser, both into reused buffers.
+        const beat = this.beatCursor.poll(songTime);
+        if (beat > 0) this.renderer.beatFeedback(beat);
+        bass = audioEngine.spectrum(this.bands);
+        this.renderer.feedSpectrum(this.bands, dt);
+      } else {
+        bass = audioEngine.bassLevel();
+      }
+    }
+
     // Audio-reactive pulse: bass envelope with instant attack and quick decay, gated so sustained
     // bass does not glow permanently — only hits above the running floor light up.
-    const bass = this.paused ? 0 : audioEngine.bassLevel();
     this.bassEnv = Math.max(bass, this.bassEnv - dt * 6);
     const pulse = Math.max(0, Math.min(1, (this.bassEnv - 0.45) / 0.4));
-
-    // Music-synchronised background (skipped entirely on the low FX level): beat pulses from the
-    // tracked beats and the spectrum skyline from the analyser, both into reused buffers.
-    if (this.renderer.fxLevel === 'full' && !this.paused && !this.finished) {
-      const beat = this.beatCursor.poll(songTime);
-      if (beat > 0) this.renderer.beatFeedback(beat);
-      audioEngine.spectrum(this.bands);
-      this.renderer.feedSpectrum(this.bands, dt);
-    }
 
     const s = this.scoring;
     const slowLeft = this.slowUntil > 0 ? this.slowUntil - songTime : 0;

@@ -174,6 +174,31 @@ export function hashId(id: string): number {
   return h >>> 0;
 }
 
+/** True for white / near-white hex colours (every channel ≥ 0xd0) — those would hide against the PERFECT popup. */
+export function isNearWhite(hex: string): boolean {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return false;
+  const v = parseInt(m[1], 16);
+  return (v >> 16) >= 0xd0 && ((v >> 8) & 0xff) >= 0xd0 && (v & 0xff) >= 0xd0;
+}
+
+/** Index of the lane colour to prefer for the GOOD judgement (lime in the original synthwave look). */
+const GOOD_LANE = 2;
+
+/**
+ * Colour for the GOOD judgement popup: lane colour `GOOD_LANE` unless it is (near) white — PERFECT
+ * is drawn white, and the two must stay distinguishable — then the next non-white lane colour,
+ * and the theme accent as a last resort.
+ */
+export function goodJudgementColor(theme: Theme): string {
+  const n = theme.laneColors.length;
+  for (let k = 0; k < n; k++) {
+    const c = theme.laneColors[(GOOD_LANE + k) % n];
+    if (!isNearWhite(c)) return c;
+  }
+  return theme.accent;
+}
+
 export function themeById(id: string): Theme | undefined {
   return THEMES.find((t) => t.id === id);
 }

@@ -8,6 +8,8 @@ import './menu.css';
 export function MenuPage() {
   return (
     <Screen className="menu">
+      {/* Scrolling neon grid floor (CSS only; the wrapper masks + clips, the pseudo-element moves). */}
+      <div className="menu-bg" aria-hidden="true" />
       <header className="menu-head" onClick={() => void audioEngine.ensureContext()}>
         <h1 className="menu-logo">
           <span className="l1">NEON</span>

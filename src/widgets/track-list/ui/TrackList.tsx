@@ -65,7 +65,12 @@ function TrackCard({ index, track, best }: { index: number; track: TrackMeta; be
           {track.artist} · {track.bpm} {dict.bpm} · {Math.round(track.duration)} с
         </div>
         <div className="tcard-tags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
-        <div className="tcard-swatch" title={`${dict.themeLabel}: ${theme.name}`} aria-label={`${dict.themeLabel}: ${theme.name}`}>
+        <div
+          className="tcard-swatch"
+          role="img"
+          title={`${dict.themeLabel}: ${theme.name}`}
+          aria-label={`${dict.themeLabel}: ${theme.name}`}
+        >
           {theme.laneColors.slice(0, PALETTE_SIZE).map((c, k) => (
             <i key={k} style={{ background: c, color: c }} />
           ))}

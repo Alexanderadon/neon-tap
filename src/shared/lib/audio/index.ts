@@ -3,7 +3,7 @@ export type { Volumes } from './AudioEngine';
 export { Clock } from './Clock';
 export { Conductor } from './Conductor';
 export { BeatCursor, BEAT_STRENGTH, DOWNBEAT_STRENGTH, BEATS_PER_BAR } from './BeatCursor';
-export { SPECTRUM_BANDS, spectrumBands, bandLayout } from './spectrum';
+export { SPECTRUM_BANDS, spectrumBands, bandLayout, bassFromBins } from './spectrum';
 export type { BandLayout } from './spectrum';
 export { SampleBank } from './SampleBank';
 export type { PlayOptions } from './SampleBank';

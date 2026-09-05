@@ -14,35 +14,10 @@
   justify-content: center;
 }
 
-@keyframes glitch-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-6px) skewX(4deg);
-    filter: hue-rotate(60deg) saturate(3);
-    clip-path: inset(30% 0 40% 0);
-  }
-  30% {
-    opacity: 1;
-    transform: translateX(4px) skewX(-2deg);
-    clip-path: inset(5% 0 60% 0);
-  }
-  60% {
-    transform: translateX(-2px);
-    clip-path: inset(50% 0 0 0);
-  }
-  100% {
-    transform: none;
-    filter: none;
-    clip-path: inset(0);
-  }
-}
-.glitch-in {
-  animation: glitch-in 0.2s steps(6, end) both;
-}
-
 /*
  * Route change: the router remounts the page with a new key, so the screen replays this
- * 250 ms enter — a fade + rise with the neon glitch folded into the first frames.
+ * 250 ms enter — a fade + rise with the neon glitch folded into the first frames (this replaced
+ * the old `glitch-in` class; there is one glitch definition on purpose).
  */
 @keyframes screen-enter {
   0% {
@@ -73,8 +48,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen-enter,
-  .glitch-in {
+  .screen-enter {
     animation: none;
   }
   .btn {
