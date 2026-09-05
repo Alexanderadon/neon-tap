@@ -1,6 +1,6 @@
 import { dict, plural } from '@/shared/i18n';
 import { attemptsOf, bestOf, trendOf, useHistory, type Attempt } from '@/entities/history';
-import { sparklinePoints, toPolyline } from '../lib/sparkline';
+import { sparklinePoints, toMarker, toPolyline } from '../lib/sparkline';
 import { formatDate, formatScore, pct } from '../lib/format';
 import { TrendMark } from './TrendMark';
 import './history.css';
@@ -53,8 +53,18 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
         <div className="history-spark-label">{dict.accuracyByAttempt}</div>
         <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none" role="img" aria-label={dict.accuracyByAttempt}>
           {points.length > 1 && <polyline points={toPolyline(points)} fill="none" stroke="#00f0ff" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
+          {/* Markers are zero-length round-capped strokes: with non-scaling-stroke they stay
+              circular under the preserveAspectRatio="none" stretch (a <circle> would be squashed). */}
           {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 4 : 2.5} fill={series[i].failed ? '#ff2bd6' : '#00f0ff'} />
+            <path
+              key={i}
+              d={toMarker(p)}
+              fill="none"
+              stroke={series[i].failed ? '#ff2bd6' : '#00f0ff'}
+              strokeWidth={i === points.length - 1 ? 8 : 5}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
           ))}
         </svg>
       </div>

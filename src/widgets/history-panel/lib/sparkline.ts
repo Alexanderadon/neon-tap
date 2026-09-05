@@ -37,3 +37,12 @@ export function sparklinePoints(values: readonly number[], width: number, height
 export function toPolyline(points: readonly SparkPoint[]): string {
   return points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 }
+
+/**
+ * A zero-length path at the point: stroked with round caps and `vector-effect: non-scaling-stroke`
+ * it renders as a true circle even when the SVG is stretched with `preserveAspectRatio="none"`
+ * (a <circle> would become an ellipse there).
+ */
+export function toMarker(p: SparkPoint): string {
+  return `M${p.x.toFixed(1)},${p.y.toFixed(1)}h0`;
+}

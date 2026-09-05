@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { dict } from '@/shared/i18n';
 import { Button, Modal } from '@/shared/ui';
 import { NICKNAME_MAX, sanitizeNickname, updateSettings } from '@/entities/settings';
@@ -14,6 +14,7 @@ interface Props {
 /** One-time nickname prompt for the online table; the name lands in settings. */
 export function NicknameDialog({ open, onSkip }: Props) {
   const [value, setValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const clean = sanitizeNickname(value);
   const valid = isValidNickname(clean);
 
@@ -24,9 +25,17 @@ export function NicknameDialog({ open, onSkip }: Props) {
   };
 
   return (
-    <Modal open={open} title={dict.nicknameTitle} onClose={onSkip} closeLabel={dict.nicknameSkip} variant="dialog">
+    <Modal
+      open={open}
+      title={dict.nicknameTitle}
+      onClose={onSkip}
+      closeLabel={dict.nicknameSkip}
+      variant="dialog"
+      initialFocus={inputRef}
+    >
       <form className="nickname" onSubmit={submit}>
         <input
+          ref={inputRef}
           className="text-input"
           type="text"
           value={value}
