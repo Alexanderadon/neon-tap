@@ -33,7 +33,7 @@ describe('public/charts/tutorial.json', () => {
     expect(file.title).toBe('Обучение');
     expect(file.chart.stars).toBe(1);
     expect(beats.length).toBeGreaterThan(100);
-    const src = JSON.parse(readFileSync(new URL('public/charts/the-9th-circle.json', ROOT), 'utf8')) as ChartFile;
+    const src = JSON.parse(readFileSync(new URL('public/charts/apparatus-overlord.json', ROOT), 'utf8')) as ChartFile;
     expect(file.audio).toBe(src.audio);
     expect(file.bpm).toBe(src.bpm);
     expect(file.offset).toBe(src.offset);

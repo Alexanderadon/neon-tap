@@ -22,7 +22,16 @@
   }
 }
 .screen-center {
-  justify-content: center;
+  /* Centre via auto margins, not `justify-content: center`: with plain centering a screen taller
+   * than the viewport (result page, settings on a phone) overflows upwards and its top is
+   * unreachable by scrolling. Auto margins centre when there is room and collapse to 0 otherwise. */
+  justify-content: flex-start;
+}
+.screen-center > :first-child {
+  margin-top: auto;
+}
+.screen-center > :last-child {
+  margin-bottom: auto;
 }
 
 /*

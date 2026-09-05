@@ -25,7 +25,6 @@ Attribution is not required for CC0 — it is listed here out of respect for the
 | `apparatus-overlord.mp3` | Apparatus Overlord | vitalezzz | [OpenGameArt](https://opengameart.org/content/apparatus-overlord) | CC0 1.0 |
 | `shortcuts.mp3` | Shortcuts | zane-little-music | [OpenGameArt](https://opengameart.org/content/shortcuts) | CC0 1.0 |
 | `technological-menace.mp3` | Technological Menace | umplix | [OpenGameArt](https://opengameart.org/content/technological-menace) | CC0 1.0 |
-| `the-9th-circle.mp3` | The 9th Circle | joth | [OpenGameArt](https://opengameart.org/content/the-9th-circle) | CC0 1.0 |
 | `hot-roadway.mp3` | Hot Roadway | mintodog | [OpenGameArt](https://opengameart.org/content/hot-roadway) | CC0 1.0 |
 | `virtual-rush.mp3` | Virtual Rush | vitalezzz | [OpenGameArt](https://opengameart.org/content/virtual-rush) | CC0 1.0 |
 | `elevate-instrument-tracks.mp3` | Elevate (+ instrument tracks) | fupi | [OpenGameArt](https://opengameart.org/content/elevate-instrument-tracks) | CC0 1.0 |
