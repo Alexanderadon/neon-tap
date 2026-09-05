@@ -8,7 +8,10 @@ interface Props {
   center?: boolean;
 }
 
-/** Full-viewport page wrapper with the glitch enter transition. */
+/**
+ * Full-viewport page wrapper. The router remounts pages with a fresh key on every route change,
+ * so the enter animation (`screen-enter`, 250 ms fade/rise + the glitch) replays per screen.
+ */
 export function Screen({ children, className = '', center = false }: Props) {
-  return <div className={`screen glitch-in ${center ? 'screen-center' : ''} ${className}`}>{children}</div>;
+  return <div className={`screen screen-enter ${center ? 'screen-center' : ''} ${className}`}>{children}</div>;
 }

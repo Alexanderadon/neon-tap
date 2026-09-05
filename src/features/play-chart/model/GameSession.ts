@@ -1,8 +1,8 @@
 import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES } from '@/shared/config/constants';
-import { audioEngine, Clock, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
+import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
-import { FpsMeter, LowFpsDetector } from '@/shared/lib/render';
+import { FpsMeter, LowFpsDetector, themeFor } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type Section, type SpellKind } from '@/entities/chart';
@@ -113,6 +113,10 @@ export class GameSession {
   private hitsSeen = 0;
   private bassEnv = 0;
   private lastTimeReport = -Infinity;
+  /** Walks `chart.beats` so the background can pulse on every beat (stronger on downbeats). */
+  private readonly beatCursor: BeatCursor;
+  /** Reused every frame for the spectrum skyline — the only spectrum buffer on the game side. */
+  private readonly bands = new Uint8Array(SPECTRUM_BANDS);
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
@@ -131,12 +135,16 @@ export class GameSession {
     this.scoring = new Scoring(judgements);
     this.timeline = new JudgementTimeline(judgements);
     this.endTime = Math.min(opts.audioBuffer.duration, this.notes.lastTime + 1.5);
+    // Per-track look: by genre when the chart carries one, otherwise deterministic from the id.
+    const theme = themeFor(opts.chart.genre, opts.chart.id);
     this.renderer = new Renderer(
       opts.canvas,
       opts.touch,
       this.sections.map((s) => s.lanes),
+      theme,
     );
     this.renderer.setLanes(this.sections[0].lanes, true);
+    this.beatCursor = new BeatCursor(opts.chart.beats, opts.chart.bpm, opts.chart.offset, opts.chart.duration);
     if (opts.fxMode === 'on') this.renderer.setFxLevel('low');
     this.input = new Input({
       audioNow: () => audioEngine.now(),
@@ -212,6 +220,7 @@ export class GameSession {
     this.slowUntil = -1;
     this.slowReleasing = false;
     this.perfectStreak = 0;
+    this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
     const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN);
     this.clock.start(startTime);
@@ -394,9 +403,24 @@ export class GameSession {
       this.opts.onTime(songTime);
     }
 
+    // The analyser is read at most once per frame: on the full FX level `spectrum()` fills the
+    // skyline bands and returns the bass level of that same read; otherwise only the bass is read.
+    let bass = 0;
+    if (!this.paused) {
+      if (this.renderer.fx === 'full' && !this.finished) {
+        // Music-synchronised background (skipped entirely on the low FX level): beat pulses from
+        // the tracked beats and the spectrum skyline from the analyser, both into reused buffers.
+        const beat = this.beatCursor.poll(songTime);
+        if (beat > 0) this.renderer.beatFeedback(beat);
+        bass = audioEngine.spectrum(this.bands);
+        this.renderer.feedSpectrum(this.bands, dt);
+      } else {
+        bass = audioEngine.bassLevel();
+      }
+    }
+
     // Audio-reactive pulse: bass envelope with instant attack and quick decay, gated so sustained
     // bass does not glow permanently — only hits above the running floor light up.
-    const bass = this.paused ? 0 : audioEngine.bassLevel();
     this.bassEnv = Math.max(bass, this.bassEnv - dt * 6);
     const pulse = Math.max(0, Math.min(1, (this.bassEnv - 0.45) / 0.4));
 
@@ -406,6 +430,7 @@ export class GameSession {
       songTime,
       approachTime: this.approachTime,
       pulse,
+      beatPhase: this.beatCursor.phase(songTime),
       combo: s.combo,
       comboAge: this.comboGrewAt < 0 ? Infinity : songTime - this.comboGrewAt,
       score: s.score,
