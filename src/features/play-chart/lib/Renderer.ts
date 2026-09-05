@@ -4,7 +4,10 @@ import { ParticlePool, ScreenShake, LaneFlash } from '@/shared/lib/render';
 import type { Judgement } from '@/entities/score';
 import type { SpellKind } from '@/entities/chart';
 import { NoteState, type NoteManager, type PooledNote } from '../model/NoteManager';
-import { computeLayout, type Layout } from './layout';
+import { computeLayout, touchZoneRect, type Layout } from './layout';
+
+/** FX budget: "low" halves particle emission and skips hold sparks, the bass zoom and milestone shockwaves (mid-range phones). */
+export type FxLevel = 'full' | 'low';
 
 export interface FrameState {
   songTime: number;
@@ -55,6 +58,8 @@ interface LaneSet {
   holdSprites: NoteSprite[];
   beams: NoteSprite[];
   spells: Record<SpellKind, NoteSprite>;
+  /** Per-lane fill for the touched zone (touch devices), precomputed — no string building per frame. */
+  zoneFill: string[];
 }
 
 /** Circles hang in the upper part of the field; three staggered heights so a group reads as a path. */
@@ -104,6 +109,11 @@ export class Renderer {
   readonly shake = new ScreenShake();
   readonly flash = new LaneFlash(MAX_LANES);
   visibleNotes = 0;
+  private fxLevel: FxLevel = 'full';
+  private fxAuto = false;
+  /** Safe-area insets (notch / home indicator) read from CSS env() — the HUD keeps clear of them. */
+  private safeTop = 0;
+  private safeBottom = 0;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -138,6 +148,18 @@ export class Renderer {
     return s;
   }
 
+  /** Current FX budget (other effects gate themselves on this too). */
+  get fx(): FxLevel {
+    return this.fxLevel;
+  }
+
+  /** Switch the FX budget; `auto` marks a switch made by the FPS watchdog (shown in the debug overlay). */
+  setFxLevel(level: FxLevel, auto = false): void {
+    this.fxLevel = level;
+    this.fxAuto = auto;
+    this.particles.emitScale = level === 'low' ? 0.5 : 1;
+  }
+
   setTouch(touch: boolean): void {
     if (this.touch === touch) return;
     this.touch = touch;
@@ -148,6 +170,8 @@ export class Renderer {
     this.width = this.canvas.clientWidth || window.innerWidth;
     this.height = this.canvas.clientHeight || window.innerHeight;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.safeTop = readSafeInset('--safe-top');
+    this.safeBottom = readSafeInset('--safe-bottom');
     this.canvas.width = Math.round(this.width * this.dpr);
     this.canvas.height = Math.round(this.height * this.dpr);
     this.sets.clear();
@@ -186,6 +210,7 @@ export class Renderer {
       holdSprites: colors.map((c) => renderNoteSprite(c, bodyW * 0.5, noteHeight * 0.6, this.dpr)),
       beams: colors.map((c) => renderBeam(hexToRgba(c, 0.55), laneWidth, hitY, this.dpr)),
       spells: { slow: renderSpell('slow', spellSize, this.dpr), heart: renderSpell('heart', spellSize, this.dpr) },
+      zoneFill: colors.map((c) => hexToRgba(c, 0.12)),
     };
   }
 
@@ -216,6 +241,8 @@ export class Renderer {
       ctx.lineTo(x, height);
       ctx.stroke();
     }
+
+    if (this.touch && !bare) this.drawTouchZones(ctx, L);
 
     ctx.shadowColor = 'rgba(255,255,255,0.8)';
     ctx.shadowBlur = 14;
@@ -249,6 +276,41 @@ export class Renderer {
     ctx.fillStyle = v;
     ctx.fillRect(0, 0, width, height);
     return layer;
+  }
+
+  /**
+   * Touch devices: the bottom half is the tap area (GDD §4). A faint wash of each lane's colour,
+   * thin separators and a small bar at the bottom of every zone show where to tap; zones span the
+   * full width (see `touchZoneRect`), which matters in landscape where the lanes are narrower.
+   */
+  private drawTouchZones(ctx: CanvasRenderingContext2D, L: Layout): void {
+    const { lanes, height } = L;
+    for (let i = 0; i < lanes; i++) {
+      const z = touchZoneRect(L, i);
+      const color = LANE_COLORS[i % LANE_COLORS.length];
+      const wash = ctx.createLinearGradient(0, z.y, 0, height);
+      wash.addColorStop(0, hexToRgba(color, 0));
+      wash.addColorStop(1, hexToRgba(color, 0.09));
+      ctx.fillStyle = wash;
+      ctx.fillRect(z.x, z.y, z.width, z.height);
+      // "Tap here" bar, clear of the home indicator.
+      ctx.fillStyle = hexToRgba(color, 0.45);
+      ctx.fillRect(z.x + z.width * 0.25, height - 6 - this.safeBottom, z.width * 0.5, 3);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < lanes; i++) {
+      const x = Math.round(touchZoneRect(L, i).x) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, L.touchZoneTop);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath();
+    ctx.moveTo(0, Math.round(L.touchZoneTop) + 0.5);
+    ctx.lineTo(L.width, Math.round(L.touchZoneTop) + 0.5);
+    ctx.stroke();
   }
 
   /** Receptor bounce on every press. */
@@ -310,7 +372,7 @@ export class Renderer {
 
   comboMilestone(combo: number): void {
     this.shake.trigger(2.5);
-    this.shockAge = 0;
+    if (this.fxLevel === 'full') this.shockAge = 0;
     this.bannerText = `${combo} COMBO`;
     this.bannerAge = 0;
     const { laneX, laneWidth, hitY, lanes } = this.layout;
@@ -342,7 +404,7 @@ export class Renderer {
 
   private heartPos(index: number): { x: number; y: number } {
     const step = this.heartSize * 1.25;
-    return { x: 14 + this.heartSize / 2 + index * step, y: 50 + this.heartSize / 2 };
+    return { x: 14 + this.heartSize / 2 + index * step, y: 50 + this.safeTop + this.heartSize / 2 };
   }
 
   draw(notes: NoteManager, s: FrameState): void {
@@ -352,7 +414,7 @@ export class Renderer {
     const { width, height, laneX, laneWidth, hitY } = L;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     // Bass "camera punch": a tiny zoom around the centre on every hit of the track.
-    const zoom = 1 + 0.012 * s.pulse;
+    const zoom = this.fxLevel === 'low' ? 1 : 1 + 0.012 * s.pulse;
     ctx.translate(width / 2 + this.shake.offsetX, height / 2 + this.shake.offsetY);
     ctx.scale(zoom, zoom);
     ctx.translate(-width / 2, -height / 2);
@@ -395,6 +457,12 @@ export class Renderer {
         ctx.globalAlpha = Math.max(f, heldNow ? 0.35 : 0);
         ctx.drawImage(cur.beams[lane].canvas, laneX + lane * laneWidth, 0, laneWidth, hitY);
         ctx.globalAlpha = 1;
+      }
+      // Touch: the zone under the finger lights up too (the beam alone is above the finger).
+      if (heldNow && this.touch) {
+        const zw = width / this.current;
+        ctx.fillStyle = cur.zoneFill[lane];
+        ctx.fillRect(lane * zw, L.touchZoneTop, zw, height - L.touchZoneTop);
       }
     }
 
@@ -444,7 +512,7 @@ export class Renderer {
         else this.drawHoldBody(set, n, cx, y, yEnd, lw, height, s);
         if (n.state === NoteState.Holding) {
           // Sparks streaming from the receptor while a hold-type note is being held.
-          if (sparkTick) {
+          if (sparkTick && this.fxLevel === 'full') {
             const hx = n.kind === 'slide' ? this.slideX(set, n, s.songTime) : cx;
             this.particles.emit(hx, hitY, 2, n.lane % LANE_COLORS.length, 160, 3, 0.3);
           }
@@ -876,10 +944,11 @@ export class Renderer {
     ctx.font = `700 ${portrait ? 18 : 22}px ${FONT}`;
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.fillText(s.score.toLocaleString('ru-RU'), 14, 30);
+    const hudY = 30 + this.safeTop;
+    ctx.fillText(s.score.toLocaleString('ru-RU'), 14, hudY);
     ctx.textAlign = 'right';
     ctx.fillStyle = s.accuracy >= 0.95 ? '#ffd700' : 'rgba(255,255,255,0.85)';
-    ctx.fillText(`${(s.accuracy * 100).toFixed(2)}%`, width - 14, 30);
+    ctx.fillText(`${(s.accuracy * 100).toFixed(2)}%`, width - 14, hudY);
 
     const lostShake = s.heartLostAge < 0.35 ? (1 - s.heartLostAge / 0.35) * 4 : 0;
     for (let i = 0; i < s.maxHearts; i++) {
@@ -892,7 +961,7 @@ export class Renderer {
     if (s.slowRemaining >= 0) {
       const barW = Math.min(220, laneAreaWidth * 0.6);
       const x = centerX - barW / 2;
-      const y = 52;
+      const y = 52 + this.safeTop;
       ctx.fillStyle = 'rgba(0,240,255,0.15)';
       ctx.fillRect(x, y, barW, 6);
       ctx.fillStyle = '#00f0ff';
@@ -904,18 +973,18 @@ export class Renderer {
     }
 
     ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(0, 0, width, 3);
+    ctx.fillRect(0, this.safeTop, width, 3);
     ctx.fillStyle = '#00f0ff';
-    ctx.fillRect(0, 0, width * s.progress, 3);
+    ctx.fillRect(0, this.safeTop, width * s.progress, 3);
 
     if (s.debug) {
       ctx.textAlign = 'left';
       ctx.font = `400 11px monospace`;
       ctx.fillStyle = s.debug.fps < 50 ? '#ff2bd6' : '#b6ff00';
       ctx.fillText(
-        `${s.debug.fps} fps · worst ${s.debug.worstMs} ms · notes ${s.debug.visibleNotes} · particles ${this.particles.alive} · lanes ${this.current} · latency ${s.debug.latencyMs} ms · offset ${s.debug.offsetMs} ms · rate ${s.debug.rate.toFixed(2)} · t ${s.songTime.toFixed(3)}`,
+        `${s.debug.fps} fps · worst ${s.debug.worstMs} ms · notes ${s.debug.visibleNotes} · particles ${this.particles.alive} · lanes ${this.current} · fx ${this.fxLevel}${this.fxAuto ? '·auto' : ''} · latency ${s.debug.latencyMs} ms · offset ${s.debug.offsetMs} ms · rate ${s.debug.rate.toFixed(2)} · t ${s.songTime.toFixed(3)}`,
         10,
-        height - 14,
+        height - 14 - this.safeBottom,
       );
     }
   }
@@ -938,6 +1007,13 @@ export class Renderer {
       ctx.fillText(subtitle, width / 2, height * 0.42 + 56);
     }
   }
+}
+
+/** Reads a CSS custom property holding an env(safe-area-inset-*) value, in px (0 when unsupported). */
+function readSafeInset(prop: string): number {
+  if (typeof document === 'undefined') return 0;
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(prop));
+  return Number.isFinite(v) && v > 0 ? Math.min(v, 120) : 0;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {

@@ -3,6 +3,8 @@ import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
 export type VoiceSetting = 'dmitry' | 'svetlana' | 'off';
+/** "Economy mode": auto = switch to the low FX level when FPS drops below 45 for 3 s; on = always low; off = always full. */
+export type FxMode = 'auto' | 'on' | 'off';
 
 export interface Settings {
   version: 1;
@@ -24,6 +26,7 @@ export interface Settings {
   tutorialDone: boolean;
   /** Name shown on the online leaderboard; '' = not asked yet. */
   nickname: string;
+  fxMode: FxMode;
 }
 
 const KEY = 'neon-tap:settings';
@@ -53,9 +56,11 @@ const DEFAULTS: Settings = {
   debugOverlay: false,
   tutorialDone: false,
   nickname: '',
+  fxMode: 'auto',
 };
 
 const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
+export const FX_MODES: FxMode[] = ['auto', 'on', 'off'];
 
 function load(): Settings {
   try {
@@ -79,6 +84,7 @@ function sanitize(s: Settings): Settings {
     voice: VOICES.includes(s.voice) ? s.voice : DEFAULTS.voice,
     tutorialDone: s.tutorialDone === true,
     nickname: typeof s.nickname === 'string' ? sanitizeNickname(s.nickname) : '',
+    fxMode: FX_MODES.includes(s.fxMode) ? s.fxMode : DEFAULTS.fxMode,
   };
 }
 

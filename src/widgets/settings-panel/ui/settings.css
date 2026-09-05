@@ -46,6 +46,11 @@
 .seg:last-child {
   border-right: none;
 }
+@media (pointer: coarse) {
+  .seg {
+    min-height: 44px;
+  }
+}
 .seg-on {
   background: rgba(0, 240, 255, 0.16);
   color: var(--c-cyan);

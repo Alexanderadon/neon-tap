@@ -13,6 +13,8 @@ export class ParticlePool {
   readonly color: Uint8Array; // index into a palette
   private cursor = 0;
   alive = 0;
+  /** Multiplier applied to every emit() count — the "economy" FX level halves it (0.5). */
+  emitScale = 1;
 
   constructor(readonly capacity: number) {
     this.x = new Float32Array(capacity);
@@ -26,7 +28,8 @@ export class ParticlePool {
   }
 
   emit(x: number, y: number, count: number, color: number, speed: number, sizePx: number, lifeSec = 0.5): void {
-    for (let n = 0; n < count; n++) {
+    const n0 = this.emitScale === 1 ? count : Math.max(1, Math.round(count * this.emitScale));
+    for (let n = 0; n < n0; n++) {
       const i = this.cursor;
       this.cursor = (this.cursor + 1) % this.capacity;
       if (this.life[i] <= 0) this.alive++;
