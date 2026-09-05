@@ -78,3 +78,32 @@
   flex-wrap: wrap;
   margin-top: 8px;
 }
+
+/* --- tutorial-lanes: "passed" badge + replay --- */
+.settings-tutorial {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.settings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.settings-badge-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.settings-badge-on {
+  border-color: rgba(182, 255, 0, 0.45);
+  color: var(--c-lime);
+  box-shadow: 0 0 10px rgba(182, 255, 0, 0.18);
+}
