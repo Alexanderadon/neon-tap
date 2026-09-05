@@ -26,3 +26,37 @@ export function decodePcm(file: string, rate: number): Float32Array {
   const buf: Buffer = r.stdout;
   return new Float32Array(buf.buffer, buf.byteOffset, Math.floor(buf.byteLength / 4));
 }
+
+/** Longest session the game wants (GDD: 90–150 s). */
+export const MAX_TRACK_SEC = 150;
+
+export interface EncodeResult {
+  /** Source duration (after looping). */
+  duration: number;
+  /** Encoded duration. */
+  cut: number;
+}
+
+/**
+ * The one encoding used for every playable track (built-in and local): trim to ≤ `maxSec`, fade the
+ * cut, loudness-normalise (−14 LUFS), stereo 44.1 kHz, 128 kbps MP3.
+ */
+export function encodeGameTrack(src: string, out: string, opts: { loops?: number; maxSec?: number } = {}): EncodeResult {
+  const loops = opts.loops ?? 1;
+  const maxSec = opts.maxSec ?? MAX_TRACK_SEC;
+  const duration = probeDuration(src) * loops;
+  const cut = Math.min(duration, maxSec);
+  const fade = cut < duration ? `,afade=t=out:st=${(cut - 3).toFixed(2)}:d=3` : '';
+  ffmpeg([
+    ...(loops > 1 ? ['-stream_loop', String(loops - 1)] : []),
+    '-i', src,
+    '-t', String(cut),
+    '-af', `loudnorm=I=-14:TP=-1.5:LRA=11${fade}`,
+    '-ac', '2',
+    '-ar', '44100',
+    '-codec:a', 'libmp3lame',
+    '-b:a', '128k',
+    out,
+  ]);
+  return { duration, cut };
+}

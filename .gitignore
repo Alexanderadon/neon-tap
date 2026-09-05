@@ -14,3 +14,8 @@ assets-src/sfx-raw/
 .vercel
 .env*.local
 .tmp
+
+# dev-only local tracks (npm run assets:local): the author's own audio never enters git or a deploy
+assets-src/music-local/*
+!assets-src/music-local/README.md
+public/local/

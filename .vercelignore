@@ -1,0 +1,22 @@
+# Vercel CLI upload filter. Mirrors .gitignore (once this file exists the CLI no longer falls back to
+# .gitignore, so every pattern is repeated here) plus the dev-only local tracks. Note that
+# scripts/deploy-fresh.sh uploads a prebuilt .vercel/output built from dist/, where
+# scripts/vite-local-tracks.ts has already removed dist/local — this file is the second fence.
+node_modules
+dist
+dist-ssr
+*.local
+.vercel
+.DS_Store
+coverage
+assets-src/music-raw/
+assets-src/voice-raw/
+assets-src/sfx-raw/
+*.log
+*.tsbuildinfo
+.env*.local
+.tmp
+
+# local tracks — never deployed
+assets-src/music-local
+public/local

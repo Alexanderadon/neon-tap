@@ -1,9 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import { localTracksPlugin } from './scripts/vite-local-tracks';
 
 export default defineConfig({
-  plugins: [react()],
+  // localTracksPlugin: dev-only `public/local` (npm run assets:local) — stripped from dist/, served in preview.
+  plugins: [react(), localTracksPlugin()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

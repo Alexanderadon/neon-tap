@@ -42,7 +42,19 @@ npm run assets:sfx       # assets-src/sfx-raw (паки Kenney) → public/sfx �
 npm run assets:voice     # нейро-TTS (msedge-tts) → public/voice/<dmitry|svetlana>; --force для перегенерации
 npm run assets:charts    # public/music → public/charts + catalog.json (тот же пайплайн, что в браузере)
 npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
+npm run assets:local     # assets-src/music-local (свои файлы, dev-only) → public/local/{music,charts,catalog.json}; --force перекодировать
 ```
+
+## Локальные треки (dev-only)
+
+`assets-src/music-local/` — свои аудиофайлы автора (gitignored, кроме README.md). `npm run assets:local`
+кодирует их тем же ffmpeg-пресетом и анализирует тем же пайплайном в `public/local/` (gitignored). Рантайм:
+`entities/track` → `loadLocalCatalog()` при старте (`app/main.tsx`), список = встроенный каталог + локальные
+с бейджем «ЛОКАЛЬНО», источник сессии `'local'`, карта `/local/charts/<id>.json`, аудио `/local/music/<id>.mp3`.
+Всегда открыты, не трек дня, не в онлайн-таблице, не в суммах звёзд и целях (`shared/lib/local-tracks` —
+реестр id, который `entities/progress` пропускает). В production не попадают: `scripts/vite-local-tracks.ts`
+удаляет `dist/local` после `vite build` и отдаёт `public/local` в `vite preview`; `.vercelignore` — вторая
+защита. Никогда не класть чужую музыку в репозиторий — для этого и существует эта папка.
 
 ## Деплой
 

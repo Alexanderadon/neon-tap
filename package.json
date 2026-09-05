@@ -17,7 +17,8 @@
     "assets:sfx": "tsx --tsconfig tsconfig.node.json scripts/prepare-sfx.ts",
     "assets:licenses": "tsx --tsconfig tsconfig.node.json scripts/write-licenses.ts",
     "assets:analyze": "tsx --tsconfig tsconfig.node.json scripts/analyze-tracks.ts",
-    "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts"
+    "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts",
+    "assets:local": "tsx --tsconfig tsconfig.node.json scripts/prepare-local.ts"
   },
   "dependencies": {
     "react": "^18.3.1",
