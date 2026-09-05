@@ -21,25 +21,43 @@ export function unlockThreshold(position: number, catalogSize: number): number {
 export interface UnlockContext {
   /** Player's stars including bonuses. */
   stars: number;
-  /** Today's daily track — always open. */
+  /** Today's daily track — always open (a premium daily is a free taste for the day). */
   dailyId?: string | null;
   /** `UNLOCK_ALL` / `?unlock=1`: everything open. */
   unlockAll?: boolean;
+  /** Track ids bought in the shop — open regardless of stars. */
+  purchased?: readonly string[];
+  /** Premium track ids — never open by stars, only by purchase (or as the daily track). */
+  premium?: readonly string[];
 }
 
 export interface UnlockInfo {
   id: string;
   unlocked: boolean;
-  /** Stars required (0 when free). */
+  /** Stars required (0 when free); meaningless for premium tracks. */
   need: number;
+  /** Premium: shop-only. */
+  premium: boolean;
+  /** Bought in the shop. */
+  purchased: boolean;
+}
+
+/**
+ * The unlock rule: a track is playable when everything is open, when it was bought, when it is
+ * today's daily track, or — for non-premium tracks only — when the player has enough stars.
+ */
+export function isOpen(need: number, premium: boolean, purchased: boolean, isDaily: boolean, ctx: UnlockContext): boolean {
+  if (ctx.unlockAll === true || purchased || isDaily) return true;
+  return !premium && ctx.stars >= need;
 }
 
 /** Unlock state for every catalog track, in catalog order. */
 export function unlockStates(catalogIds: readonly string[], ctx: UnlockContext): UnlockInfo[] {
   return catalogIds.map((id, i) => {
     const need = unlockThreshold(i, catalogIds.length);
-    const unlocked = ctx.unlockAll === true || id === ctx.dailyId || ctx.stars >= need;
-    return { id, unlocked, need };
+    const premium = ctx.premium?.includes(id) ?? false;
+    const purchased = ctx.purchased?.includes(id) ?? false;
+    return { id, unlocked: isOpen(need, premium, purchased, id === ctx.dailyId, ctx), need, premium, purchased };
   });
 }
 
@@ -47,14 +65,20 @@ export function unlockStates(catalogIds: readonly string[], ctx: UnlockContext):
 export function isTrackUnlocked(catalogIds: readonly string[], id: string, ctx: UnlockContext): boolean {
   const i = catalogIds.indexOf(id);
   if (i < 0) return true;
-  return ctx.unlockAll === true || id === ctx.dailyId || ctx.stars >= unlockThreshold(i, catalogIds.length);
+  const premium = ctx.premium?.includes(id) ?? false;
+  const purchased = ctx.purchased?.includes(id) ?? false;
+  return isOpen(unlockThreshold(i, catalogIds.length), premium, purchased, id === ctx.dailyId, ctx);
 }
 
-/** Ids that are open with `after` stars but were locked with `before` (the daily track never "unlocks"). */
-export function newlyUnlocked(catalogIds: readonly string[], before: number, after: number): string[] {
+/**
+ * Ids that are open with `after` stars but were locked with `before` (the daily track never
+ * "unlocks"; premium tracks never open by stars, so they are skipped too).
+ */
+export function newlyUnlocked(catalogIds: readonly string[], before: number, after: number, premium: readonly string[] = []): string[] {
   const out: string[] = [];
   if (after <= before) return out;
   catalogIds.forEach((id, i) => {
+    if (premium.includes(id)) return;
     const need = unlockThreshold(i, catalogIds.length);
     if (before < need && after >= need) out.push(id);
   });

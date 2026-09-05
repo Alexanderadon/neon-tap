@@ -5,6 +5,7 @@ import {
   localDateString,
   progressStore,
   rankIndex,
+  recordCrystals,
   recordResult,
   recordRun,
   starsForTrack,
@@ -22,7 +23,8 @@ const NO_META: ResultMeta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
  *  - failed runs never count otherwise (no counters, no bests);
  *  - custom songs are session-only, but their combo/plays still feed the goals;
  *  - built-in tracks update the best result, the daily bonus (once per local day, rank ≥ C)
- *    and claim any goal the run completed.
+ *    and claim any goal the run completed;
+ *  - crystals collected in any non-failed run (catalog or custom) go to the wallet.
  * `now` is injectable so the daily logic is testable.
  */
 export function saveResult(result: PlayResult, source: ChartSource, now: Date = new Date()): ResultMeta {
@@ -68,6 +70,11 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
     const passed = rankIndex(result.rank) >= rankIndex('C');
     const dailyBonus = passed && dailyTrackId(date, TRACK_IDS) === result.trackId ? completeDailyToday(date) : false;
     meta = { newRecord, starsBefore, starsAfter, dailyBonus };
+  }
+
+  if (result.crystals > 0) {
+    recordCrystals(result.crystals);
+    meta.crystals = result.crystals;
   }
 
   const goals = claimCompletedGoals();

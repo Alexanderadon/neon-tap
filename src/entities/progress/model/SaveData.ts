@@ -51,25 +51,53 @@ export interface SaveDataV3 {
   goalsClaimed: string[];
 }
 
-export type SaveData = SaveDataV3;
+export interface SaveDataV4 {
+  version: 4;
+  tracks: Record<string, BestResult>;
+  plays: number;
+  counters: Counters;
+  daily: DailyState;
+  goalsClaimed: string[];
+  /** Crystal wallet: spendable balance. */
+  crystals: number;
+  /** Crystals ever collected (never decreases; stats / future goals). */
+  lifetimeCrystals: number;
+  /** Track ids bought in the shop — playable regardless of stars. */
+  purchased: string[];
+}
 
-export const CURRENT_VERSION = 3;
+export type SaveData = SaveDataV4;
+
+export const CURRENT_VERSION = 4;
 
 export const EMPTY_COUNTERS: Counters = { spells: { slow: 0, heart: 0 }, tracksPlayed: 0, maxCombo: 0, maxTrackStars: 0 };
 export const EMPTY_DAILY: DailyState = { date: '', done: false, streak: 0, total: 0 };
 
 export const EMPTY_SAVE: SaveData = {
-  version: 3,
+  version: 4,
   tracks: {},
   plays: 0,
   counters: EMPTY_COUNTERS,
   daily: EMPTY_DAILY,
   goalsClaimed: [],
+  crystals: 0,
+  lifetimeCrystals: 0,
+  purchased: [],
 };
 
 /** Fresh, unshared copy of the empty save (nested objects are cloned). */
 export function emptySave(): SaveData {
-  return { version: 3, tracks: {}, plays: 0, counters: cloneCounters(EMPTY_COUNTERS), daily: { ...EMPTY_DAILY }, goalsClaimed: [] };
+  return {
+    version: 4,
+    tracks: {},
+    plays: 0,
+    counters: cloneCounters(EMPTY_COUNTERS),
+    daily: { ...EMPTY_DAILY },
+    goalsClaimed: [],
+    crystals: 0,
+    lifetimeCrystals: 0,
+    purchased: [],
+  };
 }
 
 function cloneCounters(c: Counters): Counters {
@@ -112,6 +140,7 @@ function sanitizeDaily(raw: unknown): DailyState {
  *  v2 → v3: progression — lifetime counters, daily track, claimed goals. Counters that can be
  *           derived from existing bests (max combo, tracks passed) are back-filled so an old
  *           player does not start the quests from zero.
+ *  v3 → v4: crystal wallet — balance, lifetime total and purchased track ids, all starting empty.
  */
 const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
   0: (data) => ({ version: 1, tracks: (data.tracks as Record<string, unknown>) ?? {}, plays: 0 }),
@@ -138,7 +167,10 @@ const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<strin
     }
     return { version: 3, tracks, plays: num(data.plays), counters, daily: { ...EMPTY_DAILY }, goalsClaimed: [] };
   },
+  3: (data) => ({ ...data, version: 4, crystals: 0, lifetimeCrystals: 0, purchased: [] }),
 };
+
+const stringList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((g): g is string => typeof g === 'string') : []);
 
 export function migrate(raw: unknown): SaveData {
   if (!raw || typeof raw !== 'object') return emptySave();
@@ -150,13 +182,17 @@ export function migrate(raw: unknown): SaveData {
     data = step(data);
     version++;
   }
+  const crystals = Math.max(0, Math.floor(num(data.crystals)));
   return {
-    version: 3,
+    version: 4,
     tracks: (data.tracks as Record<string, BestResult>) ?? {},
     plays: num(data.plays),
     counters: sanitizeCounters(data.counters),
     daily: sanitizeDaily(data.daily),
-    goalsClaimed: Array.isArray(data.goalsClaimed) ? data.goalsClaimed.filter((g): g is string => typeof g === 'string') : [],
+    goalsClaimed: stringList(data.goalsClaimed),
+    crystals,
+    lifetimeCrystals: Math.max(crystals, Math.floor(num(data.lifetimeCrystals))),
+    purchased: [...new Set(stringList(data.purchased))],
   };
 }
 

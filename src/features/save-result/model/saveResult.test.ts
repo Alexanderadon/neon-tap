@@ -107,5 +107,25 @@ describe('saveResult', () => {
     expect(meta.goalsCompleted).toEqual(['combo-100']);
     const save = progressStore.get();
     expect(save.tracks['my-song']).toBeUndefined();
-    expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 120, maxTrackStars: 0 });  });
+    expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 120, maxTrackStars: 0 });
+  });
+
+  it('credits crystals for catalog and custom runs, never for failed ones', () => {
+    startSession(chartFor(OTHER_ID, 5), 'catalog');
+    expect(saveResult(run(OTHER_ID, { crystals: 7 }), 'catalog', DATE).crystals).toBe(7);
+    expect(progressStore.get()).toMatchObject({ crystals: 7, lifetimeCrystals: 7 });
+
+    startSession(chartFor('my-song', 9), 'custom');
+    expect(saveResult(run('my-song', { crystals: 3 }), 'custom', DATE).crystals).toBe(3);
+    expect(progressStore.get()).toMatchObject({ crystals: 10, lifetimeCrystals: 10 });
+
+    startSession(chartFor(OTHER_ID, 5), 'catalog');
+    const failed = saveResult(run(OTHER_ID, { failed: true, crystals: 9 }), 'catalog', DATE);
+    expect(failed.crystals).toBeUndefined();
+    expect(progressStore.get().crystals).toBe(10);
+
+    // an empty-handed pass leaves the meta line out
+    expect(saveResult(run(OTHER_ID, { crystals: 0 }), 'catalog', DATE).crystals).toBeUndefined();
+    expect(sessionStore.get().resultMeta?.crystals).toBeUndefined();
+  });
 });
