@@ -319,7 +319,6 @@ export const ru = {
   menuCardRecords: 'Рекорды: {title}',
   menuCardDaily: 'день',
   menuCardBest: 'лучший ранг {rank}',
-  menuSecondary: 'ещё',
 } as const;
 
 export type Dictionary = typeof ru;
