@@ -1,5 +1,18 @@
-import { COMBO_THRESHOLDS, KEY_LABELS, LANE_COLORS, LANE_COUNT, MAX_LANES } from '@/shared/config/constants';
-import { hexToRgba, renderBeam, renderGlowDot, renderHeart, renderNoteSprite, renderSpell, type NoteSprite } from '@/shared/lib/render';
+import { COMBO_THRESHOLDS, KEY_LABELS, LANE_COUNT, MAX_LANES } from '@/shared/config/constants';
+import { SPECTRUM_BANDS } from '@/shared/lib/audio';
+import {
+  DEFAULT_THEME,
+  hexToRgba,
+  renderBeam,
+  renderGlowBar,
+  renderGlowDot,
+  renderGlowRing,
+  renderHeart,
+  renderNoteSprite,
+  renderSpell,
+  type NoteSprite,
+  type Theme,
+} from '@/shared/lib/render';
 import { ParticlePool, ScreenShake, LaneFlash } from '@/shared/lib/render';
 import type { Judgement } from '@/entities/score';
 import type { SpellKind } from '@/entities/chart';
@@ -11,6 +24,8 @@ export interface FrameState {
   approachTime: number;
   /** Audio-reactive pulse 0..1 — bass hits of the track itself, so every song flickers differently and in time. */
   pulse: number;
+  /** 0 on a beat → 1 just before the next one (beat-rate scrolling of the ambient layer). */
+  beatPhase: number;
   combo: number;
   /** Seconds since the combo last grew (Infinity when it hasn't). */
   comboAge: number;
@@ -32,12 +47,8 @@ export interface FrameState {
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
-const JUDGEMENT_COLOR: Record<Judgement, string> = {
-  perfect: '#ffffff',
-  great: '#00f0ff',
-  good: '#b6ff00',
-  miss: '#ff2bd6',
-};
+/** Heavy-effect budget: "low" skips the music-synchronised background (beat pulses, equaliser, ambient motif). */
+export type FxLevel = 'full' | 'low';
 
 const FONT = "'Unbounded', 'Segoe UI', system-ui, sans-serif";
 const HEART_COLOR = '#ff2bd6';
@@ -45,6 +56,16 @@ const TRANSITION_SEC = 0.75;
 const RING_POOL = 16;
 const PRESS_BOUNCE_SEC = 0.12;
 const POP_POOL = 8;
+/** Beat pulse: ring + horizon flash decay over this long. */
+const BEAT_SEC = 0.3;
+/** Equaliser smoothing (per second): fast attack, slow release. */
+const SPECTRUM_ATTACK = 28;
+const SPECTRUM_RELEASE = 5;
+const SPECTRUM_MAX_ALPHA = 0.35;
+const RING_SPRITE_RADIUS = 64;
+const HAZE_RADIUS = 96;
+const GRID_LINES = 7;
+const AMBIENT_RINGS = 3;
 
 /** Everything that depends on the lane count: geometry, static layer, sized sprites. */
 interface LaneSet {
@@ -66,6 +87,11 @@ export function circleY(L: Layout, seq: number): number {
  * Canvas 2D renderer. Static geometry (lanes, hit line, vignette) is rasterised once per lane
  * count into an offscreen layer; per-frame work is sprite blits + a few fills. No allocations
  * in draw(). Lane-count changes cross-fade between two static layers with a glitch/scan/flash FX.
+ *
+ * Colours come from a `Theme` (per-track): lane colours for sprites / receptors / beams /
+ * particles, the background gradient of the static layer, and the HUD accent. The
+ * music-synchronised background (beat pulses, spectrum skyline, ambient motif) is gated by
+ * `fxLevel` and uses only predrawn sprites and solid fills — no gradients or blur per frame.
  */
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -105,13 +131,46 @@ export class Renderer {
   readonly flash = new LaneFlash(MAX_LANES);
   visibleNotes = 0;
 
+  // --- theme / feel ---
+  readonly theme: Theme;
+  /** Heavy-effect budget; every music-synchronised background effect checks this. */
+  fxLevel: FxLevel = 'full';
+  /** Lane colour per lane index (theme palette wrapped to MAX_LANES). */
+  private readonly laneColors: string[];
+  private readonly judgementColor: Record<Judgement, string>;
+  /** Dark disc / text colour taken from the theme background. */
+  private readonly inkColor: string;
+  private readonly discColor: string;
+  // Beat pulse (ring + horizon flash), fed by beatFeedback().
+  private beatAge = 1;
+  private beatStrength = 0;
+  // Spectrum skyline: smoothed band levels 0..1.
+  private readonly bands = new Float32Array(SPECTRUM_BANDS);
+  private spectrumLive = false;
+  private ambientTime = 0;
+  // Sized sprites for the background layer (rebuilt on resize).
+  private barAccent!: NoteSprite;
+  private barGlow!: NoteSprite;
+  private ringAccent!: NoteSprite;
+  private ringGlow!: NoteSprite;
+  private hazeAccent!: NoteSprite;
+  private hazeGlow!: NoteSprite;
+  private barW = 8;
+  private barMaxH = 100;
+
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private touch: boolean,
     laneCounts: readonly number[] = [LANE_COUNT],
+    theme: Theme = DEFAULT_THEME,
   ) {
     this.ctx = canvas.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
     this.laneCounts = [...new Set([...laneCounts, LANE_COUNT])];
+    this.theme = theme;
+    this.laneColors = Array.from({ length: MAX_LANES }, (_, i) => theme.laneColors[i % theme.laneColors.length]);
+    this.judgementColor = { perfect: '#ffffff', great: theme.accent, good: this.laneColors[2], miss: theme.glow };
+    this.inkColor = theme.bg[0];
+    this.discColor = hexToRgba(theme.bg[1], 0.92);
     this.resize();
   }
 
@@ -144,6 +203,15 @@ export class Renderer {
     this.resize();
   }
 
+  setFxLevel(level: FxLevel): void {
+    this.fxLevel = level;
+    if (level !== 'full') {
+      this.beatAge = 1;
+      this.bands.fill(0);
+      this.spectrumLive = false;
+    }
+  }
+
   resize(): void {
     this.width = this.canvas.clientWidth || window.innerWidth;
     this.height = this.canvas.clientHeight || window.innerHeight;
@@ -152,11 +220,22 @@ export class Renderer {
     this.canvas.height = Math.round(this.height * this.dpr);
     this.sets.clear();
     for (const n of this.laneCounts) this.sets.set(n, this.buildSet(n));
-    this.baseLayer = this.buildStaticLayer(computeLayout(this.width, this.height, this.touch, LANE_COUNT), true);
-    this.glowDots = LANE_COLORS.map((c) => renderGlowDot(c, 16, this.dpr));
+    const base = computeLayout(this.width, this.height, this.touch, LANE_COUNT);
+    this.baseLayer = this.buildStaticLayer(base, true);
+    this.glowDots = this.laneColors.map((c) => renderGlowDot(c, 16, this.dpr));
     this.heartSize = this.height > this.width ? 16 : 20;
     this.heartOn = renderHeart(HEART_COLOR, this.heartSize, this.dpr, true);
     this.heartOff = renderHeart(HEART_COLOR, this.heartSize, this.dpr, false);
+    // Background layer sprites — sized once here, only scaled with drawImage per frame.
+    const { accent, glow } = this.theme;
+    this.barW = base.laneAreaWidth / SPECTRUM_BANDS;
+    this.barMaxH = base.hitY * 0.6;
+    this.barAccent = renderGlowBar(accent, this.barW, this.barMaxH, this.dpr);
+    this.barGlow = renderGlowBar(glow, this.barW, this.barMaxH, this.dpr);
+    this.ringAccent = renderGlowRing(accent, RING_SPRITE_RADIUS, this.dpr);
+    this.ringGlow = renderGlowRing(glow, RING_SPRITE_RADIUS, this.dpr);
+    this.hazeAccent = renderGlowDot(accent, HAZE_RADIUS, this.dpr);
+    this.hazeGlow = renderGlowDot(glow, HAZE_RADIUS, this.dpr);
   }
 
   /** Switch the playfield to `n` lanes; animated unless `instant`. */
@@ -176,7 +255,7 @@ export class Renderer {
     const layout = computeLayout(this.width, this.height, this.touch, n);
     const { laneWidth, noteHeight, hitY } = layout;
     const bodyW = laneWidth * 0.82;
-    const colors = Array.from({ length: n }, (_, i) => LANE_COLORS[i % LANE_COLORS.length]);
+    const colors = Array.from({ length: n }, (_, i) => this.laneColors[i % this.laneColors.length]);
     const spellSize = Math.round(Math.min(laneWidth * 0.7, noteHeight * 2.6));
     return {
       lanes: n,
@@ -199,7 +278,16 @@ export class Renderer {
     }
     const ctx = layer.getContext('2d') as CanvasRenderingContext2D;
     ctx.scale(dpr, dpr);
-    ctx.fillStyle = '#05060a';
+    // Theme background: top → bottom gradient (the default theme is flat near-black).
+    const [top, bottom] = this.theme.bg;
+    if (top === bottom) {
+      ctx.fillStyle = top;
+    } else {
+      const bg = ctx.createLinearGradient(0, 0, 0, height);
+      bg.addColorStop(0, top);
+      bg.addColorStop(1, bottom);
+      ctx.fillStyle = bg;
+    }
     ctx.fillRect(0, 0, width, height);
 
     const g = ctx.createLinearGradient(0, 0, 0, height);
@@ -224,7 +312,7 @@ export class Renderer {
     ctx.shadowBlur = 0;
     for (let i = 0; i < lanes && !bare; i++) {
       const cx = laneX + (i + 0.5) * laneWidth;
-      const color = LANE_COLORS[i % LANE_COLORS.length];
+      const color = this.laneColors[i % this.laneColors.length];
       ctx.strokeStyle = hexToRgba(color, 0.6);
       ctx.lineWidth = 2;
       ctx.shadowColor = color;
@@ -256,6 +344,37 @@ export class Renderer {
     if (lane >= 0 && lane < MAX_LANES) this.pressAge[lane] = 0;
   }
 
+  /**
+   * A beat of the track just passed (`strength` 0..1, downbeats stronger): expanding ring and a
+   * horizon flash behind the lanes, decaying over ~300 ms. Ignored on the low FX level.
+   */
+  beatFeedback(strength: number): void {
+    if (this.fxLevel !== 'full' || strength <= 0) return;
+    const remaining = this.beatAge < 1 ? this.beatStrength * (1 - this.beatAge) : 0;
+    this.beatStrength = Math.min(1, Math.max(strength, remaining));
+    this.beatAge = 0;
+  }
+
+  /**
+   * Feed this frame's spectrum bands (0..255, `SPECTRUM_BANDS` of them). Smoothed here with a fast
+   * attack / slow release so the skyline breathes instead of jittering. Ignored on the low FX level.
+   */
+  feedSpectrum(bands: Uint8Array, dt: number): void {
+    if (this.fxLevel !== 'full') return;
+    const n = Math.min(bands.length, SPECTRUM_BANDS);
+    const up = Math.min(1, dt * SPECTRUM_ATTACK);
+    const down = Math.min(1, dt * SPECTRUM_RELEASE);
+    const s = this.bands;
+    for (let i = 0; i < n; i++) {
+      // Highs are quieter in bytes than lows: tilt them up so the skyline has a silhouette.
+      let v = (bands[i] / 255) * (1 + (i / SPECTRUM_BANDS) * 0.9);
+      if (v > 1) v = 1;
+      const cur = s[i];
+      s[i] = cur + (v - cur) * (v > cur ? up : down);
+    }
+    this.spectrumLive = true;
+  }
+
   /** Visual feedback for a judgement at the hit line (or at a circle when `circleSeq` > 0), in the note's own lane geometry. */
   hitFeedback(lane: number, lanes: number, judgement: Judgement, circleSeq = 0): void {
     const L = this.set(lanes).layout;
@@ -267,7 +386,7 @@ export class Renderer {
       return;
     }
     this.flash.trigger(lane);
-    const color = lane % LANE_COLORS.length;
+    const color = lane % this.laneColors.length;
     const count = (judgement === 'perfect' ? 10 : judgement === 'great' ? 7 : 4) * (circleSeq > 0 ? 3 : 1);
     this.particles.emit(cx, y, count, color, circleSeq > 0 ? 380 : 260, 5, 0.45);
     if (judgement === 'perfect' || circleSeq > 0) this.ring(cx, y, color);
@@ -278,7 +397,7 @@ export class Renderer {
     const L = this.set(lanes).layout;
     const cx = L.laneX + (lane + 0.5) * L.laneWidth;
     this.flash.trigger(lane);
-    this.particles.emit(cx, L.hitY, 5, lane % LANE_COLORS.length, 220, 4, 0.35);
+    this.particles.emit(cx, L.hitY, 5, lane % this.laneColors.length, 220, 4, 0.35);
     this.pop(cx, L.hitY - L.noteHeight * 2.2, `${Math.min(taps, needed)}/${needed}`);
   }
 
@@ -314,7 +433,7 @@ export class Renderer {
     this.bannerText = `${combo} COMBO`;
     this.bannerAge = 0;
     const { laneX, laneWidth, hitY, lanes } = this.layout;
-    for (let i = 0; i < lanes; i++) this.particles.emit(laneX + (i + 0.5) * laneWidth, hitY, 12, i % LANE_COLORS.length, 420, 6, 0.8);
+    for (let i = 0; i < lanes; i++) this.particles.emit(laneX + (i + 0.5) * laneWidth, hitY, 12, i % this.laneColors.length, 420, 6, 0.8);
   }
 
   comboBreak(x: number, y: number, combo: number): void {
@@ -337,7 +456,9 @@ export class Renderer {
     for (let i = 0; i < MAX_LANES; i++) if (this.pressAge[i] < 1) this.pressAge[i] += dt;
     if (this.shockAge < 1) this.shockAge += dt / 0.5;
     if (this.bannerAge < 1) this.bannerAge += dt / 1.1;
+    if (this.beatAge < 1) this.beatAge += dt / BEAT_SEC;
     this.sparkTimer += dt;
+    this.ambientTime += dt;
   }
 
   private heartPos(index: number): { x: number; y: number } {
@@ -377,15 +498,24 @@ export class Renderer {
       ctx.drawImage(cur.staticLayer, 0, 0, width, height);
     }
 
-    // Background pulse from the music's own bass hits; magenta palette + laser sweeps in choruses (5+ lanes).
+    // Music-synchronised background: ambient motif, spectrum skyline, beat pulse (all behind the notes).
+    if (this.fxLevel === 'full') {
+      this.drawAmbient(L, s);
+      if (this.spectrumLive) this.drawSpectrum(L);
+      if (this.beatAge < 1) this.drawBeatPulse(L);
+    }
+
+    // Background pulse from the music's own bass hits; glow palette + laser sweeps in choruses (5+ lanes).
     const pulse = s.pulse;
     const chorus = this.current >= 5;
     const energy = 0.035 + 0.015 * Math.max(0, this.current - 3);
     const slowTint = s.slowRemaining >= 0 ? 0.06 : 0;
     const alpha = energy * pulse + slowTint;
     if (alpha > 0.02) {
-      ctx.fillStyle = chorus ? `rgba(255,43,214,${alpha.toFixed(3)})` : `rgba(0,240,255,${alpha.toFixed(3)})`;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = chorus ? this.theme.glow : this.theme.accent;
       ctx.fillRect(laneX, 0, L.laneAreaWidth, height);
+      ctx.globalAlpha = 1;
     }
 
     for (let lane = 0; lane < this.current; lane++) {
@@ -446,7 +576,7 @@ export class Renderer {
           // Sparks streaming from the receptor while a hold-type note is being held.
           if (sparkTick) {
             const hx = n.kind === 'slide' ? this.slideX(set, n, s.songTime) : cx;
-            this.particles.emit(hx, hitY, 2, n.lane % LANE_COLORS.length, 160, 3, 0.3);
+            this.particles.emit(hx, hitY, 2, n.lane % this.laneColors.length, 160, 3, 0.3);
           }
           visible++;
           continue;
@@ -474,7 +604,7 @@ export class Renderer {
           ctx.font = `900 ${Math.round(set.layout.noteHeight * 0.9)}px ${FONT}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#05060a';
+          ctx.fillStyle = this.inkColor;
           ctx.fillText(`×${n.extra}`, cx, y + 1);
         }
       }
@@ -488,7 +618,7 @@ export class Renderer {
     for (let i = 0; i < RING_POOL; i++) {
       const a = this.ringAge[i];
       if (a >= 1) continue;
-      ctx.strokeStyle = LANE_COLORS[this.ringColor[i]];
+      ctx.strokeStyle = this.laneColors[this.ringColor[i]];
       ctx.globalAlpha = 1 - a;
       ctx.beginPath();
       ctx.arc(this.ringX[i], this.ringY[i], 8 + a * (laneWidth * 0.55), 0, Math.PI * 2);
@@ -500,7 +630,7 @@ export class Renderer {
     const p = this.particles;
     for (let i = 0; i < p.capacity; i++) {
       if (p.life[i] <= 0) continue;
-      const dot = this.glowDots[p.color[i]];
+      const dot = this.glowDots[p.color[i] % this.glowDots.length];
       const size = p.size[i] * 2 * (p.life[i] / p.maxLife[i]);
       ctx.globalAlpha = Math.min(1, p.life[i] / p.maxLife[i] + 0.2);
       ctx.drawImage(dot.canvas, p.x[i] - size / 2, p.y[i] - size / 2, size, size);
@@ -535,6 +665,114 @@ export class Renderer {
     this.drawHud(s);
   }
 
+  // --- music-synchronised background -------------------------------------------------------
+
+  /** Beat pulse: a ring expanding from the hit line plus a horizon flash under it, ~300 ms. */
+  private drawBeatPulse(L: Layout): void {
+    const ctx = this.ctx;
+    const { laneX, laneAreaWidth, hitY } = L;
+    const a = this.beatAge;
+    const k = this.beatStrength * (1 - a);
+    if (k <= 0.01) return;
+    const cx = laneX + laneAreaWidth / 2;
+    // Horizon flash: a band under the hit line that thins out as it fades.
+    ctx.globalAlpha = 0.28 * k;
+    ctx.fillStyle = this.beatStrength >= 1 ? this.theme.glow : this.theme.accent;
+    const band = 4 + 26 * this.beatStrength * (1 - a);
+    ctx.fillRect(laneX, hitY - band * 0.35, laneAreaWidth, band);
+    // Ring: ease-out expansion from a fifth of the field to almost its full width.
+    const e = 1 - (1 - a) * (1 - a);
+    const size = laneAreaWidth * (0.2 + 0.75 * e);
+    const sp = this.beatStrength >= 1 ? this.ringGlow : this.ringAccent;
+    ctx.globalAlpha = SPECTRUM_MAX_ALPHA * k;
+    ctx.drawImage(sp.canvas, cx - size / 2, hitY - size / 2, size, size);
+    ctx.globalAlpha = 1;
+  }
+
+  /** Spectrum skyline: 32 mirrored bars rising from the hit line, bass in the middle, alpha ≤ 0.35. */
+  private drawSpectrum(L: Layout): void {
+    const ctx = this.ctx;
+    const { laneX, hitY } = L;
+    const w = this.barW;
+    const maxH = this.barMaxH;
+    const half = SPECTRUM_BANDS / 2;
+    for (let j = 0; j < SPECTRUM_BANDS; j++) {
+      // Left half takes the even bands (outer = highs), right half the odd ones: a near-symmetric skyline.
+      const band = j < half ? (half - 1 - j) * 2 : (j - half) * 2 + 1;
+      const v = this.bands[band];
+      if (v < 0.03) continue;
+      const h = maxH * v;
+      const sp = Math.abs(j - (half - 0.5)) > half - 6 ? this.barGlow : this.barAccent;
+      ctx.globalAlpha = SPECTRUM_MAX_ALPHA * (0.35 + 0.65 * v);
+      ctx.drawImage(sp.canvas, laneX + j * w, hitY - h, w, h);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /** Ambient layer per theme motif — a handful of fills / blits, all from cached sprites. */
+  private drawAmbient(L: Layout, s: FrameState): void {
+    const ctx = this.ctx;
+    const { laneX, laneAreaWidth, hitY, height } = L;
+    const t = this.ambientTime;
+    const cx = laneX + laneAreaWidth / 2;
+    switch (this.theme.motif) {
+      case 'grid': {
+        // Synthwave floor: horizon lines rolling towards the viewer, one slot per beat.
+        ctx.strokeStyle = this.theme.accent;
+        ctx.lineWidth = 1;
+        const phase = s.beatPhase;
+        for (let k = 0; k < GRID_LINES; k++) {
+          const u = (k + phase) / GRID_LINES;
+          const y = Math.round(hitY + (height - hitY) * u * u) + 0.5;
+          ctx.globalAlpha = 0.05 + 0.13 * u;
+          ctx.beginPath();
+          ctx.moveTo(laneX, y);
+          ctx.lineTo(laneX + laneAreaWidth, y);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'rings': {
+        // Slow concentric pulses drifting outwards from the upper field.
+        const cy = hitY * 0.45;
+        for (let k = 0; k < AMBIENT_RINGS; k++) {
+          const u = (t / 4.5 + k / AMBIENT_RINGS) % 1;
+          const size = laneAreaWidth * (0.15 + 0.95 * u);
+          const sp = k % 2 ? this.ringAccent : this.ringGlow;
+          ctx.globalAlpha = 0.16 * (1 - u) * (0.7 + 0.3 * s.pulse);
+          ctx.drawImage(sp.canvas, cx - size / 2, cy - size / 2, size, size);
+        }
+        break;
+      }
+      case 'bars': {
+        // Light shafts sweeping across the field.
+        const w = laneAreaWidth * 0.14;
+        for (let k = 0; k < 3; k++) {
+          const x = cx + laneAreaWidth * 0.42 * Math.sin(t * 0.23 + k * 2.1);
+          const sp = k % 2 ? this.barGlow : this.barAccent;
+          ctx.globalAlpha = 0.09 + 0.05 * s.pulse;
+          ctx.drawImage(sp.canvas, x - w / 2, 0, w, hitY);
+        }
+        break;
+      }
+      case 'haze': {
+        // Soft colour blobs drifting slowly behind the field.
+        for (let k = 0; k < 3; k++) {
+          const x = cx + laneAreaWidth * 0.35 * Math.sin(t * 0.13 + k * 2.0);
+          const y = hitY * (0.38 + 0.26 * Math.cos(t * 0.11 + k * 1.7));
+          const size = laneAreaWidth * (0.6 + 0.12 * Math.sin(t * 0.2 + k));
+          const sp = k % 2 ? this.hazeAccent : this.hazeGlow;
+          ctx.globalAlpha = 0.11 + 0.05 * s.pulse;
+          ctx.drawImage(sp.canvas, x - size / 2, y - size / 2, size, size);
+        }
+        break;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ------------------------------------------------------------------------------------------
+
   private slideX(set: LaneSet, n: PooledNote, songTime: number): number {
     const L = set.layout;
     const t = Math.max(0, Math.min(1, (songTime - n.time) / Math.max(1e-6, n.duration)));
@@ -548,7 +786,7 @@ export class Renderer {
     const top = Math.max(-40, yEnd);
     const bottom = n.state === NoteState.Holding ? set.layout.hitY : Math.min(height + 40, y);
     if (bottom <= top) return;
-    const color = LANE_COLORS[n.lane % LANE_COLORS.length];
+    const color = this.laneColors[n.lane % this.laneColors.length];
     ctx.globalAlpha = n.state === NoteState.Missed ? 0.25 : 0.55;
     ctx.fillStyle = color;
     if (n.kind === 'roll') {
@@ -580,8 +818,8 @@ export class Renderer {
     const L = set.layout;
     const x1 = L.laneX + (n.extra + 0.5) * L.laneWidth;
     const w = L.laneWidth * 0.2;
-    const color = LANE_COLORS[n.lane % LANE_COLORS.length];
-    const endColor = LANE_COLORS[n.extra % LANE_COLORS.length];
+    const color = this.laneColors[n.lane % this.laneColors.length];
+    const endColor = this.laneColors[n.extra % this.laneColors.length];
     const grad = ctx.createLinearGradient(cx, y, x1, yEnd);
     grad.addColorStop(0, hexToRgba(color, 0.6));
     grad.addColorStop(1, hexToRgba(endColor, 0.6));
@@ -620,7 +858,7 @@ export class Renderer {
     ctx.drawImage(hs.canvas, x1 - hs.width / 2, yEnd - hs.height / 2, hs.width, hs.height);
     if (n.state === NoteState.Holding) {
       // The finger marker: where the slide currently is on the hit line.
-      const dot = this.glowDots[n.lane % LANE_COLORS.length];
+      const dot = this.glowDots[n.lane % this.laneColors.length];
       ctx.drawImage(dot.canvas, xStart - 18, L.hitY - 18, 36, 36);
     }
   }
@@ -656,14 +894,14 @@ export class Renderer {
     const dt = n.time - s.songTime;
     if (dt > s.approachTime || dt < -0.4) return;
     const t = Math.max(0, Math.min(1, dt / s.approachTime));
-    const color = LANE_COLORS[n.lane % LANE_COLORS.length];
+    const color = this.laneColors[n.lane % this.laneColors.length];
     const missed = n.state === NoteState.Missed;
     const fade = dt < 0 ? Math.max(0, 1 + dt / 0.4) : 1;
     const base = (missed ? 0.3 : 1) * fade;
     ctx.globalAlpha = base;
-    const dot = this.glowDots[n.lane % LANE_COLORS.length];
+    const dot = this.glowDots[n.lane % this.laneColors.length];
     ctx.drawImage(dot.canvas, cx - r * 1.6, cy - r * 1.6, r * 3.2, r * 3.2);
-    ctx.fillStyle = 'rgba(5,6,10,0.92)';
+    ctx.fillStyle = this.discColor;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
@@ -693,13 +931,15 @@ export class Renderer {
     const { width, height } = this.layout;
     if (t < 0.12) {
       const { laneX, laneAreaWidth } = this.layout;
-      ctx.fillStyle = `rgba(255,255,255,${(0.16 * (1 - t / 0.12)).toFixed(3)})`;
+      ctx.globalAlpha = 0.16 * (1 - t / 0.12);
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(laneX, 0, laneAreaWidth, height);
+      ctx.globalAlpha = 1;
     }
     const pop = Math.min(1, t / 0.3);
     const scale = 1.45 - 0.45 * (1 - (1 - pop) ** 3);
     const alpha = Math.min(1, pop * 1.5) * (1 - Math.max(0, t - 0.75) / 0.25);
-    const color = to >= 5 ? '#ff2bd6' : '#00f0ff';
+    const color = to >= 5 ? this.theme.glow : this.theme.accent;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.globalAlpha = alpha;
@@ -737,7 +977,7 @@ export class Renderer {
       if (alpha <= 0.02) return;
       if (trail > 0.05) {
         ctx.globalAlpha = alpha * 0.35 * trail;
-        ctx.strokeStyle = '#00f0ff';
+        ctx.strokeStyle = this.theme.accent;
         ctx.lineWidth = 7;
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -778,13 +1018,13 @@ export class Renderer {
       const c0 = laneX + (i + 0.5) * wOld;
       const j = Math.min(to - 1, Math.max(0, Math.round(((i + 0.5) * to) / from - 0.5)));
       const c1 = laneX + (j + 0.5) * wNew;
-      pill(c0 + (c1 - c0) * e, wOld + (wNew - wOld) * e, LANE_COLORS[i % LANE_COLORS.length], fadeOld);
+      pill(c0 + (c1 - c0) * e, wOld + (wNew - wOld) * e, this.laneColors[i % this.laneColors.length], fadeOld);
     }
     for (let j = 0; j < to; j++) {
       const c1 = laneX + (j + 0.5) * wNew;
       const i = Math.min(from - 1, Math.max(0, Math.round(((j + 0.5) * from) / to - 0.5)));
       const c0 = laneX + (i + 0.5) * wOld;
-      pill(c0 + (c1 - c0) * e, wOld + (wNew - wOld) * e, LANE_COLORS[j % LANE_COLORS.length], fadeNew);
+      pill(c0 + (c1 - c0) * e, wOld + (wNew - wOld) * e, this.laneColors[j % this.laneColors.length], fadeNew);
     }
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -794,7 +1034,7 @@ export class Renderer {
   private lockIn(): void {
     const { laneX, laneWidth, hitY, lanes } = this.layout;
     for (let i = 0; i < lanes; i++) {
-      this.particles.emit(laneX + (i + 0.5) * laneWidth, hitY, 9, i % LANE_COLORS.length, 320, 5, 0.6);
+      this.particles.emit(laneX + (i + 0.5) * laneWidth, hitY, 9, i % this.laneColors.length, 320, 5, 0.6);
       this.flash.trigger(i);
     }
     this.shake.trigger(1.5);
@@ -803,6 +1043,7 @@ export class Renderer {
   private drawHud(s: FrameState): void {
     const ctx = this.ctx;
     const { width, height, laneX, laneAreaWidth, hitY, portrait } = this.layout;
+    const { accent, glow } = this.theme;
     const centerX = laneX + laneAreaWidth / 2;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -840,8 +1081,10 @@ export class Renderer {
       ctx.fillText('COMBO', centerX, hitY * 0.42 + base * 0.7);
     } else if (s.comboBreakAge >= 0 && s.comboBreakAge < 0.4) {
       ctx.font = `900 40px ${FONT}`;
-      ctx.fillStyle = `rgba(255,43,214,${1 - s.comboBreakAge / 0.4})`;
+      ctx.globalAlpha = 1 - s.comboBreakAge / 0.4;
+      ctx.fillStyle = glow;
       ctx.fillText('×', centerX, hitY * 0.42);
+      ctx.globalAlpha = 1;
     }
 
     // Judgement + points popup.
@@ -849,7 +1092,7 @@ export class Renderer {
       const a = 1 - s.lastJudgementAge / 0.5;
       const scale = 1 + (1 - Math.min(1, s.lastJudgementAge / 0.08)) * 0.35;
       ctx.font = `700 ${Math.round(22 * scale)}px ${FONT}`;
-      ctx.fillStyle = JUDGEMENT_COLOR[s.lastJudgement];
+      ctx.fillStyle = this.judgementColor[s.lastJudgement];
       ctx.globalAlpha = a;
       ctx.fillText(s.lastJudgement.toUpperCase(), centerX, hitY * 0.62);
       if (s.lastGain > 0) {
@@ -893,19 +1136,19 @@ export class Renderer {
       const barW = Math.min(220, laneAreaWidth * 0.6);
       const x = centerX - barW / 2;
       const y = 52;
-      ctx.fillStyle = 'rgba(0,240,255,0.15)';
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = 0.15;
       ctx.fillRect(x, y, barW, 6);
-      ctx.fillStyle = '#00f0ff';
+      ctx.globalAlpha = 1;
       ctx.fillRect(x, y, barW * s.slowRemaining, 6);
       ctx.textAlign = 'center';
       ctx.font = `700 11px ${FONT}`;
-      ctx.fillStyle = '#00f0ff';
       ctx.fillText('ЗАМЕДЛЕНИЕ', centerX, y + 16);
     }
 
     ctx.fillStyle = 'rgba(255,255,255,0.12)';
     ctx.fillRect(0, 0, width, 3);
-    ctx.fillStyle = '#00f0ff';
+    ctx.fillStyle = accent;
     ctx.fillRect(0, 0, width * s.progress, 3);
 
     if (s.debug) {
@@ -913,7 +1156,7 @@ export class Renderer {
       ctx.font = `400 11px monospace`;
       ctx.fillStyle = s.debug.fps < 50 ? '#ff2bd6' : '#b6ff00';
       ctx.fillText(
-        `${s.debug.fps} fps · worst ${s.debug.worstMs} ms · notes ${s.debug.visibleNotes} · particles ${this.particles.alive} · lanes ${this.current} · latency ${s.debug.latencyMs} ms · offset ${s.debug.offsetMs} ms · rate ${s.debug.rate.toFixed(2)} · t ${s.songTime.toFixed(3)}`,
+        `${s.debug.fps} fps · worst ${s.debug.worstMs} ms · notes ${s.debug.visibleNotes} · particles ${this.particles.alive} · lanes ${this.current} · latency ${s.debug.latencyMs} ms · offset ${s.debug.offsetMs} ms · rate ${s.debug.rate.toFixed(2)} · t ${s.songTime.toFixed(3)} · fx ${this.fxLevel} · theme ${this.theme.id}`,
         10,
         height - 14,
       );

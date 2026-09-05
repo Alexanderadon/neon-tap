@@ -39,11 +39,63 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-left: 3px solid var(--tone);
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s ease, box-shadow 0.2s ease;
+  transform-style: preserve-3d;
+  /* Cards stagger in one after another; `--i` is the card's index, set inline. */
+  animation: tcard-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(0.12s + var(--i, 0) * 45ms);
 }
-.tcard:hover {
+@keyframes tcard-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tcard:hover,
+.tcard:focus-within {
   background: rgba(255, 255, 255, 0.07);
   border-color: color-mix(in srgb, var(--tone) 60%, transparent);
+  transform: perspective(700px) rotateX(2deg) rotateY(-1.5deg) translateY(-2px);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 18px color-mix(in srgb, var(--tone) 35%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--tone) 6%, transparent);
+}
+.tcard:active {
+  transform: perspective(700px) rotateX(-1deg) scale(0.985);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--tone) 55%, transparent);
+  transition-duration: 0.06s;
+}
+/* Theme swatch: the five lane colours the song will be played in. */
+.tcard-swatch {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+  height: 4px;
+  width: 64px;
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0.85;
+}
+.tcard-swatch i {
+  flex: 1;
+  display: block;
+  box-shadow: 0 0 6px currentColor;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tcard {
+    animation: none;
+    transition: none;
+  }
+  .tcard:hover,
+  .tcard:focus-within,
+  .tcard:active {
+    transform: none;
+  }
 }
 .tcard-num {
   font-family: var(--font-display);

@@ -87,6 +87,54 @@ export function renderBeam(color: string, width: number, height: number, dpr: nu
   return { canvas, pad: 0, width, height };
 }
 
+/**
+ * Equaliser / skyline bar: a vertical glow that is solid at the bottom and fades to nothing at
+ * the top, with a bright cap. Drawn stretched to the band's height every frame (no gradients
+ * or blur per frame — one drawImage per band).
+ */
+export function renderGlowBar(color: string, width: number, height: number, dpr: number): NoteSprite {
+  const w = Math.ceil(width * dpr);
+  const h = Math.ceil(height * dpr);
+  const canvas = makeCanvas(w, h);
+  const ctx = ctx2d(canvas);
+  ctx.scale(dpr, dpr);
+  const g = ctx.createLinearGradient(0, 0, 0, height);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.08, color);
+  g.addColorStop(0.55, hexToRgba(color, 0.35));
+  g.addColorStop(1, hexToRgba(color, 0));
+  ctx.fillStyle = g;
+  const inset = width * 0.12;
+  roundRect(ctx, inset, 0, width - inset * 2, height, Math.min(4, width / 4));
+  ctx.fill();
+  return { canvas, pad: 0, width, height };
+}
+
+/** Soft glowing ring (beat pulse, concentric ambient rings). Scale it with drawImage; never stroke + blur per frame. */
+export function renderGlowRing(color: string, radius: number, dpr: number): NoteSprite {
+  const pad = Math.max(6, radius * 0.35);
+  const total = (radius + pad) * 2;
+  const canvas = makeCanvas(Math.ceil(total * dpr), Math.ceil(total * dpr));
+  const ctx = ctx2d(canvas);
+  ctx.scale(dpr, dpr);
+  const c = total / 2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = pad;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, radius * 0.06);
+  ctx.beginPath();
+  ctx.arc(c, c, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = Math.max(1, radius * 0.02);
+  ctx.beginPath();
+  ctx.arc(c, c, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  return { canvas, pad, width: total, height: total };
+}
+
 function heartPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
   // s = half width
   ctx.beginPath();

@@ -7,6 +7,8 @@
  *
  * The lowpass filter implements the "miss breaks the music" effect (GDD §1.2).
  */
+import { spectrumBands } from './spectrum';
+
 export interface Volumes {
   master: number;
   music: number;
@@ -27,7 +29,7 @@ export class AudioEngine {
   private voiceGain!: GainNode;
   private lowpass!: BiquadFilterNode;
   private analyser: AnalyserNode | null = null;
-  private spectrum: Uint8Array<ArrayBuffer> | null = null;
+  private spectrumBins: Uint8Array<ArrayBuffer> | null = null;
   private source: AudioBufferSourceNode | null = null;
   private startTime = 0;
   private pausePosition: number | null = null;
@@ -54,7 +56,7 @@ export class AudioEngine {
       this.analyser.fftSize = 256;
       this.analyser.smoothingTimeConstant = 0.4;
       this.musicGain.connect(this.analyser);
-      this.spectrum = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
+      this.spectrumBins = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
       this.sfxGain.connect(this.master);
       this.voiceGain.connect(this.master);
       this.master.connect(this.ctx.destination);
@@ -82,10 +84,23 @@ export class AudioEngine {
 
   /** Bass energy of what is playing right now, 0..1 (bins up to ~500 Hz). Cheap: one getByteFrequencyData per frame. */
   bassLevel(): number {
-    if (!this.analyser || !this.spectrum) return 0;
-    this.analyser.getByteFrequencyData(this.spectrum);
-    const s = this.spectrum;
+    if (!this.analyser || !this.spectrumBins) return 0;
+    this.analyser.getByteFrequencyData(this.spectrumBins);
+    const s = this.spectrumBins;
     return (s[0] + s[1] + s[2]) / (3 * 255);
+  }
+
+  /**
+   * Fill `out` (caller-owned, reused every frame) with `out.length` log-spaced spectrum bands,
+   * 0..255, for the audio-reactive background. Zeroes when there is no context / analyser.
+   */
+  spectrum(out: Uint8Array): void {
+    if (!this.analyser || !this.spectrumBins) {
+      out.fill(0);
+      return;
+    }
+    this.analyser.getByteFrequencyData(this.spectrumBins);
+    spectrumBands(this.spectrumBins, out);
   }
 
   get sfxDestination(): AudioNode {
