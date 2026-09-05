@@ -79,11 +79,22 @@ export async function unlockAudio(): Promise<boolean> {
   }
   if (!stateHooked) {
     stateHooked = true;
-    ctx.addEventListener('statechange', () => audioUnlockStore.set({ unlocked: ctx.state === 'running' }));
+    ctx.addEventListener('statechange', syncAudioUnlockState);
+    // iOS Safari does not always fire statechange for the non-standard "interrupted" state (phone
+    // call, Siri, switching apps): re-check whenever the page comes back so the gate can reappear.
+    document.addEventListener('visibilitychange', syncAudioUnlockState);
+    window.addEventListener('pageshow', syncAudioUnlockState);
+    window.addEventListener('focus', syncAudioUnlockState);
   }
   const ok = ctx.state === 'running';
   audioUnlockStore.set({ unlocked: ok });
   return ok;
+}
+
+/** Mirror the real AudioContext state into the store (gate shows whenever it is not running). */
+export function syncAudioUnlockState(): void {
+  const ctx = audioEngine.context;
+  audioUnlockStore.set({ unlocked: ctx !== null && ctx.state === 'running' });
 }
 
 export function useAudioUnlocked(): boolean {

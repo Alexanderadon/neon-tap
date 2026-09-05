@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { audioEngine, preloadSfx } from '@/shared/lib/audio';
 import { navigate } from '@/shared/lib/router';
+import { needsRotateHint } from '@/shared/lib/viewport';
 import { dict } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
 import type { ChartFile } from '@/shared/types/chart';
@@ -96,6 +97,7 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
           touchAssist: settings.touchAssist,
           autoOffset: settings.autoOffset,
           noFail: new URLSearchParams(window.location.search).has('nofail'),
+          fxMode: settings.fxMode,
           debug: settings.debugOverlay,
           onEvent,
         });
@@ -129,15 +131,30 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
     const onVisibility = () => {
       if (document.hidden) sessionRef.current?.pause();
       // Coming back: iOS may have suspended the context; the audio gate re-appears if so.
-      else void audioEngine.ensureContext();
+      else void audioEngine.ensureContext().catch(() => undefined);
+    };
+    // A phone rotated to landscape mid-song: the "rotate" overlay covers the field, so pause.
+    const onResize = () => {
+      if (needsRotateHint(isTouchDevice(), window.innerWidth, window.innerHeight)) sessionRef.current?.pause();
+    };
+    // iOS Safari ignores user-scalable=no: pinch-zoom is only stoppable by cancelling the gesture.
+    const stopGesture = (e: Event) => e.preventDefault();
+    const stopMultiTouch = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('resize', onResize);
+    document.addEventListener('gesturestart', stopGesture, { passive: false });
+    document.addEventListener('touchmove', stopMultiTouch, { passive: false });
 
     return () => {
       cancelled = true;
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('gesturestart', stopGesture);
+      document.removeEventListener('touchmove', stopMultiTouch);
       session?.destroy();
       sessionRef.current = null;
     };

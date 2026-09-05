@@ -60,7 +60,15 @@ export class AudioEngine {
       this.master.connect(this.ctx.destination);
       this.applyVolumes();
     }
-    if (this.ctx.state !== 'running') await this.ctx.resume();
+    // resume() rejects/hangs outside a user gesture (iOS "interrupted", Chrome autoplay policy).
+    // Never fatal: the caller gets the context, and the audio gate re-appears while it is not running.
+    if (this.ctx.state !== 'running') {
+      try {
+        await this.ctx.resume();
+      } catch {
+        /* the next tap on the audio gate resumes it */
+      }
+    }
     return this.ctx;
   }
 

@@ -35,6 +35,35 @@ export function computeLayout(width: number, height: number, touch: boolean, lan
   };
 }
 
+/** Minimum comfortable touch target (Material: 48 px, Apple HIG: 44 pt). */
+export const MIN_TOUCH_ZONE_PX = 48;
+
+export interface TouchZone {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Touch zones always span the full viewport width (not just the lane area), so in landscape the
+ * zones are wider than the lanes above them. `laneAtPoint` uses exactly this split.
+ */
+export function touchZoneWidth(layout: Layout): number {
+  return layout.width / layout.lanes;
+}
+
+/** Rectangle of the touch zone for `lane` (bottom half of the screen, GDD §4). */
+export function touchZoneRect(layout: Layout, lane: number): TouchZone {
+  const w = touchZoneWidth(layout);
+  return { x: lane * w, y: layout.touchZoneTop, width: w, height: layout.height - layout.touchZoneTop };
+}
+
+/** True when every touch zone is at least MIN_TOUCH_ZONE_PX wide (320 px / 6 lanes = 53 px still passes). */
+export function touchZonesComfortable(layout: Layout): boolean {
+  return touchZoneWidth(layout) >= MIN_TOUCH_ZONE_PX;
+}
+
 /** Pointer → lane. Touch: bottom half of the screen is split into `lanes` full-width zones (GDD §4). */
 export function laneAtPoint(layout: Layout, x: number, y: number, touch: boolean): number {
   const n = layout.lanes;

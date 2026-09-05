@@ -123,6 +123,13 @@ export const ru = {
   ready: 'Готов',
   bpm: 'BPM',
   unlockCustom: 'Открывается сразу — это главная фича проекта',
+  // --- mobile ---
+  rotateTitle: 'Поверни телефон',
+  rotateHint: 'Игра рассчитана на портретный режим: полосы во всю ширину, зоны для пальцев внизу.',
+  rotateAnyway: 'Всё равно продолжить',
+  settingsFxMode: 'Экономный режим',
+  settingsFxModeHint: 'меньше частиц и вспышек · авто — включится сам, если FPS ниже 45',
+  fxModes: { auto: 'Авто', on: 'Вкл', off: 'Выкл' },
 } as const;
 
 export type Dictionary = typeof ru;

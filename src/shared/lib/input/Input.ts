@@ -1,4 +1,5 @@
 import { INPUT_SLOTS } from '@/shared/config/constants';
+import { PointerLanes } from './PointerLanes';
 
 export interface LaneEvent {
   lane: number;
@@ -29,12 +30,19 @@ interface Options {
  * compensates for the delay between the physical key press and the JS handler running.
  * Key → lane mapping is delegated so the playfield can change its lane count mid-song.
  * A finger that slides into another lane releases the old lane and presses the new one
- * with `viaMove` set, which is how slide notes are followed.
+ * with `viaMove` set, which is how slide notes are followed. Which pointer is in which lane
+ * (multi-touch, slides, cancel) is the pure `PointerLanes` module; this class only adds the
+ * DOM listeners and the audio-time stamps.
  */
 export class Input {
   private readonly held = new Uint8Array(INPUT_SLOTS);
   private readonly keyLane = new Map<string, number>();
-  private readonly pointerLane = new Map<number, number>();
+  /** Audio time of the pointer event being dispatched (set before PointerLanes calls back). */
+  private pointerTime = 0;
+  private readonly pointers = new PointerLanes({
+    press: (lane, viaMove) => this.press(lane, this.pointerTime, viaMove),
+    release: (lane, viaMove) => this.release(lane, this.pointerTime, viaMove),
+  });
   private target: HTMLElement | null = null;
   private handlers: InputHandlers | null = null;
 
@@ -68,7 +76,7 @@ export class Input {
     this.handlers = null;
     this.held.fill(0);
     this.keyLane.clear();
-    this.pointerLane.clear();
+    this.pointers.clear();
   }
 
   isHeld(lane: number): boolean {
@@ -114,40 +122,29 @@ export class Input {
 
   private onPointerDown = (e: PointerEvent): void => {
     e.preventDefault();
-    const lane = this.opts.laneAt(e.clientX, e.clientY);
-    if (lane < 0) return;
-    this.pointerLane.set(e.pointerId, lane);
-    this.press(lane, this.eventAudioTime(e));
+    this.pointerTime = this.eventAudioTime(e);
+    this.pointers.down(e.pointerId, this.opts.laneAt(e.clientX, e.clientY));
   };
 
   private onPointerMove = (e: PointerEvent): void => {
-    const old = this.pointerLane.get(e.pointerId);
-    if (old === undefined) return;
+    if (this.pointers.laneOf(e.pointerId) < 0) return; // hover / untracked finger
     e.preventDefault();
-    const lane = this.opts.laneAt(e.clientX, e.clientY);
-    if (lane < 0 || lane === old) return;
-    this.pointerLane.set(e.pointerId, lane);
-    const t = this.eventAudioTime(e);
-    let stillHeld = false;
-    for (const l of this.pointerLane.values()) if (l === old) stillHeld = true;
-    if (!stillHeld) this.release(old, t, true);
-    this.press(lane, t, true);
+    this.pointerTime = this.eventAudioTime(e);
+    this.pointers.move(e.pointerId, this.opts.laneAt(e.clientX, e.clientY));
   };
 
+  /** pointerup and pointercancel (browser took the touch: scroll gesture, incoming call, palm) both lift the finger. */
   private onPointerUp = (e: PointerEvent): void => {
     e.preventDefault();
-    const lane = this.pointerLane.get(e.pointerId);
-    if (lane === undefined) return;
-    this.pointerLane.delete(e.pointerId);
-    for (const l of this.pointerLane.values()) if (l === lane) return; // two thumbs on one lane
-    this.release(lane, this.eventAudioTime(e));
+    this.pointerTime = this.eventAudioTime(e);
+    this.pointers.up(e.pointerId);
   };
 
   private releaseAll = (): void => {
     const t = this.opts.audioNow();
     for (let lane = 0; lane < INPUT_SLOTS; lane++) this.release(lane, t);
     this.keyLane.clear();
-    this.pointerLane.clear();
+    this.pointers.clear();
   };
 }
 

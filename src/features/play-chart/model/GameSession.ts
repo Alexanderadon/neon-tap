@@ -2,10 +2,11 @@ import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES } from '@/shared/conf
 import { audioEngine, Clock, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
-import { FpsMeter } from '@/shared/lib/render';
+import { FpsMeter, LowFpsDetector } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type Section, type SpellKind } from '@/entities/chart';
+import type { FxMode } from '@/entities/settings';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 import { Lives } from './Lives';
@@ -40,6 +41,8 @@ export interface SessionOptions {
   autoOffset: boolean;
   /** Dev/demo flag (`?nofail=1`): hearts still drain but the run never fails. */
   noFail?: boolean;
+  /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
+  fxMode?: FxMode;
   debug: boolean;
   onEvent: (e: SessionEvent) => void;
 }
@@ -71,6 +74,7 @@ export class GameSession {
   private readonly renderer: Renderer;
   private readonly input: Input;
   private readonly fps = new FpsMeter();
+  private readonly lowFps = new LowFpsDetector(45, 3);
   private readonly lives = new Lives(MAX_HEARTS);
   private scoring: Scoring;
   private raf = 0;
@@ -120,6 +124,7 @@ export class GameSession {
       this.sections.map((s) => s.lanes),
     );
     this.renderer.setLanes(this.sections[0].lanes, true);
+    if (opts.fxMode === 'on') this.renderer.setFxLevel('low');
     this.input = new Input({
       audioNow: () => audioEngine.now(),
       laneForKey: (code) => (code === CIRCLE_KEY ? CIRCLE_BUCKET : (KEY_LAYOUTS[this.renderer.lanes]?.[code] ?? -1)),
@@ -359,6 +364,11 @@ export class GameSession {
       if (this.slowUntil > 0 && songTime >= this.slowUntil) this.slowUntil = -1;
       this.notes.update(songTime, this.isHeld);
       this.renderer.update(dt);
+      // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
+      if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > 0 && this.lowFps.tick(this.fps.fps, dt)) {
+        this.renderer.setFxLevel('low', true);
+        if (this.opts.debug) console.info('[neon-tap] fps < 45 for 3 s → fx level "low" (economy mode: auto)');
+      }
       if (songTime >= this.endTime) this.finish();
     }
 
