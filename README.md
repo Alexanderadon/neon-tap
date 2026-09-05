@@ -88,7 +88,7 @@ npm run lint       # eslint + проверка FSD
 npm run build
 ```
 
-Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses` — см. `CLAUDE.md`. Деплой: `bash scripts/deploy-fresh.sh <имя-проекта>` (локальная сборка → новый проект Vercel → перенос домена).
+Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses` — см. `CLAUDE.md`; карта обучения — `npm run chart:tutorial` (план в долях в `scripts/gen-tutorial.mjs`). Деплой: `bash scripts/deploy-fresh.sh <имя-проекта>` (локальная сборка → новый проект Vercel → перенос домена).
 
 ### Рекорды и онлайн-таблица
 

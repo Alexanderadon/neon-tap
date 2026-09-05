@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DENSITY_LIMIT, KEY_LABELS, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 import type { ChartFile } from '@/shared/types/chart';
 import { parseChartLevel, parseSections, type ParsedNote } from '@/entities/chart';
-import { TUTORIAL_PLAN, beatIndex, beatTime, buildScript, captionAt, type TutorialStepId } from './script';
+import { SPELL_LANE, TUTORIAL_PLAN, beatIndex, beatTime, buildScript, captionAt, type TutorialStepId } from './script';
 
 const ROOT = new URL('../../../../', import.meta.url);
 const file = JSON.parse(readFileSync(new URL('public/charts/tutorial.json', ROOT), 'utf8')) as ChartFile;
@@ -142,6 +142,8 @@ describe('public/charts/tutorial.json', () => {
     expect(spells).toHaveLength(1);
     expect(spells[0].kind).toBe('slow');
     expect(spells[0].lanes).toBe(4);
+    // The caption's `{key}` is derived from SPELL_LANE — the chart must agree.
+    expect(spells[0].lane).toBe(SPELL_LANE);
     // The slow-motion (6 song-seconds) is over before the next section's first note.
     const next = sections.find((s) => s.time > spells[0].time)!;
     const first = Math.min(...notes.filter((n) => n.time >= next.time).map((n) => n.time));

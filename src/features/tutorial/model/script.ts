@@ -97,9 +97,18 @@ export function beatIndex(beats: readonly number[], time: number): number {
   return i + (time - beats[i]) / step;
 }
 
+/** Lane the tutorial's slow-motion spell falls into (the chart puts it on the 4-lane section). */
+export const SPELL_LANE = 1;
+
 /** Key caps for a lane count, e.g. "D F J" (used in captions and the lanes chip). */
 export function keyHint(lanes: number): string {
   return (KEY_LABELS[lanes] ?? []).join(' ');
+}
+
+/** Key cap of one lane for a lane count, e.g. lane 1 of 4 → "F" (used by `{key}` in captions). */
+export function laneKey(lanes: number, lane: number): string {
+  const keys = KEY_LABELS[lanes] ?? [];
+  return keys[clamp(lane, 0, Math.max(0, keys.length - 1))] ?? '';
 }
 
 /** Touch-zone hint for a lane count, e.g. "3 зоны внизу". */
@@ -112,7 +121,8 @@ export function buildScript(beats: readonly number[]): TutorialStep[] {
   return TUTORIAL_PLAN.map((p) => {
     const copy = dict.tutorialLaneSteps[p.id];
     const lanes = clamp(p.lanes, MIN_LANES, MAX_LANES);
-    const params = { n: lanes, keys: keyHint(lanes), zones: zoneHint(lanes) };
+    // `{keys}` — all key caps of the section, `{key}` — the cap of the spell lane only.
+    const params = { n: lanes, keys: keyHint(lanes), key: laneKey(lanes, SPELL_LANE), zones: zoneHint(lanes) };
     return {
       id: p.id,
       kind: p.kind,
