@@ -9,6 +9,7 @@ import { countJudgements, parseChartLevel, parseSections, type Section, type Spe
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 import { Lives } from './Lives';
+import { JudgementTimeline } from './JudgementTimeline';
 import { Renderer, circleY } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -73,6 +74,8 @@ export class GameSession {
   private readonly fps = new FpsMeter();
   private readonly lives = new Lives(MAX_HEARTS);
   private scoring: Scoring;
+  /** Every judgement of the run for the result screen — typed arrays, no per-judgement allocation. */
+  private readonly timeline: JudgementTimeline;
   private raf = 0;
   private lastFrame = 0;
   private finished = false;
@@ -112,7 +115,9 @@ export class GameSession {
       for (const n of parsed) if (n.time < sec.time) lastEnd = Math.max(lastEnd, n.time + n.duration);
       return Math.max(sec.time - this.approachTime, lastEnd + 0.15);
     });
-    this.scoring = new Scoring(countJudgements(parsed));
+    const judgements = countJudgements(parsed);
+    this.scoring = new Scoring(judgements);
+    this.timeline = new JudgementTimeline(judgements);
     this.endTime = Math.min(opts.audioBuffer.duration, this.notes.lastTime + 1.5);
     this.renderer = new Renderer(
       opts.canvas,
@@ -178,6 +183,7 @@ export class GameSession {
     audioEngine.stop();
     this.notes.reset();
     this.scoring.reset();
+    this.timeline.reset();
     this.lives.reset();
     this.renderer.particles.clear();
     this.finished = false;
@@ -260,6 +266,7 @@ export class GameSession {
     this.lastGain = this.scoring.score - before;
     this.lastJudgement = judgement;
     this.lastJudgementAt = this.clock.songTime();
+    this.timeline.record(this.lastJudgementAt, judgement, this.scoring.combo);
     this.renderer.hitFeedback(note.lane, note.lanes, judgement, note.kind === 'circle' ? note.seq : 0);
 
     if (judgement === 'miss') {
@@ -440,6 +447,8 @@ export class GameSession {
       notesToS: notesToReach(s.counts, 0.95),
       failed: this.failed,
       hearts: this.lives.hearts,
+      timeline: this.timeline.toResult(),
+      duration: this.opts.audioBuffer.duration,
     };
     const autoOffsetMs = this.opts.autoOffset && this.hitsSeen >= 60 && Math.abs(this.autoAdjust) >= 0.01 ? Math.round(this.clock.userOffset * 1000) : null;
     this.failed = false;
