@@ -309,3 +309,38 @@
     margin-left: 0;
   }
 }
+
+/* Local dev tracks (npm run assets:local) — own section, small badge next to the title. */
+.tracklist-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.14);
+}
+.tracklist-section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+.tcard-local {
+  border-style: dashed;
+  border-left-style: solid;
+}
+.tcard-local-badge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+}

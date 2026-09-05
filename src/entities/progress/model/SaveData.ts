@@ -1,5 +1,6 @@
 import type { Rank } from '@/shared/types/result';
 import type { SpellKind } from '@/shared/types/chart';
+import { isLocalTrackId } from '@/shared/lib/local-tracks';
 
 export interface BestResult {
   score: number;
@@ -170,9 +171,14 @@ export function starsForTrack(best: BestResult | undefined): number {
   return 3;
 }
 
-/** Stars earned on tracks only (no bonuses). */
+/** Ids in the save that count toward the built-in catalog: dev-only local tracks are left out. */
+export function countedTrackIds(save: SaveData): string[] {
+  return Object.keys(save.tracks).filter((id) => !isLocalTrackId(id));
+}
+
+/** Stars earned on tracks only (no bonuses). Without `trackIds`: every saved track except local ones. */
 export function totalStars(save: SaveData, trackIds?: readonly string[]): number {
-  const ids = trackIds ?? Object.keys(save.tracks);
+  const ids = trackIds ?? countedTrackIds(save);
   let sum = 0;
   for (const id of ids) sum += starsForTrack(save.tracks[id]);
   return sum;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { registerLocalTrackIds, resetLocalTrackIds } from '@/shared/lib/local-tracks';
 import { GOALS, bonusStars, claimGoals, findGoal, goalProgress, goalStars, grandTotalStars, isGoalDone } from './goals';
 import { emptySave, type BestResult, type SaveData } from './SaveData';
 
@@ -70,5 +71,31 @@ describe('goals', () => {
     expect(grandTotalStars(withDaily, [])).toBe(goalStars(first.save) + 2);
     // unknown claimed ids (removed goals) are worth nothing
     expect(goalStars({ ...base, goalsClaimed: ['gone'] })).toBe(0);
+  });
+});
+
+describe('goals and local tracks (dev-only)', () => {
+  it('ignores registered local ids in every track-based goal', () => {
+    const save: SaveData = {
+      ...emptySave(),
+      tracks: { a: res('S', true), 'loc-1': res('SS', true), 'loc-2': res('S'), 'loc-3': res('A'), 'loc-4': res('B'), 'loc-5': res('C') },
+    };
+    // Before registration the ids look like ordinary tracks.
+    expect(goalProgress(g('pass-5'), save)).toBe(5);
+    expect(goalProgress(g('rank-s-3'), save)).toBe(3);
+    expect(goalProgress(g('full-combo'), save)).toBe(1);
+    expect(goalProgress(g('stars-20'), save)).toBe(3 + 3 + 3 + 2 + 1 + 1);
+
+    registerLocalTrackIds(['loc-1', 'loc-2', 'loc-3', 'loc-4', 'loc-5']);
+    try {
+      expect(goalProgress(g('pass-5'), save)).toBe(1);
+      expect(goalProgress(g('rank-s-3'), save)).toBe(1);
+      expect(goalProgress(g('full-combo'), save)).toBe(1);
+      expect(goalProgress(g('stars-20'), save)).toBe(3);
+      expect(isGoalDone(g('pass-5'), save)).toBe(false);
+      expect(claimGoals(save).claimed.map((x) => x.id)).toEqual(['full-combo']);
+    } finally {
+      resetLocalTrackIds();
+    }
   });
 });

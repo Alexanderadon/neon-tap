@@ -4,7 +4,7 @@ import { navigate } from '@/shared/lib/router';
 import { unlockAllActive } from '@/shared/config/devFlags';
 import { PALETTE_SIZE, themeFor } from '@/shared/lib/render';
 import { Stars } from '@/shared/ui';
-import { CATALOG, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
+import { CATALOG, TRACK_IDS, TrackCover, findTrack, isGenre, loadChart, useLocalCatalog, type TrackMeta } from '@/entities/track';
 import {
   bonusStars,
   dailyTrackId,
@@ -35,9 +35,12 @@ interface Props {
 /**
  * Flat song list, easiest first: the daily track pinned on top, then one card per song with its
  * rating, mechanics, your best rank and — past the free ones — the stars needed to open it.
+ * Dev-only local tracks (`npm run assets:local`) follow in their own section: always open, and
+ * outside the star totals above.
  */
 export function TrackList({ onRecords }: Props = {}) {
   const save = useProgress((s) => s);
+  const local = useLocalCatalog();
   const trackStars = totalStars(save, TRACK_IDS);
   const bonus = bonusStars(save);
   const stars = trackStars + bonus;
@@ -62,6 +65,19 @@ export function TrackList({ onRecords }: Props = {}) {
           <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} need={unlocks[i].unlocked ? 0 : unlocks[i].need} onRecords={onRecords} />
         ))}
       </div>
+      {local.length > 0 && (
+        <>
+          <div className="tracklist-section">
+            <span className="tracklist-section-title">{dict.localSection}</span>
+            <span className="tracklist-hint">{dict.localHint}</span>
+          </div>
+          <div className="tracklist-grid">
+            {local.map((t, i) => (
+              <TrackCard key={t.id} index={CATALOG.length + i + 1} track={t} best={save.tracks[t.id]} onRecords={onRecords} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -98,7 +114,7 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
     setBusy(true);
     try {
       const chart = await loadChart(track.id);
-      startSession(chart, 'catalog');
+      startSession(chart, track.local ? 'local' : 'catalog');
       navigate('game');
     } finally {
       setBusy(false);
@@ -107,8 +123,9 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
 
   // Visual theme of the song (genre when the catalog knows it, otherwise deterministic by id).
   const theme = themeFor(track.genre, track.id);
+  const genreLabel = isGenre(track.genre) ? dict.genres[track.genre] : dict.localGenre;
 
-  const cls = ['tcard', daily && 'tcard-daily', locked && 'tcard-locked'].filter(Boolean).join(' ');
+  const cls = ['tcard', daily && 'tcard-daily', locked && 'tcard-locked', track.local && 'tcard-local'].filter(Boolean).join(' ');
   return (
     <article
       className={cls}
@@ -127,12 +144,16 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
             {daily === 'done' && streak >= 2 && <span className="tcard-daily-hint">{fmt(dict.dailyStreak, { n: streak })}</span>}
           </div>
         )}
-        <div className="tcard-title">{track.title}</div>
+        <div className="tcard-title">
+          {track.title}
+          {track.local && <span className="tcard-local-badge">{dict.localBadge}</span>}
+        </div>
         <div className="tcard-genre">
-          {dict.genres[track.genre]} · {dict.tempo} {Math.round(track.bpm)} {dict.bpm}
+          {genreLabel} · {dict.tempo} {Math.round(track.bpm)} {dict.bpm}
         </div>
         <div className="tcard-artist">
-          {track.artist} · {Math.round(track.duration)} с
+          {track.artist ? `${track.artist} · ` : ''}
+          {Math.round(track.duration)} с
         </div>
         <div className="tcard-tags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
         <div

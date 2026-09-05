@@ -71,8 +71,8 @@ export interface CoverSpec {
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
-/** Build the full cover description. Same `id` + `genre` → identical output. */
-export function coverSpec(id: string, genre: Genre | undefined): CoverSpec {
+/** Build the full cover description. Same `id` + `genre` → identical output; unknown genres (`'local'`) use the default. */
+export function coverSpec(id: string, genre: string | undefined): CoverSpec {
   const g = genre && isGenre(genre) ? genre : DEFAULT_GENRE;
   const seed = hashId(`${id}|${g}`);
   const palette = COVER_PALETTES[g];

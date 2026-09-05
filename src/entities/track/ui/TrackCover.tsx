@@ -1,11 +1,11 @@
 import { createElement, useMemo, type CSSProperties, type ReactElement } from 'react';
-import type { Genre } from '@/shared/types/chart';
+import type { TrackGenre } from '@/shared/types/chart';
 import { coverSpec, type CoverShape } from '../model/cover';
 
 export interface TrackCoverProps {
   /** Track id — seeds the deterministic art. */
   id: string;
-  genre?: Genre;
+  genre?: TrackGenre;
   /** CSS size (both dimensions); defaults to filling the parent width at 1:1. */
   size?: number | string;
   title?: string;

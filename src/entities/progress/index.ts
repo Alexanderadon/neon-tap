@@ -8,7 +8,7 @@ export {
   resetProgress,
   useProgress,
 } from './model/progressStore';
-export { starsForTrack, totalStars, rankIndex } from './model/SaveData';
+export { starsForTrack, totalStars, countedTrackIds, rankIndex } from './model/SaveData';
 export type { BestResult, SaveData, Counters, DailyState } from './model/SaveData';
 export { unlockThreshold, unlockStates, isTrackUnlocked, newlyUnlocked, ALWAYS_OPEN } from './model/unlocks';
 export type { UnlockContext, UnlockInfo } from './model/unlocks';

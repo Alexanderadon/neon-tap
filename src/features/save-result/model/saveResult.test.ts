@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
-import { dailyTrackId, localDateString, progressStore, recordSpell, resetProgress } from '@/entities/progress';
+import { dailyTrackId, localDateString, progressStore, recordSpell, resetProgress, totalStars } from '@/entities/progress';
 import { historyStore, playsOf, resetHistory } from '@/entities/history';
-import { TRACK_IDS } from '@/entities/track';
+import { TRACK_IDS, setLocalCatalog } from '@/entities/track';
+import { resetLocalTrackIds } from '@/shared/lib/local-tracks';
 import { sessionStore, startSession } from '@/entities/play-session';
 import { saveResult } from './saveResult';
 
@@ -106,5 +107,33 @@ describe('saveResult', () => {
     expect(meta.goalsCompleted).toEqual(['combo-100']);
     const save = progressStore.get();
     expect(save.tracks['my-song']).toBeUndefined();
-    expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 120, maxTrackStars: 0 });  });
+    expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 120, maxTrackStars: 0 });
+  });
+
+  it('local (dev-only) tracks keep a best and a history, but no daily bonus and no hardest-track counter', () => {
+    const LOCAL_ID = 'noize-mc-lebedinoe-ozero';
+    setLocalCatalog([{ id: LOCAL_ID, title: 'x', artist: '', license: 'private', sourceUrl: '', genre: 'local', bpm: 120, duration: 90, stars: 9, notes: 1, features: { circles: 0, rolls: 0, slides: 0, holds: 0, laneChanges: 0 } }]);
+    try {
+      startSession(chartFor(LOCAL_ID, 9), 'local');
+      const meta = saveResult(run(LOCAL_ID, { maxCombo: 150 }), 'local', DATE);
+      expect(meta).toMatchObject({ newRecord: true, starsBefore: 0, starsAfter: 2, dailyBonus: false });
+      const save = progressStore.get();
+      expect(save.tracks[LOCAL_ID].rank).toBe('A');
+      expect(save.plays).toBe(1);
+      expect(playsOf(historyStore.get(), LOCAL_ID)).toBe(1);
+      expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 150, maxTrackStars: 0 });
+      expect(save.daily.total).toBe(0);
+      // the local best never feeds the built-in totals or the track-based goals
+      expect(totalStars(save)).toBe(0);
+      expect(totalStars(save, TRACK_IDS)).toBe(0);
+      expect(meta.goalsCompleted).toEqual(['combo-100']);
+
+      saveResult(run(LOCAL_ID, { failed: true }), 'local', DATE);
+      expect(playsOf(historyStore.get(), LOCAL_ID)).toBe(2);
+      expect(progressStore.get().plays).toBe(1);
+    } finally {
+      setLocalCatalog([]);
+      resetLocalTrackIds();
+    }
+  });
 });

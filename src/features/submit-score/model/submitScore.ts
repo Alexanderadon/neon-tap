@@ -2,7 +2,7 @@ import { leaderboard, type LeaderboardClient, type LeaderboardSubmitResult } fro
 import type { ChartSource } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
 
-/** Only finished built-in tracks go online; failed runs and custom songs stay local. */
+/** Only finished built-in tracks go online; failed runs, custom songs and dev-only local tracks stay on this device. */
 export function isEligible(result: PlayResult | null | undefined, source: ChartSource): boolean {
   return !!result && source === 'catalog' && !result.failed && result.totalNotes > 0;
 }
