@@ -17,6 +17,7 @@ const result = (over: Partial<PlayResult> = {}): PlayResult => ({
   hearts: 4,
   timeline: { t: [], j: [], combo: [] },
   duration: 0,
+  crystals: 0,
   ...over,
 });
 

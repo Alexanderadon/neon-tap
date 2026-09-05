@@ -37,4 +37,6 @@ export interface PlayResult {
   timeline: ResultTimeline;
   /** Song length in seconds — the time axis of `timeline`. */
   duration: number;
+  /** Crystals collected during the run (gem notes hit); credited to the wallet unless the run failed. */
+  crystals: number;
 }
