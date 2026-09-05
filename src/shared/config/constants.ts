@@ -68,7 +68,7 @@ export const CALIBRATION_TAPS = 16;
 export const DENSITY_LIMIT = 3.5;
 
 /**
- * Progression gate. `true` = every track is playable from the start (current state, by the
- * author's request while the game is tuned).
+ * Progression gate. `true` = every track is playable from the start. The `?unlock=1` URL flag is
+ * the dev override (see `shared/config/devFlags.ts`); the rules live in `entities/progress/model/unlocks.ts`.
  */
-export const UNLOCK_ALL = true;
+export const UNLOCK_ALL = false;

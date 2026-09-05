@@ -4,6 +4,17 @@ import type { PlayResult } from '@/shared/types/result';
 
 export type ChartSource = 'catalog' | 'custom';
 
+/** Celebration metadata produced by the save feature for the result screen. */
+export interface ResultMeta {
+  newRecord: boolean;
+  starsBefore: number;
+  starsAfter: number;
+  /** This run completed today's daily track for the first time (+1 bonus star). */
+  dailyBonus?: boolean;
+  /** Goal ids completed (and claimed) by this run. */
+  goalsCompleted?: string[];
+}
+
 export interface PlaySession {
   chart: ChartFile | null;
   /** Decoded audio for custom songs (built-in tracks are streamed by URL). */
@@ -11,7 +22,7 @@ export interface PlaySession {
   source: ChartSource;
   result: PlayResult | null;
   /** Filled by the save feature so the result screen can celebrate. */
-  resultMeta: { newRecord: boolean; starsBefore: number; starsAfter: number } | null;
+  resultMeta: ResultMeta | null;
 }
 
 export const sessionStore = createStore<PlaySession>({

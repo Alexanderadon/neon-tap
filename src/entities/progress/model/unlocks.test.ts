@@ -1,0 +1,47 @@
+import { describe, expect, it } from 'vitest';
+import { ALWAYS_OPEN, isTrackUnlocked, newlyUnlocked, unlockStates, unlockThreshold } from './unlocks';
+
+const IDS = Array.from({ length: 21 }, (_, i) => `t${i}`);
+
+describe('unlocks', () => {
+  it('keeps the five easiest tracks free and grows the threshold with position', () => {
+    for (let i = 0; i < ALWAYS_OPEN; i++) expect(unlockThreshold(i, 21)).toBe(0);
+    expect(unlockThreshold(5, 21)).toBe(2); // round(1 × 2.2)
+    expect(unlockThreshold(6, 21)).toBe(4);
+    expect(unlockThreshold(7, 21)).toBe(7); // round(6.6)
+    expect(unlockThreshold(10, 21)).toBe(13);
+    expect(unlockThreshold(20, 21)).toBe(35); // round(35.2)
+    for (let i = 1; i < 21; i++) expect(unlockThreshold(i, 21)).toBeGreaterThanOrEqual(unlockThreshold(i - 1, 21));
+  });
+
+  it('never asks for more than max stars − 6', () => {
+    // 21 tracks → 63 stars → cap 57; a huge catalog hits the cap of its own size
+    for (let i = 0; i < 21; i++) expect(unlockThreshold(i, 21)).toBeLessThanOrEqual(57);
+    expect(unlockThreshold(60, 40)).toBe(40 * 3 - 6);
+    expect(unlockThreshold(5, 1)).toBe(0); // cap can't go negative
+  });
+
+  it('reports unlock state per track in catalog order', () => {
+    const states = unlockStates(IDS, { stars: 4 });
+    expect(states.map((s) => s.id)).toEqual(IDS);
+    expect(states.slice(0, 7).every((s) => s.unlocked)).toBe(true); // free + need 2 + need 4
+    expect(states[7]).toEqual({ id: 't7', unlocked: false, need: 7 });
+    expect(states[20].unlocked).toBe(false);
+  });
+
+  it('daily track and custom songs are always open, UNLOCK_ALL opens everything', () => {
+    expect(isTrackUnlocked(IDS, 't20', { stars: 0 })).toBe(false);
+    expect(isTrackUnlocked(IDS, 't20', { stars: 0, dailyId: 't20' })).toBe(true);
+    expect(isTrackUnlocked(IDS, 'my-song.mp3', { stars: 0 })).toBe(true);
+    expect(unlockStates(IDS, { stars: 0, unlockAll: true }).every((s) => s.unlocked)).toBe(true);
+    expect(unlockStates(IDS, { stars: 0, dailyId: 't15' })[15].unlocked).toBe(true);
+    expect(unlockStates(IDS, { stars: 0, dailyId: 't15' })[16].unlocked).toBe(false);
+  });
+
+  it('lists tracks that open when stars grow', () => {
+    expect(newlyUnlocked(IDS, 0, 0)).toEqual([]);
+    expect(newlyUnlocked(IDS, 1, 2)).toEqual(['t5']);
+    expect(newlyUnlocked(IDS, 3, 7)).toEqual(['t6', 't7']);
+    expect(newlyUnlocked(IDS, 7, 5)).toEqual([]);
+  });
+});

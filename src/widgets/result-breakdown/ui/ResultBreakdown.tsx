@@ -14,10 +14,12 @@ interface Props {
   title: string;
   subtitle: string;
   onRetry: () => void;
+  /** Extra one-line celebrations (daily bonus, completed goal), one per entry. */
+  notes?: readonly string[];
 }
 
 /** Result screen body: rank, breakdown, near-miss hint and a dominant RETRY (GDD §1.3). */
-export function ResultBreakdown({ result, meta, title, subtitle, onRetry }: Props) {
+export function ResultBreakdown({ result, meta, title, subtitle, onRetry, notes }: Props) {
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
 
   useEffect(() => {
@@ -72,6 +74,13 @@ export function ResultBreakdown({ result, meta, title, subtitle, onRetry }: Prop
       {starsGained > 0 && (
         <div className="result-stars">
           <Stars value={meta!.starsAfter} size="md" /> <span>{fmt(dict.starsEarned, { n: starsGained })}</span>
+        </div>
+      )}
+      {notes && notes.length > 0 && (
+        <div className="result-notes">
+          {notes.map((n) => (
+            <div key={n}>{n}</div>
+          ))}
         </div>
       )}
 
