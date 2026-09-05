@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSettings, updateSettings } from './settingsStore';
+import { NICKNAME_MAX, getSettings, sanitizeNickname, updateSettings } from './settingsStore';
 
 describe('settingsStore', () => {
   it('starts with the tutorial not done', () => {
@@ -21,5 +21,17 @@ describe('settingsStore', () => {
     const after = getSettings();
     expect({ ...after, tutorialDone: false }).toEqual({ ...before, tutorialDone: false });
     updateSettings({ tutorialDone: false });
+  });
+});
+
+describe('sanitizeNickname', () => {
+  it('trims, collapses whitespace and strips control characters / angle brackets', () => {
+    expect(sanitizeNickname('  Neo   Tap ')).toBe('Neo Tap');
+    expect(sanitizeNickname('<b>x</b>')).toBe('bx/b');
+    expect(sanitizeNickname('   ')).toBe('');
+  });
+
+  it('caps the length', () => {
+    expect(sanitizeNickname('a'.repeat(40))).toHaveLength(NICKNAME_MAX);
   });
 });

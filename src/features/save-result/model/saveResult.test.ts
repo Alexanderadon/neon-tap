@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { dailyTrackId, localDateString, progressStore, recordSpell, resetProgress } from '@/entities/progress';
+import { historyStore, playsOf, resetHistory } from '@/entities/history';
 import { TRACK_IDS } from '@/entities/track';
 import { sessionStore, startSession } from '@/entities/play-session';
 import { saveResult } from './saveResult';
@@ -30,7 +31,20 @@ const run = (trackId: string, over: Partial<PlayResult> = {}): PlayResult => ({
 });
 
 describe('saveResult', () => {
-  beforeEach(() => resetProgress());
+  beforeEach(() => {
+    resetHistory();
+    resetProgress();
+  });
+
+  it('records every catalog run in the history, failed ones too, but only passes in progress', () => {
+    startSession(chartFor(OTHER_ID, 5), 'catalog');
+    saveResult(run(OTHER_ID), 'catalog', DATE);
+    saveResult(run(OTHER_ID, { failed: true, score: 100 }), 'catalog', DATE);
+    expect(playsOf(historyStore.get(), OTHER_ID)).toBe(2);
+    expect(progressStore.get().plays).toBe(1);
+    expect(progressStore.get().tracks[OTHER_ID].score).toBe(5000);
+    expect(sessionStore.get().result?.failed).toBe(true);
+  });
 
   it('ignores failed runs entirely', () => {
     startSession(chartFor(OTHER_ID, 5), 'catalog');
@@ -90,6 +104,5 @@ describe('saveResult', () => {
     expect(meta.goalsCompleted).toEqual(['combo-100']);
     const save = progressStore.get();
     expect(save.tracks['my-song']).toBeUndefined();
-    expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 120, maxTrackStars: 0 });
-  });
+    expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 120, maxTrackStars: 0 });  });
 });

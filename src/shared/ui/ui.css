@@ -170,3 +170,138 @@
   border-radius: 4px;
   transition: width 0.4s ease;
 }
+
+/* --- modal (records panel, nickname dialog) --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(3, 4, 8, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  animation: modal-fade 0.15s ease both;
+}
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modal-rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.modal-panel {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(88vh, 88dvh);
+  display: flex;
+  flex-direction: column;
+  background: #0b0d16;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 240, 255, 0.12);
+  padding: 14px 16px max(16px, env(safe-area-inset-bottom));
+  animation: modal-rise 0.18s cubic-bezier(0.2, 1, 0.3, 1) both;
+  outline: none;
+}
+.modal-dialog {
+  align-items: center;
+  padding: 16px;
+}
+.modal-dialog .modal-panel {
+  max-width: 400px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 16px;
+  padding-bottom: 16px;
+}
+@media (min-width: 720px) {
+  .modal-sheet {
+    align-items: stretch;
+    justify-content: flex-end;
+  }
+  .modal-sheet .modal-panel {
+    max-width: 440px;
+    max-height: none;
+    border-radius: 0;
+    border-bottom: none;
+    border-left: 1px solid rgba(0, 240, 255, 0.25);
+    padding: 20px 22px;
+    animation-name: modal-slide;
+  }
+  @keyframes modal-slide {
+    from {
+      transform: translateX(40px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.modal-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-cyan);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+}
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.modal-close:hover,
+.modal-close:focus-visible {
+  border-color: var(--c-cyan);
+  color: var(--c-cyan);
+  outline: none;
+}
+.modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+.text-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--c-cyan);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}

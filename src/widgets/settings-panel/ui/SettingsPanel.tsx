@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { OFFSET_RANGE_MS } from '@/shared/config/constants';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
 import { Button, Slider } from '@/shared/ui';
-import { updateSettings, useSettings, type VoiceSetting } from '@/entities/settings';
+import { NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type VoiceSetting } from '@/entities/settings';
 import { resetProgress } from '@/entities/progress';
 import { voice } from '@/features/voice-feedback';
 import './settings.css';
@@ -91,6 +92,8 @@ export function SettingsPanel() {
         <span>{dict.fps} / debug overlay</span>
       </label>
 
+      <NicknameField value={s.nickname} />
+
       <div className="settings-actions">
         <Button variant="ghost" onClick={() => navigate('calibration')}>
           {dict.settingsRecalibrate}
@@ -105,6 +108,36 @@ export function SettingsPanel() {
         </Button>
       </div>
     </div>
+  );
+}
+
+/** Nickname for the online table: edited as a draft, sanitised and stored on blur / Enter. */
+function NicknameField({ value }: { value: string }) {
+  const [draft, setDraft] = useState(value);
+  const commit = () => {
+    const clean = sanitizeNickname(draft);
+    setDraft(clean);
+    if (clean !== value) updateSettings({ nickname: clean });
+  };
+  return (
+    <label className="settings-group">
+      <span className="settings-group-label">{dict.settingsNickname}</span>
+      <input
+        className="text-input"
+        type="text"
+        value={draft}
+        maxLength={NICKNAME_MAX}
+        placeholder={dict.nicknamePlaceholder}
+        autoComplete="nickname"
+        autoCapitalize="off"
+        spellCheck={false}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+      />
+    </label>
   );
 }
 

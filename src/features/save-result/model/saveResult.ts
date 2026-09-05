@@ -9,6 +9,7 @@ import {
   recordRun,
   starsForTrack,
 } from '@/entities/progress';
+import { recordAttempt } from '@/entities/history';
 import { TRACK_IDS } from '@/entities/track';
 import { sessionStore, setSessionResult, type ChartSource, type ResultMeta } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
@@ -17,13 +18,24 @@ const NO_META: ResultMeta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
 
 /**
  * Persist a finished run and stash result + celebration metadata for the result screen.
- *  - failed runs never count (no counters, no bests);
+ *  - every catalog run (failed too) lands in the local attempt history;
+ *  - failed runs never count otherwise (no counters, no bests);
  *  - custom songs are session-only, but their combo/plays still feed the goals;
  *  - built-in tracks update the best result, the daily bonus (once per local day, rank ≥ C)
  *    and claim any goal the run completed.
  * `now` is injectable so the daily logic is testable.
  */
 export function saveResult(result: PlayResult, source: ChartSource, now: Date = new Date()): ResultMeta {
+  if (source === 'catalog') {
+    recordAttempt(result.trackId, {
+      at: now.toISOString(),
+      score: result.score,
+      accuracy: result.accuracy,
+      rank: result.rank,
+      maxCombo: result.maxCombo,
+      failed: result.failed,
+    });
+  }
   if (result.failed) {
     // Nothing is recorded, but spells caught mid-run already hit the counters — a goal such as
     // "10 slowdowns" may have just completed, and the player should hear about it now.
