@@ -72,7 +72,7 @@ src/
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 99 юнит-тестов (vitest)
+npm test           # 100 юнит-тестов (vitest)
 npm run lint       # eslint + проверка FSD
 npm run build
 ```

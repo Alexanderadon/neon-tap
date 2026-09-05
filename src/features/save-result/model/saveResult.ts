@@ -25,8 +25,13 @@ const NO_META: ResultMeta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
  */
 export function saveResult(result: PlayResult, source: ChartSource, now: Date = new Date()): ResultMeta {
   if (result.failed) {
-    setSessionResult(result, NO_META);
-    return NO_META;
+    // Nothing is recorded, but spells caught mid-run already hit the counters — a goal such as
+    // "10 slowdowns" may have just completed, and the player should hear about it now.
+    const meta: ResultMeta = { ...NO_META };
+    const goals = claimCompletedGoals();
+    if (goals.length) meta.goalsCompleted = goals.map((g) => g.id);
+    setSessionResult(result, meta);
+    return meta;
   }
 
   const chart = sessionStore.get().chart;

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
-import { dailyTrackId, localDateString, progressStore, resetProgress } from '@/entities/progress';
+import { dailyTrackId, localDateString, progressStore, recordSpell, resetProgress } from '@/entities/progress';
 import { TRACK_IDS } from '@/entities/track';
 import { sessionStore, startSession } from '@/entities/play-session';
 import { saveResult } from './saveResult';
@@ -40,6 +40,15 @@ describe('saveResult', () => {
     expect(save.tracks[OTHER_ID]).toBeUndefined();
     expect(save.counters.tracksPlayed).toBe(0);
     expect(sessionStore.get().resultMeta).toEqual(meta);
+  });
+
+  it('still reports a spell goal completed during a failed run', () => {
+    startSession(chartFor(OTHER_ID, 5), 'catalog');
+    for (let i = 0; i < 10; i++) recordSpell('slow');
+    const meta = saveResult(run(OTHER_ID, { failed: true, rank: 'D' }), 'catalog', DATE);
+    expect(meta.goalsCompleted).toEqual(['slow-10']);
+    expect(progressStore.get().goalsClaimed).toEqual(['slow-10']);
+    expect(progressStore.get().tracks[OTHER_ID]).toBeUndefined();
   });
 
   it('records a built-in track: best, counters, hardest track', () => {
