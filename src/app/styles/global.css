@@ -6,6 +6,11 @@
   --c-orange: #ff8a00;
   --font-display: 'Unbounded', 'Segoe UI', system-ui, sans-serif;
   color-scheme: dark;
+  /* Safe-area insets as variables: CSS uses them directly, the canvas HUD reads them via getComputedStyle. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 * {
   box-sizing: border-box;
@@ -16,14 +21,36 @@ body,
   height: 100%;
   margin: 0;
 }
+html {
+  /* The page itself never scrolls (screens scroll inside .screen): kills pull-to-refresh and rubber-banding. */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 body {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--c-bg);
   color: #fff;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 15px;
   overscroll-behavior: none;
+  /* No double-tap zoom anywhere; scrolling/panning stays allowed inside menus. */
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
+  -webkit-touch-callout: none;
+}
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
+button,
+[role='button'],
+input[type='range'],
+input[type='checkbox'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 body::before {
   /* CRT scanlines */

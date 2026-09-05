@@ -9,6 +9,7 @@ import { CalibrationPage } from '@/pages/calibration';
 import { SettingsPage } from '@/pages/settings';
 import { CustomSongPage } from '@/pages/custom';
 import { AudioGate } from '@/widgets/audio-gate';
+import { OrientationHint } from '@/widgets/orientation-hint';
 
 /** Screen router: the game has no URLs on purpose — restart must never trigger navigation. */
 export function App() {
@@ -47,6 +48,7 @@ export function App() {
   return (
     <>
       {page}
+      <OrientationHint />
       <AudioGate />
     </>
   );

@@ -3,6 +3,8 @@ import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
 export type VoiceSetting = 'dmitry' | 'svetlana' | 'off';
+/** "Economy mode": auto = switch to the low FX level when FPS drops below 45 for 3 s; on = always low; off = always full. */
+export type FxMode = 'auto' | 'on' | 'off';
 
 export interface Settings {
   version: 1;
@@ -20,6 +22,7 @@ export interface Settings {
   /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
   calibrationVersion: number;
   debugOverlay: boolean;
+  fxMode: FxMode;
 }
 
 const KEY = 'neon-tap:settings';
@@ -36,9 +39,11 @@ const DEFAULTS: Settings = {
   calibrated: false,
   calibrationVersion: 0,
   debugOverlay: false,
+  fxMode: 'auto',
 };
 
 const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
+export const FX_MODES: FxMode[] = ['auto', 'on', 'off'];
 
 function load(): Settings {
   try {
@@ -60,6 +65,7 @@ function sanitize(s: Settings): Settings {
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),
     voice: VOICES.includes(s.voice) ? s.voice : DEFAULTS.voice,
+    fxMode: FX_MODES.includes(s.fxMode) ? s.fxMode : DEFAULTS.fxMode,
   };
 }
 
