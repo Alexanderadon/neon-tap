@@ -17,3 +17,4 @@
 | 9. Экран результата | [09-result-polish.md](09-result-polish.md) | ✅ |
 | 9. Темы и ощущение | [09-feel.md](09-feel.md) | ✅ |
 | 9. Мобильная версия | [../mobile-checklist.md](../mobile-checklist.md) | 🔄 реальные устройства — вручную |
+| 10. Ритмическая точность | [10-rhythm.md](10-rhythm.md) | ✅ |
