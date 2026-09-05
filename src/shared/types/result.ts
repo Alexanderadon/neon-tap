@@ -8,6 +8,16 @@ export interface JudgementCounts {
   miss: number;
 }
 
+/**
+ * Every judgement of a run in order: song time (seconds), verdict and the combo right after it.
+ * Parallel arrays — index `i` describes one judgement.
+ */
+export interface ResultTimeline {
+  t: number[];
+  j: Judgement[];
+  combo: number[];
+}
+
 export interface PlayResult {
   trackId: string;
   score: number;
@@ -23,4 +33,8 @@ export interface PlayResult {
   failed: boolean;
   /** Hearts left at the end. */
   hearts: number;
+  /** Judgement-by-judgement record of the run (empty when nothing was judged). */
+  timeline: ResultTimeline;
+  /** Song length in seconds — the time axis of `timeline`. */
+  duration: number;
 }

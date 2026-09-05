@@ -16,7 +16,7 @@ export function ResultPage() {
   if (!chart || !result) return null;
   return (
     <Screen center>
-      <ResultBreakdown result={result} meta={resultMeta} title={chart.title} subtitle={`★ ${chart.chart.stars}`} onRetry={retry} />
+      <ResultBreakdown result={result} meta={resultMeta} title={chart.title} subtitle={`★ ${chart.chart.stars}`} onRetry={retry} chart={chart} />
     </Screen>
   );
 }

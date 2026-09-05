@@ -124,3 +124,129 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.4);
 }
+
+/* --- where did I miss --- */
+.result-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  text-align: left;
+}
+.result-section-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.result-section-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: -4px;
+}
+.result-strip {
+  position: relative;
+  width: 100%;
+}
+.result-strip-canvas {
+  display: block;
+  width: 100%;
+  height: 46px;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+.result-strip-cursor {
+  position: absolute;
+  top: 0;
+  height: 46px;
+  width: 1px;
+  background: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+  pointer-events: none;
+  transform: translateX(-0.5px);
+}
+.result-strip-time {
+  position: absolute;
+  top: -22px;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(5, 6, 10, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: #ffffff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.result-strip-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 3px;
+}
+.result-strip-hint {
+  color: rgba(255, 255, 255, 0.28);
+}
+.result-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.result-chart-axis {
+  font-size: 9px;
+  fill: rgba(255, 255, 255, 0.5);
+}
+.result-chart-legend {
+  font-size: 9px;
+  fill: rgba(255, 255, 255, 0.55);
+}
+.result-chart-legend-combo {
+  fill: var(--c-cyan);
+}
+.result-highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.result-highlights li {
+  padding: 6px 10px;
+  border-left: 3px solid currentColor;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+.result-replay-canvas {
+  display: block;
+  width: 100%;
+  height: 190px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.result-share {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.result-share-status {
+  min-height: 1.2em;
+  font-size: 12px;
+  color: var(--c-lime);
+}
+.result-share-status.is-error {
+  color: var(--c-magenta);
+}
