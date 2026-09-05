@@ -13,3 +13,7 @@
 | 7. Контент | [07-content.md](07-content.md) | ✅ |
 | 8. Полировка и витрина | [08-polish.md](08-polish.md) | 🔄 профилирование на реальных устройствах — вручную |
 | 9. Обучение | [09-tutorial.md](09-tutorial.md) | ✅ |
+| 9. Рекорды и онлайн-таблица | [09-records.md](09-records.md) | ✅ |
+| 9. Экран результата | [09-result-polish.md](09-result-polish.md) | ✅ |
+| 9. Темы и ощущение | [09-feel.md](09-feel.md) | ✅ |
+| 9. Мобильная версия | [../mobile-checklist.md](../mobile-checklist.md) | 🔄 реальные устройства — вручную |
