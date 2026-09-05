@@ -3,6 +3,7 @@
     "id": "midnight-drive",
     "title": "Midnight Drive",
     "artist": "congusbongus",
+    "genre": "synthwave",
     "raw": "midnight-drive.ogg",
     "sourceUrl": "https://opengameart.org/content/midnight-drive",
     "license": "CC0 1.0"
@@ -11,6 +12,7 @@
     "id": "neon-hyperdrive",
     "title": "Neon Hyperdrive",
     "artist": "adiutorium",
+    "genre": "techno",
     "raw": "neon-hyperdrive.mp3",
     "sourceUrl": "https://opengameart.org/content/neon-hyperdrive",
     "license": "CC0 1.0"
@@ -19,6 +21,7 @@
     "id": "robotic-city",
     "title": "Robotic City",
     "artist": "Section31",
+    "genre": "techno",
     "raw": "robotic-city.ogg",
     "sourceUrl": "https://opengameart.org/content/robotic-city",
     "license": "CC0 1.0"
@@ -27,6 +30,7 @@
     "id": "night-prowler",
     "title": "Night Prowler",
     "artist": "Section31",
+    "genre": "techno",
     "raw": "night-prowler.ogg",
     "sourceUrl": "https://opengameart.org/content/night-prowler",
     "license": "CC0 1.0"
@@ -35,6 +39,7 @@
     "id": "black-diamond",
     "title": "Black Diamond",
     "artist": "joth",
+    "genre": "dnb",
     "raw": "black-diamond.mp3",
     "sourceUrl": "https://opengameart.org/content/black-diamond",
     "license": "CC0 1.0"
@@ -44,6 +49,7 @@
     "loops": 2,
     "title": "Dance Field",
     "artist": "centurionofwar",
+    "genre": "chiptune",
     "raw": "dance-field.mp3",
     "sourceUrl": "https://opengameart.org/content/dance-field",
     "license": "CC0 1.0"
@@ -52,6 +58,7 @@
     "id": "action-track",
     "title": "Action Track",
     "artist": "lushogames",
+    "genre": "rock",
     "raw": "action-track.mp3",
     "sourceUrl": "https://opengameart.org/content/action-track",
     "license": "CC0 1.0"
@@ -60,6 +67,7 @@
     "id": "chase",
     "title": "Chase",
     "artist": "adiutorium",
+    "genre": "techno",
     "raw": "chase.mp3",
     "sourceUrl": "https://opengameart.org/content/chase-2",
     "license": "CC0 1.0"
@@ -68,6 +76,7 @@
     "id": "mindstream",
     "title": "MindStream",
     "artist": "DST",
+    "genre": "ambient",
     "raw": "mindstream.mp3",
     "sourceUrl": "https://opengameart.org/content/mindstream",
     "license": "CC0 1.0"
@@ -76,6 +85,7 @@
     "id": "lunar-arrow",
     "title": "Lunar Arrow",
     "artist": "mmry",
+    "genre": "electronic",
     "raw": "lunar-arrow.mp3",
     "sourceUrl": "https://opengameart.org/content/lunar-arrow",
     "license": "CC0 1.0"
@@ -84,6 +94,7 @@
     "id": "the-lab",
     "title": "The Lab",
     "artist": "tricksntraps",
+    "genre": "electronic",
     "raw": "the-lab.wav",
     "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1",
     "license": "CC0 1.0"
@@ -92,6 +103,7 @@
     "id": "the-rift",
     "title": "The Rift",
     "artist": "vitalezzz",
+    "genre": "electronic",
     "raw": "the-rift.mp3",
     "sourceUrl": "https://opengameart.org/content/the-rift",
     "license": "CC0 1.0"
@@ -100,6 +112,7 @@
     "id": "achilles",
     "title": "Achilles",
     "artist": "zane-little-music",
+    "genre": "rock",
     "raw": "achilles.mp3",
     "sourceUrl": "https://opengameart.org/content/achilles",
     "license": "CC0 1.0"
@@ -108,6 +121,7 @@
     "id": "silver-bullet",
     "title": "Silver Bullet",
     "artist": "vitalezzz",
+    "genre": "rock",
     "raw": "silver-bullet.mp3",
     "sourceUrl": "https://opengameart.org/content/silver-bullet",
     "license": "CC0 1.0"
@@ -116,6 +130,7 @@
     "id": "apparatus-overlord",
     "title": "Apparatus Overlord",
     "artist": "vitalezzz",
+    "genre": "electronic",
     "raw": "apparatus-overlord.mp3",
     "sourceUrl": "https://opengameart.org/content/apparatus-overlord",
     "license": "CC0 1.0"
@@ -124,6 +139,7 @@
     "id": "shortcuts",
     "title": "Shortcuts",
     "artist": "zane-little-music",
+    "genre": "dnb",
     "raw": "shortcuts.mp3",
     "sourceUrl": "https://opengameart.org/content/shortcuts",
     "license": "CC0 1.0"
@@ -132,6 +148,7 @@
     "id": "technological-menace",
     "title": "Technological Menace",
     "artist": "umplix",
+    "genre": "electronic",
     "raw": "technological-menace.mp3",
     "sourceUrl": "https://opengameart.org/content/technological-menace",
     "license": "CC0 1.0"
@@ -140,6 +157,7 @@
     "id": "the-9th-circle",
     "title": "The 9th Circle",
     "artist": "joth",
+    "genre": "techno",
     "raw": "the-9th-circle.mp3",
     "sourceUrl": "https://opengameart.org/content/the-9th-circle",
     "license": "CC0 1.0"
@@ -148,6 +166,7 @@
     "id": "hot-roadway",
     "title": "Hot Roadway",
     "artist": "mintodog",
+    "genre": "techno",
     "raw": "hot-roadway.ogg",
     "sourceUrl": "https://opengameart.org/content/hot-roadway",
     "license": "CC0 1.0"
@@ -156,6 +175,7 @@
     "id": "virtual-rush",
     "title": "Virtual Rush",
     "artist": "vitalezzz",
+    "genre": "synthwave",
     "raw": "virtual-rush.mp3",
     "sourceUrl": "https://opengameart.org/content/virtual-rush",
     "license": "CC0 1.0"
@@ -164,8 +184,100 @@
     "id": "elevate-instrument-tracks",
     "title": "Elevate (+ instrument tracks)",
     "artist": "fupi",
+    "genre": "electronic",
     "raw": "elevate-instrument-tracks.ogg",
     "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "8-bit-mechanical-complex",
+    "title": "8-bit Mechanical Complex",
+    "artist": "HydroGene",
+    "genre": "chiptune",
+    "raw": "8-bit-mechanical-complex.mp3",
+    "sourceUrl": "https://opengameart.org/content/8-bit-mechanical-complex",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "space-cadet-training-montage",
+    "loops": 2,
+    "title": "Space Cadet Training Montage",
+    "artist": "Zane Little Music",
+    "genre": "chiptune",
+    "raw": "space-cadet-training-montage.wav",
+    "sourceUrl": "https://opengameart.org/content/space-cadet-training-montage",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "since-2-am",
+    "title": "Since 2 A.M.",
+    "artist": "TAD",
+    "genre": "lofi",
+    "raw": "since-2-am.mp3",
+    "sourceUrl": "https://opengameart.org/content/since-2-am",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "metal-song-energetic",
+    "title": "Metal Song - Energetic",
+    "artist": "The Real Monoton Artist",
+    "genre": "rock",
+    "raw": "metal-song-energetic.mp3",
+    "sourceUrl": "https://opengameart.org/content/metal-song-energetic",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "battle-theme",
+    "title": "Battle Theme",
+    "artist": "Wolfgang_",
+    "genre": "orchestral",
+    "raw": "battle-theme.mp3",
+    "sourceUrl": "https://opengameart.org/content/battle-theme-0",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "wednesday-night",
+    "title": "Wednesday Night",
+    "artist": "Zane Little Music",
+    "genre": "jazz",
+    "raw": "wednesday-night.mp3",
+    "sourceUrl": "https://opengameart.org/content/wednesday-night-funk-fusion",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "final-hour",
+    "title": "Final Hour",
+    "artist": "isaiah658",
+    "genre": "dnb",
+    "raw": "final-hour.mp3",
+    "sourceUrl": "https://opengameart.org/content/final-hour",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "up-in-the-sky",
+    "title": "Up in the Sky",
+    "artist": "Memoraphile (You're Perfect Studio)",
+    "genre": "ambient",
+    "raw": "up-in-the-sky.ogg",
+    "sourceUrl": "https://opengameart.org/content/up-in-the-sky",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "wasteland-caravan",
+    "title": "Wasteland Caravan",
+    "artist": "vitalezzz",
+    "genre": "acoustic",
+    "raw": "wasteland-caravan.mp3",
+    "sourceUrl": "https://opengameart.org/content/wasteland-caravan",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "growing-village",
+    "title": "Growing Village",
+    "artist": "earlbeat",
+    "genre": "world",
+    "raw": "growing-village.mp3",
+    "sourceUrl": "https://opengameart.org/content/growing-village",
     "license": "CC0 1.0"
   }
 ]
