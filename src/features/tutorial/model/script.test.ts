@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { KEY_LABELS } from '@/shared/config/constants';
-import { TUTORIAL_PLAN, beatIndex, beatTime, buildScript, captionAt, keyHint, stepProgress, zoneHint } from './script';
+import { SPELL_LANE, TUTORIAL_PLAN, beatIndex, beatTime, buildScript, captionAt, keyHint, laneKey, stepProgress, zoneHint } from './script';
 
 /** A perfectly even 120 BPM grid starting at 1.0 s. */
 const BEATS = Array.from({ length: 200 }, (_, i) => 1 + i * 0.5);
@@ -54,12 +54,24 @@ describe('tutorial script', () => {
     expect(keyHint(4)).toBe('D F J K');
     expect(keyHint(6)).toBe('S D F J K L');
     expect(keyHint(9)).toBe('');
+    expect(laneKey(4, 1)).toBe('F');
+    expect(laneKey(2, 1)).toBe('J');
+    expect(laneKey(1, 1)).toBe('F J');
+    expect(laneKey(6, 9)).toBe('L');
+    expect(laneKey(9, 0)).toBe('');
     expect(zoneHint(1)).toBe('вся нижняя половина экрана');
     expect(zoneHint(2)).toBe('2 зоны внизу');
     expect(zoneHint(5)).toBe('5 зон внизу');
     const script = buildScript(BEATS);
     const four = script.find((s) => s.id === 'lanes4')!;
     expect(four.title).toBe('Полосы: 4');
+    // The spell caption names only the spell lane's key, not the whole 4-key row.
+    const spell = script.find((s) => s.id === 'spell')!;
+    expect(spell.hintDesktop).toContain(`нажми ${KEY_LABELS[4][SPELL_LANE]} по ним`);
+    expect(spell.hintDesktop).not.toContain(keyHint(4));
+    // On one lane either key works; the tap hint says so instead of reading as a chord.
+    const tap = script.find((s) => s.id === 'tap')!;
+    expect(tap.hintDesktop).toContain('любую из F J');
     expect(four.hintDesktop).toBe('Клавиши D F J K');
     expect(four.hintTouch).toContain('4 зоны внизу');
     const one = script.find((s) => s.id === 'tap')!;

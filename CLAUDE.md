@@ -64,7 +64,7 @@ npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
   таблицу в выводе: плотность 1.2–2.3 нот/с, звёзды с разбросом (сейчас ★4–7), дроби есть в большинстве
   треков и не быстрее 6 нажатий/с, слайды только в соседнюю полосу.
 - Одна карта на песню (`chart`), без уровней сложности — сложность задаёт песня (`rateStars`).
-- `public/charts/tutorial.json` — рукописная карта обучения: не в `catalog.json`, не генерируется и не перезаписывается `assets:charts`; её инварианты проверяет `features/tutorial/model/chart.test.ts`.
+- `public/charts/tutorial.json` — рукописная карта обучения: не в `catalog.json`, не генерируется и не перезаписывается `assets:charts`; план в долях лежит в `scripts/gen-tutorial.mjs` (`npm run chart:tutorial`), инварианты проверяет `features/tutorial/model/chart.test.ts`.
 - Новый трек — обязательно с `genre` в `assets-src/tracks.json` (список `GENRES` в `shared/types/chart.ts`): от него зависят обложка, тема и подпись на карточке.
 - Тексты словаря `ru.ts` добавляются блоком в конец с комментарием `// --- <поток> ---`, чтобы ветки сливались без конфликтов.
 - Ничего не удалять (файлы, кеши, проекты) без явной просьбы автора.

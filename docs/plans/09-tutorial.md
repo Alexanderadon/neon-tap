@@ -9,7 +9,8 @@
 bpm / offset / beats / audio / duration / license / sourceUrl / artist / genre скопированы из
 `apparatus-overlord.json`. Каждая нота лежит ровно на доле (16-е — на четвертях доли).
 Карта — путешествие по числу полос 1 → 2 → 3 → 4 → 5 → 6 (v2, поток `tutorial-lanes`);
-план в долях воспроизводится скриптом-генератором (`.tmp/gen-tutorial.mjs`, не в репозитории).
+план в долях лежит в генераторе `scripts/gen-tutorial.mjs` (`npm run chart:tutorial`, чистый node,
+без зависимостей) — правки делать там, а не в JSON; `chart.test.ts` проверяет результат.
 
 | Доли | Полос | Шаг | Ноты |
 |---|---|---|---|
