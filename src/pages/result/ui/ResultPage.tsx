@@ -33,10 +33,11 @@ export function ResultPage() {
         title={chart.title}
         subtitle={`★ ${chart.chart.stars}`}
         onRetry={retry}
+        chart={chart}
         notes={notes}
         belowGrid={source === 'catalog' ? <AttemptLine trackId={result.trackId} /> : undefined}
+        extraBottom={<OnlineLeaderboard result={result} source={source} />}
       />
-      <OnlineLeaderboard result={result} source={source} />
     </Screen>
   );
 }
