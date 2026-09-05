@@ -284,6 +284,8 @@ export const ru = {
   settingsFxMode: 'Экономный режим',
   settingsFxModeHint: 'меньше частиц и вспышек · авто — включится сам, если FPS ниже 45',
   fxModes: { auto: 'Авто', on: 'Вкл', off: 'Выкл' },
+  // --- feel ---
+  themeLabel: 'Визуальная тема',
 } as const;
 
 export type Dictionary = typeof ru;

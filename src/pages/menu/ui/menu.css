@@ -1,3 +1,77 @@
+.menu {
+  isolation: isolate;
+}
+/*
+ * Slow-moving neon grid behind the menu: a perspective floor of cyan lines scrolling towards the
+ * viewer plus a magenta horizon glow. Pure gradients + keyframes — no images, no JS.
+ *
+ * `.menu-bg` is a fixed, masked, clipping window; its pseudo-element is the grid, one tile (44px)
+ * taller than the window on each side and moved with `transform` only (compositor-driven — the
+ * layer is painted once, unlike an animated `background-position`, which repaints every frame).
+ * The grid repeats every 44px, so a 0 → 44px loop is seamless.
+ */
+.menu-bg {
+  position: fixed;
+  left: -20vw;
+  right: -20vw;
+  bottom: -10vh;
+  height: 62vh;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
+  opacity: 0.55;
+}
+.menu-bg::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -44px;
+  bottom: -44px;
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.11) 1px, transparent 1px);
+  background-size: 100% 44px, 64px 100%;
+  transform-origin: 50% 44px;
+  transform: perspective(520px) rotateX(64deg);
+  will-change: transform;
+  animation: menu-grid 4s linear infinite;
+}
+.menu::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 55vh;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 50% 100%, rgba(255, 43, 214, 0.22), transparent 70%),
+    radial-gradient(40% 35% at 50% 100%, rgba(0, 240, 255, 0.12), transparent 70%);
+  animation: menu-horizon 6s ease-in-out infinite alternate;
+}
+@keyframes menu-grid {
+  from {
+    transform: perspective(520px) rotateX(64deg) translateY(0);
+  }
+  to {
+    transform: perspective(520px) rotateX(64deg) translateY(44px);
+  }
+}
+@keyframes menu-horizon {
+  from {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1.08);
+  }
+}
+
 .menu-head {
   display: flex;
   flex-direction: column;
@@ -18,16 +92,60 @@
 .menu-logo .l1 {
   color: var(--c-cyan);
   text-shadow: 0 0 18px var(--c-cyan), 0 0 50px rgba(0, 240, 255, 0.5);
+  animation: logo-flicker 1.6s steps(1, end) both;
 }
 .menu-logo .l2 {
   color: var(--c-magenta);
   text-shadow: 0 0 18px var(--c-magenta), 0 0 50px rgba(255, 43, 214, 0.5);
+  animation: logo-flicker 1.9s steps(1, end) 0.15s both;
+}
+/* A neon tube warming up: a few dark blinks, then steady. */
+@keyframes logo-flicker {
+  0%,
+  8% {
+    opacity: 0.15;
+    text-shadow: none;
+  }
+  10%,
+  18% {
+    opacity: 1;
+  }
+  20%,
+  24% {
+    opacity: 0.3;
+    text-shadow: none;
+  }
+  26%,
+  42% {
+    opacity: 1;
+  }
+  44%,
+  46% {
+    opacity: 0.55;
+  }
+  48%,
+  100% {
+    opacity: 1;
+  }
 }
 .menu-tagline {
   color: rgba(255, 255, 255, 0.5);
   letter-spacing: 0.25em;
   text-transform: uppercase;
   font-size: 12px;
+  animation: tagline-in 0.8s ease-out 0.5s both;
+}
+@keyframes tagline-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.25em;
+    transform: none;
+  }
 }
 .menu-nav {
   display: flex;
@@ -35,6 +153,7 @@
   margin-top: 10px;
   flex-wrap: wrap;
   justify-content: center;
+  animation: tagline-in 0.6s ease-out 0.7s both;
 }
 .menu-foot {
   display: flex;
@@ -48,4 +167,15 @@
 }
 .menu-foot a {
   color: rgba(255, 255, 255, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-bg::before,
+  .menu::after,
+  .menu-logo .l1,
+  .menu-logo .l2,
+  .menu-tagline,
+  .menu-nav {
+    animation: none;
+  }
 }

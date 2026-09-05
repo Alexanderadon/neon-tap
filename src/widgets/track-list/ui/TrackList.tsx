@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { unlockAllActive } from '@/shared/config/devFlags';
+import { PALETTE_SIZE, themeFor } from '@/shared/lib/render';
 import { Stars } from '@/shared/ui';
 import { CATALOG, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
 import {
@@ -104,9 +105,16 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
     }
   };
 
+  // Visual theme of the song (genre when the catalog knows it, otherwise deterministic by id).
+  const theme = themeFor(track.genre, track.id);
+
   const cls = ['tcard', daily && 'tcard-daily', locked && 'tcard-locked'].filter(Boolean).join(' ');
   return (
-    <article className={cls} style={{ ['--tone' as string]: daily ? DAILY_TONE : toneFor(track.stars) }} aria-disabled={locked || undefined}>
+    <article
+      className={cls}
+      style={{ ['--tone' as string]: daily ? DAILY_TONE : toneFor(track.stars), ['--i' as string]: daily ? 0 : index }}
+      aria-disabled={locked || undefined}
+    >
       <div className="tcard-num" aria-hidden="true">
         {daily ? '☀' : locked ? '🔒' : String(index).padStart(2, '0')}
       </div>
@@ -127,6 +135,16 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
           {track.artist} · {Math.round(track.duration)} с
         </div>
         <div className="tcard-tags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
+        <div
+          className="tcard-swatch"
+          role="img"
+          title={`${dict.themeLabel}: ${theme.name}`}
+          aria-label={`${dict.themeLabel}: ${theme.name}`}
+        >
+          {theme.laneColors.slice(0, PALETTE_SIZE).map((c, k) => (
+            <i key={k} style={{ background: c, color: c }} />
+          ))}
+        </div>
         {onRecords && (
           <button type="button" className="tcard-records" onClick={() => onRecords({ id: track.id, title: track.title })}>
             {dict.records}
