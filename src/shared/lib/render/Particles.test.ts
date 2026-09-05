@@ -11,6 +11,18 @@ describe('ParticlePool', () => {
     pool.update(5);
     expect(pool.alive).toBe(0);
   });
+
+  it('emitScale halves emission in the economy FX level (but never below one particle)', () => {
+    const pool = new ParticlePool(100);
+    pool.emitScale = 0.5;
+    pool.emit(0, 0, 20, 0, 100, 4, 1);
+    expect(pool.alive).toBe(10);
+    pool.emit(0, 0, 1, 0, 100, 4, 1);
+    expect(pool.alive).toBe(11);
+    pool.emitScale = 1;
+    pool.emit(0, 0, 20, 0, 100, 4, 1);
+    expect(pool.alive).toBe(31);
+  });
 });
 
 describe('ScreenShake', () => {

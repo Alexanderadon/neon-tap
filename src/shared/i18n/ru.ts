@@ -277,6 +277,13 @@ export const ru = {
   shareText: 'NEON TAP · {song}\nРанг {rank} · {acc}% · {score} очков · макс. комбо {combo}\n{url}',
   shareTextFailed: 'NEON TAP · {song}\nПровал на {t} · {score} очков · макс. комбо {combo}\n{url}',
   shareFileName: 'neon-tap-{id}.png',
+  // --- mobile ---
+  rotateTitle: 'Поверни телефон',
+  rotateHint: 'Игра рассчитана на портретный режим: полосы во всю ширину, зоны для пальцев внизу.',
+  rotateAnyway: 'Всё равно продолжить',
+  settingsFxMode: 'Экономный режим',
+  settingsFxModeHint: 'меньше частиц и вспышек · авто — включится сам, если FPS ниже 45',
+  fxModes: { auto: 'Авто', on: 'Вкл', off: 'Выкл' },
 } as const;
 
 export type Dictionary = typeof ru;

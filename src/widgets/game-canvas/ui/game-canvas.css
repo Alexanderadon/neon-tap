@@ -1,12 +1,16 @@
 .game-root {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   background: #05060a;
   overflow: hidden;
+  overscroll-behavior: none;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .game-canvas {
   position: absolute;
@@ -30,7 +34,7 @@
 }
 .game-topbar {
   position: absolute;
-  top: max(10px, env(safe-area-inset-top));
+  top: max(10px, var(--safe-top));
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;
@@ -47,10 +51,20 @@
   cursor: pointer;
   touch-action: manipulation;
 }
+@media (pointer: coarse) {
+  .game-iconbtn {
+    width: 52px;
+    height: 40px;
+    font-size: 14px;
+  }
+}
 .game-pause-menu {
   position: absolute;
   left: 50%;
   top: 60%;
+  max-height: calc(40% - var(--safe-bottom) - 12px);
+  overflow-y: auto;
+  padding-bottom: var(--safe-bottom);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;

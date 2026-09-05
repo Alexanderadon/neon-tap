@@ -4,7 +4,7 @@ import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
 import { Button, Slider } from '@/shared/ui';
-import { NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type VoiceSetting } from '@/entities/settings';
+import { FX_MODES, NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type VoiceSetting } from '@/entities/settings';
 import { resetProgress } from '@/entities/progress';
 import { voice } from '@/features/voice-feedback';
 import './settings.css';
@@ -86,6 +86,18 @@ export function SettingsPanel() {
           <span className="settings-hint"> · {dict.settingsTouchAssistHint}</span>
         </span>
       </label>
+
+      <div className="settings-group">
+        <div className="settings-group-label">{dict.settingsFxMode}</div>
+        <div className="settings-segmented" role="radiogroup">
+          {FX_MODES.map((id) => (
+            <button key={id} role="radio" aria-checked={s.fxMode === id} className={`seg ${s.fxMode === id ? 'seg-on' : ''}`} onClick={() => updateSettings({ fxMode: id })}>
+              {dict.fxModes[id]}
+            </button>
+          ))}
+        </div>
+        <div className="settings-hint">{dict.settingsFxModeHint}</div>
+      </div>
 
       <label className="settings-check">
         <input type="checkbox" checked={s.debugOverlay} onChange={(e) => updateSettings({ debugOverlay: e.target.checked })} />
