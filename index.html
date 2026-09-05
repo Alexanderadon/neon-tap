@@ -4,11 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#05060a" />
+    <meta name="color-scheme" content="dark" />
     <meta name="description" content="NEON TAP — браузерная ритм-игра с автогенерацией карт из любого MP3" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NEON TAP" />
+    <meta name="application-name" content="NEON TAP" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2305060a'/%3E%3Crect x='8' y='14' width='10' height='36' rx='3' fill='%2300f0ff'/%3E%3Crect x='22' y='14' width='10' height='36' rx='3' fill='%23ff2bd6'/%3E%3Crect x='36' y='14' width='10' height='36' rx='3' fill='%23b6ff00'/%3E%3Crect x='50' y='14' width='10' height='36' rx='3' fill='%23ff8a00'/%3E%3C/svg%3E" />
@@ -16,9 +19,107 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet" />
     <title>NEON TAP</title>
+    <!--
+      Critical CSS: the page is dark from the very first paint (no white flash while the bundle
+      loads — matters most for the installed app, whose splash is background_color + icon), and a
+      logo splash sits on top until React mounts (src/app/main.tsx fades it out).
+    -->
+    <style>
+      html {
+        background: #05060a;
+        color-scheme: dark;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+      body {
+        margin: 0;
+        background: #05060a;
+        color: #fff;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      #root {
+        height: 100%;
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 20000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: #05060a;
+        transition: opacity 0.35s ease;
+        pointer-events: none;
+      }
+      #splash.splash-out {
+        opacity: 0;
+      }
+      .splash-mark {
+        width: 84px;
+        height: 84px;
+        border-radius: 22px;
+        box-shadow: 0 0 36px rgba(0, 240, 255, 0.3), 0 0 60px rgba(255, 43, 214, 0.18);
+      }
+      .splash-logo {
+        display: flex;
+        gap: 0.25em;
+        font-family: 'Unbounded', 'Segoe UI', system-ui, sans-serif;
+        font-weight: 900;
+        font-size: clamp(34px, 9vw, 56px);
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+      .splash-logo .l1 {
+        color: #00f0ff;
+        text-shadow: 0 0 18px #00f0ff, 0 0 50px rgba(0, 240, 255, 0.5);
+      }
+      .splash-logo .l2 {
+        color: #ff2bd6;
+        text-shadow: 0 0 18px #ff2bd6, 0 0 50px rgba(255, 43, 214, 0.5);
+      }
+      .splash-line {
+        width: 120px;
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+        animation: splash-line 1.2s ease-in-out infinite alternate;
+      }
+      @keyframes splash-line {
+        from {
+          transform: scaleX(0.35);
+          opacity: 0.5;
+        }
+        to {
+          transform: scaleX(1);
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash-line {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="splash" aria-hidden="true">
+      <svg class="splash-mark" viewBox="0 0 64 64">
+        <rect width="64" height="64" rx="14" fill="#05060a" />
+        <rect x="9" y="15" width="9.5" height="34" rx="3" fill="#00f0ff" />
+        <rect x="21" y="15" width="9.5" height="34" rx="3" fill="#ff2bd6" />
+        <rect x="33" y="15" width="9.5" height="34" rx="3" fill="#b6ff00" />
+        <rect x="45" y="15" width="9.5" height="34" rx="3" fill="#ff8a00" />
+        <rect x="7" y="41" width="50" height="1.6" rx="0.8" fill="#fff" fill-opacity="0.85" />
+      </svg>
+      <div class="splash-logo"><span class="l1">NEON</span><span class="l2">TAP</span></div>
+      <div class="splash-line"></div>
+    </div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>
