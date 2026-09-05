@@ -19,6 +19,9 @@ export function MenuPage() {
           <Button size="lg" onClick={() => navigate('custom')}>
             ♫ {dict.customSong}
           </Button>
+          <Button variant="ghost" onClick={() => navigate('tutorial')}>
+            {dict.tutorial}
+          </Button>
           <Button variant="ghost" onClick={() => navigate('settings')}>
             {dict.settings}
           </Button>

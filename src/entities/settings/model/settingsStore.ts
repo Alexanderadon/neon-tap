@@ -20,6 +20,8 @@ export interface Settings {
   /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
   calibrationVersion: number;
   debugOverlay: boolean;
+  /** The interactive tutorial was finished or skipped once (it opens itself after first calibration). */
+  tutorialDone: boolean;
 }
 
 const KEY = 'neon-tap:settings';
@@ -36,6 +38,7 @@ const DEFAULTS: Settings = {
   calibrated: false,
   calibrationVersion: 0,
   debugOverlay: false,
+  tutorialDone: false,
 };
 
 const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
@@ -60,6 +63,7 @@ function sanitize(s: Settings): Settings {
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),
     voice: VOICES.includes(s.voice) ? s.voice : DEFAULTS.voice,
+    tutorialDone: s.tutorialDone === true,
   };
 }
 

@@ -8,6 +8,7 @@ import { ResultPage } from '@/pages/result';
 import { CalibrationPage } from '@/pages/calibration';
 import { SettingsPage } from '@/pages/settings';
 import { CustomSongPage } from '@/pages/custom';
+import { TutorialPage } from '@/pages/tutorial';
 import { AudioGate } from '@/widgets/audio-gate';
 
 /** Screen router: the game has no URLs on purpose — restart must never trigger navigation. */
@@ -15,11 +16,14 @@ export function App() {
   const screen = useScreen();
   const key = useRouteKey();
 
-  // First launch → latency calibration (GDD §4, critical requirement 2).
+  // First launch → latency calibration (GDD §4, critical requirement 2), then the tutorial once.
+  // Calibration returns to the menu, so the check runs every time the menu opens.
   useEffect(() => {
+    if (screen !== 'menu') return;
     const s = getSettings();
     if (!s.calibrated || s.calibrationVersion < CALIBRATION_VERSION) navigate('calibration');
-  }, []);
+    else if (!s.tutorialDone) navigate('tutorial');
+  }, [screen]);
 
   let page;
   switch (screen) {
@@ -37,6 +41,9 @@ export function App() {
       break;
     case 'custom':
       page = <CustomSongPage key={key} />;
+      break;
+    case 'tutorial':
+      page = <TutorialPage key={key} />;
       break;
     default:
       page = <MenuPage key={key} />;
