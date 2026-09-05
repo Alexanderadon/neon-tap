@@ -29,6 +29,16 @@ Attribution is not required for CC0 — it is listed here out of respect for the
 | `hot-roadway.mp3` | Hot Roadway | mintodog | [OpenGameArt](https://opengameart.org/content/hot-roadway) | CC0 1.0 |
 | `virtual-rush.mp3` | Virtual Rush | vitalezzz | [OpenGameArt](https://opengameart.org/content/virtual-rush) | CC0 1.0 |
 | `elevate-instrument-tracks.mp3` | Elevate (+ instrument tracks) | fupi | [OpenGameArt](https://opengameart.org/content/elevate-instrument-tracks) | CC0 1.0 |
+| `8-bit-mechanical-complex.mp3` | 8-bit Mechanical Complex | HydroGene | [OpenGameArt](https://opengameart.org/content/8-bit-mechanical-complex) | CC0 1.0 |
+| `space-cadet-training-montage.mp3` | Space Cadet Training Montage | Zane Little Music | [OpenGameArt](https://opengameart.org/content/space-cadet-training-montage) | CC0 1.0 |
+| `since-2-am.mp3` | Since 2 A.M. | TAD | [OpenGameArt](https://opengameart.org/content/since-2-am) | CC0 1.0 |
+| `metal-song-energetic.mp3` | Metal Song - Energetic | The Real Monoton Artist | [OpenGameArt](https://opengameart.org/content/metal-song-energetic) | CC0 1.0 |
+| `battle-theme.mp3` | Battle Theme | Wolfgang_ | [OpenGameArt](https://opengameart.org/content/battle-theme-0) | CC0 1.0 |
+| `wednesday-night.mp3` | Wednesday Night | Zane Little Music | [OpenGameArt](https://opengameart.org/content/wednesday-night-funk-fusion) | CC0 1.0 |
+| `final-hour.mp3` | Final Hour | isaiah658 | [OpenGameArt](https://opengameart.org/content/final-hour) | CC0 1.0 |
+| `up-in-the-sky.mp3` | Up in the Sky | Memoraphile (You're Perfect Studio) | [OpenGameArt](https://opengameart.org/content/up-in-the-sky) | CC0 1.0 |
+| `wasteland-caravan.mp3` | Wasteland Caravan | vitalezzz | [OpenGameArt](https://opengameart.org/content/wasteland-caravan) | CC0 1.0 |
+| `growing-village.mp3` | Growing Village | earlbeat | [OpenGameArt](https://opengameart.org/content/growing-village) | CC0 1.0 |
 
 ## Sound effects
 

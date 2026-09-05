@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { Stars } from '@/shared/ui';
-import { CATALOG, TRACK_IDS, loadChart, type TrackMeta } from '@/entities/track';
+import { CATALOG, TRACK_IDS, TrackCover, loadChart, type TrackMeta } from '@/entities/track';
 import { starsForTrack, totalStars, useProgress, type BestResult } from '@/entities/progress';
 import { startSession } from '@/entities/play-session';
 import './track-list.css';
@@ -55,10 +55,14 @@ function TrackCard({ index, track, best }: { index: number; track: TrackMeta; be
   return (
     <article className="tcard" style={{ ['--tone' as string]: toneFor(track.stars) }}>
       <div className="tcard-num">{String(index).padStart(2, '0')}</div>
+      <TrackCover id={track.id} genre={track.genre} title={track.title} className="tcard-cover" />
       <div className="tcard-body">
         <div className="tcard-title">{track.title}</div>
+        <div className="tcard-genre">
+          {dict.genres[track.genre]} · {dict.tempo} {Math.round(track.bpm)} {dict.bpm}
+        </div>
         <div className="tcard-artist">
-          {track.artist} · {track.bpm} {dict.bpm} · {Math.round(track.duration)} с
+          {track.artist} · {Math.round(track.duration)} с
         </div>
         <div className="tcard-tags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
       </div>

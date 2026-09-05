@@ -31,7 +31,7 @@
 }
 .tcard {
   display: grid;
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: 34px 56px 1fr auto;
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
@@ -50,10 +50,25 @@
   font-weight: 900;
   color: rgba(255, 255, 255, 0.25);
 }
+.tcard-cover {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  display: block;
+  flex: none;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 25%, transparent);
+}
 .tcard-title {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
+}
+.tcard-genre {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--tone) 80%, white);
+  margin-top: 2px;
 }
 .tcard-artist {
   font-size: 12px;
@@ -134,9 +149,14 @@
 }
 @media (max-width: 480px) {
   .tcard {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 48px 1fr auto;
+    gap: 10px;
   }
   .tcard-num {
     display: none;
+  }
+  .tcard-cover {
+    width: 48px;
+    height: 48px;
   }
 }
