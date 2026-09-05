@@ -264,7 +264,7 @@
   color: var(--c-cyan);
 }
 .dock-btn.is-primary .dock-icon {
-  color: #05060a;
+  color: var(--c-bg);
   background: var(--c-cyan);
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.55);
 }
@@ -280,7 +280,7 @@
   padding: 0 4px;
   border-radius: 8px;
   background: #ffd700;
-  color: #05060a;
+  color: var(--c-bg);
   font-size: 10px;
   font-weight: 700;
   line-height: 16px;
@@ -299,6 +299,12 @@
   .menu {
     --gutter: 0px;
     padding: var(--bar-h) 0 0;
+    /* The dock is a fixed bar over the top of this scroll container: every scrollIntoView target
+       and the sticky hero must sit below it, not under it. */
+    scroll-padding-top: calc(var(--bar-h) + 12px);
+  }
+  .menu-goals {
+    scroll-margin-top: 0;
   }
   .menu-cols {
     flex-direction: row;
@@ -311,7 +317,9 @@
   .menu-cols .hero {
     flex: 0 0 clamp(360px, 40%, 520px);
     position: sticky;
-    top: 20px;
+    /* Below the fixed top bar (+20px breathing room) — the panel's own top bar with the star pill
+       would otherwise slide under the dock as soon as the right column scrolls. */
+    top: calc(var(--bar-h) + 20px);
     min-height: min(calc(100dvh - var(--bar-h) - 48px), 720px);
     border-radius: 18px;
     padding-top: 22px;
