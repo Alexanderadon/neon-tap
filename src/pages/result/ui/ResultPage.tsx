@@ -1,7 +1,9 @@
 import { useCallback, useEffect } from 'react';
+import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { Screen } from '@/shared/ui';
 import { useSession } from '@/entities/play-session';
+import { findGoal } from '@/entities/progress';
 import { ResultBreakdown } from '@/widgets/result-breakdown';
 
 export function ResultPage() {
@@ -14,9 +16,16 @@ export function ResultPage() {
   const retry = useCallback(() => navigate('game'), []);
 
   if (!chart || !result) return null;
+
+  // Progression celebrations: daily bonus star and any goal this run completed (one line each).
+  const notes: string[] = [];
+  if (resultMeta?.dailyBonus) notes.push(dict.dailyBonus);
+  const goalTitles = (resultMeta?.goalsCompleted ?? []).map((id) => findGoal(id)?.title).filter((t): t is string => !!t);
+  if (goalTitles.length) notes.push(fmt(dict.goalCompleted, { title: goalTitles.join(' · ') }));
+
   return (
     <Screen center>
-      <ResultBreakdown result={result} meta={resultMeta} title={chart.title} subtitle={`★ ${chart.chart.stars}`} onRetry={retry} />
+      <ResultBreakdown result={result} meta={resultMeta} title={chart.title} subtitle={`★ ${chart.chart.stars}`} onRetry={retry} notes={notes} />
     </Screen>
   );
 }

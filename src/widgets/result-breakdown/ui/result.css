@@ -58,6 +58,14 @@
   font-size: 26px;
   font-weight: 700;
 }
+.result-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
 .result-badge {
   font-family: var(--font-display);
   font-weight: 900;

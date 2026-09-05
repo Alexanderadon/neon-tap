@@ -3,6 +3,7 @@ import { navigate } from '@/shared/lib/router';
 import { audioEngine } from '@/shared/lib/audio';
 import { Button, Screen } from '@/shared/ui';
 import { TrackList } from '@/widgets/track-list';
+import { GoalsPanel } from '@/widgets/goals-panel';
 import './menu.css';
 
 export function MenuPage() {
@@ -23,6 +24,7 @@ export function MenuPage() {
           </Button>
         </nav>
       </header>
+      <GoalsPanel />
       <TrackList />
       <footer className="menu-foot">
         <span>{dict.madeWith}</span>
