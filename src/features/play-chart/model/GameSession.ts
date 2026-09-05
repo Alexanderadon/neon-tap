@@ -1,16 +1,17 @@
 import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES } from '@/shared/config/constants';
-import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
+import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxGem, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
 import { FpsMeter, LowFpsDetector, themeFor } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
-import { countJudgements, parseChartLevel, parseSections, type Section, type SpellKind } from '@/entities/chart';
+import { countJudgements, parseChartLevel, parseSections, type ParsedNote, type Section, type SpellKind } from '@/entities/chart';
 import type { FxMode } from '@/entities/settings';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
+import { pickGems } from './gems';
 import { Renderer, circleY } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -23,6 +24,8 @@ export type SessionEvent =
   | { type: 'life-lost'; hearts: number }
   | { type: 'life-gained'; hearts: number }
   | { type: 'spell'; kind: SpellKind }
+  /** A crystal was collected: its value and the run total so far. */
+  | { type: 'gem'; value: number; total: number }
   | { type: 'lanes'; lanes: number }
   | { type: 'fail' }
   | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
@@ -44,6 +47,10 @@ export interface SessionOptions {
   noFail?: boolean;
   /** Tutorial: no hearts drawn, no heart-loss effects (implies no fail). */
   hideHearts?: boolean;
+  /** Crystals: a few plain taps per run become gems (default on; off in the tutorial). */
+  gems?: boolean;
+  /** Fixed seed for the gem picks (tests / demos); by default every run rolls its own. */
+  gemSeed?: number;
   /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
   fxMode?: FxMode;
   debug: boolean;
@@ -106,6 +113,11 @@ export class GameSession {
   private endTime = 0;
   private resizeObserver: ResizeObserver | null = null;
   private readonly sections: Section[];
+  /** Parsed chart notes (sorted) — the gem picker runs over them on every restart. */
+  private readonly parsed: readonly ParsedNote[];
+  /** Crystals collected this run. */
+  private crystals = 0;
+  private gemAt = -1;
   /** When each section's lane count takes over: as soon as the previous section's last note is gone, but no later than one approach before the section starts. */
   private readonly switchTimes: number[];
   private readonly deltas: number[] = [];
@@ -123,6 +135,7 @@ export class GameSession {
     this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0 });
     const level = opts.chart.chart;
     const parsed = parseChartLevel(level);
+    this.parsed = parsed;
     this.sections = parseSections(level);
     this.notes.load(parsed);
     this.switchTimes = this.sections.map((sec, i) => {
@@ -164,6 +177,16 @@ export class GameSession {
     };
     this.resizeObserver = new ResizeObserver(() => this.renderer.resize());
     this.resizeObserver.observe(opts.canvas);
+  }
+
+  /** New gem layout for this run: a handful of plain taps spread over the song, seeded per run. */
+  private rollGems(): void {
+    if (this.opts.gems === false) {
+      this.notes.setGems([]);
+      return;
+    }
+    const seed = this.opts.gemSeed ?? (Math.random() * 0x100000000) >>> 0;
+    this.notes.setGems(pickGems(this.parsed, seed, this.opts.audioBuffer.duration));
   }
 
   get approachTime(): number {
@@ -220,6 +243,9 @@ export class GameSession {
     this.slowUntil = -1;
     this.slowReleasing = false;
     this.perfectStreak = 0;
+    this.crystals = 0;
+    this.gemAt = -1;
+    this.rollGems();
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
     const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN);
@@ -322,6 +348,13 @@ export class GameSession {
     if (this.perfectStreak > 0 && this.perfectStreak % 25 === 0) this.opts.onEvent({ type: 'perfect-streak', streak: this.perfectStreak });
     if (this.lives.hit() && !this.opts.hideHearts) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
     if ((note.kind === 'slow' || note.kind === 'heart') && !tail) this.castSpell(note.kind, note.lane, note.lanes);
+    if (note.gem > 0 && !tail) {
+      this.crystals += note.gem;
+      this.gemAt = this.lastJudgementAt;
+      this.renderer.gemCollected(note.lane, note.lanes, note.gem);
+      sfxGem(note.gem > 1);
+      this.opts.onEvent({ type: 'gem', value: note.gem, total: this.crystals });
+    }
     const combo = this.scoring.combo;
     if (MILESTONES.includes(combo)) {
       sfxMilestone();
@@ -440,6 +473,8 @@ export class GameSession {
       maxHearts: this.opts.hideHearts ? 0 : MAX_HEARTS,
       heartLostAge: this.heartLostAt < 0 ? Infinity : songTime - this.heartLostAt,
       slowRemaining: slowLeft > 0 ? Math.min(1, slowLeft / SLOW_DURATION) : -1,
+      crystals: this.opts.gems === false ? -1 : this.crystals,
+      gemAge: this.gemAt < 0 ? Infinity : songTime - this.gemAt,
       held: this.isHeld,
       lastJudgement: this.lastJudgement,
       lastJudgementAge: this.lastJudgementAt < 0 ? 1 : songTime - this.lastJudgementAt,
@@ -499,6 +534,7 @@ export class GameSession {
       hearts: this.lives.hearts,
       timeline: this.timeline.toResult(),
       duration: this.opts.audioBuffer.duration,
+      crystals: this.crystals,
     };
     const autoOffsetMs = this.opts.autoOffset && this.hitsSeen >= 60 && Math.abs(this.autoAdjust) >= 0.01 ? Math.round(this.clock.userOffset * 1000) : null;
     this.failed = false;
