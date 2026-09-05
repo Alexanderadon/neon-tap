@@ -74,6 +74,7 @@ export function TrackHero({ trackId, top, onRecords }: Props) {
         {top}
         <div
           className="hero-stars"
+          role="img"
           title={fmt(dict.starsBreakdown, { tracks: state.trackStars, max: state.maxTrackStars, bonus: state.bonus })}
           aria-label={`${dict.menuStarsTotal}: ${state.stars}`}
         >

@@ -48,6 +48,8 @@
   gap: 18px;
   padding: max(14px, var(--safe-top)) var(--hero-xr) 24px var(--hero-x);
   color: #fff;
+  /* Opaque on purpose: the blurred cover sits at 0.85 and the page's fixed grid floor must not show through. */
+  background: var(--c-bg);
 }
 .hero-bg {
   position: absolute;
@@ -113,6 +115,7 @@
   gap: 12px;
 }
 .hero-stars {
+  margin-left: auto; /* stays flush right when the wordmark is hidden (desktop top bar carries it) */
   display: inline-flex;
   align-items: center;
   gap: 6px;
