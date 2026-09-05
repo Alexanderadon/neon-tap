@@ -1,0 +1,371 @@
+/* Caption layer above the canvas. Everything passes pointer events through except the skip button. */
+.tut {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(max(10px, env(safe-area-inset-top)) + 44px);
+  display: flex;
+  justify-content: center;
+  padding: 0 10px;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes tut-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tut-card {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(5, 6, 10, 0.72);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.18), inset 0 0 20px rgba(0, 240, 255, 0.05);
+  border-radius: 14px;
+  padding: 10px 12px 8px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: tut-in 0.22s ease-out both;
+  position: relative;
+  overflow: hidden;
+}
+.tut-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tut-titles {
+  flex: 1;
+  min-width: 0;
+}
+.tut-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(17px, 4.5vw, 22px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-cyan);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+  line-height: 1.1;
+}
+.tut-step {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+.tut-skip {
+  pointer-events: auto;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.tut-text {
+  margin-top: 6px;
+  font-size: clamp(13px, 3.6vw, 15px);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+}
+.tut-hint {
+  margin-top: 4px;
+  font-size: clamp(12px, 3.2vw, 13px);
+  color: var(--c-lime);
+  text-shadow: 0 0 8px rgba(182, 255, 0, 0.4);
+}
+.tut-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  min-height: 20px;
+}
+.tut-dots {
+  display: flex;
+  gap: 5px;
+}
+.tut-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.tut-dot.done {
+  background: rgba(0, 240, 255, 0.55);
+}
+.tut-dot.now {
+  background: var(--c-cyan);
+  box-shadow: 0 0 8px var(--c-cyan);
+}
+@keyframes tut-great {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tut-great {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+  opacity: 0;
+}
+.tut-great.on {
+  animation: tut-great 0.35s ease-out both;
+}
+.tut-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.tut-bar-fill {
+  height: 100%;
+  background: var(--c-cyan);
+  transition: width 0.12s linear;
+}
+
+/* --- icons --- */
+.tut-icon {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.ic-lane {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 1;
+}
+.ic-line {
+  stroke: var(--c-cyan);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ic-note,
+.ic-hold,
+.ic-roll {
+  fill: var(--c-magenta);
+}
+.ic-stripe {
+  stroke: rgba(5, 6, 10, 0.8);
+  stroke-width: 2;
+}
+.ic-finger {
+  fill: #fff;
+  opacity: 0.9;
+}
+.ic-pulse {
+  fill: var(--c-cyan);
+  opacity: 0;
+  transform-origin: 24px 38px;
+  animation: ic-pulse 1.2s ease-out infinite;
+}
+.tut-icon-intro .ic-pulse {
+  transform-origin: 24px 24px;
+}
+.ic-wave {
+  fill: none;
+  stroke: var(--c-magenta);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.ic-count,
+.ic-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 12px;
+  fill: #fff;
+  text-anchor: middle;
+}
+.ic-circle {
+  fill: rgba(255, 43, 214, 0.35);
+  stroke: var(--c-magenta);
+  stroke-width: 2;
+}
+.ic-ring {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  transform-origin: 24px 24px;
+  animation: ic-shrink 1.2s ease-in infinite;
+}
+@keyframes ic-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(27px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(27px);
+    opacity: 0;
+  }
+}
+.ic-fall {
+  animation: ic-fall 1.2s linear infinite;
+}
+@keyframes ic-pulse {
+  0%,
+  70% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  78% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+@keyframes ic-fall-hold {
+  0% {
+    transform: translateY(-30px);
+  }
+  100% {
+    transform: translateY(34px);
+  }
+}
+.ic-fall-hold {
+  animation: ic-fall-hold 2s linear infinite;
+}
+@keyframes ic-hold-press {
+  0%,
+  35% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  40%,
+  95% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+}
+.ic-hold-press {
+  transform-origin: 24px 38px;
+  animation: ic-hold-press 2s linear infinite;
+}
+@keyframes ic-slide-move {
+  0%,
+  20% {
+    transform: translateX(0);
+  }
+  70%,
+  100% {
+    transform: translateX(22px);
+  }
+}
+.ic-slide-move {
+  animation: ic-slide-move 1.6s ease-in-out infinite;
+}
+@keyframes ic-roll-tap {
+  0%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+.ic-roll-tap {
+  transform-origin: 24px 38px;
+  animation: ic-roll-tap 0.33s ease-in-out infinite;
+}
+@keyframes ic-shrink {
+  0% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  85% {
+    transform: scale(0.55);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+}
+@keyframes ic-lanes-fold {
+  0%,
+  35% {
+    opacity: 1;
+    transform: none;
+  }
+  55%,
+  85% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ic-lanes-widen {
+  0%,
+  35% {
+    transform: none;
+  }
+  55%,
+  85% {
+    transform: translateX(var(--dx)) scaleX(1.35);
+  }
+  100% {
+    transform: none;
+  }
+}
+.tut-icon-lanes .ic-lane {
+  transform-origin: 24px 24px;
+  animation: ic-lanes-widen 2.4s ease-in-out infinite;
+}
+.tut-icon-lanes .ic-lane-a {
+  --dx: -1px;
+  transform-origin: 3px 24px;
+}
+.tut-icon-lanes .ic-lane-b {
+  --dx: 3px;
+  transform-origin: 14px 24px;
+}
+.tut-icon-lanes .ic-lane-c {
+  --dx: 7px;
+  transform-origin: 25px 24px;
+}
+.tut-icon-lanes .ic-lane-d {
+  animation: ic-lanes-fold 2.4s ease-in-out infinite;
+  transform-origin: 45px 24px;
+}
+
+@media (max-width: 400px) {
+  .tut-card {
+    padding: 8px 10px 6px;
+  }
+  .tut-icon {
+    width: 40px;
+    height: 40px;
+  }
+}

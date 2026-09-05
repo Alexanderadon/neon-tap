@@ -11,27 +11,45 @@ import { voice, praise } from '@/features/voice-feedback';
 import type { ChartSource } from '@/entities/play-session';
 import './game-canvas.css';
 
+export type GameCanvasMode = 'play' | 'tutorial';
+
 interface Props {
   chart: ChartFile;
   source: ChartSource;
   /** Pre-decoded audio for custom songs. */
   audioBuffer: AudioBuffer | null;
+  /**
+   * `play` (default): hearts, fail, result saved and the result screen opens on finish.
+   * `tutorial`: no hearts / no fail, nothing is saved, `finish` is only reported via `onEvent`.
+   */
+  mode?: GameCanvasMode;
+  /** Mirror of session events for the host page (tutorial captions). */
+  onEvent?: (e: SessionEvent) => void;
+  /** Song time at ~10 Hz (tutorial captions). */
+  onTime?: (songTime: number) => void;
+  /** Called instead of `navigate('menu')` when the player leaves through the pause menu. */
+  onExit?: () => void;
 }
 
 const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
 
 /** Hosts the canvas, owns the GameSession lifecycle and routes session events to voice/save. */
-export function GameCanvas({ chart, source, audioBuffer }: Props) {
+export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [paused, setPaused] = useState(false);
+  // Latest host callbacks without re-creating the session when the parent re-renders.
+  const hostRef = useRef({ onEvent, onTime, onExit });
+  hostRef.current = { onEvent, onTime, onExit };
 
   useEffect(() => {
     let cancelled = false;
     let session: GameSession | null = null;
+    const tutorial = mode === 'tutorial';
 
-    const onEvent = (e: SessionEvent) => {
+    const handleEvent = (e: SessionEvent) => {
+      hostRef.current.onEvent?.(e);
       switch (e.type) {
         case 'start':
           voice.say('poehali', true);
@@ -68,6 +86,7 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
           setPaused(false);
           break;
         case 'finish':
+          if (tutorial) break; // the tutorial page decides what happens next
           if (e.autoOffsetMs !== null) updateSettings({ audioOffsetMs: e.autoOffsetMs });
           saveResult(e.result, source);
           navigate('result');
@@ -87,6 +106,7 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
           voice.preload(),
         ]);
         if (cancelled || !canvasRef.current) return;
+        const noFailFlag = new URLSearchParams(window.location.search).has('nofail');
         session = new GameSession({
           chart,
           audioBuffer: buffer,
@@ -94,16 +114,18 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
           userOffset: settings.audioOffsetMs / 1000,
           touch: isTouchDevice(),
           touchAssist: settings.touchAssist,
-          autoOffset: settings.autoOffset,
-          noFail: new URLSearchParams(window.location.search).has('nofail'),
+          autoOffset: settings.autoOffset && !tutorial,
+          noFail: noFailFlag || tutorial,
+          hideHearts: tutorial,
           debug: settings.debugOverlay,
-          onEvent,
+          onEvent: handleEvent,
+          onTime: tutorial ? (t) => hostRef.current.onTime?.(t) : undefined,
         });
         sessionRef.current = session;
         setStatus('ready');
         session.start();
         // Dev hook for automated checks: `?nofail=1` exposes the session on window.
-        if (new URLSearchParams(window.location.search).has('nofail')) (window as unknown as { __neon: GameSession }).__neon = session;
+        if (noFailFlag) (window as unknown as { __neon: GameSession }).__neon = session;
       } catch (err) {
         console.error(err);
         if (!cancelled) setStatus('error');
@@ -141,7 +163,9 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
       session?.destroy();
       sessionRef.current = null;
     };
-  }, [chart, source, audioBuffer]);
+  }, [chart, source, audioBuffer, mode]);
+
+  const exit = () => (hostRef.current.onExit ? hostRef.current.onExit() : navigate('menu'));
 
   return (
     <div className="game-root">
@@ -150,7 +174,7 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
       {status === 'error' && (
         <div className="game-overlay">
           <p>{dict.customError}</p>
-          <Button onClick={() => navigate('menu')}>{dict.toMenu}</Button>
+          <Button onClick={exit}>{dict.toMenu}</Button>
         </div>
       )}
       {status === 'ready' && (
@@ -183,7 +207,7 @@ export function GameCanvas({ chart, source, audioBuffer }: Props) {
           >
             {dict.restart}
           </Button>
-          <Button variant="ghost" onClick={() => navigate('menu')}>
+          <Button variant="ghost" onClick={exit}>
             {dict.exit}
           </Button>
         </div>
