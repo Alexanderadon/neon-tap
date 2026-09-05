@@ -1,8 +1,8 @@
 import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES } from '@/shared/config/constants';
-import { audioEngine, Clock, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
+import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
-import { FpsMeter } from '@/shared/lib/render';
+import { FpsMeter, themeFor } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type Section, type SpellKind } from '@/entities/chart';
@@ -98,6 +98,10 @@ export class GameSession {
   private autoAdjust = 0;
   private hitsSeen = 0;
   private bassEnv = 0;
+  /** Walks `chart.beats` so the background can pulse on every beat (stronger on downbeats). */
+  private readonly beatCursor: BeatCursor;
+  /** Reused every frame for the spectrum skyline — the only spectrum buffer on the game side. */
+  private readonly bands = new Uint8Array(SPECTRUM_BANDS);
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
@@ -114,12 +118,16 @@ export class GameSession {
     });
     this.scoring = new Scoring(countJudgements(parsed));
     this.endTime = Math.min(opts.audioBuffer.duration, this.notes.lastTime + 1.5);
+    // Per-track look: by genre when the chart carries one, otherwise deterministic from the id.
+    const theme = themeFor((opts.chart as ChartFile & { genre?: string }).genre, opts.chart.id);
     this.renderer = new Renderer(
       opts.canvas,
       opts.touch,
       this.sections.map((s) => s.lanes),
+      theme,
     );
     this.renderer.setLanes(this.sections[0].lanes, true);
+    this.beatCursor = new BeatCursor(opts.chart.beats, opts.chart.bpm, opts.chart.offset, opts.chart.duration);
     this.input = new Input({
       audioNow: () => audioEngine.now(),
       laneForKey: (code) => (code === CIRCLE_KEY ? CIRCLE_BUCKET : (KEY_LAYOUTS[this.renderer.lanes]?.[code] ?? -1)),
@@ -193,6 +201,7 @@ export class GameSession {
     this.slowUntil = -1;
     this.slowReleasing = false;
     this.perfectStreak = 0;
+    this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
     const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN);
     this.clock.start(startTime);
@@ -368,12 +377,22 @@ export class GameSession {
     this.bassEnv = Math.max(bass, this.bassEnv - dt * 6);
     const pulse = Math.max(0, Math.min(1, (this.bassEnv - 0.45) / 0.4));
 
+    // Music-synchronised background (skipped entirely on the low FX level): beat pulses from the
+    // tracked beats and the spectrum skyline from the analyser, both into reused buffers.
+    if (this.renderer.fxLevel === 'full' && !this.paused && !this.finished) {
+      const beat = this.beatCursor.poll(songTime);
+      if (beat > 0) this.renderer.beatFeedback(beat);
+      audioEngine.spectrum(this.bands);
+      this.renderer.feedSpectrum(this.bands, dt);
+    }
+
     const s = this.scoring;
     const slowLeft = this.slowUntil > 0 ? this.slowUntil - songTime : 0;
     this.renderer.draw(this.notes, {
       songTime,
       approachTime: this.approachTime,
       pulse,
+      beatPhase: this.beatCursor.phase(songTime),
       combo: s.combo,
       comboAge: this.comboGrewAt < 0 ? Infinity : songTime - this.comboGrewAt,
       score: s.score,

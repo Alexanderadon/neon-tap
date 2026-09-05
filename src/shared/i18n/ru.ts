@@ -123,6 +123,8 @@ export const ru = {
   ready: 'Готов',
   bpm: 'BPM',
   unlockCustom: 'Открывается сразу — это главная фича проекта',
+  // --- feel ---
+  themeLabel: 'Визуальная тема',
 } as const;
 
 export type Dictionary = typeof ru;

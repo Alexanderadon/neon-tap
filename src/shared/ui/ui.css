@@ -40,6 +40,48 @@
   animation: glitch-in 0.2s steps(6, end) both;
 }
 
+/*
+ * Route change: the router remounts the page with a new key, so the screen replays this
+ * 250 ms enter — a fade + rise with the neon glitch folded into the first frames.
+ */
+@keyframes screen-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) translateX(-6px) skewX(4deg) scale(0.985);
+    filter: hue-rotate(60deg) saturate(3);
+    clip-path: inset(30% 0 40% 0);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(4px) translateX(4px) skewX(-2deg);
+    clip-path: inset(5% 0 60% 0);
+  }
+  50% {
+    transform: translateY(1px) translateX(-2px);
+    filter: none;
+    clip-path: inset(50% 0 0 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    clip-path: inset(0);
+  }
+}
+.screen-enter {
+  animation: screen-enter 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter,
+  .glitch-in {
+    animation: none;
+  }
+  .btn {
+    transition: none;
+  }
+}
+
 .btn {
   font-family: var(--font-display);
   font-weight: 700;
