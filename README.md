@@ -61,10 +61,11 @@ Feature-Sliced Design: `app → pages → widgets → features → entities → 
 src/
 ├── app/         роутер экранов
 ├── pages/       menu · game · result · calibration · settings · custom
-├── widgets/     track-list · game-canvas · result-breakdown · song-drop-zone · audio-gate · calibration-meter · settings-panel
-├── features/    play-chart · generate-chart · calibrate-offset · save-result · voice-feedback
-├── entities/    track · chart · score · progress · settings · play-session
+├── widgets/     track-list · game-canvas · result-breakdown · history-panel · online-leaderboard · song-drop-zone · audio-gate · calibration-meter · settings-panel
+├── features/    play-chart · generate-chart · calibrate-offset · save-result · submit-score · voice-feedback
+├── entities/    track · chart · score · progress · history · settings · play-session
 └── shared/lib/  audio · analysis · render · input · store · router
+api/             scores.ts — Vercel serverless-функция онлайн-таблицы (Node, без зависимостей); api/_lib — чистые хелперы с тестами
 ```
 
 ## Запуск
@@ -78,6 +79,10 @@ npm run build
 ```
 
 Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses` — см. `CLAUDE.md`. Деплой: `bash scripts/deploy-fresh.sh <имя-проекта>` (локальная сборка → новый проект Vercel → перенос домена).
+
+### Рекорды и онлайн-таблица
+
+История попыток (счёт, точность, ранг, тренд) хранится локально в `localStorage` и открывается по ссылке «Рекорды» на карточке трека. Онлайн-таблица — опциональна: `api/scores.ts` хранит топ-100 на трек в Upstash Redis через REST API. Чтобы включить, задайте в проекте Vercel переменные `UPSTASH_REDIS_REST_URL` и `UPSTASH_REDIS_REST_TOKEN` (Upstash → база → REST API). Без них функция отвечает `{ enabled: false }`, и секция «Онлайн-рекорды» просто не показывается. Ник спрашивается один раз на экране результата и меняется в настройках.
 
 ## Лицензии на музыку
 

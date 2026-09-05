@@ -20,9 +20,22 @@ export interface Settings {
   /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
   calibrationVersion: number;
   debugOverlay: boolean;
+  /** Name shown on the online leaderboard; '' = not asked yet. */
+  nickname: string;
 }
 
 const KEY = 'neon-tap:settings';
+
+export const NICKNAME_MAX = 16;
+
+/** Trim, collapse whitespace, drop control characters and angle brackets, cap the length. */
+export function sanitizeNickname(raw: string): string {
+  return raw
+    .replace(/[\p{Cc}<>]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, NICKNAME_MAX);
+}
 
 const DEFAULTS: Settings = {
   version: 1,
@@ -36,6 +49,7 @@ const DEFAULTS: Settings = {
   calibrated: false,
   calibrationVersion: 0,
   debugOverlay: false,
+  nickname: '',
 };
 
 const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
@@ -60,6 +74,7 @@ function sanitize(s: Settings): Settings {
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),
     voice: VOICES.includes(s.voice) ? s.voice : DEFAULTS.voice,
+    nickname: typeof s.nickname === 'string' ? sanitizeNickname(s.nickname) : '',
   };
 }
 
