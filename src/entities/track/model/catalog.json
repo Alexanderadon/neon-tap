@@ -95,25 +95,6 @@
     }
   },
   {
-    "id": "the-9th-circle",
-    "title": "The 9th Circle",
-    "artist": "joth",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/the-9th-circle",
-    "genre": "techno",
-    "bpm": 120.1,
-    "duration": 150.05,
-    "stars": 4,
-    "notes": 202,
-    "features": {
-      "circles": 16,
-      "rolls": 0,
-      "slides": 10,
-      "holds": 39,
-      "laneChanges": 4
-    }
-  },
-  {
     "id": "apparatus-overlord",
     "title": "Apparatus Overlord",
     "artist": "vitalezzz",

@@ -5,9 +5,9 @@
 
 ## Карта — `public/charts/tutorial.json`
 
-Ручная карта `id: tutorial`, `title: Обучение`, ★1 на сетке долей «The 9th Circle» (CC0, 120 BPM):
+Ручная карта `id: tutorial`, `title: Обучение`, ★1 на сетке долей «Apparatus Overlord» (CC0, 120 BPM):
 bpm / offset / beats / audio / duration / license / sourceUrl / artist скопированы из
-`the-9th-circle.json`. Каждая нота лежит ровно на доле (16-е — на четвертях доли).
+`apparatus-overlord.json`. Каждая нота лежит ровно на доле (16-е — на четвертях доли).
 
 | Доли | Шаг | Ноты |
 |---|---|---|
