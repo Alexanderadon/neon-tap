@@ -543,7 +543,7 @@
   border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 .reel-seg[aria-checked='true'] {
-  color: #05060a;
+  color: var(--c-bg);
   background: var(--c-cyan);
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
 }
@@ -633,7 +633,7 @@
   padding: 3px 8px 3px 7px;
   border-radius: 0 9px 0 8px;
   background: #ffd700;
-  color: #05060a;
+  color: var(--c-bg);
   font-weight: 700;
 }
 .reel-card-text {
@@ -704,7 +704,7 @@
   padding: 6px 10px 6px 9px;
   border-radius: 999px;
   background: var(--tone);
-  color: #05060a;
+  color: var(--c-bg);
   font-weight: 700;
   box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 80%, transparent);
   animation: go-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
