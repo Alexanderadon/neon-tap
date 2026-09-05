@@ -40,9 +40,16 @@ export interface SessionOptions {
   autoOffset: boolean;
   /** Dev/demo flag (`?nofail=1`): hearts still drain but the run never fails. */
   noFail?: boolean;
+  /** Tutorial: no hearts drawn, no heart-loss effects (implies no fail). */
+  hideHearts?: boolean;
   debug: boolean;
   onEvent: (e: SessionEvent) => void;
+  /** Song-time reporter for a host overlay, called at ~10 Hz from the frame loop. */
+  onTime?: (songTime: number) => void;
 }
+
+/** Minimum interval between `onTime` reports, milliseconds. */
+const TIME_REPORT_MS = 100;
 
 const LEAD_IN = 2.0;
 const MILESTONES = [50, 100, 250, 500, 1000];
@@ -98,6 +105,7 @@ export class GameSession {
   private autoAdjust = 0;
   private hitsSeen = 0;
   private bassEnv = 0;
+  private lastTimeReport = -Infinity;
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
@@ -274,11 +282,13 @@ export class GameSession {
         this.opts.onEvent({ type: 'combo-break', combo: prevCombo });
       }
       const dead = this.lives.miss();
-      this.heartLostAt = this.lastJudgementAt;
-      this.renderer.heartLost(this.lives.hearts);
-      this.opts.onEvent({ type: 'life-lost', hearts: this.lives.hearts });
+      if (!this.opts.hideHearts) {
+        this.heartLostAt = this.lastJudgementAt;
+        this.renderer.heartLost(this.lives.hearts);
+        this.opts.onEvent({ type: 'life-lost', hearts: this.lives.hearts });
+      }
       this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
-      if (dead && !this.opts.noFail) this.fail();
+      if (dead && !this.opts.noFail && !this.opts.hideHearts) this.fail();
       return;
     }
 
@@ -289,7 +299,7 @@ export class GameSession {
     this.comboGrewAt = this.lastJudgementAt;
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
     if (this.perfectStreak > 0 && this.perfectStreak % 25 === 0) this.opts.onEvent({ type: 'perfect-streak', streak: this.perfectStreak });
-    if (this.lives.hit()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
+    if (this.lives.hit() && !this.opts.hideHearts) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
     if ((note.kind === 'slow' || note.kind === 'heart') && !tail) this.castSpell(note.kind, note.lane, note.lanes);
     const combo = this.scoring.combo;
     if (MILESTONES.includes(combo)) {
@@ -361,6 +371,11 @@ export class GameSession {
       this.renderer.update(dt);
       if (songTime >= this.endTime) this.finish();
     }
+    // Host overlay (tutorial captions): song time at ~10 Hz, no per-frame work otherwise.
+    if (this.opts.onTime && now - this.lastTimeReport >= TIME_REPORT_MS) {
+      this.lastTimeReport = now;
+      this.opts.onTime(songTime);
+    }
 
     // Audio-reactive pulse: bass envelope with instant attack and quick decay, gated so sustained
     // bass does not glow permanently — only hits above the running floor light up.
@@ -380,7 +395,7 @@ export class GameSession {
       accuracy: s.accuracy,
       progress: Math.max(0, Math.min(1, songTime / this.endTime)),
       hearts: this.lives.hearts,
-      maxHearts: MAX_HEARTS,
+      maxHearts: this.opts.hideHearts ? 0 : MAX_HEARTS,
       heartLostAge: this.heartLostAt < 0 ? Infinity : songTime - this.heartLostAt,
       slowRemaining: slowLeft > 0 ? Math.min(1, slowLeft / SLOW_DURATION) : -1,
       held: this.isHeld,
