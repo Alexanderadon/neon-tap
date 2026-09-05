@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { dict, fmt } from '@/shared/i18n';
+import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { unlockAllActive } from '@/shared/config/devFlags';
 import { PALETTE_SIZE, themeFor } from '@/shared/lib/render';
-import { Stars } from '@/shared/ui';
-import { CATALOG, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
+import { CrystalIcon, Stars } from '@/shared/ui';
+import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
 import {
   bonusStars,
   dailyTrackId,
@@ -12,6 +12,7 @@ import {
   localDateString,
   starsForTrack,
   totalStars,
+  trackPrice,
   unlockStates,
   useProgress,
   type BestResult,
@@ -45,7 +46,7 @@ export function TrackList({ onRecords }: Props = {}) {
   const dailyId = dailyTrackId(today, TRACK_IDS);
   const daily = dailyId ? findTrack(dailyId) : undefined;
   const dailyDone = isDailyDone(save.daily, today);
-  const unlocks = unlockStates(TRACK_IDS, { stars, dailyId, unlockAll: unlockAllActive() });
+  const unlocks = unlockStates(TRACK_IDS, { stars, dailyId, unlockAll: unlockAllActive(), purchased: save.purchased, premium: PREMIUM_IDS });
 
   return (
     <div className="tracklist">
@@ -59,7 +60,17 @@ export function TrackList({ onRecords }: Props = {}) {
       <div className="tracklist-grid">
         {daily && <TrackCard track={daily} best={save.tracks[daily.id]} daily={dailyDone ? 'done' : 'open'} streak={save.daily.streak} onRecords={onRecords} />}
         {CATALOG.map((t, i) => (
-          <TrackCard key={t.id} index={i + 1} track={t} best={save.tracks[t.id]} need={unlocks[i].unlocked ? 0 : unlocks[i].need} onRecords={onRecords} />
+          <TrackCard
+            key={t.id}
+            index={i + 1}
+            track={t}
+            best={save.tracks[t.id]}
+            locked={!unlocks[i].unlocked}
+            need={unlocks[i].need}
+            premium={unlocks[i].premium}
+            purchased={unlocks[i].purchased}
+            onRecords={onRecords}
+          />
         ))}
       </div>
     </div>
@@ -71,19 +82,25 @@ interface CardProps {
   best: BestResult | undefined;
   /** Position in the catalog (hidden on the daily card). */
   index?: number;
-  /** Stars still required to open the track; 0 = playable. */
+  /** Closed: not open by stars, not bought, not today's daily track. */
+  locked?: boolean;
+  /** Stars required to open the track by progression (meaningless for premium). */
   need?: number;
+  /** Premium: shop-only, never opens by stars. */
+  premium?: boolean;
+  /** Bought in the shop. */
+  purchased?: boolean;
   /** Pinned daily-track card and whether today's bonus is already claimed. */
   daily?: 'open' | 'done';
   streak?: number;
   onRecords?: (track: TrackRef) => void;
 }
 
-function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords }: CardProps) {
+function TrackCard({ index, track, best, locked = false, need = 0, premium = false, purchased = false, daily, streak = 0, onRecords }: CardProps) {
   const [busy, setBusy] = useState(false);
   const plays = useHistory((h) => playsOf(h, track.id));
   const earned = starsForTrack(best);
-  const locked = need > 0;
+  const price = trackPrice(track.stars, premium);
   const f = track.features;
   const tags = [
     f.laneChanges > 0 && dict.tagLanes,
@@ -108,7 +125,7 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
   // Visual theme of the song (genre when the catalog knows it, otherwise deterministic by id).
   const theme = themeFor(track.genre, track.id);
 
-  const cls = ['tcard', daily && 'tcard-daily', locked && 'tcard-locked'].filter(Boolean).join(' ');
+  const cls = ['tcard', daily && 'tcard-daily', locked && 'tcard-locked', locked && premium && 'tcard-premium'].filter(Boolean).join(' ');
   return (
     <article
       className={cls}
@@ -116,7 +133,7 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
       aria-disabled={locked || undefined}
     >
       <div className="tcard-num" aria-hidden="true">
-        {daily ? '☀' : locked ? '🔒' : String(index).padStart(2, '0')}
+        {daily ? '☀' : locked && premium ? <CrystalIcon size={18} /> : locked ? '🔒' : String(index).padStart(2, '0')}
       </div>
       <TrackCover id={track.id} genre={track.genre} title={track.title} className="tcard-cover" />
       <div className="tcard-body">
@@ -127,7 +144,14 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
             {daily === 'done' && streak >= 2 && <span className="tcard-daily-hint">{fmt(dict.dailyStreak, { n: streak })}</span>}
           </div>
         )}
-        <div className="tcard-title">{track.title}</div>
+        <div className="tcard-title">
+          {track.title}
+          {purchased && (
+            <span className="tcard-bought" title={dict.purchasedBadge} aria-label={dict.purchasedBadge}>
+              <CrystalIcon size={11} />
+            </span>
+          )}
+        </div>
         <div className="tcard-genre">
           {dict.genres[track.genre]} · {dict.tempo} {Math.round(track.bpm)} {dict.bpm}
         </div>
@@ -156,11 +180,24 @@ function TrackCard({ index, track, best, need = 0, daily, streak = 0, onRecords 
         <div className="tcard-stars">★ {track.stars}</div>
         <Stars value={earned} />
         {best && <div className={`tcard-rank rank-${best.rank}`}>{best.rank}</div>}
-        {locked ? (
+        {locked && premium ? (
+          <>
+            <div className="tcard-price" aria-label={`${price} ${plural(price, dict.crystalsNoun)}`}>
+              <CrystalIcon size={13} />
+              <span>{price}</span>
+            </div>
+            <button className="tcard-play tcard-shop" onClick={() => navigate('shop')}>
+              {dict.toShop}
+            </button>
+          </>
+        ) : locked ? (
           <>
             <div className="tcard-need">{fmt(dict.unlockNeed, { n: need })}</div>
             <button className="tcard-play" disabled>
               {dict.locked}
+            </button>
+            <button type="button" className="tcard-shoplink" onClick={() => navigate('shop')}>
+              <CrystalIcon size={11} /> {price} · {dict.toShop}
             </button>
           </>
         ) : (
