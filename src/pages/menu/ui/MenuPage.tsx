@@ -6,6 +6,7 @@ import { Button, Screen } from '@/shared/ui';
 import { TrackList, type TrackRef } from '@/widgets/track-list';
 import { GoalsPanel } from '@/widgets/goals-panel';
 import { HistoryModal } from '@/widgets/history-panel';
+import { WalletBadge } from '@/widgets/wallet-badge';
 import './menu.css';
 
 export function MenuPage() {
@@ -28,9 +29,13 @@ export function MenuPage() {
           <Button variant="ghost" onClick={() => navigate('tutorial')}>
             {dict.tutorial}
           </Button>
+          <Button variant="ghost" onClick={() => navigate('shop')}>
+            {dict.shop}
+          </Button>
           <Button variant="ghost" onClick={() => navigate('settings')}>
             {dict.settings}
           </Button>
+          <WalletBadge />
         </nav>
       </header>
       <GoalsPanel />
