@@ -31,12 +31,31 @@ export interface ChartLevel {
   sections?: SectionTuple[];
 }
 
+/** Music genres of the built-in catalog — drive the cover art and (optionally) visual themes. */
+export const GENRES = [
+  'synthwave',
+  'chiptune',
+  'lofi',
+  'rock',
+  'orchestral',
+  'jazz',
+  'dnb',
+  'techno',
+  'ambient',
+  'acoustic',
+  'world',
+  'electronic',
+] as const;
+export type Genre = (typeof GENRES)[number];
+
 export interface ChartFile {
   id: string;
   title: string;
   artist: string;
   license: string;
   sourceUrl: string;
+  /** Genre tag from the track registry; absent for user-supplied songs. */
+  genre?: Genre;
   audio: string;
   bpm: number;
   /** Seconds to the first downbeat. */
