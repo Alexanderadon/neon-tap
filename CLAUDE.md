@@ -42,7 +42,18 @@ npm run assets:sfx       # assets-src/sfx-raw (паки Kenney) → public/sfx �
 npm run assets:voice     # нейро-TTS (msedge-tts) → public/voice/<dmitry|svetlana>; --force для перегенерации
 npm run assets:charts    # public/music → public/charts + catalog.json (тот же пайплайн, что в браузере)
 npm run assets:licenses  # tracks.json + sfx.json → public/music/LICENSES.md
+npm run assets:icons     # PNG-иконки 192/512/maskable/apple-touch из public/icons/icon.svg-дизайна (чистый Node; --force для перезаписи)
 ```
+
+## PWA
+
+`public/sw.js` — рукописный service worker без библиотек; список оболочки и хеш сборки подставляет
+`scripts/build-sw.ts` (шаг `npm run build` после `vite build`, плейсхолдеры `__NEON_BUILD__` /
+`__NEON_PRECACHE__`). Медиа (`/music`, `/charts`, `/sfx`, `/voice`, `/icons`) — cache-first с лимитом 200 МБ.
+Регистрация только в production (`app/main.tsx`), в dev воркера нет. Новая версия ждёт нажатия в тосте
+«Доступно обновление» (`widgets/update-toast`, логика — `shared/lib/pwa/updateState.ts`). После деплоя
+проверять `/sw.js` с `Cache-Control: no-cache` (`vercel.json`). Путь в Google Play (TWA / Bubblewrap,
+`assetlinks.json`, политика конфиденциальности `public/privacy.html`) — `docs/android-app.md`.
 
 ## Деплой
 
