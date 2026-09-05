@@ -60,9 +60,9 @@ Feature-Sliced Design: `app → pages → widgets → features → entities → 
 ```
 src/
 ├── app/         роутер экранов
-├── pages/       menu · game · result · calibration · settings · custom
-├── widgets/     track-list · goals-panel · game-canvas · result-breakdown · song-drop-zone · audio-gate · calibration-meter · settings-panel
-├── features/    play-chart · generate-chart · calibrate-offset · save-result · track-progress · voice-feedback
+├── pages/       menu · game · result · calibration · settings · custom · tutorial
+├── widgets/     track-list · goals-panel · game-canvas · tutorial-overlay · result-breakdown · song-drop-zone · audio-gate · calibration-meter · settings-panel
+├── features/    play-chart · generate-chart · calibrate-offset · save-result · track-progress · voice-feedback · tutorial
 ├── entities/    track · chart · score · progress · settings · play-session
 └── shared/lib/  audio · analysis · render · input · store · router
 ```
