@@ -45,6 +45,15 @@ export const GENRES = [
   'acoustic',
   'world',
   'electronic',
+  // --- tracks2 ---
+  'trance',
+  'house',
+  'hardstyle',
+  'hardcore',
+  'breakbeat',
+  'eurobeat',
+  'synthpop',
+  'metal',
 ] as const;
 export type Genre = (typeof GENRES)[number];
 
@@ -56,6 +65,8 @@ export interface ChartFile {
   sourceUrl: string;
   /** Genre tag from the track registry; absent for user-supplied songs. */
   genre?: Genre;
+  /** Premium track — sold in the shop for crystals; absent / false for the free catalog and user songs. */
+  premium?: boolean;
   audio: string;
   bpm: number;
   /** Seconds to the first downbeat. */

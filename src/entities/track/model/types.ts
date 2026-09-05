@@ -8,6 +8,8 @@ export interface TrackMeta {
   license: string;
   sourceUrl: string;
   genre: Genre;
+  /** Premium track — sold in the shop for crystals; absent for the free catalog. */
+  premium?: boolean;
   bpm: number;
   duration: number;
   /** Difficulty of the song's chart, 1–10. */
