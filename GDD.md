@@ -97,6 +97,10 @@ Pixabay требует логин для скачивания и не отдаё
 
 Safe-area через `env(safe-area-inset-*)` в CSS-токенах и HUD; тач-зоны во всю ширину с подсветкой нажатой; мультитач — `PointerLanes` (pointercancel = pointerup); подсказка «поверни телефон» с паузой в ландшафте на коротком экране; экономный режим `fxMode` (авто: FPS < 45 три секунды → `low`, один раз); PWA-манифест и иконки. Подробности и чек-лист реального устройства — `docs/mobile-checklist.md`.
 
+### Приложение (PWA)
+
+Service worker `public/sw.js` без библиотек: оболочка прекешируется (список и хеш сборки подставляет `scripts/build-sw.ts`), `/music`, `/charts`, `/sfx`, `/voice`, `/icons` — cache-first с лимитом 200 МБ и вытеснением самых старых записей, `index.html` — network-first. Новая версия ждёт: тост «Доступно обновление — обновить» (`widgets/update-toast`, чистый редьюсер `shared/lib/pwa/updateState.ts`) → `SKIP_WAITING` → `controllerchange` → перезагрузка; во время игры тост не показывается. Баннер «Установить приложение» (`widgets/install-banner`): на Chromium повторяет перехваченный `beforeinstallprompt`, на iOS Safari объясняет «Поделиться → На экран „Домой“»; «Не сейчас» помнится 30 дней, в standalone баннер скрыт. Установленное приложение: тёмный сплэш с логотипом в `index.html` до первого рендера React, запрет зума и жестов (`installStandaloneGuards`), пауза при уходе в фон с живым AudioContext. Иконки PNG рендерятся процедурно и кодируются собственным PNG-энкодером (`npm run assets:icons`). Путь в Google Play — TWA (`docs/android-app.md`, `public/.well-known/assetlinks.json`, `public/privacy.html`).
+
 ### Ранги
 
 | Точность | Ранг |

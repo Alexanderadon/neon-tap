@@ -60,6 +60,7 @@ AudioBuffer → моно 22 050 Гц → STFT (Hann 1024, hop 512)
 - **Рекорды** — история попыток с спарклайном точности на каждой карточке («Рекорды»), опциональная онлайн-таблица (см. ниже).
 - **Экран результата** — таймлайн судейств пишется в типизированные массивы прямо в игровом цикле, из него: полоса «где промахи» по всей песне, график точности/комбо, лучшая серия и слабое место, **повтор лучшего момента** (мини-поле на canvas) и карточка 1080×1350 для «Поделиться» / копирования (`entities/score/lib/resultStats`, `widgets/result-breakdown`).
 - **Мобильная версия** — safe-area (челка и home-индикатор), тач-зоны с подсветкой пальца, мультитач через `PointerLanes`, подсказка «поверни телефон» с паузой, **экономный режим** (авто: FPS < 45 три секунды → меньше частиц и фоновых эффектов), PWA-манифест и иконки. Чек-лист — `docs/mobile-checklist.md`.
+- **Приложение** — рукописный service worker без библиотек (`public/sw.js`): оболочка прекешируется списком, который `scripts/build-sw.ts` подставляет после сборки, музыка/карты/звуки кешируются при первом использовании с лимитом 200 МБ — сыгранные треки работают офлайн; тост «Доступно обновление» при новой версии; баннер «Установить приложение» (Android/десктоп — системный диалог, iOS — подсказка «Поделиться → На экран „Домой“»); тёмный сплэш до первого кадра, без зума и жестов в установленном виде. PNG-иконки генерируются собственным PNG-кодировщиком на Node (`npm run assets:icons`). Публикация в Google Play через Trusted Web Activity — `docs/android-app.md`, политика конфиденциальности — `/privacy.html`.
 - **Контент** — 31 трек в 12 жанрах, жанр в реестре и в карте, **процедурные обложки** (SVG из хэша id + палитра/мотив жанра, `entities/track/ui/TrackCover`).
 - **Ощущение** — визуальная тема на трек (по жанру или детерминированно по id: палитра полос, акцент, мотив фона), фон синхронизирован с музыкой (пульс на долях из карты + спектр из AnalyserNode, один read на кадр), анимированное меню и карточки.
 
@@ -71,10 +72,11 @@ Feature-Sliced Design: `app → pages → widgets → features → entities → 
 src/
 ├── app/         роутер экранов
 ├── pages/       menu · game · result · calibration · settings · custom · tutorial
-├── widgets/     track-list · goals-panel · game-canvas · tutorial-overlay · result-breakdown · history-panel · online-leaderboard · song-drop-zone · audio-gate · calibration-meter · settings-panel
+├── widgets/     track-list · goals-panel · game-canvas · tutorial-overlay · result-breakdown · history-panel · online-leaderboard · song-drop-zone · audio-gate · calibration-meter · settings-panel · install-banner · update-toast
 ├── features/    play-chart · generate-chart · calibrate-offset · save-result · submit-score · track-progress · voice-feedback · tutorial
 ├── entities/    track · chart · score · progress · history · settings · play-session
-└── shared/lib/  audio · analysis · render · input · store · router
+└── shared/lib/  audio · analysis · render · input · store · router · pwa
+public/sw.js     service worker (оболочка + кеш медиа), список подставляет scripts/build-sw.ts
 api/             scores.ts — Vercel serverless-функция онлайн-таблицы (Node, без зависимостей); api/_lib — чистые хелперы с тестами
 ```
 
@@ -105,4 +107,5 @@ npm run build
 - [GDD.md](GDD.md) — дизайн-документ: механики удержания, референсы, прогрессия, формат карт, пайплайн анализа
 - [docs/plans/](docs/plans/) — план по фазам
 - [docs/mobile-checklist.md](docs/mobile-checklist.md) — что проверено в эмуляции и что осталось на реальном устройстве
+- [docs/android-app.md](docs/android-app.md) — публикация в Google Play: Trusted Web Activity (Bubblewrap), assetlinks, подпись, листинг; альтернатива — Capacitor
 - [CLAUDE.md](CLAUDE.md) — правила проекта
