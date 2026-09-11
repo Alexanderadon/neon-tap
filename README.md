@@ -90,7 +90,7 @@ npm run lint       # eslint + FSD check
 npm run build
 ```
 
-Asset pipeline (only needed to rebuild content): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses` — see `CLAUDE.md`. Deploy: `bash scripts/deploy-fresh.sh <project-name>` (local build → new Vercel project → domain transfer).
+Asset pipeline (only needed to rebuild content): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses`. Deploy: `bash scripts/deploy-fresh.sh <project-name>` (local build → new Vercel project → domain transfer).
 
 ### Records and online leaderboard
 
@@ -107,7 +107,6 @@ User files for "Custom music" are processed in the browser and never uploaded an
 - [GDD.md](GDD.md) — game design document: retention mechanics, references, progression, chart format, analysis pipeline
 - [docs/plans/](docs/plans/) — phase-by-phase plan
 - [docs/mobile-checklist.md](docs/mobile-checklist.md) — what was verified in emulation and what remains for a real device
-- [CLAUDE.md](CLAUDE.md) — project rules
 
 ## License
 
