@@ -90,7 +90,7 @@ npm run lint       # eslint + проверка FSD
 npm run build
 ```
 
-Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses` — см. `CLAUDE.md`. Деплой: `bash scripts/deploy-fresh.sh <имя-проекта>` (локальная сборка → новый проект Vercel → перенос домена).
+Ассет-пайплайн (нужен только для пересборки контента): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses`. Деплой: `bash scripts/deploy-fresh.sh <имя-проекта>` (локальная сборка → новый проект Vercel → перенос домена).
 
 ### Рекорды и онлайн-таблица
 
@@ -107,7 +107,6 @@ npm run build
 - [GDD.md](GDD.md) — дизайн-документ: механики удержания, референсы, прогрессия, формат карт, пайплайн анализа
 - [docs/plans/](docs/plans/) — план по фазам
 - [docs/mobile-checklist.md](docs/mobile-checklist.md) — что проверено в эмуляции и что осталось на реальном устройстве
-- [CLAUDE.md](CLAUDE.md) — правила проекта
 
 ## Лицензия
 
