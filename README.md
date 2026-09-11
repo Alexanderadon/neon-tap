@@ -62,7 +62,7 @@ Audio output latency: desktop 20–60 ms, Android 80–200 ms, Bluetooth up to 3
 - **Records** — an attempt history with an accuracy sparkline on every card ("Records"), an optional online leaderboard (see below).
 - **Result screen** — the judgement timeline is written into typed arrays directly in the game loop; from it: a "where the misses are" strip across the whole song, an accuracy/combo graph, best streak and weakest spot, a **replay of the best moment** (a mini playfield on canvas) and a 1080×1350 card for "Share" / copy (`entities/score/lib/resultStats`, `widgets/result-breakdown`).
 - **Mobile** — safe-area (notch and home indicator), touch zones with finger highlight, multitouch via `PointerLanes`, a "rotate your phone" hint with pause, **economy mode** (automatic: FPS < 45 for three seconds → fewer particles and background effects), PWA manifest and icons. Checklist — `docs/mobile-checklist.md`.
-- **Content** — 31 tracks in 12 genres, genre in the registry and in the chart, **procedural covers** (SVG from the id hash + genre palette/motif, `entities/track/ui/TrackCover`).
+- **Content** — 30 tracks in 12 genres, genre in the registry and in the chart, **procedural covers** (SVG from the id hash + genre palette/motif, `entities/track/ui/TrackCover`).
 - **Feel** — a visual theme per track (by genre or deterministically by id: lane palette, accent, background motif), background synced to the music (pulse on beats from the chart + spectrum from an AnalyserNode, one read per frame), animated menu and cards.
 
 ## Architecture
@@ -98,7 +98,7 @@ The attempt history (score, accuracy, rank, trend) is stored locally in `localSt
 
 ## Music licenses
 
-All 31 built-in tracks (synthwave, techno, chiptune, lo-fi, rock, orchestral, jazz-funk, drum & bass, ambient, acoustic, ethnic) are **CC0 1.0** from OpenGameArt.org; authors and links are in [`public/music/LICENSES.md`](public/music/LICENSES.md). Sound effects are CC0 samples from Kenney packs (note hits are round-robin from 5 variations to avoid a "machine gun" effect). Voice-over uses neural ru-RU Dmitry / Svetlana voices, selectable in settings. Source registries are `assets-src/tracks.json` and `assets-src/sfx.json`; both the files and the license report are generated from them by scripts.
+All 30 built-in tracks (synthwave, techno, chiptune, lo-fi, rock, orchestral, jazz-funk, drum & bass, ambient, acoustic, ethnic) are **CC0 1.0** from OpenGameArt.org; authors and links are in [`public/music/LICENSES.md`](public/music/LICENSES.md). Sound effects are CC0 samples from Kenney packs (note hits are round-robin from 5 variations to avoid a "machine gun" effect). Voice-over uses neural ru-RU Dmitry / Svetlana voices, selectable in settings. Source registries are `assets-src/tracks.json` and `assets-src/sfx.json`; both the files and the license report are generated from them by scripts.
 
 User files for "Custom music" are processed in the browser and never uploaded anywhere.
 
