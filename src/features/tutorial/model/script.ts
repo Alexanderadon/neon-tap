@@ -34,7 +34,6 @@ export interface TutorialStep {
   /** Song time (seconds) when the next caption takes over. */
   to: number;
   title: string;
-  text: string;
   /** Keyboard hint (desktop). */
   hintDesktop: string;
   /** Finger hint (phones). */
@@ -131,7 +130,6 @@ export function buildScript(beats: readonly number[]): TutorialStep[] {
       from: beatTime(beats, p.fromBeat),
       to: beatTime(beats, p.toBeat),
       title: fmt(copy.title, params),
-      text: fmt(copy.text, params),
       hintDesktop: fmt(copy.desktop, params),
       hintTouch: fmt(copy.touch, params),
     };

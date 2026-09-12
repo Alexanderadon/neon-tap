@@ -1,40 +1,35 @@
 .shop {
   gap: 16px;
 }
+/* Sticky top bar: back arrow · title · balance — reachable however far the list is scrolled. */
 .shop-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   width: 100%;
   max-width: 760px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
   gap: 10px;
-  padding-top: 8px;
+  padding: 6px 0 10px;
+  background: linear-gradient(to bottom, #05060a 70%, rgba(5, 6, 10, 0));
 }
-.shop-head-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.shop-head-row .page-title {
+.shop-title {
   text-align: left;
+  margin: 0;
 }
-.shop-balance {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.shop-back {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 12, 20, 0.85);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
-.shop-balance-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.5);
-}
-.shop-intro {
-  max-width: none;
-  text-align: left;
-  font-size: 13px;
-}
-.shop-foot {
-  padding: 8px 0 16px;
+.shop-back:active {
+  transform: scale(0.94);
 }

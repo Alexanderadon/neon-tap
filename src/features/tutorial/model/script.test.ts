@@ -39,9 +39,9 @@ describe('tutorial script', () => {
     }
     for (const s of script) {
       expect(s.title.length).toBeGreaterThan(0);
-      expect(s.text.length).toBeGreaterThan(0);
-      expect(s.hintDesktop.length).toBeGreaterThan(0);
-      expect(s.hintTouch.length).toBeGreaterThan(0);
+      expect(s.title.length).toBeLessThanOrEqual(16); // a command, not a sentence
+      expect(s.hintDesktop.length).toBeLessThanOrEqual(40);
+      expect(s.hintTouch.length).toBeLessThanOrEqual(34);
       expect(s.keys).toEqual(KEY_LABELS[s.lanes]);
     }
     expect(script[0].lanes).toBe(1);
@@ -67,13 +67,13 @@ describe('tutorial script', () => {
     expect(four.title).toBe('Полосы: 4');
     // The spell caption names only the spell lane's key, not the whole 4-key row.
     const spell = script.find((s) => s.id === 'spell')!;
-    expect(spell.hintDesktop).toContain(`нажми ${KEY_LABELS[4][SPELL_LANE]} по ним`);
+    expect(spell.hintDesktop).toBe(`${KEY_LABELS[4][SPELL_LANE]} — и всё замедлится`);
     expect(spell.hintDesktop).not.toContain(keyHint(4));
     // On one lane either key works; the tap hint says so instead of reading as a chord.
     const tap = script.find((s) => s.id === 'tap')!;
-    expect(tap.hintDesktop).toContain('любую из F J');
+    expect(tap.hintDesktop).toBe('Когда нота на линии — F J');
     expect(four.hintDesktop).toBe('Клавиши D F J K');
-    expect(four.hintTouch).toContain('4 зоны внизу');
+    expect(four.hintTouch).toBe('Четыре зоны');
     const one = script.find((s) => s.id === 'tap')!;
     expect(one.hintDesktop).toContain('F J');
   });
