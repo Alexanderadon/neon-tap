@@ -4,6 +4,8 @@ import { round3, type Event } from './bars';
 
 /** Circles cycle through this many screen positions across the whole field. */
 const CIRCLE_SPREAD = 8;
+/** After a long note ends, its thumb needs this many slots (an eighth) to lift and move before it plays again. */
+const RELEASE_SLOTS = 2;
 
 type MotionKind = 'up' | 'down' | 'zigzag' | 'trill';
 
@@ -188,14 +190,15 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
     for (const lane of lanes) {
       if (ev.hold > 0) {
         const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);
+        const freeAt = endIdx + RELEASE_SLOTS;
         const dur = round3(slots[endIdx].time - slot.time);
         // The thumb that takes a long note: its own half; the middle lane goes to the thumb that just played.
         const h = handOf(lane, n);
         const hand: 0 | 1 = h === -1 ? (lastSide as 0 | 1) : h;
-        busy = { hand, until: endIdx };
+        busy = { hand, until: freeAt };
         if (ev.kind === 'roll') {
           notes.push([time, lane, dur, 'roll', ev.taps]);
-          heldUntil[lane] = endIdx;
+          heldUntil[lane] = freeAt;
         } else if (ev.kind === 'slide') {
           // Slide into the free lane next door (never across a lane), staying on the same thumb's half;
           // both lanes are blocked for the duration.
@@ -203,15 +206,15 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
           if (options.length) {
             const end = options[Math.floor(random() * Math.min(2, options.length))];
             notes.push([time, lane, dur, 'slide', end]);
-            heldUntil[lane] = endIdx;
-            heldUntil[end] = endIdx;
+            heldUntil[lane] = freeAt;
+            heldUntil[end] = freeAt;
           } else {
             notes.push([time, lane, dur]);
-            heldUntil[lane] = endIdx;
+            heldUntil[lane] = freeAt;
           }
         } else {
           notes.push([time, lane, dur]);
-          heldUntil[lane] = endIdx;
+          heldUntil[lane] = freeAt;
         }
       } else if (ev.kind) notes.push([time, lane, 0, ev.kind]);
       else notes.push([time, lane]);
