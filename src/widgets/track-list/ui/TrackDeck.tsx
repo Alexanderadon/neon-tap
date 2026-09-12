@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { flickCards, velocityOf } from '@/shared/lib/input/gestures';
+import { velocityOf } from '@/shared/lib/input/gestures';
 import { CrystalIcon, Stars } from '@/shared/ui';
 import { CATALOG, TrackCover, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type CatalogState, type LockState } from '../model/useCatalogState';
 import { usePlayTrack } from '../model/usePlayTrack';
 import { readDeckIndex, writeDeckIndex } from '../model/deckPosition';
+import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
 import { LockIcon, PlayIcon, StarIcon, SunIcon } from './icons';
 import './track-deck.css';
 
@@ -45,57 +46,71 @@ export function TrackDeck({ onRecords }: Props) {
   const { busy, play } = usePlayTrack();
   const n = CATALOG.length;
   const [index, setIndex] = useState(() => readDeckIndex(storage(), n) ?? startIndex(state));
-  /** Where the deck is drawn, in cards (fractional while dragging or flying). */
-  const [view, setView] = useState<number>(index);
   const [details, setDetails] = useState(false);
-  /** Active drag: pointer id, start x, and the last two samples for the release velocity. */
-  const pointer = useRef<{ id: number; x: number; prev: { x: number; t: number }; last: { x: number; t: number } } | null>(null);
+  /** Motion lives outside React; `index` follows the centre card and is the only render trigger. */
+  const motion = useRef<DeckMotion | null>(null);
+  if (!motion.current) motion.current = new DeckMotion(index);
+  const cards = useRef(new Map<number, HTMLElement>());
   const stageRef = useRef<HTMLDivElement>(null);
   const raf = useRef(0);
-  const viewRef = useRef(view);
-  viewRef.current = view;
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  /** Active drag: pointer id, start x, and the last two samples for the release velocity. */
+  const pointer = useRef<{ id: number; x: number; prev: { x: number; t: number }; last: { x: number; t: number } } | null>(null);
 
-  /** Fly from the current view position to card `to`: ease-out, longer for longer trips (220–700 ms). */
-  const flyTo = useCallback((to: number) => {
-    cancelAnimationFrame(raf.current);
-    const from = viewRef.current;
-    const dist = Math.abs(to - from);
-    if (dist < 0.001) {
-      setView(to);
-      return;
+  /** Write every mounted card's transform from the current position — no React involved. */
+  const paint = useCallback(() => {
+    const pos = motion.current!.pos();
+    for (const [i, el] of cards.current) {
+      const st = cardStyle(i - pos);
+      el.style.transform = `translate3d(${st.x}%, 0, 0) scale(${st.scale})`;
+      el.style.opacity = String(st.opacity);
+      el.style.zIndex = String(st.z);
     }
-    const duration = Math.min(700, 220 + 90 * dist);
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / duration);
-      const e = 1 - (1 - k) ** 3;
-      setView(from + (to - from) * e);
-      if (k < 1) raf.current = requestAnimationFrame(step);
-    };
-    raf.current = requestAnimationFrame(step);
   }, []);
+
+  /** The centre card changed: slide the mounted window (a React render) and tick. */
+  const settleIndex = useCallback((i: number) => {
+    if (i === indexRef.current) return;
+    indexRef.current = i;
+    sfxUi();
+    setDetails(false);
+    setIndex(i);
+    writeDeckIndex(storage(), i);
+  }, []);
+
+  const tick = useCallback(
+    (now: number) => {
+      const m = motion.current!;
+      const moving = m.step(now);
+      paint();
+      settleIndex(Math.round(m.pos()));
+      if (moving) raf.current = requestAnimationFrame(tick);
+    },
+    [paint, settleIndex],
+  );
+
+  const flyTo = useCallback(
+    (to: number) => {
+      cancelAnimationFrame(raf.current);
+      motion.current!.fly(to, performance.now());
+      raf.current = requestAnimationFrame(tick);
+    },
+    [tick],
+  );
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  // New cards mount (the window slid): place them before the browser paints.
+  useLayoutEffect(paint, [index, paint]);
+
   const track = CATALOG[index];
   const lock = useMemo(() => lockFor(state, track.id, track.stars), [state, track]);
 
-  const go = useCallback(
-    (to: number) => {
-      const clamped = Math.max(0, Math.min(n - 1, to));
-      if (clamped !== index) {
-        sfxUi();
-        setDetails(false);
-        setIndex(clamped);
-        writeDeckIndex(storage(), clamped);
-      }
-      flyTo(clamped);
-    },
-    [index, n, flyTo],
-  );
+  const go = useCallback((to: number) => flyTo(Math.max(0, Math.min(n - 1, to))), [flyTo, n]);
 
   /** Card width in px — converts a finger drag into a fraction of a card. */
   const cardPx = () => (stageRef.current ? Math.min(stageRef.current.clientWidth * 0.78, 360) : 300);
 
-  // Swipe: horizontal pointer drag on the deck.
+  // Swipe: the finger owns the position; release → flight (see deckMotion.ts).
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     cancelAnimationFrame(raf.current);
@@ -108,19 +123,15 @@ export function TrackDeck({ onRecords }: Props) {
     if (!p || p.id !== e.pointerId) return;
     p.prev = p.last;
     p.last = { x: e.clientX, t: e.timeStamp };
-    // The deck follows the finger 1:1; past either end it resists (a third of the drag).
-    const raw = index - (e.clientX - p.x) / cardPx();
-    setView(raw < 0 ? raw / 3 : raw > n - 1 ? n - 1 + (raw - (n - 1)) / 3 : raw);
+    motion.current!.drag(rubberBand(indexRef.current - (e.clientX - p.x) / cardPx(), n));
+    paint();
   };
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     const p = pointer.current;
     if (!p || p.id !== e.pointerId) return;
     pointer.current = null;
-    // A flick flies as many cards as its speed earns (see gestures.ts); a slow drag flips one;
-    // a drag past the halfway point settles on the nearer card.
     const dx = e.clientX - p.x;
-    const cards = flickCards(dx, velocityOf(p.prev, { x: e.clientX, t: e.timeStamp }));
-    go(cards !== 0 ? index + cards : Math.round(viewRef.current));
+    flyTo(releaseTarget(indexRef.current, motion.current!.pos(), dx, velocityOf(p.prev, { x: e.clientX, t: e.timeStamp }), n));
   };
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight') go(index + 1);
@@ -174,21 +185,20 @@ export function TrackDeck({ onRecords }: Props) {
       </header>
 
       <div ref={stageRef} className="deck-stage" tabIndex={0} onKeyDown={onKey} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
-        {visibleCards(view, n).map((i) => {
+        {windowCards(index, n).map((i) => {
           const t = CATALOG[i];
-          const rel = i - view;
           const l = i === index ? lock : lockFor(state, t.id, t.stars);
           return (
             <DeckCard
               key={t.id}
               track={t}
-              rel={rel}
+              mount={(el) => (el ? cards.current.set(i, el) : cards.current.delete(i))}
               current={i === index}
               lock={l}
               daily={t.id === state.dailyId}
               best={starsForTrack(state.save.tracks[t.id])}
               rank={state.save.tracks[t.id]?.rank}
-              onTap={() => (rel === 0 ? setDetails((d) => !d) : go(i))}
+              onTap={() => (i === index ? setDetails((d) => !d) : go(i))}
             />
           );
         })}
@@ -249,18 +259,18 @@ export function TrackDeck({ onRecords }: Props) {
   );
 }
 
-/** Cards worth drawing around a fractional position: one beyond each visible neighbour. */
-function visibleCards(view: number, n: number): number[] {
+/** Cards mounted around the centre: WINDOW on each side, so a flight always has the next card ready. */
+function windowCards(index: number, n: number): number[] {
   const out: number[] = [];
-  for (let i = Math.floor(view) - 1; i <= Math.ceil(view) + 1; i++) if (i >= 0 && i < n) out.push(i);
+  for (let i = index - WINDOW; i <= index + WINDOW; i++) if (i >= 0 && i < n) out.push(i);
   return out;
 }
 
 interface CardProps {
   track: TrackMeta;
-  /** Distance from the view position in cards: 0 = centred, negative = to the left. */
-  rel: number;
-  /** The settled card (the one PLAY refers to). */
+  /** Registers the element so the motion loop can write its transform. */
+  mount: (el: HTMLElement | null) => void;
+  /** The centre card (the one PLAY refers to). */
   current: boolean;
   lock: LockState;
   daily: boolean;
@@ -269,23 +279,11 @@ interface CardProps {
   onTap: () => void;
 }
 
-function DeckCard({ track, rel, current, lock, daily, best, rank, onTap }: CardProps) {
+function DeckCard({ track, mount, current, lock, daily, best, rank, onTap }: CardProps) {
   const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
-  // Every card is placed from the continuous view position, so drags and flights are one motion:
-  // 84 % of a card per step, scale and dimming eased in over the first card of distance.
-  const away = Math.min(1, Math.abs(rel));
+  // Position, scale and opacity are written by the motion loop (see paint in TrackDeck).
   return (
-    <article
-      className={cls}
-      style={{
-        transform: `translateX(${rel * 84}%) scale(${1 - 0.12 * away})`,
-        opacity: 1 - 0.45 * away,
-        filter: `saturate(${1 - 0.4 * away})`,
-        zIndex: 10 - Math.round(Math.abs(rel)),
-      }}
-      aria-hidden={current ? undefined : true}
-      onClick={onTap}
-    >
+    <article ref={mount} className={cls} aria-hidden={current ? undefined : true} onClick={onTap}>
       <div className="deck-art" aria-hidden="true">
         <TrackCover id={track.id} genre={track.genre} />
       </div>
