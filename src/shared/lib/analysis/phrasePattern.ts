@@ -48,12 +48,11 @@ export const gridBonus = (step: number): number => (step % 4 === 0 ? 0.15 : step
  * the max — plus, in intense phrases, steps next to a peak that are still very loud (sixteenth
  * pairs). Greedy by loudness with the min-gap rule, at most `cap` steps. Returned loudest first.
  */
-export function patternSteps(profile: readonly number[], intense: boolean, cap: number): number[] {
+export function patternSteps(profile: readonly number[], intense: boolean, cap: number, gap = intense ? MIN_GAP_INTENSE : MIN_GAP_SLOTS): number[] {
   const n = profile.length;
   let max = 0;
   for (const v of profile) if (v > max) max = v;
   if (max < MIN_NOTE_STRENGTH) return [];
-  const gap = intense ? MIN_GAP_INTENSE : MIN_GAP_SLOTS;
   const cand: { step: number; score: number }[] = [];
   for (let s = 0; s < n; s++) {
     const v = profile[s];
