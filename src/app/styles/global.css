@@ -5,6 +5,8 @@
   --c-lime: #b6ff00;
   --c-orange: #ff8a00;
   --font-display: 'Unbounded', 'Segoe UI', system-ui, sans-serif;
+  /* Numbers (stars, BPM, counters, ranks) sit in a monospace so columns of digits line up. */
+  --font-mono: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', 'SF Mono', Consolas, 'Roboto Mono', monospace;
   color-scheme: dark;
   /* Safe-area insets as variables: CSS uses them directly, the canvas HUD reads them via getComputedStyle. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -61,6 +63,10 @@ body::before {
   background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
   z-index: 9999;
   mix-blend-mode: overlay;
+}
+/* The menu paints its own scanlines inside the hero only; the page-wide overlay would double them. */
+body:has(.menu)::before {
+  display: none;
 }
 a {
   color: var(--c-cyan);
