@@ -81,7 +81,7 @@ export const RANK_THRESHOLDS = [
 
 export const CALIBRATION_BPM = 120;
 /** Bump to force every player through calibration again (v2: mobile audio was silent before, offsets were garbage). */
-export const CALIBRATION_VERSION = 2;
+export const CALIBRATION_VERSION = 3; // 3: device output latency is subtracted automatically; old offsets double-counted it
 export const CALIBRATION_TAPS = 16;
 
 /** Max distinct note times per second in the composed chart (sliding 1-second window): the stream of a fast song, still two thumbs. */

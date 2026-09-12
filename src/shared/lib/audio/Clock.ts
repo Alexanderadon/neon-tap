@@ -23,8 +23,14 @@ export class Clock {
 
   constructor(
     private readonly now: () => number,
-    /** Seconds; positive = player hears audio late, so notes are judged later. */
+    /** Seconds; positive = player hears audio late, so notes are judged later (the residual after `deviceLatency`). */
     public userOffset = 0,
+    /**
+     * Seconds the device's audio output lags the audio clock (AudioContext output + base latency,
+     * a Bluetooth headset adds far more): the sound the player hears is this much behind
+     * `position()`, so tiles and judgements run this much later too. Set from the engine; updated live.
+     */
+    public deviceLatency = 0,
   ) {}
 
   /** `startTime` is the audio-clock instant that corresponds to song position `position` (default 0). */
@@ -105,19 +111,24 @@ export class Clock {
     return this.positionAt(this.pausedAt ?? this.now());
   }
 
-  /** Song time in seconds, corrected by the user's calibrated offset. */
+  /** Everything the player hears late: device output latency plus their calibrated residual. */
+  get heardOffset(): number {
+    return this.deviceLatency + this.userOffset;
+  }
+
+  /** Song time as the player hears it, in seconds: position minus device latency and the calibrated offset. */
   songTime(): number {
     if (!this.running) return 0;
-    return this.position() - this.userOffset;
+    return this.position() - this.heardOffset;
   }
 
-  /** Convert an absolute audio-clock timestamp (e.g. an input event) to song time. */
+  /** Convert an absolute audio-clock timestamp (e.g. an input event) to heard song time. */
   toSongTime(audioTime: number): number {
-    return this.positionAt(audioTime) - this.userOffset;
+    return this.positionAt(audioTime) - this.heardOffset;
   }
 
-  /** Convert song time to the absolute audio-clock instant (constant-rate approximation). */
+  /** Convert heard song time to the absolute audio-clock instant (constant-rate approximation). */
   toAudioTime(songTime: number): number {
-    return this.anchorA + (songTime + this.userOffset - this.anchorP) / this.rateAt();
+    return this.anchorA + (songTime + this.heardOffset - this.anchorP) / this.rateAt();
   }
 }

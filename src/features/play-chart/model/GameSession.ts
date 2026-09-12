@@ -141,7 +141,7 @@ export class GameSession {
   private readonly bands = new Uint8Array(SPECTRUM_BANDS);
 
   constructor(private readonly opts: SessionOptions) {
-    this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
+    this.clock = new Clock(() => audioEngine.now(), opts.userOffset, audioEngine.outputLatency());
     this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0, approachTime: this.approachTime });
     const level = opts.chart.chart;
     const parsed = parseChartLevel(level);
@@ -529,6 +529,8 @@ export class GameSession {
     this.lastFrame = now;
     this.fps.tick(dt);
 
+    // The device's output latency can change mid-song (a headset connects): keep the heard time honest.
+    this.clock.deviceLatency = audioEngine.outputLatency();
     const songTime = this.clock.songTime();
     if (!this.paused && !this.finished) {
       const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
