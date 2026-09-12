@@ -98,6 +98,20 @@ describe('NoteManager', () => {
       expect(nm.press(7, 1.02)).toBe('perfect');
       expect(events).toHaveLength(1);
     });
+
+    it('get almost twice the time of a lane note: 0.25 s late is still good, 0.30 s is a miss', () => {
+      const lane = make([[1, 2]]);
+      lane.nm.update(1.25, notHeld);
+      expect(lane.nm.press(2, 1.25)).toBeNull(); // a lane note is long gone at 0.25 s
+      const c = make([[1, 2, 0, 'circle'], [2, 0, 0, 'circle']]);
+      c.nm.update(1.25, notHeld);
+      expect(c.nm.pool[0].state).toBe(NoteState.Pending);
+      expect(c.nm.press(7, 1.25)).toBe('good');
+      expect(c.nm.press(7, 1.85)).toBe('great'); // 0.15 s early on the next one
+      const late = make([[1, 2, 0, 'circle']]);
+      late.nm.update(1.3, notHeld);
+      expect(late.nm.pool[0].state).toBe(NoteState.Missed);
+    });
   });
 
   describe('rolls', () => {

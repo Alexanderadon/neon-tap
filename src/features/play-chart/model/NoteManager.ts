@@ -1,4 +1,4 @@
-import { CIRCLE_BUCKET, HIT_WINDOWS, INPUT_SLOTS } from '@/shared/config/constants';
+import { CIRCLE_BUCKET, CIRCLE_HIT_WINDOWS, HIT_WINDOWS, INPUT_SLOTS, type HitWindows } from '@/shared/config/constants';
 import { judgeDelta, type Judgement } from '@/entities/score';
 import type { NoteKind, ParsedNote } from '@/entities/chart';
 
@@ -64,6 +64,11 @@ const POOL_SIZE = 2000;
  * that can still be judged, so `press()` is O(1) amortised and `update()` only scans the few
  * notes near the current time.
  */
+/** Circles get the wider windows; everything on the lanes keeps the tight ones. */
+function windowsFor(note: { kind: string | null }): HitWindows {
+  return note.kind === 'circle' ? CIRCLE_HIT_WINDOWS : HIT_WINDOWS;
+}
+
 export class NoteManager {
   readonly pool: PooledNote[] = [];
   count = 0;
@@ -173,12 +178,13 @@ export class NoteManager {
       while (cursor < len) {
         const note = this.pool[list[cursor]];
         if (note.state === NoteState.Pending) {
-          if (note.armed && songTime >= note.time - HIT_WINDOWS.great) {
+          const w = windowsFor(note);
+          if (note.armed && songTime >= note.time - w.great) {
             note.assisted = true;
-            this.hit(note, 'great', -HIT_WINDOWS.great);
+            this.hit(note, 'great', -w.great);
             continue;
           }
-          if (songTime - note.time > HIT_WINDOWS.good) {
+          if (songTime - note.time > w.good) {
             note.state = NoteState.Missed;
             note.judgement = 'miss';
             this.emit(note, 'miss', false);
@@ -234,11 +240,12 @@ export class NoteManager {
       }
       if (note.state !== NoteState.Pending) continue;
       const delta = songTime - note.time;
-      if (delta < -HIT_WINDOWS.good) {
+      const w = windowsFor(note);
+      if (delta < -w.good) {
         if (this.assistWindow > 0 && -delta <= this.assistWindow && !note.armed) note.armed = true;
         return null;
       }
-      const j = judgeDelta(delta);
+      const j = judgeDelta(delta, w);
       if (!j) continue; // overdue note — update() will miss it
       this.hit(note, j, delta);
       return j;
