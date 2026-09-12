@@ -241,6 +241,83 @@ export function renderSpell(kind: 'slow' | 'heart', size: number, dpr: number): 
   return { canvas, pad, width: total, height: total };
 }
 
+/** Crystal outline: an elongated hexagon (gem cut), `s` = half height, width ≈ 0.62 of the height. */
+function crystalPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number): void {
+  const w = s * 0.62;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s);
+  ctx.lineTo(cx + w, cy - s * 0.42);
+  ctx.lineTo(cx + w, cy + s * 0.42);
+  ctx.lineTo(cx, cy + s);
+  ctx.lineTo(cx - w, cy + s * 0.42);
+  ctx.lineTo(cx - w, cy - s * 0.42);
+  ctx.closePath();
+}
+
+/**
+ * Collectible crystal (gem note): glowing faceted hexagon with a bright core. `size` is the
+ * crystal height in CSS px; the big variant gets a second, warmer facet ring. Drawn rotated
+ * with `drawImage` every frame — nothing here runs in the loop.
+ */
+export function renderCrystal(color: string, size: number, dpr: number, big = false): NoteSprite {
+  const pad = Math.round(size * 0.55);
+  const total = size + pad * 2;
+  const canvas = makeCanvas(Math.ceil(total * dpr), Math.ceil(total * dpr));
+  const ctx = ctx2d(canvas);
+  ctx.scale(dpr, dpr);
+  const c = total / 2;
+  const s = size / 2;
+  ctx.lineJoin = 'round';
+
+  // Glow + body.
+  ctx.shadowColor = color;
+  ctx.shadowBlur = size * 0.45;
+  ctx.fillStyle = color;
+  crystalPath(ctx, c, c, s);
+  ctx.fill();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Facets: a darker left half and a lighter right half read as depth.
+  ctx.save();
+  crystalPath(ctx, c, c, s);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.fillRect(c - size, c - size, size, size * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath();
+  ctx.moveTo(c, c - s);
+  ctx.lineTo(c + s * 0.62, c - s * 0.42);
+  ctx.lineTo(c, c + s * 0.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Inner core: white heart of the gem.
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = size * 0.25;
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  crystalPath(ctx, c, c, s * 0.42);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Outline (+ a second warm ring on the big gem).
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctx.lineWidth = Math.max(1.5, size * 0.06);
+  crystalPath(ctx, c, c, s);
+  ctx.stroke();
+  if (big) {
+    ctx.strokeStyle = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = size * 0.3;
+    ctx.lineWidth = Math.max(1.5, size * 0.05);
+    crystalPath(ctx, c, c, s + pad * 0.35);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  return { canvas, pad, width: total, height: total };
+}
+
 export function hexToRgba(hex: string, alpha: number): string {
   const v = parseInt(hex.slice(1), 16);
   return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${alpha})`;

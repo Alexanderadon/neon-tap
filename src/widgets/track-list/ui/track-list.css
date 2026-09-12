@@ -292,6 +292,66 @@
   cursor: not-allowed;
   border-style: dashed;
 }
+/* Premium track (shop-only): crystal price instead of the star requirement, magenta accent. */
+.tcard-premium {
+  filter: saturate(0.7);
+}
+.tcard-premium .tcard-num {
+  color: #7df9ff;
+  filter: drop-shadow(0 0 6px rgba(125, 249, 255, 0.7));
+  display: flex;
+  justify-content: center;
+}
+.tcard-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  color: #7df9ff;
+  text-shadow: 0 0 10px rgba(125, 249, 255, 0.6);
+  white-space: nowrap;
+}
+.tcard-premium .tcard-play.tcard-shop {
+  cursor: pointer;
+  border-style: solid;
+  border-color: #7df9ff;
+  color: #7df9ff;
+}
+.tcard-premium .tcard-play.tcard-shop:hover {
+  background: rgba(125, 249, 255, 0.18);
+  box-shadow: 0 0 16px rgba(125, 249, 255, 0.45);
+}
+.tcard-shoplink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: rgba(125, 249, 255, 0.75);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.tcard-shoplink:hover,
+.tcard-shoplink:focus-visible {
+  color: #7df9ff;
+  outline: none;
+}
+/* Bought in the shop: a small crystal next to the title. */
+.tcard-bought {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+  color: #7df9ff;
+  filter: drop-shadow(0 0 4px rgba(125, 249, 255, 0.8));
+}
 @media (max-width: 480px) {
   .tcard {
     grid-template-columns: 48px 1fr auto;

@@ -1,4 +1,4 @@
-export { CATALOG, TRACK_IDS, findTrack } from './model/catalog';
+export { CATALOG, TRACK_IDS, PREMIUM_IDS, findTrack } from './model/catalog';
 export type { TrackMeta } from './model/types';
 export { loadChart } from './api/loadChart';
 export { TrackCover } from './ui/TrackCover';

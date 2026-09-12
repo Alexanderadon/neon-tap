@@ -36,6 +36,8 @@ export interface PooledNote {
   armed: boolean;
   /** True when the judgement came from touch assist (its delta is synthetic — skip for auto-offset). */
   assisted: boolean;
+  /** Crystal value carried by this (plain tap) note: 0 = none, 1 = gem, 5 = big gem. Set per run, kept across `reset()`. */
+  gem: number;
 }
 
 export interface JudgeEvent {
@@ -94,6 +96,7 @@ export class NoteManager {
         hitDelta: 0,
         armed: false,
         assisted: false,
+        gem: 0,
       });
     }
     for (let l = 0; l < INPUT_SLOTS; l++) this.laneNotes.push(new Int32Array(capacity));
@@ -123,6 +126,7 @@ export class NoteManager {
       n.hitDelta = 0;
       n.armed = false;
       n.assisted = false;
+      n.gem = 0;
       // Circles are hit by tapping them (or Space), so they live in their own input bucket.
       const bucket = src.kind === 'circle' ? CIRCLE_BUCKET : src.lane;
       this.laneNotes[bucket][this.laneLen[bucket]++] = i;
@@ -142,6 +146,16 @@ export class NoteManager {
     }
     this.laneCursor.fill(0);
     this.firstActive = 0;
+  }
+
+  /**
+   * Mark this run's crystals: `picks` are indexes into the loaded (sorted) note list with the
+   * crystal value each carries. Every other note is cleared. Judgement is untouched — a gem is a
+   * plain tap that happens to pay out when hit.
+   */
+  setGems(picks: readonly { index: number; value: number }[]): void {
+    for (let i = 0; i < this.count; i++) this.pool[i].gem = 0;
+    for (const p of picks) if (p.index >= 0 && p.index < this.count) this.pool[p.index].gem = p.value;
   }
 
   get lastTime(): number {
