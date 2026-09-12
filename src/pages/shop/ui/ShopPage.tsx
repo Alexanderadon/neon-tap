@@ -25,12 +25,8 @@ export function ShopPage() {
       <header className="shop-head">
         <div className="shop-head-row">
           <h1 className="page-title">{dict.shop}</h1>
-          <div className="shop-balance">
-            <span className="shop-balance-label">{dict.shopBalance}</span>
-            <WalletBadge link={false} />
-          </div>
+          <WalletBadge link={false} />
         </div>
-        <p className="page-intro shop-intro">{dict.shopIntro}</p>
       </header>
       <ShopGrid />
       <div className="shop-foot">

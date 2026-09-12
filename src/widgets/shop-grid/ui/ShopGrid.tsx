@@ -107,33 +107,22 @@ function ShopCard({ item, index, balance, onBuy }: CardProps) {
       <div className="shopcard-body">
         <div className="shopcard-title">{track.title}</div>
         <div className="shopcard-genre">
-          {dict.genres[track.genre]} · ★ {track.stars}
-        </div>
-        <div className="shopcard-artist">{track.artist}</div>
-        <div className="shopcard-hint">
-          {premium ? (
-            <>
-              <span className="shopcard-tag">{dict.shopPremium}</span> {dict.shopPremiumHint}
-            </>
-          ) : (
-            !owned && fmt(dict.shopLockedHint, { n: info.need })
-          )}
+          {premium && <span className="shopcard-tag">{dict.shopPremium}</span>}★ {track.stars}
         </div>
       </div>
       <div className="shopcard-side">
-        <div className="shopcard-price" aria-label={`${price} ${plural(price, dict.crystalsNoun)}`}>
-          <CrystalIcon size={15} />
-          <span>{price}</span>
-        </div>
         {owned ? (
           <span className="shopcard-bought">{dict.shopBought}</span>
         ) : (
-          <>
-            <Button size="md" className="shopcard-buy" disabled={!canBuy} onClick={onBuy}>
-              {dict.shopBuy}
-            </Button>
-            {short > 0 && <span className="shopcard-short">{fmt(dict.shopNotEnough, { n: short })}</span>}
-          </>
+          <Button
+            size="md"
+            className={`shopcard-buy${short > 0 ? ' is-short' : ''}`}
+            disabled={!canBuy}
+            onClick={onBuy}
+            aria-label={`${dict.shopBuy} · ${price} ${plural(price, dict.crystalsNoun)}${short > 0 ? ` · ${fmt(dict.shopNotEnough, { n: short })}` : ''}`}
+          >
+            {dict.shopBuy} · <CrystalIcon size={13} /> <span className="shopcard-buy-price">{price}</span>
+          </Button>
         )}
       </div>
     </article>
