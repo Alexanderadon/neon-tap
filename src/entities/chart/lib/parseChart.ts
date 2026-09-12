@@ -29,7 +29,7 @@ export function lanesAt(sections: readonly Section[], time: number): number {
 /** Validate + expand a chart level into sorted notes. Throws on malformed data. */
 export function parseChartLevel(level: ChartLevel): ParsedNote[] {
   const sections = parseSections(level);
-  const notes = level.notes.map((t, i) => parseNote(t, i, lanesAt(sections, t[0]), level.pitches?.[i] ?? 0));
+  const notes = level.notes.map((t, i) => parseNote(t, i, lanesAt(sections, t[0])));
   notes.sort((a, b) => a.time - b.time || a.lane - b.lane);
   let lastCircle = -Infinity;
   let seq = 0;
@@ -42,7 +42,7 @@ export function parseChartLevel(level: ChartLevel): ParsedNote[] {
   return notes;
 }
 
-function parseNote(t: NoteTuple, i: number, lanes: number, pitch: number): ParsedNote {
+function parseNote(t: NoteTuple, i: number, lanes: number): ParsedNote {
   const [time, lane, duration = 0, kind, extra = 0] = t;
   if (!Number.isFinite(time) || time < 0) throw new Error(`note ${i}: bad time ${time}`);
   if (!Number.isInteger(lane) || lane < 0 || lane >= lanes) throw new Error(`note ${i}: lane ${lane} outside ${lanes}-lane section`);
@@ -54,8 +54,7 @@ function parseNote(t: NoteTuple, i: number, lanes: number, pitch: number): Parse
   if (kind === 'slide' && (duration <= 0 || !Number.isInteger(extra) || extra < 0 || extra >= lanes || extra === lane)) {
     throw new Error(`note ${i}: slide needs a duration and a different end lane inside the section`);
   }
-  if (!Number.isFinite(pitch) || pitch < 0 || pitch > 127) throw new Error(`note ${i}: bad pitch ${pitch}`);
-  return { time, lane, duration, kind: kind ?? null, seq: 0, extra, lanes, pitch };
+  return { time, lane, duration, kind: kind ?? null, seq: 0, extra, lanes };
 }
 
 /** Number of judgements a chart yields: holds, rolls and slides count twice (head + tail). */

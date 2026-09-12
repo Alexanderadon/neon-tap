@@ -8,7 +8,6 @@
  * The lowpass filter implements the "miss breaks the music" effect (GDD §1.2).
  */
 import { bassFromBins, spectrumBands } from './spectrum';
-import { NoteSynth } from './NoteSynth';
 
 export interface Volumes {
   master: number;
@@ -20,8 +19,6 @@ export interface Volumes {
 const LOWPASS_OPEN_HZ = 20000;
 /** Lead layer at rest (between hits): audible enough to keep the song recognisable, clearly "off". */
 const LEAD_IDLE = 0.12;
-/** The tile instrument's level on the music bus: clearly "you played that", under the song itself. */
-const SYNTH_LEVEL = 0.42;
 const LEAD_ATTACK = 0.008;
 const LEAD_RELEASE = 0.25;
 const LOWPASS_MISS_HZ = 800;
@@ -41,8 +38,6 @@ export class AudioEngine {
   /** The lead layer (vocal / melody stem) — plays in sync with `source`, audible only while the player hits. */
   private lead: AudioBufferSourceNode | null = null;
   private leadGain!: GainNode;
-  /** The tiles' own instrument: a hit plays the melody note the tile stands for. */
-  private synth: NoteSynth | null = null;
   private startTime = 0;
   private pausePosition: number | null = null;
   private volumes: Volumes = { master: 1, music: 0.9, sfx: 0.8, voice: 1 };
@@ -66,7 +61,6 @@ export class AudioEngine {
       this.leadGain.gain.value = LEAD_IDLE;
       this.leadGain.connect(this.lowpass);
       this.musicGain.connect(this.master);
-      this.synth = new NoteSynth(this.ctx, this.musicGain, SYNTH_LEVEL);
       // Analyser taps the music bus for audio-reactive visuals (bass pulse). Not in the audible path.
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 256;
@@ -231,17 +225,7 @@ export class AudioEngine {
     this.resetFilter();
   }
 
-  /** A tile was hit: play its melody note (a held tile rings until noteOff). */
-  noteOn(midi: number, hold: boolean, velocity = 1): void {
-    this.synth?.play(midi, hold, velocity);
-  }
-
-  noteOff(midi: number): void {
-    this.synth?.release(midi);
-  }
-
   private stopLead(): void {
-    this.synth?.releaseAll();
     if (!this.lead) return;
     const l = this.lead;
     this.lead = null;

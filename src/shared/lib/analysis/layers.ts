@@ -105,26 +105,25 @@ export function soundSustain(layers: StemLayers, layer: Layer, si: number, floor
   return n;
 }
 
-/** Weight of a melodic layer when phrases pick what the player follows: the singer first, then the lead, then the bass line. */
-export const LAYER_WEIGHT: Record<Layer, number> = { vocals: 1.35, other: 1.0, bass: 0.7, drums: 0.5 };
-/** The layers a tile can be a note of. Drums are followed only where no melody plays (a break, a drum intro). */
-const MELODIC: readonly Layer[] = ['vocals', 'other', 'bass'];
+/** Weight of a layer when phrases pick what the player follows: a singer beats a hi-hat. */
+export const LAYER_WEIGHT: Record<Layer, number> = { vocals: 1.35, other: 1.0, drums: 0.95, bass: 0.8 };
 
 /** A layer counts as playing in a phrase when its energy there is at least this share of the loudest layer's. */
 export const PRESENCE_REL = 0.15;
 /** A phrase is judged by its clearest hits: this many peaks (two per bar), so a busy hi-hat does not outvote a melody. */
 const TOP_PEAKS = 8;
-/** A melodic layer leads when its clearest hits add up to at least this (a few clear notes in the phrase). */
-const MELODY_MIN = 1.5;
+/** After MIN_RUN phrases on one instrument the chart switches when the runner-up is at least this close. */
+const SWITCH_REL = 0.55;
+const MIN_RUN = 2;
 
 /**
- * Which layer a phrase follows — the Magic Tiles rule: the tiles are the melody. Among the layers
- * actually playing (by energy), the melodic one whose clearest onset peaks carry the most weighted
- * strength (TOP_PEAKS of them, so a busy layer gets no credit for being busy) leads: the singer,
- * else the lead instrument, else the bass line. Drums lead only where nothing melodic plays.
- * `slots` are the phrase's global slot indices. Returns null when nothing is audible.
+ * Which layer a phrase follows: among the layers actually playing there (by energy), the one whose
+ * clearest onset peaks carry the most weighted strength (TOP_PEAKS of them — a busy layer gets no
+ * credit for being busy). After `prevRun` phrases (≥ MIN_RUN) on `prev`, a close runner-up takes
+ * over, so a song is played on its drums, its bass and its voice in turn — by 8-bar sections, not
+ * every bar. `slots` are the phrase's global slot indices. Returns null when nothing is audible.
  */
-export function pickLayer(layers: StemLayers, slots: readonly number[], minTotal = 0.6): Layer | null {
+export function pickLayer(layers: StemLayers, slots: readonly number[], prev: Layer | null = null, prevRun = 0, minTotal = 0.6): Layer | null {
   const mean = {} as Record<Layer, number>;
   let loudest = 0;
   for (const name of LAYERS) {
@@ -148,8 +147,7 @@ export function pickLayer(layers: StemLayers, slots: readonly number[], minTotal
     if (score > 0) scored.push({ name, score });
   }
   scored.sort((a, b) => b.score - a.score);
-  const melody = scored.find((s) => MELODIC.includes(s.name) && s.score >= MELODY_MIN);
-  if (melody) return melody.name;
   if (!scored.length || scored[0].score < minTotal) return null;
+  if (scored[0].name === prev && prevRun >= MIN_RUN && scored.length > 1 && scored[1].score >= SWITCH_REL * scored[0].score) return scored[1].name;
   return scored[0].name;
 }

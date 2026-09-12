@@ -14,8 +14,6 @@ export interface ParsedNote {
   extra: number;
   /** Lane count of the section this note belongs to. */
   lanes: number;
-  /** Melody note the tile plays when hit (MIDI), 0 = none. */
-  pitch: number;
 }
 
 /** A resolved lane-count section. */
