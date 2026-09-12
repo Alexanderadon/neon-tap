@@ -45,6 +45,14 @@ export const GENRES = [
   'acoustic',
   'world',
   'electronic',
+  'trance',
+  'house',
+  'hardstyle',
+  'hardcore',
+  'breakbeat',
+  'eurobeat',
+  'synthpop',
+  'metal',
 ] as const;
 export type Genre = (typeof GENRES)[number];
 

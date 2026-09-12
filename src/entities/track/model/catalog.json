@@ -1,5 +1,24 @@
 [
   {
+    "id": "chill-lofi-inspired",
+    "title": "Chill lofi inspired",
+    "artist": "omfgdude",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/chill-lofi-inspired",
+    "genre": "lofi",
+    "bpm": 79.5,
+    "duration": 123.19,
+    "stars": 2,
+    "notes": 139,
+    "features": {
+      "circles": 20,
+      "rolls": 7,
+      "slides": 5,
+      "holds": 19,
+      "laneChanges": 3
+    }
+  },
+  {
     "id": "technological-menace",
     "title": "Technological Menace",
     "artist": "umplix",
@@ -19,6 +38,101 @@
     }
   },
   {
+    "id": "fight-for-better-future",
+    "title": "Fight for Better Future [Rock/Metal]",
+    "artist": "nene",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/fight-for-better-future-rockmetal",
+    "genre": "metal",
+    "bpm": 78,
+    "duration": 136.25,
+    "stars": 3,
+    "notes": 191,
+    "features": {
+      "circles": 28,
+      "rolls": 3,
+      "slides": 16,
+      "holds": 14,
+      "laneChanges": 5
+    }
+  },
+  {
+    "id": "hard-boss-battle-2",
+    "title": "Hard Boss Battle 2",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-2",
+    "genre": "hardcore",
+    "bpm": 69.9,
+    "duration": 112.04,
+    "stars": 3,
+    "notes": 193,
+    "features": {
+      "circles": 59,
+      "rolls": 3,
+      "slides": 4,
+      "holds": 16,
+      "laneChanges": 1
+    }
+  },
+  {
+    "id": "red-moon",
+    "title": "Red Moon",
+    "artist": "Pro Sensory",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/red-moon",
+    "genre": "jazz",
+    "bpm": 120.1,
+    "duration": 138,
+    "stars": 3,
+    "notes": 266,
+    "features": {
+      "circles": 0,
+      "rolls": 0,
+      "slides": 11,
+      "holds": 61,
+      "laneChanges": 7
+    }
+  },
+  {
+    "id": "bouncer",
+    "title": "Bouncer",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/bouncer-0",
+    "genre": "hardstyle",
+    "bpm": 128.9,
+    "duration": 93.81,
+    "stars": 4,
+    "notes": 172,
+    "features": {
+      "circles": 35,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 28,
+      "laneChanges": 5
+    }
+  },
+  {
+    "id": "sky-trance",
+    "title": "Sky Trance",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/sky-trance",
+    "genre": "trance",
+    "bpm": 69.9,
+    "duration": 116.58,
+    "stars": 4,
+    "notes": 185,
+    "features": {
+      "circles": 28,
+      "rolls": 1,
+      "slides": 4,
+      "holds": 14,
+      "laneChanges": 6
+    }
+  },
+  {
     "id": "battle-theme",
     "title": "Battle Theme",
     "artist": "Wolfgang_",
@@ -35,6 +149,44 @@
       "slides": 3,
       "holds": 34,
       "laneChanges": 6
+    }
+  },
+  {
+    "id": "hardstyler",
+    "title": "Hardstyler",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hardstyler",
+    "genre": "hardstyle",
+    "bpm": 139.8,
+    "duration": 112.9,
+    "stars": 4,
+    "notes": 242,
+    "features": {
+      "circles": 23,
+      "rolls": 0,
+      "slides": 9,
+      "holds": 40,
+      "laneChanges": 6
+    }
+  },
+  {
+    "id": "slow-stride",
+    "title": "Slow Stride",
+    "artist": "isaiah658",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/slow-stride",
+    "genre": "lofi",
+    "bpm": 108.5,
+    "duration": 130.95,
+    "stars": 4,
+    "notes": 257,
+    "features": {
+      "circles": 49,
+      "rolls": 1,
+      "slides": 4,
+      "holds": 35,
+      "laneChanges": 5
     }
   },
   {
@@ -76,6 +228,44 @@
     }
   },
   {
+    "id": "bright-stars",
+    "title": "Bright Stars",
+    "artist": "Gena Sealov",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/bright-stars",
+    "genre": "synthpop",
+    "bpm": 123.5,
+    "duration": 150.05,
+    "stars": 4,
+    "notes": 303,
+    "features": {
+      "circles": 70,
+      "rolls": 0,
+      "slides": 13,
+      "holds": 41,
+      "laneChanges": 6
+    }
+  },
+  {
+    "id": "november-snow",
+    "title": "November Snow",
+    "artist": "cynicmusic",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/november-snow",
+    "genre": "ambient",
+    "bpm": 123.9,
+    "duration": 150.05,
+    "stars": 4,
+    "notes": 320,
+    "features": {
+      "circles": 46,
+      "rolls": 0,
+      "slides": 9,
+      "holds": 48,
+      "laneChanges": 7
+    }
+  },
+  {
     "id": "since-2-am",
     "title": "Since 2 A.M.",
     "artist": "TAD",
@@ -92,6 +282,25 @@
       "slides": 19,
       "holds": 63,
       "laneChanges": 9
+    }
+  },
+  {
+    "id": "delta",
+    "title": "DELTA",
+    "artist": "tomcat",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/delta",
+    "genre": "breakbeat",
+    "bpm": 99.5,
+    "duration": 150.05,
+    "stars": 5,
+    "notes": 337,
+    "features": {
+      "circles": 124,
+      "rolls": 5,
+      "slides": 13,
+      "holds": 20,
+      "laneChanges": 2
     }
   },
   {
@@ -114,6 +323,44 @@
     }
   },
   {
+    "id": "espelhar",
+    "title": "Espelhar - LOUD Melodic EDM",
+    "artist": "Fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/espelhar-loud-melodic-edm",
+    "genre": "electronic",
+    "bpm": 139.8,
+    "duration": 150.05,
+    "stars": 5,
+    "notes": 355,
+    "features": {
+      "circles": 41,
+      "rolls": 1,
+      "slides": 13,
+      "holds": 48,
+      "laneChanges": 7
+    }
+  },
+  {
+    "id": "vengeance-electro",
+    "title": "Vengeance Electro",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
+    "genre": "house",
+    "bpm": 128.8,
+    "duration": 150.05,
+    "stars": 5,
+    "notes": 363,
+    "features": {
+      "circles": 42,
+      "rolls": 0,
+      "slides": 7,
+      "holds": 48,
+      "laneChanges": 6
+    }
+  },
+  {
     "id": "up-in-the-sky",
     "title": "Up in the Sky",
     "artist": "Memoraphile (You're Perfect Studio)",
@@ -130,6 +377,44 @@
       "slides": 16,
       "holds": 43,
       "laneChanges": 5
+    }
+  },
+  {
+    "id": "hard-boss-battle-1",
+    "title": "Hard Boss Battle 1",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-1",
+    "genre": "hardcore",
+    "bpm": 99.5,
+    "duration": 80.14,
+    "stars": 6,
+    "notes": 200,
+    "features": {
+      "circles": 76,
+      "rolls": 2,
+      "slides": 7,
+      "holds": 12,
+      "laneChanges": 2
+    }
+  },
+  {
+    "id": "race-of-the-wasp",
+    "title": "Race of the Wasp",
+    "artist": "OwlishMedia",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/race-of-the-wasp",
+    "genre": "metal",
+    "bpm": 160.9,
+    "duration": 83.88,
+    "stars": 6,
+    "notes": 226,
+    "features": {
+      "circles": 18,
+      "rolls": 2,
+      "slides": 11,
+      "holds": 24,
+      "laneChanges": 3
     }
   },
   {
@@ -168,6 +453,25 @@
       "slides": 14,
       "holds": 26,
       "laneChanges": 12
+    }
+  },
+  {
+    "id": "happier-tune",
+    "title": "Happier Tune",
+    "artist": "Gena Sealov",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/happier-tune",
+    "genre": "synthpop",
+    "bpm": 217,
+    "duration": 128.81,
+    "stars": 6,
+    "notes": 372,
+    "features": {
+      "circles": 61,
+      "rolls": 0,
+      "slides": 23,
+      "holds": 67,
+      "laneChanges": 11
     }
   },
   {
@@ -323,6 +627,25 @@
     }
   },
   {
+    "id": "hardcore-chiptune-theme",
+    "title": "hardcore chiptune theme",
+    "artist": "obscure music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hardcore-chiptune-theme",
+    "genre": "chiptune",
+    "bpm": 128.7,
+    "duration": 106.84,
+    "stars": 7,
+    "notes": 283,
+    "features": {
+      "circles": 82,
+      "rolls": 0,
+      "slides": 7,
+      "holds": 19,
+      "laneChanges": 7
+    }
+  },
+  {
     "id": "lunar-arrow",
     "title": "Lunar Arrow",
     "artist": "mmry",
@@ -339,6 +662,25 @@
       "slides": 10,
       "holds": 34,
       "laneChanges": 6
+    }
+  },
+  {
+    "id": "boss-battle-9-metal",
+    "title": "Boss Battle #9 [Metal]",
+    "artist": "nene",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/boss-battle-9-metal",
+    "genre": "metal",
+    "bpm": 151.7,
+    "duration": 127.43,
+    "stars": 7,
+    "notes": 334,
+    "features": {
+      "circles": 123,
+      "rolls": 4,
+      "slides": 21,
+      "holds": 19,
+      "laneChanges": 10
     }
   },
   {
@@ -380,6 +722,44 @@
     }
   },
   {
+    "id": "slampe",
+    "title": "Slampe - Synthwave House",
+    "artist": "Fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/slampe-synthwave-house",
+    "genre": "house",
+    "bpm": 152,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 393,
+    "features": {
+      "circles": 113,
+      "rolls": 3,
+      "slides": 20,
+      "holds": 33,
+      "laneChanges": 17
+    }
+  },
+  {
+    "id": "technomania101",
+    "title": "Technomania101 - 2000's europop electronic dance music",
+    "artist": "Fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
+    "genre": "eurobeat",
+    "bpm": 142.9,
+    "duration": 141.98,
+    "stars": 7,
+    "notes": 394,
+    "features": {
+      "circles": 104,
+      "rolls": 1,
+      "slides": 28,
+      "holds": 29,
+      "laneChanges": 7
+    }
+  },
+  {
     "id": "virtual-rush",
     "title": "Virtual Rush",
     "artist": "vitalezzz",
@@ -396,6 +776,64 @@
       "slides": 25,
       "holds": 31,
       "laneChanges": 15
+    }
+  },
+  {
+    "id": "lucid-trigger",
+    "title": "Lucid Trigger",
+    "artist": "khtlrpzvgm",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/lucid-trigger",
+    "genre": "breakbeat",
+    "bpm": 151.3,
+    "duration": 135.24,
+    "stars": 7,
+    "notes": 399,
+    "features": {
+      "circles": 124,
+      "rolls": 2,
+      "slides": 13,
+      "holds": 37,
+      "laneChanges": 9
+    }
+  },
+  {
+    "id": "all-night-road",
+    "title": "All Night Road",
+    "artist": "iamoneabe",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/all-night-road",
+    "genre": "synthpop",
+    "bpm": 207,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 443,
+    "features": {
+      "circles": 78,
+      "rolls": 2,
+      "slides": 16,
+      "holds": 53,
+      "laneChanges": 8
+    }
+  },
+  {
+    "id": "funky-house",
+    "title": "Funky House",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/funky-house",
+    "genre": "house",
+    "premium": true,
+    "bpm": 128.8,
+    "duration": 137.46,
+    "stars": 7,
+    "notes": 457,
+    "features": {
+      "circles": 46,
+      "rolls": 1,
+      "slides": 11,
+      "holds": 57,
+      "laneChanges": 11
     }
   },
   {
@@ -475,6 +913,85 @@
     }
   },
   {
+    "id": "fever-stadium",
+    "title": "Fever Stadium",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/fever-stadium",
+    "genre": "eurobeat",
+    "premium": true,
+    "bpm": 163.1,
+    "duration": 85.81,
+    "stars": 8,
+    "notes": 279,
+    "features": {
+      "circles": 99,
+      "rolls": 1,
+      "slides": 16,
+      "holds": 23,
+      "laneChanges": 8
+    }
+  },
+  {
+    "id": "trance-boss-battle",
+    "title": "Trance Boss Battle",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/trance-boss-battle",
+    "genre": "trance",
+    "bpm": 151.4,
+    "duration": 102.43,
+    "stars": 8,
+    "notes": 302,
+    "features": {
+      "circles": 124,
+      "rolls": 1,
+      "slides": 17,
+      "holds": 25,
+      "laneChanges": 5
+    }
+  },
+  {
+    "id": "polygons-n-light",
+    "title": "Polygons N' Light",
+    "artist": "Umplix",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/polygons-n-light",
+    "genre": "electronic",
+    "premium": true,
+    "bpm": 144,
+    "duration": 106.53,
+    "stars": 8,
+    "notes": 357,
+    "features": {
+      "circles": 145,
+      "rolls": 8,
+      "slides": 16,
+      "holds": 24,
+      "laneChanges": 2
+    }
+  },
+  {
+    "id": "tech-rave",
+    "title": "Tech rave",
+    "artist": "Frenchyboy",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/tech-rave",
+    "genre": "techno",
+    "premium": true,
+    "bpm": 163.2,
+    "duration": 125.13,
+    "stars": 8,
+    "notes": 362,
+    "features": {
+      "circles": 139,
+      "rolls": 15,
+      "slides": 8,
+      "holds": 23,
+      "laneChanges": 12
+    }
+  },
+  {
     "id": "dance-field",
     "title": "Dance Field",
     "artist": "centurionofwar",
@@ -491,6 +1008,46 @@
       "slides": 17,
       "holds": 37,
       "laneChanges": 11
+    }
+  },
+  {
+    "id": "trance-battle",
+    "title": "Trance Battle",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/trance-battle",
+    "genre": "trance",
+    "premium": true,
+    "bpm": 139.8,
+    "duration": 150.05,
+    "stars": 8,
+    "notes": 423,
+    "features": {
+      "circles": 177,
+      "rolls": 2,
+      "slides": 28,
+      "holds": 21,
+      "laneChanges": 6
+    }
+  },
+  {
+    "id": "chiptuned-rock",
+    "title": "Ciptuned Rock tune",
+    "artist": "bertsz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/ciptuned-rock-tune",
+    "genre": "chiptune",
+    "premium": true,
+    "bpm": 216.8,
+    "duration": 137.48,
+    "stars": 8,
+    "notes": 475,
+    "features": {
+      "circles": 112,
+      "rolls": 2,
+      "slides": 15,
+      "holds": 62,
+      "laneChanges": 18
     }
   },
   {

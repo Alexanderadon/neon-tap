@@ -38,6 +38,35 @@ Attribution is not required for CC0 — it is listed here out of respect for the
 | `up-in-the-sky.mp3` | Up in the Sky | Memoraphile (You're Perfect Studio) | [OpenGameArt](https://opengameart.org/content/up-in-the-sky) | CC0 1.0 |
 | `wasteland-caravan.mp3` | Wasteland Caravan | vitalezzz | [OpenGameArt](https://opengameart.org/content/wasteland-caravan) | CC0 1.0 |
 | `growing-village.mp3` | Growing Village | earlbeat | [OpenGameArt](https://opengameart.org/content/growing-village) | CC0 1.0 |
+| `trance-boss-battle.mp3` | Trance Boss Battle | MintoDog | [OpenGameArt](https://opengameart.org/content/trance-boss-battle) | CC0 1.0 |
+| `trance-battle.mp3` | Trance Battle | MintoDog | [OpenGameArt](https://opengameart.org/content/trance-battle) | CC0 1.0 |
+| `sky-trance.mp3` | Sky Trance | MintoDog | [OpenGameArt](https://opengameart.org/content/sky-trance) | CC0 1.0 |
+| `hardstyler.mp3` | Hardstyler | Of Far Different Nature | [OpenGameArt](https://opengameart.org/content/hardstyler) | CC0 1.0 |
+| `bouncer.mp3` | Bouncer | Of Far Different Nature | [OpenGameArt](https://opengameart.org/content/bouncer-0) | CC0 1.0 |
+| `funky-house.mp3` | Funky House | Of Far Different Nature | [OpenGameArt](https://opengameart.org/content/funky-house) | CC0 1.0 |
+| `vengeance-electro.mp3` | Vengeance Electro | Of Far Different Nature | [OpenGameArt](https://opengameart.org/content/vengeance-electro) | CC0 1.0 |
+| `slampe.mp3` | Slampe - Synthwave House | Fupi | [OpenGameArt](https://opengameart.org/content/slampe-synthwave-house) | CC0 1.0 |
+| `espelhar.mp3` | Espelhar - LOUD Melodic EDM | Fupi | [OpenGameArt](https://opengameart.org/content/espelhar-loud-melodic-edm) | CC0 1.0 |
+| `technomania101.mp3` | Technomania101 - 2000's europop electronic dance music | Fupi | [OpenGameArt](https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music) | CC0 1.0 |
+| `fever-stadium.mp3` | Fever Stadium | MintoDog | [OpenGameArt](https://opengameart.org/content/fever-stadium) | CC0 1.0 |
+| `lucid-trigger.mp3` | Lucid Trigger | khtlrpzvgm | [OpenGameArt](https://opengameart.org/content/lucid-trigger) | CC0 1.0 |
+| `delta.mp3` | DELTA | tomcat | [OpenGameArt](https://opengameart.org/content/delta) | CC0 1.0 |
+| `hard-boss-battle-1.mp3` | Hard Boss Battle 1 | MintoDog | [OpenGameArt](https://opengameart.org/content/hard-boss-battle-1) | CC0 1.0 |
+| `hard-boss-battle-2.mp3` | Hard Boss Battle 2 | MintoDog | [OpenGameArt](https://opengameart.org/content/hard-boss-battle-2) | CC0 1.0 |
+| `bright-stars.mp3` | Bright Stars | Gena Sealov | [OpenGameArt](https://opengameart.org/content/bright-stars) | CC0 1.0 |
+| `happier-tune.mp3` | Happier Tune | Gena Sealov | [OpenGameArt](https://opengameart.org/content/happier-tune) | CC0 1.0 |
+| `all-night-road.mp3` | All Night Road | iamoneabe | [OpenGameArt](https://opengameart.org/content/all-night-road) | CC0 1.0 |
+| `boss-battle-9-metal.mp3` | Boss Battle #9 [Metal] | nene | [OpenGameArt](https://opengameart.org/content/boss-battle-9-metal) | CC0 1.0 |
+| `fight-for-better-future.mp3` | Fight for Better Future [Rock/Metal] | nene | [OpenGameArt](https://opengameart.org/content/fight-for-better-future-rockmetal) | CC0 1.0 |
+| `race-of-the-wasp.mp3` | Race of the Wasp | OwlishMedia | [OpenGameArt](https://opengameart.org/content/race-of-the-wasp) | CC0 1.0 |
+| `chiptuned-rock.mp3` | Ciptuned Rock tune | bertsz | [OpenGameArt](https://opengameart.org/content/ciptuned-rock-tune) | CC0 1.0 |
+| `hardcore-chiptune-theme.mp3` | hardcore chiptune theme | obscure music | [OpenGameArt](https://opengameart.org/content/hardcore-chiptune-theme) | CC0 1.0 |
+| `polygons-n-light.mp3` | Polygons N' Light | Umplix | [OpenGameArt](https://opengameart.org/content/polygons-n-light) | CC0 1.0 |
+| `tech-rave.mp3` | Tech rave | Frenchyboy | [OpenGameArt](https://opengameart.org/content/tech-rave) | CC0 1.0 |
+| `chill-lofi-inspired.mp3` | Chill lofi inspired | omfgdude | [OpenGameArt](https://opengameart.org/content/chill-lofi-inspired) | CC0 1.0 |
+| `slow-stride.mp3` | Slow Stride | isaiah658 | [OpenGameArt](https://opengameart.org/content/slow-stride) | CC0 1.0 |
+| `november-snow.mp3` | November Snow | cynicmusic | [OpenGameArt](https://opengameart.org/content/november-snow) | CC0 1.0 |
+| `red-moon.mp3` | Red Moon | Pro Sensory | [OpenGameArt](https://opengameart.org/content/red-moon) | CC0 1.0 |
 
 ## Sound effects
 

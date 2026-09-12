@@ -270,5 +270,277 @@
     "raw": "growing-village.mp3",
     "sourceUrl": "https://opengameart.org/content/growing-village",
     "license": "CC0 1.0"
+  },
+  {
+    "id": "trance-boss-battle",
+    "title": "Trance Boss Battle",
+    "artist": "MintoDog",
+    "genre": "trance",
+    "raw": "trance-boss-battle.mp3",
+    "sourceUrl": "https://opengameart.org/content/trance-boss-battle",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "trance-battle",
+    "title": "Trance Battle",
+    "artist": "MintoDog",
+    "genre": "trance",
+    "raw": "trance-battle.mp3",
+    "sourceUrl": "https://opengameart.org/content/trance-battle",
+    "license": "CC0 1.0",
+    "premium": true
+  },
+  {
+    "id": "sky-trance",
+    "title": "Sky Trance",
+    "artist": "MintoDog",
+    "genre": "trance",
+    "raw": "sky-trance.ogg",
+    "sourceUrl": "https://opengameart.org/content/sky-trance",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "hardstyler",
+    "loops": 4,
+    "title": "Hardstyler",
+    "artist": "Of Far Different Nature",
+    "genre": "hardstyle",
+    "raw": "hardstyler.wav",
+    "sourceUrl": "https://opengameart.org/content/hardstyler",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "bouncer",
+    "title": "Bouncer",
+    "artist": "Of Far Different Nature",
+    "genre": "hardstyle",
+    "raw": "bouncer.mp3",
+    "sourceUrl": "https://opengameart.org/content/bouncer-0",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "funky-house",
+    "loops": 2,
+    "title": "Funky House",
+    "artist": "Of Far Different Nature",
+    "genre": "house",
+    "raw": "funky-house.mp3",
+    "sourceUrl": "https://opengameart.org/content/funky-house",
+    "license": "CC0 1.0",
+    "premium": true
+  },
+  {
+    "id": "vengeance-electro",
+    "title": "Vengeance Electro",
+    "artist": "Of Far Different Nature",
+    "genre": "house",
+    "raw": "vengeance-electro.mp3",
+    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "slampe",
+    "title": "Slampe - Synthwave House",
+    "artist": "Fupi",
+    "genre": "house",
+    "raw": "slampe.ogg",
+    "sourceUrl": "https://opengameart.org/content/slampe-synthwave-house",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "espelhar",
+    "title": "Espelhar - LOUD Melodic EDM",
+    "artist": "Fupi",
+    "genre": "electronic",
+    "raw": "espelhar.ogg",
+    "sourceUrl": "https://opengameart.org/content/espelhar-loud-melodic-edm",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "technomania101",
+    "title": "Technomania101 - 2000's europop electronic dance music",
+    "artist": "Fupi",
+    "genre": "eurobeat",
+    "raw": "technomania101.ogg",
+    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "fever-stadium",
+    "title": "Fever Stadium",
+    "artist": "MintoDog",
+    "genre": "eurobeat",
+    "raw": "fever-stadium.mp3",
+    "sourceUrl": "https://opengameart.org/content/fever-stadium",
+    "license": "CC0 1.0",
+    "premium": true
+  },
+  {
+    "id": "lucid-trigger",
+    "title": "Lucid Trigger",
+    "artist": "khtlrpzvgm",
+    "genre": "breakbeat",
+    "raw": "lucid-trigger.wav",
+    "sourceUrl": "https://opengameart.org/content/lucid-trigger",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "delta",
+    "title": "DELTA",
+    "artist": "tomcat",
+    "genre": "breakbeat",
+    "raw": "delta.ogg",
+    "sourceUrl": "https://opengameart.org/content/delta",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "hard-boss-battle-1",
+    "title": "Hard Boss Battle 1",
+    "artist": "MintoDog",
+    "genre": "hardcore",
+    "raw": "hard-boss-battle-1.mp3",
+    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-1",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "hard-boss-battle-2",
+    "title": "Hard Boss Battle 2",
+    "artist": "MintoDog",
+    "genre": "hardcore",
+    "raw": "hard-boss-battle-2.mp3",
+    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-2",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "bright-stars",
+    "title": "Bright Stars",
+    "artist": "Gena Sealov",
+    "genre": "synthpop",
+    "raw": "bright-stars.mp3",
+    "sourceUrl": "https://opengameart.org/content/bright-stars",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "happier-tune",
+    "title": "Happier Tune",
+    "artist": "Gena Sealov",
+    "genre": "synthpop",
+    "raw": "happier-tune.mp3",
+    "sourceUrl": "https://opengameart.org/content/happier-tune",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "all-night-road",
+    "title": "All Night Road",
+    "artist": "iamoneabe",
+    "genre": "synthpop",
+    "raw": "all-night-road.mp3",
+    "sourceUrl": "https://opengameart.org/content/all-night-road",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "boss-battle-9-metal",
+    "loops": 3,
+    "title": "Boss Battle #9 [Metal]",
+    "artist": "nene",
+    "genre": "metal",
+    "raw": "boss-battle-9-metal.wav",
+    "sourceUrl": "https://opengameart.org/content/boss-battle-9-metal",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "fight-for-better-future",
+    "loops": 2,
+    "title": "Fight for Better Future [Rock/Metal]",
+    "artist": "nene",
+    "genre": "metal",
+    "raw": "fight-for-better-future.wav",
+    "sourceUrl": "https://opengameart.org/content/fight-for-better-future-rockmetal",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "race-of-the-wasp",
+    "title": "Race of the Wasp",
+    "artist": "OwlishMedia",
+    "genre": "metal",
+    "raw": "race-of-the-wasp.wav",
+    "sourceUrl": "https://opengameart.org/content/race-of-the-wasp",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "chiptuned-rock",
+    "title": "Ciptuned Rock tune",
+    "artist": "bertsz",
+    "genre": "chiptune",
+    "raw": "chiptuned-rock.flac",
+    "sourceUrl": "https://opengameart.org/content/ciptuned-rock-tune",
+    "license": "CC0 1.0",
+    "premium": true
+  },
+  {
+    "id": "hardcore-chiptune-theme",
+    "title": "hardcore chiptune theme",
+    "artist": "obscure music",
+    "genre": "chiptune",
+    "raw": "hardcore-chiptune-theme.mp3",
+    "sourceUrl": "https://opengameart.org/content/hardcore-chiptune-theme",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "polygons-n-light",
+    "title": "Polygons N' Light",
+    "artist": "Umplix",
+    "genre": "electronic",
+    "raw": "polygons-n-light.mp3",
+    "sourceUrl": "https://opengameart.org/content/polygons-n-light",
+    "license": "CC0 1.0",
+    "premium": true
+  },
+  {
+    "id": "tech-rave",
+    "loops": 2,
+    "title": "Tech rave",
+    "artist": "Frenchyboy",
+    "genre": "techno",
+    "raw": "tech-rave.wav",
+    "sourceUrl": "https://opengameart.org/content/tech-rave",
+    "license": "CC0 1.0",
+    "premium": true
+  },
+  {
+    "id": "chill-lofi-inspired",
+    "title": "Chill lofi inspired",
+    "artist": "omfgdude",
+    "genre": "lofi",
+    "raw": "chill-lofi-inspired.mp3",
+    "sourceUrl": "https://opengameart.org/content/chill-lofi-inspired",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "slow-stride",
+    "title": "Slow Stride",
+    "artist": "isaiah658",
+    "genre": "lofi",
+    "raw": "slow-stride.ogg",
+    "sourceUrl": "https://opengameart.org/content/slow-stride",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "november-snow",
+    "title": "November Snow",
+    "artist": "cynicmusic",
+    "genre": "ambient",
+    "raw": "november-snow.mp3",
+    "sourceUrl": "https://opengameart.org/content/november-snow",
+    "license": "CC0 1.0"
+  },
+  {
+    "id": "red-moon",
+    "title": "Red Moon",
+    "artist": "Pro Sensory",
+    "genre": "jazz",
+    "raw": "red-moon.mp3",
+    "sourceUrl": "https://opengameart.org/content/red-moon",
+    "license": "CC0 1.0"
   }
 ]
