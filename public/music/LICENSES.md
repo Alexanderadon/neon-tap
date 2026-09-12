@@ -98,6 +98,8 @@ Samples from the **Kenney** CC0 packs, converted to MP3 and peak-normalised (`sc
 | `sfx/lanes-open.mp3` | Kenney — Interface Sounds / `maximize_006.ogg` | lane count grows (lanes spread apart) |
 | `sfx/lanes-close.mp3` | Kenney — Interface Sounds / `minimize_006.ogg` | lane count shrinks (lanes merge) |
 | `sfx/lanes-glitch.mp3` | Kenney — Interface Sounds / `glitch_002.ogg` | lane change accent (layered) |
+| `sfx/swipe-0.mp3` | Kenney — Interface Sounds / `pluck_001.ogg` | deck card passes the centre (round-robin 1/2) |
+| `sfx/swipe-1.mp3` | Kenney — Interface Sounds / `pluck_002.ogg` | deck card passes the centre (round-robin 2/2) |
 
 ## Voice
 

@@ -25,6 +25,8 @@ const SAMPLES = [
   'lanes-open',
   'lanes-close',
   'lanes-glitch',
+  'swipe-0',
+  'swipe-1',
 ] as const;
 
 export const sfxBank = new SampleBank(`${import.meta.env.BASE_URL}sfx/`);
@@ -93,6 +95,11 @@ export function sfxLanes(open: boolean): void {
     osc.start(t);
     osc.stop(t + 0.42);
   }
+}
+
+/** A card passing the centre of the deck: a soft pluck, pitched up a little with each card of a long flight. */
+export function sfxSwipe(pitch = 1): void {
+  if (!sfxBank.play('swipe', { gain: 0.55, rate: pitch })) fallbackTone(520 * pitch, 0.05, 0.08, 'sine');
 }
 
 /** Soft UI click for buttons. */
