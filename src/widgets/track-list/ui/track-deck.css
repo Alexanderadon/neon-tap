@@ -134,13 +134,9 @@
   overflow: hidden;
   background: #0b0d16;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.28s ease, filter 0.28s ease;
-  will-change: transform;
+  /* Position, scale and dimming come from JS every frame (one continuous motion for drags and flights). */
+  will-change: transform, opacity;
   cursor: pointer;
-}
-.deck-card:not(.is-current) {
-  opacity: 0.55;
-  filter: saturate(0.6);
 }
 .deck-card.is-locked .deck-art {
   filter: grayscale(0.7) brightness(0.55);
@@ -337,7 +333,6 @@
   .deck-play-ring {
     animation: none;
   }
-  .deck-card,
   .deck-dot {
     transition: none;
   }
