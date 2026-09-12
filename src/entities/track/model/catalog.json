@@ -9,12 +9,12 @@
     "bpm": 79.5,
     "duration": 123.19,
     "stars": 2,
-    "notes": 139,
+    "notes": 133,
     "features": {
       "circles": 20,
-      "rolls": 7,
+      "rolls": 4,
       "slides": 5,
-      "holds": 19,
+      "holds": 17,
       "laneChanges": 3
     }
   },
@@ -28,7 +28,7 @@
     "bpm": 110.1,
     "duration": 87.38,
     "stars": 3,
-    "notes": 152,
+    "notes": 148,
     "features": {
       "circles": 18,
       "rolls": 1,
@@ -47,11 +47,11 @@
     "bpm": 78,
     "duration": 136.25,
     "stars": 3,
-    "notes": 191,
+    "notes": 186,
     "features": {
       "circles": 28,
-      "rolls": 3,
-      "slides": 16,
+      "rolls": 0,
+      "slides": 14,
       "holds": 14,
       "laneChanges": 5
     }
@@ -66,10 +66,10 @@
     "bpm": 69.9,
     "duration": 112.04,
     "stars": 3,
-    "notes": 193,
+    "notes": 192,
     "features": {
-      "circles": 59,
-      "rolls": 3,
+      "circles": 60,
+      "rolls": 1,
       "slides": 4,
       "holds": 16,
       "laneChanges": 1
@@ -85,12 +85,12 @@
     "bpm": 120.1,
     "duration": 138,
     "stars": 3,
-    "notes": 266,
+    "notes": 252,
     "features": {
       "circles": 0,
       "rolls": 0,
-      "slides": 11,
-      "holds": 61,
+      "slides": 10,
+      "holds": 54,
       "laneChanges": 7
     }
   },
@@ -104,7 +104,7 @@
     "bpm": 128.9,
     "duration": 93.81,
     "stars": 4,
-    "notes": 172,
+    "notes": 171,
     "features": {
       "circles": 35,
       "rolls": 0,
@@ -123,12 +123,12 @@
     "bpm": 69.9,
     "duration": 116.58,
     "stars": 4,
-    "notes": 185,
+    "notes": 184,
     "features": {
       "circles": 28,
       "rolls": 1,
       "slides": 4,
-      "holds": 14,
+      "holds": 13,
       "laneChanges": 6
     }
   },
@@ -142,7 +142,7 @@
     "bpm": 119.7,
     "duration": 116.06,
     "stars": 4,
-    "notes": 222,
+    "notes": 218,
     "features": {
       "circles": 20,
       "rolls": 3,
@@ -161,12 +161,12 @@
     "bpm": 139.8,
     "duration": 112.9,
     "stars": 4,
-    "notes": 242,
+    "notes": 237,
     "features": {
       "circles": 23,
       "rolls": 0,
       "slides": 9,
-      "holds": 40,
+      "holds": 38,
       "laneChanges": 6
     }
   },
@@ -180,10 +180,10 @@
     "bpm": 108.5,
     "duration": 130.95,
     "stars": 4,
-    "notes": 257,
+    "notes": 256,
     "features": {
       "circles": 49,
-      "rolls": 1,
+      "rolls": 0,
       "slides": 4,
       "holds": 35,
       "laneChanges": 5
@@ -199,7 +199,7 @@
     "bpm": 129.4,
     "duration": 150.05,
     "stars": 4,
-    "notes": 290,
+    "notes": 289,
     "features": {
       "circles": 46,
       "rolls": 0,
@@ -218,12 +218,12 @@
     "bpm": 129.6,
     "duration": 145.97,
     "stars": 4,
-    "notes": 292,
+    "notes": 290,
     "features": {
       "circles": 33,
       "rolls": 0,
       "slides": 25,
-      "holds": 37,
+      "holds": 36,
       "laneChanges": 15
     }
   },
@@ -237,12 +237,12 @@
     "bpm": 123.5,
     "duration": 150.05,
     "stars": 4,
-    "notes": 303,
+    "notes": 301,
     "features": {
       "circles": 70,
       "rolls": 0,
       "slides": 13,
-      "holds": 41,
+      "holds": 39,
       "laneChanges": 6
     }
   },
@@ -256,12 +256,12 @@
     "bpm": 123.9,
     "duration": 150.05,
     "stars": 4,
-    "notes": 320,
+    "notes": 316,
     "features": {
       "circles": 46,
       "rolls": 0,
-      "slides": 9,
-      "holds": 48,
+      "slides": 8,
+      "holds": 45,
       "laneChanges": 7
     }
   },
@@ -275,12 +275,12 @@
     "bpm": 160.9,
     "duration": 150.05,
     "stars": 4,
-    "notes": 333,
+    "notes": 324,
     "features": {
       "circles": 26,
       "rolls": 0,
       "slides": 19,
-      "holds": 63,
+      "holds": 59,
       "laneChanges": 9
     }
   },
@@ -294,32 +294,13 @@
     "bpm": 99.5,
     "duration": 150.05,
     "stars": 5,
-    "notes": 337,
+    "notes": 333,
     "features": {
       "circles": 124,
-      "rolls": 5,
+      "rolls": 1,
       "slides": 13,
       "holds": 20,
       "laneChanges": 2
-    }
-  },
-  {
-    "id": "wasteland-caravan",
-    "title": "Wasteland Caravan",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/wasteland-caravan",
-    "genre": "acoustic",
-    "bpm": 172.1,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 353,
-    "features": {
-      "circles": 34,
-      "rolls": 0,
-      "slides": 27,
-      "holds": 56,
-      "laneChanges": 11
     }
   },
   {
@@ -332,13 +313,32 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 5,
-    "notes": 355,
+    "notes": 345,
     "features": {
       "circles": 41,
       "rolls": 1,
-      "slides": 13,
-      "holds": 48,
+      "slides": 12,
+      "holds": 47,
       "laneChanges": 7
+    }
+  },
+  {
+    "id": "wasteland-caravan",
+    "title": "Wasteland Caravan",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/wasteland-caravan",
+    "genre": "acoustic",
+    "bpm": 172.1,
+    "duration": 150.05,
+    "stars": 5,
+    "notes": 351,
+    "features": {
+      "circles": 34,
+      "rolls": 0,
+      "slides": 26,
+      "holds": 56,
+      "laneChanges": 11
     }
   },
   {
@@ -351,7 +351,7 @@
     "bpm": 128.8,
     "duration": 150.05,
     "stars": 5,
-    "notes": 363,
+    "notes": 362,
     "features": {
       "circles": 42,
       "rolls": 0,
@@ -370,7 +370,7 @@
     "bpm": 136,
     "duration": 150.05,
     "stars": 5,
-    "notes": 366,
+    "notes": 364,
     "features": {
       "circles": 21,
       "rolls": 0,
@@ -389,10 +389,10 @@
     "bpm": 99.5,
     "duration": 80.14,
     "stars": 6,
-    "notes": 200,
+    "notes": 198,
     "features": {
       "circles": 76,
-      "rolls": 2,
+      "rolls": 0,
       "slides": 7,
       "holds": 12,
       "laneChanges": 2
@@ -408,13 +408,32 @@
     "bpm": 160.9,
     "duration": 83.88,
     "stars": 6,
-    "notes": 226,
+    "notes": 224,
     "features": {
-      "circles": 18,
-      "rolls": 2,
+      "circles": 20,
+      "rolls": 0,
       "slides": 11,
-      "holds": 24,
+      "holds": 22,
       "laneChanges": 3
+    }
+  },
+  {
+    "id": "growing-village",
+    "title": "Growing Village",
+    "artist": "earlbeat",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/growing-village",
+    "genre": "world",
+    "bpm": 199.2,
+    "duration": 92.06,
+    "stars": 6,
+    "notes": 258,
+    "features": {
+      "circles": 24,
+      "rolls": 0,
+      "slides": 17,
+      "holds": 44,
+      "laneChanges": 9
     }
   },
   {
@@ -427,12 +446,12 @@
     "bpm": 161.1,
     "duration": 120.03,
     "stars": 6,
-    "notes": 338,
+    "notes": 328,
     "features": {
       "circles": 79,
-      "rolls": 3,
+      "rolls": 1,
       "slides": 16,
-      "holds": 46,
+      "holds": 43,
       "laneChanges": 12
     }
   },
@@ -446,12 +465,12 @@
     "bpm": 143.6,
     "duration": 150.05,
     "stars": 6,
-    "notes": 370,
+    "notes": 367,
     "features": {
       "circles": 99,
-      "rolls": 3,
+      "rolls": 2,
       "slides": 14,
-      "holds": 26,
+      "holds": 25,
       "laneChanges": 12
     }
   },
@@ -465,13 +484,32 @@
     "bpm": 217,
     "duration": 128.81,
     "stars": 6,
-    "notes": 372,
+    "notes": 373,
     "features": {
-      "circles": 61,
+      "circles": 62,
       "rolls": 0,
       "slides": 23,
       "holds": 67,
       "laneChanges": 11
+    }
+  },
+  {
+    "id": "achilles",
+    "title": "Achilles",
+    "artist": "zane-little-music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/achilles",
+    "genre": "rock",
+    "bpm": 143.7,
+    "duration": 150.05,
+    "stars": 6,
+    "notes": 377,
+    "features": {
+      "circles": 54,
+      "rolls": 5,
+      "slides": 14,
+      "holds": 45,
+      "laneChanges": 15
     }
   },
   {
@@ -486,10 +524,10 @@
     "stars": 6,
     "notes": 379,
     "features": {
-      "circles": 138,
-      "rolls": 6,
-      "slides": 14,
-      "holds": 28,
+      "circles": 144,
+      "rolls": 1,
+      "slides": 13,
+      "holds": 29,
       "laneChanges": 7
     }
   },
@@ -503,32 +541,13 @@
     "bpm": 120.1,
     "duration": 150.05,
     "stars": 6,
-    "notes": 381,
+    "notes": 379,
     "features": {
-      "circles": 88,
+      "circles": 89,
       "rolls": 0,
-      "slides": 16,
-      "holds": 27,
-      "laneChanges": 8
-    }
-  },
-  {
-    "id": "achilles",
-    "title": "Achilles",
-    "artist": "zane-little-music",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/achilles",
-    "genre": "rock",
-    "bpm": 143.7,
-    "duration": 150.05,
-    "stars": 6,
-    "notes": 387,
-    "features": {
-      "circles": 54,
-      "rolls": 7,
       "slides": 14,
-      "holds": 51,
-      "laneChanges": 15
+      "holds": 25,
+      "laneChanges": 8
     }
   },
   {
@@ -541,12 +560,12 @@
     "bpm": 171.4,
     "duration": 136.96,
     "stars": 6,
-    "notes": 392,
+    "notes": 386,
     "features": {
       "circles": 42,
       "rolls": 1,
-      "slides": 18,
-      "holds": 37,
+      "slides": 17,
+      "holds": 36,
       "laneChanges": 7
     }
   },
@@ -560,12 +579,12 @@
     "bpm": 113.4,
     "duration": 138.92,
     "stars": 6,
-    "notes": 415,
+    "notes": 400,
     "features": {
       "circles": 60,
       "rolls": 2,
       "slides": 7,
-      "holds": 41,
+      "holds": 36,
       "laneChanges": 10
     }
   },
@@ -579,13 +598,33 @@
     "bpm": 161,
     "duration": 150.05,
     "stars": 6,
-    "notes": 426,
+    "notes": 411,
     "features": {
       "circles": 41,
       "rolls": 0,
-      "slides": 24,
-      "holds": 81,
+      "slides": 22,
+      "holds": 75,
       "laneChanges": 9
+    }
+  },
+  {
+    "id": "funky-house",
+    "title": "Funky House",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/funky-house",
+    "genre": "house",
+    "premium": true,
+    "bpm": 128.8,
+    "duration": 137.46,
+    "stars": 6,
+    "notes": 418,
+    "features": {
+      "circles": 46,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 54,
+      "laneChanges": 11
     }
   },
   {
@@ -598,32 +637,13 @@
     "bpm": 135.1,
     "duration": 98.56,
     "stars": 7,
-    "notes": 258,
+    "notes": 257,
     "features": {
-      "circles": 88,
-      "rolls": 4,
+      "circles": 90,
+      "rolls": 2,
       "slides": 19,
       "holds": 11,
       "laneChanges": 3
-    }
-  },
-  {
-    "id": "growing-village",
-    "title": "Growing Village",
-    "artist": "earlbeat",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/growing-village",
-    "genre": "world",
-    "bpm": 199.2,
-    "duration": 92.06,
-    "stars": 7,
-    "notes": 266,
-    "features": {
-      "circles": 24,
-      "rolls": 0,
-      "slides": 17,
-      "holds": 48,
-      "laneChanges": 9
     }
   },
   {
@@ -655,12 +675,12 @@
     "bpm": 152.6,
     "duration": 127.35,
     "stars": 7,
-    "notes": 324,
+    "notes": 319,
     "features": {
       "circles": 83,
-      "rolls": 1,
+      "rolls": 0,
       "slides": 10,
-      "holds": 34,
+      "holds": 33,
       "laneChanges": 6
     }
   },
@@ -674,11 +694,11 @@
     "bpm": 151.7,
     "duration": 127.43,
     "stars": 7,
-    "notes": 334,
+    "notes": 328,
     "features": {
       "circles": 123,
-      "rolls": 4,
-      "slides": 21,
+      "rolls": 1,
+      "slides": 20,
       "holds": 19,
       "laneChanges": 10
     }
@@ -693,12 +713,12 @@
     "bpm": 139.8,
     "duration": 129.57,
     "stars": 7,
-    "notes": 378,
+    "notes": 376,
     "features": {
       "circles": 103,
-      "rolls": 1,
+      "rolls": 0,
       "slides": 11,
-      "holds": 35,
+      "holds": 34,
       "laneChanges": 9
     }
   },
@@ -712,12 +732,12 @@
     "bpm": 117.5,
     "duration": 150.05,
     "stars": 7,
-    "notes": 388,
+    "notes": 379,
     "features": {
       "circles": 137,
-      "rolls": 5,
-      "slides": 23,
-      "holds": 20,
+      "rolls": 2,
+      "slides": 21,
+      "holds": 18,
       "laneChanges": 4
     }
   },
@@ -731,32 +751,13 @@
     "bpm": 152,
     "duration": 150.05,
     "stars": 7,
-    "notes": 393,
+    "notes": 384,
     "features": {
-      "circles": 113,
-      "rolls": 3,
-      "slides": 20,
-      "holds": 33,
+      "circles": 114,
+      "rolls": 2,
+      "slides": 18,
+      "holds": 30,
       "laneChanges": 17
-    }
-  },
-  {
-    "id": "technomania101",
-    "title": "Technomania101 - 2000's europop electronic dance music",
-    "artist": "Fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
-    "genre": "eurobeat",
-    "bpm": 142.9,
-    "duration": 141.98,
-    "stars": 7,
-    "notes": 394,
-    "features": {
-      "circles": 104,
-      "rolls": 1,
-      "slides": 28,
-      "holds": 29,
-      "laneChanges": 7
     }
   },
   {
@@ -769,13 +770,32 @@
     "bpm": 161.1,
     "duration": 150.05,
     "stars": 7,
-    "notes": 398,
+    "notes": 393,
     "features": {
-      "circles": 96,
-      "rolls": 2,
-      "slides": 25,
-      "holds": 31,
+      "circles": 98,
+      "rolls": 1,
+      "slides": 24,
+      "holds": 28,
       "laneChanges": 15
+    }
+  },
+  {
+    "id": "technomania101",
+    "title": "Technomania101 - 2000's europop electronic dance music",
+    "artist": "Fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
+    "genre": "eurobeat",
+    "bpm": 142.9,
+    "duration": 141.98,
+    "stars": 7,
+    "notes": 395,
+    "features": {
+      "circles": 109,
+      "rolls": 1,
+      "slides": 26,
+      "holds": 28,
+      "laneChanges": 7
     }
   },
   {
@@ -790,8 +810,8 @@
     "stars": 7,
     "notes": 399,
     "features": {
-      "circles": 124,
-      "rolls": 2,
+      "circles": 127,
+      "rolls": 0,
       "slides": 13,
       "holds": 37,
       "laneChanges": 9
@@ -807,33 +827,13 @@
     "bpm": 207,
     "duration": 150.05,
     "stars": 7,
-    "notes": 443,
+    "notes": 442,
     "features": {
-      "circles": 78,
-      "rolls": 2,
+      "circles": 79,
+      "rolls": 1,
       "slides": 16,
       "holds": 53,
       "laneChanges": 8
-    }
-  },
-  {
-    "id": "funky-house",
-    "title": "Funky House",
-    "artist": "Of Far Different Nature",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/funky-house",
-    "genre": "house",
-    "premium": true,
-    "bpm": 128.8,
-    "duration": 137.46,
-    "stars": 7,
-    "notes": 457,
-    "features": {
-      "circles": 46,
-      "rolls": 1,
-      "slides": 11,
-      "holds": 57,
-      "laneChanges": 11
     }
   },
   {
@@ -846,12 +846,12 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 7,
-    "notes": 459,
+    "notes": 454,
     "features": {
       "circles": 133,
       "rolls": 1,
       "slides": 20,
-      "holds": 41,
+      "holds": 39,
       "laneChanges": 12
     }
   },
@@ -865,12 +865,12 @@
     "bpm": 172.8,
     "duration": 150.05,
     "stars": 7,
-    "notes": 470,
+    "notes": 464,
     "features": {
       "circles": 58,
       "rolls": 0,
       "slides": 3,
-      "holds": 63,
+      "holds": 59,
       "laneChanges": 10
     }
   },
@@ -884,12 +884,12 @@
     "bpm": 216.8,
     "duration": 149.97,
     "stars": 7,
-    "notes": 486,
+    "notes": 470,
     "features": {
       "circles": 38,
-      "rolls": 6,
-      "slides": 39,
-      "holds": 63,
+      "rolls": 4,
+      "slides": 37,
+      "holds": 55,
       "laneChanges": 15
     }
   },
@@ -903,10 +903,10 @@
     "bpm": 143.4,
     "duration": 150.05,
     "stars": 7,
-    "notes": 492,
+    "notes": 489,
     "features": {
       "circles": 134,
-      "rolls": 3,
+      "rolls": 0,
       "slides": 6,
       "holds": 43,
       "laneChanges": 8
@@ -923,12 +923,12 @@
     "bpm": 163.1,
     "duration": 85.81,
     "stars": 8,
-    "notes": 279,
+    "notes": 276,
     "features": {
-      "circles": 99,
+      "circles": 100,
       "rolls": 1,
       "slides": 16,
-      "holds": 23,
+      "holds": 21,
       "laneChanges": 8
     }
   },
@@ -942,33 +942,13 @@
     "bpm": 151.4,
     "duration": 102.43,
     "stars": 8,
-    "notes": 302,
+    "notes": 303,
     "features": {
-      "circles": 124,
-      "rolls": 1,
+      "circles": 127,
+      "rolls": 0,
       "slides": 17,
-      "holds": 25,
-      "laneChanges": 5
-    }
-  },
-  {
-    "id": "polygons-n-light",
-    "title": "Polygons N' Light",
-    "artist": "Umplix",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/polygons-n-light",
-    "genre": "electronic",
-    "premium": true,
-    "bpm": 144,
-    "duration": 106.53,
-    "stars": 8,
-    "notes": 357,
-    "features": {
-      "circles": 145,
-      "rolls": 8,
-      "slides": 16,
       "holds": 24,
-      "laneChanges": 2
+      "laneChanges": 5
     }
   },
   {
@@ -982,13 +962,33 @@
     "bpm": 163.2,
     "duration": 125.13,
     "stars": 8,
-    "notes": 362,
+    "notes": 347,
     "features": {
       "circles": 139,
-      "rolls": 15,
+      "rolls": 9,
       "slides": 8,
-      "holds": 23,
+      "holds": 19,
       "laneChanges": 12
+    }
+  },
+  {
+    "id": "polygons-n-light",
+    "title": "Polygons N' Light",
+    "artist": "Umplix",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/polygons-n-light",
+    "genre": "electronic",
+    "premium": true,
+    "bpm": 144,
+    "duration": 106.53,
+    "stars": 8,
+    "notes": 350,
+    "features": {
+      "circles": 147,
+      "rolls": 3,
+      "slides": 15,
+      "holds": 23,
+      "laneChanges": 2
     }
   },
   {
@@ -1001,12 +1001,12 @@
     "bpm": 185,
     "duration": 109.77,
     "stars": 8,
-    "notes": 375,
+    "notes": 369,
     "features": {
       "circles": 114,
-      "rolls": 4,
-      "slides": 17,
-      "holds": 37,
+      "rolls": 2,
+      "slides": 16,
+      "holds": 35,
       "laneChanges": 11
     }
   },
@@ -1021,12 +1021,12 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 8,
-    "notes": 423,
+    "notes": 427,
     "features": {
-      "circles": 177,
-      "rolls": 2,
-      "slides": 28,
-      "holds": 21,
+      "circles": 185,
+      "rolls": 1,
+      "slides": 27,
+      "holds": 19,
       "laneChanges": 6
     }
   },
@@ -1041,12 +1041,12 @@
     "bpm": 216.8,
     "duration": 137.48,
     "stars": 8,
-    "notes": 475,
+    "notes": 470,
     "features": {
       "circles": 112,
-      "rolls": 2,
+      "rolls": 1,
       "slides": 15,
-      "holds": 62,
+      "holds": 60,
       "laneChanges": 18
     }
   },
@@ -1060,12 +1060,12 @@
     "bpm": 163,
     "duration": 150.05,
     "stars": 8,
-    "notes": 479,
+    "notes": 476,
     "features": {
-      "circles": 169,
-      "rolls": 4,
+      "circles": 172,
+      "rolls": 1,
       "slides": 25,
-      "holds": 42,
+      "holds": 41,
       "laneChanges": 8
     }
   },
@@ -1079,9 +1079,9 @@
     "bpm": 129.5,
     "duration": 150.05,
     "stars": 8,
-    "notes": 528,
+    "notes": 520,
     "features": {
-      "circles": 129,
+      "circles": 132,
       "rolls": 3,
       "slides": 9,
       "holds": 23,
@@ -1098,12 +1098,12 @@
     "bpm": 143.5,
     "duration": 150.05,
     "stars": 9,
-    "notes": 557,
+    "notes": 545,
     "features": {
-      "circles": 176,
+      "circles": 178,
       "rolls": 1,
-      "slides": 15,
-      "holds": 43,
+      "slides": 14,
+      "holds": 40,
       "laneChanges": 9
     }
   },
@@ -1117,10 +1117,10 @@
     "bpm": 199.2,
     "duration": 150.05,
     "stars": 9,
-    "notes": 586,
+    "notes": 581,
     "features": {
       "circles": 156,
-      "rolls": 5,
+      "rolls": 2,
       "slides": 11,
       "holds": 51,
       "laneChanges": 15

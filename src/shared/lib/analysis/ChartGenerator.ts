@@ -379,6 +379,14 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   //    same step of the figure gets the same treatment in every bar of the phrase.
   const holdBudget = new Map<number, number>();
   let activeHold: Event | null = null;
+  /** A long note must end a beat before the next circle: circle windows are circles only, and the free thumb taps them. */
+  const clampBeforeCircle = (i: number, len: number): number => {
+    const si = events[i].si;
+    for (let j = i + 1; j < events.length && events[j].si < si + len + 4; j++) {
+      if (events[j].kind === 'circle') return Math.min(len, events[j].si - 4 - si);
+    }
+    return len;
+  };
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
     const slot = slots[ev.si];
@@ -404,7 +412,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     if (ev.kind) continue; // spells and circles stay plain taps
     const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET;
     const melodic = slot.low < 0.55;
-    const bassLen = Math.min(slot.sustain, gapNext, 8);
+    const bassLen = clampBeforeCircle(i, Math.min(slot.sustain, gapNext, 8));
     const bassDur = slots[Math.min(slots.length - 1, ev.si + bassLen)].time - slot.time;
     const bassTaps = Math.min(ROLL_MAX_TAPS, Math.round(bassLen / 2) + 1, Math.floor(bassDur * ROLL_MAX_TAPS_PER_SEC));
     if (
@@ -433,7 +441,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       !activeHold &&
       decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity]
     ) {
-      let dur = Math.min(slot.sustain, MAX_HOLD_SLOTS);
+      let dur = clampBeforeCircle(i, Math.min(slot.sustain, MAX_HOLD_SLOTS));
       const barEnd = ev.bar.start + ev.bar.slots.length;
       if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
       else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd + STEPS_PER_BAR - SECTION_GAP_SLOTS - ev.si);
