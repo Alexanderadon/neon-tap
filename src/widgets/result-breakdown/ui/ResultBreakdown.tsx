@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { sfxRank } from '@/shared/lib/audio';
+import { sfxMilestone, sfxRank } from '@/shared/lib/audio';
 import { Button, Stars } from '@/shared/ui';
 import { parseChartLevel, parseSections, type ChartFile, type ParsedNote, type Section } from '@/entities/chart';
 import { densestSlice, formatClock, summarizeTimeline, type PlayResult, type TimeRange } from '@/entities/score';
@@ -11,6 +11,8 @@ import { SongStrip } from './SongStrip';
 import { AccuracyChart } from './AccuracyChart';
 import { BestMomentReplay } from './BestMomentReplay';
 import { ShareRow } from './ShareRow';
+import { EarnedBadges } from './EarnedBadges';
+import { useCountUp } from '../lib/useCountUp';
 import './result.css';
 
 interface Props {
@@ -21,8 +23,10 @@ interface Props {
   onRetry: () => void;
   /** "Next" — the following playable track; hidden when there is none or the run failed. */
   onNext?: () => void;
-  /** Extra one-line celebrations (daily bonus, completed goal), one per entry. */
+  /** Extra one-line celebrations (daily bonus), one per entry. */
   notes?: readonly string[];
+  /** Achievements completed by this run (goal ids) — shown as a row of badges. */
+  goals?: readonly string[];
   /** Optional compact line rendered right under the breakdown grid (e.g. attempt history). */
   belowGrid?: ReactNode;
   /** The chart that was played: lane-section bands under the strip and notes for the replay. */
@@ -42,9 +46,16 @@ const NO_NOTES: readonly ParsedNote[] = [];
  * Result screen body: rank, breakdown, near-miss hint and a dominant RETRY (GDD §1.3), followed by
  * "where did I miss" — song strip, accuracy/combo chart, highlights, best-moment replay and sharing.
  */
-export function ResultBreakdown({ result, meta, title, subtitle, onRetry, onNext, notes: noteLines, belowGrid, chart, extraTop, extraBottom }: Props) {
+export function ResultBreakdown({ result, meta, title, subtitle, onRetry, onNext, notes: noteLines, goals, belowGrid, chart, extraTop, extraBottom }: Props) {
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
   const [details, setDetails] = useState(false);
+  // The numbers run up after the rank lands; the score last and longest, then it pops.
+  const score = useCountUp(result.score, 1300, 350);
+  const accuracy = useCountUp(Math.round(result.accuracy * 1000), 900, 350);
+  const combo = useCountUp(result.maxCombo, 900, 350);
+  useEffect(() => {
+    if (score.done && result.score > 0 && !result.failed) sfxMilestone();
+  }, [score.done, result.score, result.failed]);
 
   useEffect(() => {
     if (result.failed) {
@@ -149,19 +160,21 @@ export function ResultBreakdown({ result, meta, title, subtitle, onRetry, onNext
       {meaning && <div className={`result-meaning${result.failed ? ' is-failed' : ''}`}>{meaning}</div>}
 
       <div className="result-numbers">
-        <div className="result-number">
-          <b>{result.score.toLocaleString('ru-RU')}</b>
+        <div className={`result-number result-score${score.done && result.score > 0 ? ' is-done' : ''}`}>
+          <b>{score.value.toLocaleString('ru-RU')}</b>
           <span className="micro">{dict.score}</span>
         </div>
         <div className="result-number">
-          <b>{(result.accuracy * 100).toFixed(1)}%</b>
+          <b>{(accuracy.value / 10).toFixed(1)}%</b>
           <span className="micro">{dict.accuracy}</span>
         </div>
         <div className="result-number">
-          <b>{result.maxCombo}</b>
+          <b>{combo.value}</b>
           <span className="micro">{dict.maxCombo}</span>
         </div>
       </div>
+
+      {goals && goals.length > 0 && <EarnedBadges ids={goals} />}
 
       {(noteLines?.length || meta?.crystals || (starsGained > 0 && meaning !== fmt(dict.starsEarned, { n: starsGained }))) && (
         <div className="result-pills">

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { dict, fmt } from '@/shared/i18n';
+import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { Screen } from '@/shared/ui';
 import { startSession, useSession } from '@/entities/play-session';
 import { CATALOG, loadChart } from '@/entities/track';
-import { findGoal } from '@/entities/progress';
 import { ResultBreakdown } from '@/widgets/result-breakdown';
 import { useCatalogState } from '@/widgets/track-list';
 import { AttemptLine } from '@/widgets/history-panel';
@@ -36,11 +35,9 @@ export function ResultPage() {
 
   if (!chart || !result) return null;
 
-  // Progression celebrations: daily bonus star and any goal this run completed (one line each).
+  // Progression celebrations: the daily bonus star as a pill; completed goals as a row of badges.
   const notes: string[] = [];
   if (resultMeta?.dailyBonus) notes.push(dict.dailyBonus);
-  const goalTitles = (resultMeta?.goalsCompleted ?? []).map((id) => findGoal(id)?.title).filter((t): t is string => !!t);
-  for (const title of goalTitles) notes.push(fmt(dict.goalCompleted, { title }));
 
   return (
     <Screen center>
@@ -53,6 +50,7 @@ export function ResultPage() {
         onNext={nextId ? () => void next() : undefined}
         chart={chart}
         notes={notes}
+        goals={resultMeta?.goalsCompleted}
         belowGrid={
           <>
             {resultMeta?.crystals ? <CrystalsEarned n={resultMeta.crystals} /> : null}

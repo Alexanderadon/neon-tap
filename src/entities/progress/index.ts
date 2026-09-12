@@ -19,3 +19,4 @@ export { GOALS, findGoal, goalProgress, isGoalDone, bonusStars, grandTotalStars,
 export type { Goal, GoalFamily } from './model/goals';
 export { trackPrice, isForSale, isPurchased, canAfford, addCrystals, purchaseTrack, PRICE_BASE, PRICE_PER_STAR, PREMIUM_MULTIPLIER } from './model/shop';
 export type { PurchaseFailure } from './model/shop';
+export { FamilyIcon } from './ui/FamilyIcon';

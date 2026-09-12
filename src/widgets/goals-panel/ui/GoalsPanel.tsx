@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { CrystalIcon } from '@/shared/ui';
-import { GOALS, goalProgress, isGoalDone, useProgress, type Goal, type SaveData } from '@/entities/progress';
+import { FamilyIcon, GOALS, goalProgress, isGoalDone, useProgress, type Goal, type SaveData } from '@/entities/progress';
 import './goals-panel.css';
 
 /**
@@ -51,9 +51,18 @@ function Badge({ goal, save, open, onToggle }: { goal: Goal; save: SaveData; ope
   const cls = ['ach-badge', earned && 'is-earned', open && 'is-open'].filter(Boolean).join(' ');
   return (
     <li className={cls}>
-      <button type="button" className="ach-hit" onClick={onToggle} aria-expanded={open} aria-label={`${goal.title}: ${earned ? dict.achEarned : fmt(dict.goalsDone, { done: value, total: goal.target })}`}>
+      <button
+        type="button"
+        className="ach-hit"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-label={`${goal.title}: ${earned ? dict.achEarned : fmt(dict.goalsDone, { done: value, total: goal.target })}`}
+      >
         <span className="ach-ring" style={{ ['--p' as string]: ratio }} aria-hidden="true">
           <span className="ach-target mono">{goal.target}</span>
+          <span className="ach-glyph">
+            <FamilyIcon family={goal.family} size={12} />
+          </span>
         </span>
         <span className="ach-name">{goal.title}</span>
       </button>
