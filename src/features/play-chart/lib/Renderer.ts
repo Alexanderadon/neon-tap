@@ -1111,27 +1111,32 @@ export class Renderer {
     ctx.shadowBlur = 0;
     ctx.font = `400 13px ${FONT}`;
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillText(`${to >= 5 ? 'ПОЛОС' : 'ПОЛОСЫ'} · ${to > from ? 'ШИРЕ' : 'УЖЕ'}`, width / 2, height * 0.3 + 40 * scale);
+    ctx.fillText(`${to === 1 ? 'ПОЛОСА' : to >= 5 ? 'ПОЛОС' : 'ПОЛОСЫ'} · ${to > from ? 'ШИРЕ' : 'УЖЕ'}`, width / 2, height * 0.3 + 40 * scale);
     ctx.globalAlpha = 1;
   }
 
   /**
    * Lane-count change, part 2: dividers and receptors physically slide to their new places —
    * lanes split apart or merge, with a slight overshoot and light trails while they move.
-   * The new geometry's static layer fades in over the last quarter of the transition.
+   * Each count uses its own geometry (a single lane is a narrow centred column), so the old
+   * pieces travel from the old lane area to the new one. The new geometry's static layer fades
+   * in over the last quarter of the transition.
    */
   private drawLaneMorph(from: number, to: number, t: number): void {
     const ctx = this.ctx;
-    const L = this.layout;
-    const { laneX, laneAreaWidth: W, hitY, height, noteHeight } = L;
+    const A = this.set(from).layout;
+    const B = this.set(to).layout;
+    const { hitY, height, noteHeight } = B;
     const u = Math.min(1, t / 0.72);
     const k = 0.7;
     const e = 1 + (k + 1) * (u - 1) ** 3 + k * (u - 1) ** 2; // ease-out-back
     const fadeOld = Math.max(0, 1 - t / 0.45);
     const fadeNew = Math.min(1, t / 0.45);
     const trail = Math.sin(Math.PI * u);
-    const wOld = W / from;
-    const wNew = W / to;
+    const wOld = A.laneWidth;
+    const wNew = B.laneWidth;
+    // Divider `i` of an `n`-lane field, in that field's own lane area.
+    const dividerX = (L: Layout, i: number, n: number) => L.laneX + (i / n) * L.laneAreaWidth;
 
     const divider = (x: number, alpha: number) => {
       if (alpha <= 0.02) return;
@@ -1154,13 +1159,13 @@ export class Renderer {
     };
     // Old dividers converge on the nearest new one; new ones emerge from the nearest old one.
     for (let i = 1; i < from; i++) {
-      const x0 = laneX + (i / from) * W;
-      const x1 = laneX + (Math.round((i * to) / from) / to) * W;
+      const x0 = dividerX(A, i, from);
+      const x1 = dividerX(B, Math.round((i * to) / from), to);
       divider(x0 + (x1 - x0) * e, fadeOld);
     }
     for (let j = 1; j < to; j++) {
-      const x1 = laneX + (j / to) * W;
-      const x0 = laneX + (Math.round((j * from) / to) / from) * W;
+      const x1 = dividerX(B, j, to);
+      const x0 = dividerX(A, Math.round((j * from) / to), from);
       divider(x0 + (x1 - x0) * e, fadeNew);
     }
 
@@ -1175,15 +1180,15 @@ export class Renderer {
       ctx.stroke();
     };
     for (let i = 0; i < from; i++) {
-      const c0 = laneX + (i + 0.5) * wOld;
+      const c0 = A.laneX + (i + 0.5) * wOld;
       const j = Math.min(to - 1, Math.max(0, Math.round(((i + 0.5) * to) / from - 0.5)));
-      const c1 = laneX + (j + 0.5) * wNew;
+      const c1 = B.laneX + (j + 0.5) * wNew;
       pill(c0 + (c1 - c0) * e, wOld + (wNew - wOld) * e, this.laneColors[i % this.laneColors.length], fadeOld);
     }
     for (let j = 0; j < to; j++) {
-      const c1 = laneX + (j + 0.5) * wNew;
+      const c1 = B.laneX + (j + 0.5) * wNew;
       const i = Math.min(from - 1, Math.max(0, Math.round(((j + 0.5) * from) / to - 0.5)));
-      const c0 = laneX + (i + 0.5) * wOld;
+      const c0 = A.laneX + (i + 0.5) * wOld;
       pill(c0 + (c1 - c0) * e, wOld + (wNew - wOld) * e, this.laneColors[j % this.laneColors.length], fadeNew);
     }
     ctx.shadowBlur = 0;

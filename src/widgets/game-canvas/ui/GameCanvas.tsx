@@ -73,7 +73,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           if (e.hearts === 1) voice.say('ne-sdavaysya', true);
           break;
         case 'spell':
-          trackSpell(e.kind);
+          if (!tutorial) trackSpell(e.kind); // the tutorial's spell does not count toward goals
           if (e.kind === 'slow') voice.say('ogon', true);
           break;
         case 'lanes':
