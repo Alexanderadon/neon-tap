@@ -18,8 +18,25 @@ import {
 import { ParticlePool, ScreenShake, LaneFlash } from '@/shared/lib/render';
 import type { Judgement } from '@/entities/score';
 import type { SpellKind } from '@/entities/chart';
+import { dict } from '@/shared/i18n';
 import { NoteState, type NoteManager, type PooledNote } from '../model/NoteManager';
 import { computeLayout, touchZoneRect, type Layout } from './layout';
+
+/** What the renderer needs to draw a spinner. */
+export interface SpinFrame {
+  /** 1 far away → 0 at its start; negative while it runs. */
+  approach: number;
+  revolutions: number;
+  required: number;
+  /** Bonus score earned so far by extra revolutions. */
+  bonus: number;
+  /** Seconds since the bonus last grew (Infinity when it hasn't). */
+  bonusAge: number;
+  /** Revolutions per second right now (visual energy). */
+  rate: number;
+  /** 1 while the wheel is up; falls to 0 over the fade after its verdict. */
+  fade: number;
+}
 
 export interface FrameState {
   songTime: number;
@@ -50,6 +67,8 @@ export interface FrameState {
   /** Points awarded by the last judgement (for the "+300" popup). */
   lastGain: number;
   comboBreakAge: number;
+  /** The spinner on screen (approaching or running), or null. */
+  spin: SpinFrame | null;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
@@ -126,6 +145,14 @@ export function circlePos(L: Layout, seq: number): { x: number; y: number } {
 export function circleRadius(L: Layout): number {
   return Math.max(18, Math.min(L.laneAreaWidth / 9, 40));
 }
+
+/** Spinner geometry: centred over the field, above the hit line, as big as the narrowest phone allows. */
+export function spinGeometry(L: Layout): { x: number; y: number; r: number } {
+  return { x: L.laneX + L.laneAreaWidth / 2, y: L.hitY * 0.5, r: Math.min(L.laneAreaWidth * 0.36, L.hitY * 0.27) };
+}
+
+/** The wheel grows in over this share of the approach time (the last notes before it are still landing). */
+const SPIN_GROW_SHARE = 0.45;
 
 /** Only this many pending circles are drawn ahead — more would pile numbers on top of each other. */
 const CIRCLES_AHEAD = 4;
@@ -718,6 +745,7 @@ export class Renderer {
     for (let i = notes.firstActive; i < notes.count; i++) {
       const n = notes.pool[i];
       if (n.time > horizon) break;
+      if (n.kind === 'spin') continue; // drawn from the frame state, not the pool
       if (n.state === NoteState.Hit || n.state === NoteState.Released) continue;
       const set = n.lanes === this.current ? cur : this.set(n.lanes);
       const lw = set.layout.laneWidth;
@@ -790,6 +818,7 @@ export class Renderer {
       visible++;
     }
     this.visibleNotes = visible;
+    if (s.spin) this.drawSpinner(L, s.spin);
 
     // Perfect / circle rings.
     ctx.lineWidth = 2;
@@ -1141,6 +1170,94 @@ export class Renderer {
       ctx.fillText(String(n.seq || 1), cx, cy + 1);
     }
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * osu!-style spinner: a big wheel in the middle of the empty field. It grows in during the
+   * approach with the word "Крути", then three blades turn with the player's circling, a progress
+   * arc fills towards the required revolutions and every extra revolution pops a bonus.
+   */
+  private drawSpinner(L: Layout, sp: SpinFrame): void {
+    const ctx = this.ctx;
+    const { x, y, r } = spinGeometry(L);
+    const active = sp.approach <= 0;
+    // The wheel grows in over the last part of its approach and swells slightly as it fades out.
+    const t = active ? 0 : Math.min(1, sp.approach / SPIN_GROW_SHARE);
+    const R = r * (1 + 0.5 * t + 0.15 * (1 - sp.fade));
+    const over = sp.revolutions >= sp.required;
+    const main = over ? this.theme.glow : this.theme.accent;
+    ctx.save();
+    ctx.globalAlpha = (active ? 1 : 0.3 + 0.7 * (1 - t)) * sp.fade;
+    const haze = R * (1.4 + 0.25 * Math.min(1, sp.rate / 3));
+    ctx.drawImage(this.hazeAccent.canvas, x - haze, y - haze, haze * 2, haze * 2);
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(4, R * 0.06);
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.beginPath();
+    ctx.arc(x, y, R, 0, Math.PI * 2);
+    ctx.stroke();
+    const progress = sp.required > 0 ? Math.min(1, sp.revolutions / sp.required) : 1;
+    if (progress > 0) {
+      ctx.strokeStyle = main;
+      ctx.shadowColor = main;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    // Blades turn with the player's revolutions.
+    ctx.translate(x, y);
+    ctx.rotate(sp.revolutions * Math.PI * 2);
+    ctx.strokeStyle = main;
+    ctx.lineWidth = Math.max(3, R * 0.05);
+    for (let k = 0; k < 3; k++) {
+      const a = (k * Math.PI * 2) / 3;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * R * 0.38, Math.sin(a) * R * 0.38);
+      ctx.lineTo(Math.cos(a) * R * 0.82, Math.sin(a) * R * 0.82);
+      ctx.stroke();
+    }
+    ctx.rotate(-sp.revolutions * Math.PI * 2);
+    ctx.translate(-x, -y);
+    ctx.fillStyle = this.discColor;
+    ctx.beginPath();
+    ctx.arc(x, y, R * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (active) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `900 ${Math.round(R * 0.36)}px ${FONT}`;
+      ctx.fillText(String(Math.floor(sp.revolutions)), x, y - R * 0.02);
+      ctx.font = `400 ${Math.round(R * 0.13)}px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(`/ ${sp.required}`, x, y + R * 0.2);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `900 ${Math.round(R * 0.22)}px ${FONT}`;
+      ctx.fillText(dict.spinHint.toUpperCase(), x, y);
+    }
+    if (over && sp.bonus > 0) {
+      const a = Math.min(1, sp.bonusAge / 0.5);
+      ctx.globalAlpha = 1 - 0.5 * a;
+      ctx.fillStyle = this.theme.glow;
+      ctx.shadowColor = this.theme.glow;
+      ctx.shadowBlur = 16;
+      ctx.font = `900 ${Math.round(R * 0.26)}px ${FONT}`;
+      ctx.fillText(`+${sp.bonus}`, x, y - R * 1.28 - a * 10);
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
+
+  /** The spinner ended: a burst from its centre (the judgement text comes from the HUD as usual). */
+  spinDone(judgement: Judgement): void {
+    const { x, y } = spinGeometry(this.layout);
+    if (judgement === 'miss') return;
+    this.ring(x, y, 1);
+    this.particles.emit(x, y, judgement === 'perfect' ? 28 : 14, 1, 460, 5, 0.6);
+    if (this.fxLevel === 'full') this.shake.trigger(judgement === 'perfect' ? 6 : 3);
   }
 
   /** Lane-count change, part 1: a short white flash and the new count fading in above the field. */

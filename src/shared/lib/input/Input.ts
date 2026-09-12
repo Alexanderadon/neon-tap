@@ -10,9 +10,21 @@ export interface LaneEvent {
   viaMove?: boolean;
 }
 
+/** Raw pointer position (client coordinates) of a finger / mouse that is down on the field. */
+export interface PointerEventInfo {
+  pointerId: number;
+  x: number;
+  y: number;
+  audioTime: number;
+}
+
 export interface InputHandlers {
   onPress: (e: LaneEvent) => void;
   onRelease: (e: LaneEvent) => void;
+  /** Every pointer that is down, as it lands and moves — for the spinner, which reads motion, not lanes. */
+  onPointerDown?: (e: PointerEventInfo) => void;
+  onPointerMove?: (e: PointerEventInfo) => void;
+  onPointerUp?: (e: PointerEventInfo) => void;
 }
 
 interface Options {
@@ -124,6 +136,7 @@ export class Input {
     e.preventDefault();
     this.pointerTime = this.eventAudioTime(e);
     this.pointers.down(e.pointerId, this.opts.laneAt(e.clientX, e.clientY));
+    this.handlers?.onPointerDown?.({ pointerId: e.pointerId, x: e.clientX, y: e.clientY, audioTime: this.pointerTime });
   };
 
   private onPointerMove = (e: PointerEvent): void => {
@@ -131,6 +144,7 @@ export class Input {
     e.preventDefault();
     this.pointerTime = this.eventAudioTime(e);
     this.pointers.move(e.pointerId, this.opts.laneAt(e.clientX, e.clientY));
+    this.handlers?.onPointerMove?.({ pointerId: e.pointerId, x: e.clientX, y: e.clientY, audioTime: this.pointerTime });
   };
 
   /** pointerup and pointercancel (browser took the touch: scroll gesture, incoming call, palm) both lift the finger. */
@@ -138,6 +152,7 @@ export class Input {
     e.preventDefault();
     this.pointerTime = this.eventAudioTime(e);
     this.pointers.up(e.pointerId);
+    this.handlers?.onPointerUp?.({ pointerId: e.pointerId, x: e.clientX, y: e.clientY, audioTime: this.pointerTime });
   };
 
   private releaseAll = (): void => {

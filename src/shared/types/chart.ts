@@ -4,15 +4,18 @@
  *  - circle: osu!-style hit circle, tapped on screen (or Space), never a lane key.
  *  - roll: drum roll — tap the lane `extra` times before the bar runs out.
  *  - slide: a hold that travels to lane `extra`; keep the finger on it and slide.
+ *  - spin: osu!-style spinner — the field is empty, circle a finger (or the mouse) around the
+ *    centre for `duration`; enough revolutions clear it, every extra one is bonus score.
  */
-export type NoteKind = 'slow' | 'heart' | 'circle' | 'roll' | 'slide';
+export type NoteKind = 'slow' | 'heart' | 'circle' | 'roll' | 'slide' | 'spin';
 export type SpellKind = 'slow' | 'heart';
 
 /**
  * `[timeSec, lane]` tap · `[timeSec, lane, durationSec]` hold ·
  * `[timeSec, lane, 0, 'slow' | 'heart' | 'circle']` special tap ·
  * `[timeSec, lane, durationSec, 'roll', taps]` drum roll ·
- * `[timeSec, lane, durationSec, 'slide', endLane]` slide hold.
+ * `[timeSec, lane, durationSec, 'slide', endLane]` slide hold ·
+ * `[timeSec, 0, durationSec, 'spin']` spinner (lane is ignored).
  */
 export type NoteTuple =
   | [number, number]

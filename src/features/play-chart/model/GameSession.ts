@@ -1,4 +1,4 @@
-import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES } from '@/shared/config/constants';
+import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES, SPIN_BONUS_PER_REV, SPIN_BUCKET } from '@/shared/config/constants';
 import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxGem, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
@@ -8,11 +8,12 @@ import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type ParsedNote, type Section, type SpellKind } from '@/entities/chart';
 import type { FxMode } from '@/entities/settings';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
-import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
+import { NoteManager, NoteState, type JudgeEvent, type PooledNote } from './NoteManager';
+import { SpinTracker } from './SpinTracker';
 import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems } from './gems';
-import { Renderer, circlePos, circleRadius } from '../lib/Renderer';
+import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
 export type SessionEvent =
@@ -65,6 +66,8 @@ export interface SessionOptions {
 const TIME_REPORT_MS = 100;
 
 const LEAD_IN = 2.0;
+/** The spinner's wheel fades out this long after its verdict. */
+const SPIN_FADE_SEC = 0.35;
 /** How long a tap keeps the lead layer open (a beat at 150 BPM). */
 const LEAD_TAP_SEC = 0.4;
 const MILESTONES = [50, 100, 250, 500, 1000];
@@ -122,6 +125,13 @@ export class GameSession {
   /** Crystals collected this run. */
   private crystals = 0;
   private gemAt = -1;
+  /** The spinner on screen (approaching or running) and the wheel that reads the player's circling. */
+  private spinNote: PooledNote | null = null;
+  private readonly spin = new SpinTracker();
+  private spinBonus = 0;
+  private spinBonusAt = -1;
+  /** The running spinner has started counting (the wheel was zeroed at its first frame). */
+  private spinStarted = false;
   /** When each section's lane count takes over: as soon as the previous section's last note is gone, but no later than one approach before the section starts. */
   private readonly switchTimes: number[];
   private readonly deltas: number[] = [];
@@ -170,6 +180,7 @@ export class GameSession {
         const r = opts.canvas.getBoundingClientRect();
         const px = x - r.left;
         const py = y - r.top;
+        if (this.spinNote) return SPIN_BUCKET; // the field is empty: every finger belongs to the wheel
         if (this.circleAt(px, py)) return CIRCLE_BUCKET;
         return laneAtPoint(this.renderer.layout, px, py, opts.touch);
       },
@@ -221,7 +232,13 @@ export class GameSession {
 
   start(): void {
     if (this.destroyed) return;
-    this.input.attach(this.opts.canvas, { onPress: this.onPress, onRelease: this.onRelease });
+    this.input.attach(this.opts.canvas, {
+      onPress: this.onPress,
+      onRelease: this.onRelease,
+      onPointerDown: (e) => this.spinPointer('down', e),
+      onPointerMove: (e) => this.spinPointer('move', e),
+      onPointerUp: (e) => this.spinPointer('up', e),
+    });
     this.restart();
   }
 
@@ -249,6 +266,11 @@ export class GameSession {
     this.perfectStreak = 0;
     this.crystals = 0;
     this.gemAt = -1;
+    this.spinNote = null;
+    this.spin.reset();
+    this.spinBonus = 0;
+    this.spinBonusAt = -1;
+    this.spinStarted = false;
     this.rollGems();
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
@@ -270,9 +292,21 @@ export class GameSession {
 
   resume(): void {
     if (!this.paused) return;
-    const pos = Math.max(0, this.clock.position() - 1);
+    this.resumeAt(Math.max(0, this.clock.position() - 1));
+  }
+
+  /** Dev (no-fail sessions, `window.__neon.seek(sec)`): jump the song; notes before the point are auto-missed. */
+  seek(songTime: number): void {
+    if (!this.started || this.finished) return;
+    if (!this.paused) this.pause();
+    this.resumeAt(Math.max(0, songTime));
+  }
+
+  private resumeAt(pos: number): void {
+    // play() returns the audio-clock instant of song position 0 (whatever position it starts at), which is
+    // exactly what the clock anchors on — passing pos again would count it twice and jump the notes ahead.
     const startTime = audioEngine.play(this.opts.audioBuffer, pos, () => this.finish(), 0.3, this.opts.leadBuffer ?? null);
-    this.clock.start(startTime, pos);
+    this.clock.start(startTime);
     this.slowUntil = -1;
     this.slowReleasing = false;
     audioEngine.tapeEffect(false, 0.01);
@@ -302,8 +336,86 @@ export class GameSession {
     if (!this.started || this.paused || this.finished) return;
     if (lane < MAX_LANES) this.renderer.pressFeedback(lane);
     if (viaMove) return; // a finger sliding into a lane is not a new tap
-    this.notes.press(lane, this.clock.toSongTime(audioTime));
+    const songTime = this.clock.toSongTime(audioTime);
+    // Keyboard fallback for the spinner: mashing lane keys turns the wheel a little.
+    if (lane < MAX_LANES && this.spinStarted) {
+      this.spin.tap(songTime);
+      this.syncSpin(songTime);
+      return;
+    }
+    this.notes.press(lane, songTime);
   };
+
+  /** A pointer down / move / up: while a spinner is on screen it turns the wheel. */
+  private spinPointer(phase: 'down' | 'move' | 'up', e: { pointerId: number; x: number; y: number; audioTime: number }): void {
+    if (!this.started || this.paused || this.finished) return;
+    if (phase === 'up') {
+      this.spin.up(e.pointerId);
+      return;
+    }
+    const note = this.spinNote;
+    if (!note) return;
+    const r = this.opts.canvas.getBoundingClientRect();
+    const songTime = this.clock.toSongTime(e.audioTime);
+    if (phase === 'down') this.spin.down(e.pointerId, e.x - r.left, e.y - r.top, songTime);
+    else this.spin.move(e.pointerId, e.x - r.left, e.y - r.top, songTime);
+    this.syncSpin(songTime);
+  }
+
+  /** Copy the wheel into the note and pay every full revolution beyond the required ones. */
+  private syncSpin(songTime: number): void {
+    const note = this.spinNote;
+    if (!note || !this.spinStarted) return;
+    note.spin = this.spin.revolutions;
+    const extra = Math.floor(note.spin - note.extra);
+    const bonus = Math.max(0, extra) * SPIN_BONUS_PER_REV;
+    if (bonus > this.spinBonus) {
+      this.scoring.addBonus(bonus - this.spinBonus);
+      this.spinBonus = bonus;
+      this.spinBonusAt = songTime;
+      sfxHit(0);
+    }
+  }
+
+  /** Per frame: which spinner is on screen; a new one resets the wheel and takes the current geometry. */
+  private trackSpin(songTime: number): void {
+    let note = this.notes.activeSpin(songTime, this.approachTime);
+    // Keep the finished wheel on screen for its fade.
+    const prev = this.spinNote;
+    if (!note && prev && prev.state === NoteState.Released && songTime - prev.endTime < SPIN_FADE_SEC) note = prev;
+    if (note !== this.spinNote) {
+      this.spinNote = note;
+      this.spin.reset();
+      this.spinBonus = 0;
+      this.spinBonusAt = -1;
+      this.spinStarted = false;
+    }
+    if (!note) return;
+    const g = spinGeometry(this.renderer.layoutFor(note.lanes));
+    this.spin.cx = g.x;
+    this.spin.cy = g.y;
+    this.spin.radius = g.r;
+    // The wheel only counts from the spinner's start: whatever was circled during the approach is dropped.
+    if (note.state === NoteState.Holding && !this.spinStarted) {
+      this.spinStarted = true;
+      this.spin.reset();
+    }
+  }
+
+  private spinFrame(songTime: number): SpinFrame | null {
+    const note = this.spinNote;
+    if (!note) return null;
+    const done = note.state === NoteState.Released;
+    return {
+      approach: note.state === NoteState.Pending ? (note.time - songTime) / this.approachTime : -1,
+      fade: done ? clamp(1 - (songTime - note.endTime) / SPIN_FADE_SEC, 0, 1) : 1,
+      revolutions: note.spin,
+      required: note.extra,
+      bonus: this.spinBonus,
+      bonusAge: this.spinBonusAt < 0 ? Infinity : songTime - this.spinBonusAt,
+      rate: this.spin.rate(songTime),
+    };
+  }
 
   private onRelease = ({ lane, audioTime }: { lane: number; audioTime: number }): void => {
     if (!this.started || this.paused || this.finished) return;
@@ -319,6 +431,20 @@ export class GameSession {
     this.lastJudgement = judgement;
     this.lastJudgementAt = this.clock.songTime();
     this.timeline.record(this.lastJudgementAt, judgement, this.scoring.combo);
+    if (note.kind === 'spin') {
+      // A spinner is its own thing: its verdict counts for score and accuracy, but a failed one
+      // costs no heart and touches no other mechanic.
+      this.renderer.spinDone(judgement);
+      if (judgement === 'miss') {
+        this.perfectStreak = 0;
+        sfxMiss();
+      } else {
+        sfxHit(judgement === 'perfect' ? 0 : 1);
+        this.comboGrewAt = this.lastJudgementAt;
+      }
+      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
+      return;
+    }
     this.renderer.hitFeedback(note.lane, note.lanes, judgement, note.kind === 'circle' ? note.seq : 0);
 
     if (judgement === 'miss') {
@@ -430,6 +556,7 @@ export class GameSession {
       }
       if (this.slowUntil > 0 && songTime >= this.slowUntil) this.slowUntil = -1;
       this.notes.update(songTime, this.isHeld);
+      this.trackSpin(songTime);
       this.renderer.update(dt);
       // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
       if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > 0 && this.lowFps.tick(this.fps.fps, dt)) {
@@ -488,6 +615,7 @@ export class GameSession {
       lastJudgementAge: this.lastJudgementAt < 0 ? 1 : songTime - this.lastJudgementAt,
       lastGain: this.lastGain,
       comboBreakAge: this.comboBreakAt < 0 ? -1 : songTime - this.comboBreakAt,
+      spin: this.spinFrame(songTime),
       debug: this.opts.debug
         ? {
             fps: this.fps.fps,

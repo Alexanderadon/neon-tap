@@ -37,8 +37,9 @@ const plan = [
   // --- 5 lanes (section at 93): everything mixed ---
   [98, 0], [99, 4], [100, 2], [101, 1, 2], [103.5, 3], [105, 2, 2, 'roll', 4], [108, 3, 2, 'slide', 4],
   [111, 0], [111.5, 1], [112, 2], [113.5, 0], [113.5, 4],
-  // --- 6 lanes (section at 115.5): short finale ---
-  [120, 0], [121, 5], [122, 1], [123, 4], [124, 2], [125, 3], [126.5, 2], [127, 3], [128, 0], [128, 5], [130, 2, 2],
+  // --- 6 lanes (section at 115.5): the spinner (4 beats of wheel on an empty field), then a short finale ---
+  [120, 0, 4, 'spin'],
+  [128, 0], [129, 5], [130, 1], [131, 4], [132, 2], [133, 3], [134.5, 2], [135, 3], [136, 0], [136, 5], [138, 2, 2],
 ];
 // The first section starts at song time 0 (not at the first tracked beat), so parseSections does not
 // prepend a second one-lane section before it.
@@ -48,7 +49,7 @@ const notes = plan.map(([b, lane, len = 0, kind, extra]) => {
   const t = r3(beatTime(b));
   if (len === 0 && kind === undefined) return [t, lane];
   if (kind === undefined) return [t, lane, dur(b, len)];
-  if (extra === undefined) return [t, lane, 0, kind];
+  if (extra === undefined) return [t, lane, len > 0 ? dur(b, len) : 0, kind];
   return [t, lane, dur(b, len), kind, extra];
 });
 const sections = sectionBeats.map(([b, lanes]) => [b === null ? 0 : r3(beatTime(b)), lanes]);

@@ -122,6 +122,15 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       lastLanes = n;
     }
     if (busy && busy.until < ev.si) busy = null;
+    if (ev.kind === 'spin') {
+      // The field is empty around a spinner (the composer cleared it): both thumbs are free after it.
+      const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);
+      notes.push([round3(slot.time), 0, round3(slots[endIdx].time - slot.time), 'spin']);
+      heldUntil.fill(-1);
+      busy = null;
+      lastSi = endIdx;
+      continue;
+    }
     // Only lanes the free thumb can reach: not held, and not on the busy thumb's half.
     const free: number[] = [];
     for (let l = 0; l < n; l++) if (heldUntil[l] < ev.si && (!busy || handOf(l, n) !== busy.hand)) free.push(l);

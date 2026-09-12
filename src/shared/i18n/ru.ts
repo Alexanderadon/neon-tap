@@ -268,6 +268,8 @@ export const ru = {
   tutorialReplay: 'Пройти обучение заново',
   tutorialPassed: 'Обучение пройдено',
   tutorialNotPassed: 'Обучение ещё не пройдено',
+  /** Spinner caption while it approaches. */
+  spinHint: 'Крути',
   tutorialLaneSteps: {
     intro: { title: 'Поехали', desktop: 'Клавиши {keys}', touch: 'Тапай в нижней половине' },
     tap: { title: 'Тапни', desktop: 'Когда нота на линии — {keys}', touch: 'Когда нота на линии' },
@@ -283,6 +285,7 @@ export const ru = {
     lanes5: { title: 'Полосы: {n}', desktop: 'Клавиши {keys}', touch: 'Пять зон' },
     mixed: { title: 'Всё вместе', desktop: '{keys}', touch: 'Как в настоящем треке' },
     lanes6: { title: 'Полосы: {n}', desktop: 'Клавиши {keys}', touch: 'Шесть зон' },
+    spin: { title: 'Крути', desktop: 'Мышью по кругу или жми клавиши', touch: 'Пальцем по кругу — сколько успеешь' },
     finale: { title: 'Финал', desktop: '{keys}', touch: 'Дальше — настоящие треки' },
   },
   // --- pwa ---

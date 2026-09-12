@@ -64,7 +64,7 @@ export function thumbViolations(notes: readonly NoteTuple[], sections: readonly 
   const lanesAt = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).pop()![1];
   const startsAt = (t: number) => notes.filter((m) => m[0] === t).length;
   const out: string[] = [];
-  for (const h of notes.filter(isHoldType)) {
+  for (const h of notes.filter((n) => isHoldType(n) && n[3] !== 'spin')) {
     const n = lanesAt(h[0]);
     const end = h[0] + (h[2] as number);
     const hand = handOf(h[1], n);

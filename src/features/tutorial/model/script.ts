@@ -3,7 +3,7 @@ import { dict, fmt, plural } from '@/shared/i18n';
 import { clamp } from '@/shared/lib/math';
 
 /** Mechanic a tutorial step teaches (drives the overlay icon + hint animation). */
-export type TutorialKind = 'intro' | 'tap' | 'hold' | 'slide' | 'roll' | 'circle' | 'spell' | 'lanes' | 'free';
+export type TutorialKind = 'intro' | 'tap' | 'hold' | 'slide' | 'roll' | 'circle' | 'spell' | 'spin' | 'lanes' | 'free';
 
 export type TutorialStepId =
   | 'intro'
@@ -20,6 +20,7 @@ export type TutorialStepId =
   | 'lanes5'
   | 'mixed'
   | 'lanes6'
+  | 'spin'
   | 'finale';
 
 export interface TutorialStep {
@@ -72,7 +73,8 @@ export const TUTORIAL_PLAN: readonly TutorialPlanEntry[] = [
   { id: 'lanes5', kind: 'lanes', lanes: 5, fromBeat: 91.25, toBeat: 96 },
   { id: 'mixed', kind: 'free', lanes: 5, fromBeat: 96, toBeat: 113.75 },
   { id: 'lanes6', kind: 'lanes', lanes: 6, fromBeat: 113.75, toBeat: 118 },
-  { id: 'finale', kind: 'free', lanes: 6, fromBeat: 118, toBeat: Infinity },
+  { id: 'spin', kind: 'spin', lanes: 6, fromBeat: 118, toBeat: 126 },
+  { id: 'finale', kind: 'free', lanes: 6, fromBeat: 126, toBeat: Infinity },
 ];
 
 /** Beat index (fractional allowed) → song seconds on a tracked beat grid; extrapolates past the ends. */

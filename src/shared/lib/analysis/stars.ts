@@ -8,6 +8,10 @@ export function eventsToTuples(events: readonly Event[], slots: readonly Slot[])
   for (const e of events) {
     const time = round3(slots[e.si].time);
     const dur = e.hold > 0 ? round3(slots[Math.min(slots.length - 1, e.si + e.hold)].time - slots[e.si].time) : 0;
+    if (e.kind === 'spin') {
+      out.push([time, 0, dur, 'spin']);
+      continue;
+    }
     for (let k = 0; k < e.size; k++) {
       if (e.kind === 'roll') out.push([time, k, dur, 'roll', e.taps]);
       else if (e.kind === 'slide') out.push([time, k, dur, 'slide', k + 1]);
@@ -114,6 +118,7 @@ export function starFeatures(notes: readonly NoteTuple[], bpm = 120, sections?: 
 /** Mechanic counts for the song card. */
 export function chartFeatures(level: ChartLevel): {
   circles: number;
+  spins: number;
   rolls: number;
   slides: number;
   holds: number;
@@ -122,6 +127,7 @@ export function chartFeatures(level: ChartLevel): {
   const kind = (k: NoteKind) => level.notes.filter((n) => n[3] === k).length;
   return {
     circles: kind('circle'),
+    spins: kind('spin'),
     rolls: kind('roll'),
     slides: kind('slide'),
     holds: level.notes.filter((n) => n.length === 3 && (n[2] as number) > 0).length,

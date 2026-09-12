@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { NoteKind } from '@/entities/chart';
-import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
+import { NoteManager, NoteState, spinJudgement, type JudgeEvent } from './NoteManager';
+import { SPIN_BUCKET, SPIN_REV_PER_SEC } from '@/shared/config/constants';
 
 type Spec = [number, number, number?, NoteKind?, number?];
 
@@ -17,7 +18,11 @@ const held = () => true;
 
 describe('NoteManager', () => {
   it('judges taps by the windows: 0.030 → perfect, 0.080 → great, 0.200 → miss', () => {
-    const { nm, events } = make([[1, 0], [2, 1], [3, 2]]);
+    const { nm, events } = make([
+      [1, 0],
+      [2, 1],
+      [3, 2],
+    ]);
     expect(nm.press(0, 1.03)).toBe('perfect');
     expect(nm.press(1, 2.08)).toBe('great');
     expect(nm.press(2, 3.2)).toBeNull();
@@ -33,7 +38,10 @@ describe('NoteManager', () => {
   });
 
   it('judges the earliest pending note in the lane', () => {
-    const { nm } = make([[1, 0], [1.1, 0]]);
+    const { nm } = make([
+      [1, 0],
+      [1.1, 0],
+    ]);
     expect(nm.press(0, 1.04)).toBe('perfect');
     expect(nm.pool[0].state).toBe(NoteState.Hit);
     expect(nm.pool[1].state).toBe(NoteState.Pending);
@@ -103,7 +111,10 @@ describe('NoteManager', () => {
       const lane = make([[1, 2]]);
       lane.nm.update(1.25, notHeld);
       expect(lane.nm.press(2, 1.25)).toBeNull(); // a lane note is long gone at 0.25 s
-      const c = make([[1, 2, 0, 'circle'], [2, 0, 0, 'circle']]);
+      const c = make([
+        [1, 2, 0, 'circle'],
+        [2, 0, 0, 'circle'],
+      ]);
       c.nm.update(1.25, notHeld);
       expect(c.nm.pool[0].state).toBe(NoteState.Pending);
       expect(c.nm.press(7, 1.25)).toBe('good');
@@ -115,7 +126,10 @@ describe('NoteManager', () => {
 
     it('are open for the last half of their approach: any tap while the ring is closing counts as good', () => {
       const nm = new NoteManager(50, { approachTime: 2 }); // circles open 1.0 s early
-      nm.load([{ time: 3, lane: 1, duration: 0, kind: 'circle', seq: 1, extra: 0, lanes: 4 }, { time: 6, lane: 2, duration: 0, kind: 'circle', seq: 2, extra: 0, lanes: 4 }]);
+      nm.load([
+        { time: 3, lane: 1, duration: 0, kind: 'circle', seq: 1, extra: 0, lanes: 4 },
+        { time: 6, lane: 2, duration: 0, kind: 'circle', seq: 2, extra: 0, lanes: 4 },
+      ]);
       expect(nm.press(7, 1.9)).toBeNull(); // 1.1 s early: the ring is still wide, nothing happens
       expect(nm.pool[0].state).toBe(NoteState.Pending);
       expect(nm.press(7, 2.2)).toBe('good'); // 0.8 s early: open
@@ -174,6 +188,45 @@ describe('NoteManager', () => {
       nm.press(0, 1.0);
       nm.release(3, 1.96);
       expect(events[1]).toMatchObject({ judgement: 'perfect', tail: true });
+    });
+  });
+
+  describe('spinners', () => {
+    it('start on their own, are turned rather than pressed, and are judged once at the end by revolutions', () => {
+      const { nm, events } = make([
+        [1, 0],
+        [3, 0, 2, 'spin'],
+        [6, 1],
+      ]);
+      const spin = nm.pool[1];
+      expect(spin.extra).toBe(Math.round(2 * SPIN_REV_PER_SEC));
+      nm.update(2, notHeld);
+      expect(spin.state).toBe(NoteState.Pending);
+      expect(nm.activeSpin(2, 0.5)).toBeNull();
+      expect(nm.activeSpin(2.8, 0.5)).toBe(spin); // about to start: the field is already cleared
+      nm.update(3.1, notHeld);
+      expect(spin.state).toBe(NoteState.Holding);
+      expect(nm.activeSpin(3.1, 0.5)).toBe(spin);
+      expect(nm.press(SPIN_BUCKET, 3.2)).toBeNull();
+      spin.spin = spin.extra;
+      nm.update(5.2, notHeld);
+      expect(spin.state).toBe(NoteState.Released);
+      expect(nm.activeSpin(5.2, 0.5)).toBeNull();
+      // One judgement for the spinner (tail), plus the miss of the untouched first tap.
+      expect(events.filter((e) => e.note === spin)).toEqual([{ note: spin, judgement: 'perfect', tail: true }]);
+    });
+
+    it('grades by the share of required revolutions and never by lane presses', () => {
+      expect(spinJudgement(3, 3)).toBe('perfect');
+      expect(spinJudgement(2.3, 3)).toBe('great');
+      expect(spinJudgement(1.5, 3)).toBe('good');
+      expect(spinJudgement(1.4, 3)).toBe('miss');
+      const { nm, events } = make([[1, 0, 2, 'spin']]);
+      nm.update(1.5, notHeld);
+      expect(nm.press(0, 1.5)).toBeNull();
+      nm.release(SPIN_BUCKET, 1.6);
+      nm.update(3.5, notHeld);
+      expect(events).toEqual([{ note: nm.pool[0], judgement: 'miss', tail: true }]);
     });
   });
 });

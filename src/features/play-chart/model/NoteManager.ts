@@ -1,4 +1,13 @@
-import { CIRCLE_BUCKET, CIRCLE_HIT_WINDOWS, CIRCLE_OPEN_SHARE, HIT_WINDOWS, INPUT_SLOTS, type HitWindows } from '@/shared/config/constants';
+import {
+  CIRCLE_BUCKET,
+  CIRCLE_HIT_WINDOWS,
+  CIRCLE_OPEN_SHARE,
+  HIT_WINDOWS,
+  INPUT_SLOTS,
+  SPIN_BUCKET,
+  SPIN_REV_PER_SEC,
+  type HitWindows,
+} from '@/shared/config/constants';
 import { judgeDelta, type Judgement } from '@/entities/score';
 import type { NoteKind, ParsedNote } from '@/entities/chart';
 
@@ -20,10 +29,12 @@ export interface PooledNote {
   kind: NoteKind | null;
   /** Circle group number (1-based) for kind === 'circle', else 0. */
   seq: number;
-  /** Roll: required taps. Slide: end lane. */
+  /** Roll: required taps. Slide: end lane. Spin: required revolutions. */
   extra: number;
   /** Roll: taps registered so far. */
   taps: number;
+  /** Spin: revolutions so far (fractional). */
+  spin: number;
   /** Lane count of the section this note belongs to (for rendering geometry). */
   lanes: number;
   state: NoteState;
@@ -66,6 +77,12 @@ const POOL_SIZE = 2000;
  * that can still be judged, so `press()` is O(1) amortised and `update()` only scans the few
  * notes near the current time.
  */
+/** Spinner verdict: all required revolutions — perfect; three quarters — great; half — good; less — miss. */
+export function spinJudgement(revolutions: number, required: number): Judgement {
+  const share = required > 0 ? revolutions / required : 1;
+  return share >= 1 - 1e-6 ? 'perfect' : share >= 0.75 ? 'great' : share >= 0.5 ? 'good' : 'miss';
+}
+
 /** Circles get the wider windows; everything on the lanes keeps the tight ones. */
 function windowsFor(note: { kind: string | null }): HitWindows {
   return note.kind === 'circle' ? CIRCLE_HIT_WINDOWS : HIT_WINDOWS;
@@ -99,6 +116,7 @@ export class NoteManager {
         seq: 0,
         extra: 0,
         taps: 0,
+        spin: 0,
         lanes: 4,
         state: NoteState.Pending,
         judgement: null,
@@ -127,8 +145,9 @@ export class NoteManager {
       n.endTime = src.time + src.duration;
       n.kind = src.kind;
       n.seq = src.seq;
-      n.extra = src.extra;
+      n.extra = src.kind === 'spin' ? Math.max(1, Math.round(src.duration * SPIN_REV_PER_SEC)) : src.extra;
       n.taps = 0;
+      n.spin = 0;
       n.lanes = src.lanes;
       n.state = NoteState.Pending;
       n.judgement = null;
@@ -137,8 +156,8 @@ export class NoteManager {
       n.armed = false;
       n.assisted = false;
       n.gem = 0;
-      // Circles are hit by tapping them (or Space), so they live in their own input bucket.
-      const bucket = src.kind === 'circle' ? CIRCLE_BUCKET : src.lane;
+      // Circles are hit by tapping them (or Space) and spinners by circling the field, so both live in their own input buckets.
+      const bucket = src.kind === 'circle' ? CIRCLE_BUCKET : src.kind === 'spin' ? SPIN_BUCKET : src.lane;
       this.laneNotes[bucket][this.laneLen[bucket]++] = i;
     }
   }
@@ -151,6 +170,7 @@ export class NoteManager {
       n.tailJudgement = null;
       n.hitDelta = 0;
       n.taps = 0;
+      n.spin = 0;
       n.armed = false;
       n.assisted = false;
     }
@@ -182,6 +202,12 @@ export class NoteManager {
       let cursor = this.laneCursor[lane];
       while (cursor < len) {
         const note = this.pool[list[cursor]];
+        if (note.state === NoteState.Pending && note.kind === 'spin') {
+          // A spinner needs no press: it starts on its own and is judged once, at its end.
+          if (songTime < note.time) break;
+          note.state = NoteState.Holding;
+          continue;
+        }
         if (note.state === NoteState.Pending) {
           const w = windowsFor(note);
           if (note.armed && songTime >= note.time - w.great) {
@@ -224,12 +250,28 @@ export class NoteManager {
   /** Tail verdict when a hold-type note reaches its end. */
   private tailJudgement(note: PooledNote, isHeld: (lane: number) => boolean): Judgement {
     if (note.kind === 'roll') return note.taps >= note.extra ? 'perfect' : note.taps >= Math.ceil(note.extra / 2) ? 'good' : 'miss';
+    if (note.kind === 'spin') return spinJudgement(note.spin, note.extra);
     if (note.kind === 'slide') return isHeld(note.extra) ? (note.judgement ?? 'perfect') : 'miss';
     return note.judgement ?? 'perfect';
   }
 
+  /**
+   * The spinner the player can turn right now: running, or about to start (within `ahead` seconds,
+   * so the field is already cleared for it). Null otherwise.
+   */
+  activeSpin(songTime: number, ahead: number): PooledNote | null {
+    const list = this.laneNotes[SPIN_BUCKET];
+    for (let i = this.laneCursor[SPIN_BUCKET]; i < this.laneLen[SPIN_BUCKET]; i++) {
+      const n = this.pool[list[i]];
+      if (n.state === NoteState.Holding) return n;
+      if (n.state === NoteState.Pending) return n.time - songTime <= ahead ? n : null;
+    }
+    return null;
+  }
+
   /** Player pressed input slot `bucket` at `songTime`. Returns the judgement, or null when no note was in range. */
   press(bucket: number, songTime: number): Judgement | null {
+    if (bucket === SPIN_BUCKET) return null; // spinners are turned, not pressed (see activeSpin)
     const list = this.laneNotes[bucket];
     const len = this.laneLen[bucket];
     for (let i = this.laneCursor[bucket]; i < len; i++) {
@@ -261,6 +303,7 @@ export class NoteManager {
 
   /** Player released input slot `bucket`. Matters for holds (break) and slides (arrive in the end lane). */
   release(bucket: number, songTime: number): void {
+    if (bucket === SPIN_BUCKET) return;
     // Slides end in another lane: a release there within the window is the tail hit.
     for (let i = this.firstActive; i < this.count; i++) {
       const n = this.pool[i];

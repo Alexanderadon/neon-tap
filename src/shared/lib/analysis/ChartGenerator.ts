@@ -65,6 +65,8 @@ export interface Profile {
   keepLanesChance: number;
   /** Which spells the chart may carry: the slow-motion spell is a tool for hard songs, not a beginner's first surprise. */
   spells: readonly SpellKind[];
+  /** Max spinners per chart (breakdowns become a wheel to circle); 0 for beginners. */
+  spinners: number;
 }
 
 export const NORMAL: Profile = {
@@ -80,6 +82,7 @@ export const NORMAL: Profile = {
   maxHoldSlots: 16,
   circleGapSlots: 2,
   circlesPerWindow: Infinity,
+  spinners: 2,
   lanePools: LANE_POOLS,
   keepLanesChance: 0.4,
   spells: ['slow', 'heart'],
@@ -99,6 +102,7 @@ export const MEDIUM: Profile = {
   maxHoldSlots: 16,
   circleGapSlots: 4,
   circlesPerWindow: 6,
+  spinners: 1,
   lanePools: [[3], [3, 4], [4, 5]],
   keepLanesChance: 0.6,
   spells: ['heart'],
@@ -117,6 +121,7 @@ export const EASY: Profile = {
   maxHoldSlots: 16,
   circleGapSlots: 4,
   circlesPerWindow: 4,
+  spinners: 0,
   lanePools: EASY_LANE_POOLS,
   keepLanesChance: 0.8,
   spells: ['heart'],
@@ -156,6 +161,13 @@ const CIRCLE_KEEP_REL = 0.75;
 const CIRCLE_EVERY_PHRASE_STARS = 6;
 /** Lane bars between two windows — at most a third of the song is circles. */
 const CIRCLE_COOLDOWN_BARS = 8;
+/** Spinner: a quiet stretch (a breakdown after louder bars) of this many bars becomes a wheel. */
+const SPIN_MIN_BARS = 2;
+const SPIN_MAX_BARS = 4;
+const SPIN_COOLDOWN_BARS = 24;
+/** Empty field before a spinner starts (a beat) and after it ends (the notes' whole fall, 3.5 beats: nothing falls while the wheel is up). */
+const SPIN_GAP_BEFORE = 4;
+const SPIN_GAP_AFTER = 14;
 
 export interface ComposeOptions {
   seed?: number;
@@ -419,6 +431,26 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     for (const s of phrase.steps) if (s < bar.slots.length) sum += sal[bar.start + s];
     return sum;
   };
+  /** Empty the field on [from, to): notes inside go, long notes reaching in are cut short. */
+  const clearWindow = (from: number, to: number): void => {
+    for (let i = events.length - 1; i >= 0; i--) {
+      const e = events[i];
+      if (e.si >= from && e.si < to) events.splice(i, 1);
+      else if (e.hold > 0 && e.si < from && e.si + e.hold > from) {
+        e.hold = Math.max(2, from - e.si);
+        if (e.kind === 'roll') {
+          // A shortened roll must not become a tap-rate impossibility: fewer taps, or a plain tap.
+          const dur = slots[Math.min(slots.length - 1, e.si + e.hold)].time - slots[e.si].time;
+          e.taps = Math.min(e.taps, Math.floor(dur * ROLL_MAX_TAPS_PER_SEC));
+          if (e.taps < ROLL_MIN_TAPS) {
+            e.kind = null;
+            e.hold = 0;
+            e.taps = 0;
+          }
+        }
+      }
+    }
+  };
   let lastWindowEnd = -100;
   for (const bar of bars) {
     if (bar.index % PHRASE_BARS !== 0 || bar.intensity !== 2 || bar.index < 4) continue;
@@ -439,23 +471,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const last = windowBars[windowBars.length - 1];
     const endSi = last.start + last.slots.length;
     lastWindowEnd = last.index + 1;
-    for (let i = events.length - 1; i >= 0; i--) {
-      const e = events[i];
-      if (e.si >= startSi - 4 && e.si < endSi) events.splice(i, 1);
-      else if (e.hold > 0 && e.si < startSi - 4 && e.si + e.hold > startSi - 4) {
-        e.hold = Math.max(2, startSi - 4 - e.si);
-        if (e.kind === 'roll') {
-          // A shortened roll must not become a tap-rate impossibility: fewer taps, or a plain tap.
-          const dur = slots[Math.min(slots.length - 1, e.si + e.hold)].time - slots[e.si].time;
-          e.taps = Math.min(e.taps, Math.floor(dur * ROLL_MAX_TAPS_PER_SEC));
-          if (e.taps < ROLL_MIN_TAPS) {
-            e.kind = null;
-            e.hold = 0;
-            e.taps = 0;
-          }
-        }
-      }
-    }
+    clearWindow(startSi - 4, endSi);
     const hits: { si: number; bar: Bar; score: number }[] = [];
     for (const wb of windowBars) {
       // The two-beat silence before a lane-count change holds for circles too.
@@ -487,6 +503,35 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
         taps: 0,
         accent: false,
       });
+  }
+  // 1c'. Spinners: a breakdown — quiet bars right after louder ones, still audible — or the song's
+  //      last calm bars become a wheel: the field empties and the player circles for the whole
+  //      stretch (osu!-style).
+  let spinners = 0;
+  let lastSpinEnd = -100;
+  const audible = (b: Bar): boolean => b.slots.some((_s, j) => raw[b.start + j] >= MIN_RAW_STRENGTH);
+  for (let i = PHRASE_BARS; i < bars.length && spinners < P.spinners; i++) {
+    if (i < lastSpinEnd + SPIN_COOLDOWN_BARS) continue;
+    const breakdown = bars[i].intensity === 0 && bars[i - 1].intensity > 0;
+    const ending = i >= bars.length - SPIN_MAX_BARS && bars[i - 1].intensity > bars[i].intensity && bars.slice(i).every((b) => b.intensity <= 1);
+    if (!breakdown && !ending) continue;
+    const maxIntensity = ending ? 1 : 0;
+    const run: Bar[] = [];
+    for (let k = i; k < bars.length && run.length < SPIN_MAX_BARS; k++) {
+      const b = bars[k];
+      if (b.intensity > maxIntensity || !audible(b)) break;
+      run.push(b);
+      if (lastBarOfSection.has(b.index)) break; // the wheel does not straddle a lane-count change
+    }
+    if (run.length < SPIN_MIN_BARS) continue;
+    const startSi = run[0].start;
+    const last = run[run.length - 1];
+    const endSi = last.start + last.slots.length - SPIN_GAP_AFTER;
+    if (endSi - startSi < STEPS_PER_BAR) continue;
+    clearWindow(startSi - SPIN_GAP_BEFORE, endSi + SPIN_GAP_AFTER);
+    events.push({ si: startSi, bar: run[0], step: 0, size: 1, hold: endSi - startSi, kind: 'spin', taps: 0, accent: false });
+    lastSpinEnd = last.index;
+    spinners++;
   }
   events.sort((a, b) => a.si - b.si);
   filtered = capDensity(events, slots, densityLimit);
