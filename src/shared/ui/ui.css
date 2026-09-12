@@ -64,7 +64,10 @@
   }
 }
 .screen-enter {
-  animation: screen-enter 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  /* `backwards`, not `both`: a kept final keyframe leaves a (identity) transform on the screen, which
+   * turns it into the containing block for every position: fixed child — the menu dock would then
+   * sit mid-screen instead of at the viewport bottom. */
+  animation: screen-enter 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
