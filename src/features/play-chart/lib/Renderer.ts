@@ -100,10 +100,35 @@ interface LaneSet {
   zoneFill: string[];
 }
 
-/** Circles hang in the upper part of the field; three staggered heights so a group reads as a path. */
-export function circleY(L: Layout, seq: number): number {
-  return L.hitY * [0.34, 0.5, 0.42][(Math.max(1, seq) - 1) % 3];
+/**
+ * Circles are tapped on screen, so they get their own geometry: a 3 × 3 grid over the field
+ * (left / centre / right × three heights in the middle band) walked in a zig-zag by the circle's
+ * number within its group. Nine cells and at most four circles shown ahead → four circles on screen
+ * always sit in four different cells, and any two cells are further apart than a circle's diameter.
+ */
+const CIRCLE_CELLS: readonly [number, number][] = [
+  [0.2, 0.3],
+  [0.8, 0.3],
+  [0.5, 0.46],
+  [0.2, 0.62],
+  [0.8, 0.62],
+  [0.5, 0.3],
+  [0.2, 0.46],
+  [0.8, 0.46],
+  [0.5, 0.62],
+];
+export function circlePos(L: Layout, seq: number): { x: number; y: number } {
+  const [fx, fy] = CIRCLE_CELLS[(Math.max(1, seq) - 1) % CIRCLE_CELLS.length];
+  return { x: L.laneX + fx * L.laneAreaWidth, y: L.hitY * fy };
 }
+
+/** Circle radius for a lane geometry (numbers stay legible on the narrowest phone). */
+export function circleRadius(L: Layout): number {
+  return Math.max(18, Math.min(L.laneAreaWidth / 9, 40));
+}
+
+/** Only this many pending circles are drawn ahead — more would pile numbers on top of each other. */
+const CIRCLES_AHEAD = 4;
 
 /**
  * Canvas 2D renderer. Static geometry (lanes, hit line, vignette) is rasterised once per lane
@@ -470,8 +495,9 @@ export class Renderer {
   hitFeedback(lane: number, lanes: number, judgement: Judgement, circleSeq = 0): void {
     const L = this.set(lanes).layout;
     const { laneX, laneWidth } = L;
-    const y = circleSeq > 0 ? circleY(L, circleSeq) : L.hitY;
-    const cx = laneX + (lane + 0.5) * laneWidth;
+    const pos = circleSeq > 0 ? circlePos(L, circleSeq) : null;
+    const y = pos ? pos.y : L.hitY;
+    const cx = pos ? pos.x : laneX + (lane + 0.5) * laneWidth;
     if (judgement === 'miss') {
       this.shake.trigger(3);
       return;
@@ -584,6 +610,15 @@ export class Renderer {
     this.ambientTime += dt;
   }
 
+  /** Combo counter baseline: under the score / hearts row, above the circle band. */
+  private comboY(): number {
+    return 96 + this.safeTop;
+  }
+
+  get comboAnchorY(): number {
+    return this.comboY();
+  }
+
   private heartPos(index: number): { x: number; y: number } {
     const step = this.heartSize * 1.25;
     return { x: 14 + this.heartSize / 2 + index * step, y: 50 + this.safeTop + this.heartSize / 2 };
@@ -679,6 +714,7 @@ export class Renderer {
     if (sparkTick) this.sparkTimer = 0;
     let prevCircle: PooledNote | null = null;
     let prevCircleSet: LaneSet | null = null;
+    let circlesAhead = 0;
     for (let i = notes.firstActive; i < notes.count; i++) {
       const n = notes.pool[i];
       if (n.time > horizon) break;
@@ -687,10 +723,11 @@ export class Renderer {
       const lw = set.layout.laneWidth;
       const cx = set.layout.laneX + (n.lane + 0.5) * lw;
       if (n.kind === 'circle') {
+        if (n.state === NoteState.Pending && ++circlesAhead > CIRCLES_AHEAD) continue;
         if (prevCircle && prevCircleSet && prevCircle.state === NoteState.Pending && n.seq === prevCircle.seq + 1) {
           this.drawFollowLine(prevCircleSet, prevCircle, set, n, s);
         }
-        this.drawCircle(set, n, cx, s);
+        this.drawCircle(set, n, s);
         prevCircle = n;
         prevCircleSet = set;
         visible++;
@@ -1026,10 +1063,8 @@ export class Renderer {
   private drawFollowLine(setA: LaneSet, a: PooledNote, setB: LaneSet, b: PooledNote, s: FrameState): void {
     if (b.time - s.songTime > s.approachTime) return;
     const ctx = this.ctx;
-    const ax = setA.layout.laneX + (a.lane + 0.5) * setA.layout.laneWidth;
-    const ay = circleY(setA.layout, a.seq);
-    const bx = setB.layout.laneX + (b.lane + 0.5) * setB.layout.laneWidth;
-    const by = circleY(setB.layout, b.seq);
+    const { x: ax, y: ay } = circlePos(setA.layout, a.seq);
+    const { x: bx, y: by } = circlePos(setB.layout, b.seq);
     ctx.globalAlpha = 0.28;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
@@ -1046,11 +1081,11 @@ export class Renderer {
    * osu!-style hit circle: sits still at a fixed height in its lane while an approach ring shrinks
    * onto it. Tap (or press Space) when the ring meets the circle. Numbered within its group.
    */
-  private drawCircle(set: LaneSet, n: PooledNote, cx: number, s: FrameState): void {
+  private drawCircle(set: LaneSet, n: PooledNote, s: FrameState): void {
     const ctx = this.ctx;
     const L = set.layout;
-    const cy = circleY(L, n.seq);
-    const r = Math.max(16, Math.min(L.laneWidth * 0.42, 40));
+    const { x: cx, y: cy } = circlePos(L, n.seq);
+    const r = circleRadius(L);
     const dt = n.time - s.songTime;
     if (dt > s.approachTime || dt < -0.4) return;
     const t = Math.max(0, Math.min(1, dt / s.approachTime));
@@ -1234,7 +1269,7 @@ export class Renderer {
         jy = (Math.random() * 2 - 1) * amp;
       }
       const x = centerX + jx;
-      const y = hitY * 0.42 + jy;
+      const y = this.comboY() + jy;
       ctx.font = `900 ${size}px ${FONT}`;
       ctx.fillStyle = color;
       ctx.globalAlpha = 0.35;
@@ -1243,12 +1278,12 @@ export class Renderer {
       ctx.fillText(String(s.combo), x, y);
       ctx.font = `400 12px ${FONT}`;
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillText('COMBO', centerX, hitY * 0.42 + base * 0.7);
+      ctx.fillText('COMBO', centerX, this.comboY() + base * 0.62);
     } else if (s.comboBreakAge >= 0 && s.comboBreakAge < 0.4) {
       ctx.font = `900 40px ${FONT}`;
       ctx.globalAlpha = 1 - s.comboBreakAge / 0.4;
       ctx.fillStyle = glow;
-      ctx.fillText('×', centerX, hitY * 0.42);
+      ctx.fillText('×', centerX, this.comboY());
       ctx.globalAlpha = 1;
     }
 
@@ -1259,11 +1294,12 @@ export class Renderer {
       ctx.font = `700 ${Math.round(22 * scale)}px ${FONT}`;
       ctx.fillStyle = this.judgementColor[s.lastJudgement];
       ctx.globalAlpha = a;
-      ctx.fillText(s.lastJudgement.toUpperCase(), centerX, hitY * 0.62);
+      const jy = hitY - this.layout.noteHeight * 3.4;
+      ctx.fillText(s.lastJudgement.toUpperCase(), centerX, jy);
       if (s.lastGain > 0) {
         ctx.font = `700 14px ${FONT}`;
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillText(`+${s.lastGain}`, centerX, hitY * 0.62 + 22 - s.lastJudgementAge * 30);
+        ctx.fillText(`+${s.lastGain}`, centerX, jy - 20 - s.lastJudgementAge * 30);
       }
       ctx.globalAlpha = 1;
     }
@@ -1277,7 +1313,7 @@ export class Renderer {
       ctx.font = `900 ${portrait ? 26 : 34}px ${FONT}`;
       ctx.fillStyle = '#ffd700';
       ctx.textAlign = 'center';
-      ctx.fillText(this.bannerText, Math.min(width / 2, x), hitY * 0.2);
+      ctx.fillText(this.bannerText, Math.min(width / 2, x), hitY * 0.27);
       ctx.globalAlpha = 1;
     }
 

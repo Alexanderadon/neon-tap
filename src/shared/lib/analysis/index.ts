@@ -9,7 +9,7 @@ export type { Slot, SongAnalysis, AnalysisStage } from './SongAnalyzer';
 export { composeChart } from './ChartGenerator';
 export { salience, PHRASE_BARS } from './bars';
 export { patternSteps } from './phrasePattern';
-export { circleSpread } from './laneAssign';
+export { circleSpread, handOf } from './laneAssign';
 export { rateStars, chartFeatures } from './stars';
 export type { ComposeOptions } from './ChartGenerator';
 export type { PhrasePattern } from './phrasePattern';

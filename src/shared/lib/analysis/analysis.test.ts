@@ -6,7 +6,7 @@ import { estimateDownbeatPhase, trackBeats } from './BeatTracker';
 import { analyzeSong, STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
 import { composeChart } from './ChartGenerator';
 import { patternSteps } from './phrasePattern';
-import { circleSpread } from './laneAssign';
+import { circleSpread, handOf } from './laneAssign';
 import { chartFeatures, rateStars } from './stars';
 import { synthesizeClicks } from './synthetic';
 import { DENSITY_LIMIT } from '@/shared/config/constants';
@@ -162,6 +162,28 @@ function maxFingers(notes: readonly NoteTuple[]): number {
   return worst;
 }
 
+/**
+ * Two-thumb violations: while a long note (hold / roll / slide) is active, every other note must
+ * be on the OTHER thumb's half (the middle lane of an odd count counts for either), no circle may
+ * start, and no second long note may start. Returns human-readable offenders.
+ */
+function thumbViolations(notes: readonly NoteTuple[], sections: readonly [number, number][]): string[] {
+  const lanesAt = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).pop()![1];
+  const out: string[] = [];
+  for (const h of notes.filter(isHoldType)) {
+    const n = lanesAt(h[0]);
+    const end = h[0] + (h[2] as number);
+    const hand = handOf(h[1], n);
+    for (const m of notes) {
+      if (m === h || m[0] <= h[0] || m[0] >= end - 1e-6) continue;
+      if (m[3] === 'circle') out.push(`circle at ${m[0]} during long note at ${h[0]}`);
+      else if (isHoldType(m)) out.push(`long note at ${m[0]} during long note at ${h[0]}`);
+      else if (hand !== -1 && handOf(m[1], lanesAt(m[0])) === hand) out.push(`note at ${m[0]} lane ${m[1]} on the busy thumb's half (hold lane ${h[1]}, ${n} lanes)`);
+    }
+  }
+  return out;
+}
+
 const drumLoop = (bar: number, step: number): Partial<Slot> => {
   const intense = bar % 24 >= 8;
   if (step % 4 === 0) return { strength: 1, low: 0.7, mid: 0.2, high: 0.1 };
@@ -193,6 +215,13 @@ describe('composeChart', () => {
     for (const n of chart.notes) expect(slotTimes.has(n[0])).toBe(true);
     expect(maxFingers(chart.notes)).toBeLessThanOrEqual(2);
     expect(maxFingers(composeChart(fakeAnalysis(24, sustainedLoop)).notes)).toBeLessThanOrEqual(2);
+  });
+
+  it('keeps the free thumb on its own half while the other holds, rolls or slides', () => {
+    for (const a of [chart, composeChart(fakeAnalysis(32, sustainedLoop)), composeChart(fakeAnalysis(16, fillLoop))]) {
+      expect(a.notes.filter(isHoldType).length).toBeGreaterThan(0);
+      expect(thumbViolations(a.notes, a.sections!)).toEqual([]);
+    }
   });
 
   it('respects the density limit, lane rules and chord validity', () => {

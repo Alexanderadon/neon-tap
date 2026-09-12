@@ -12,7 +12,7 @@ import { NoteManager, NoteState, type JudgeEvent } from './NoteManager';
 import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems } from './gems';
-import { Renderer, circleY } from '../lib/Renderer';
+import { Renderer, circlePos, circleRadius } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
 export type SessionEvent =
@@ -207,9 +207,8 @@ export class GameSession {
       if (n.time - songTime > this.approachTime) break;
       if (n.kind !== 'circle' || n.state !== NoteState.Pending) continue;
       const L = this.renderer.layoutFor(n.lanes);
-      const cx = L.laneX + (n.lane + 0.5) * L.laneWidth;
-      const cy = circleY(L, n.seq);
-      const r = Math.max(16, Math.min(L.laneWidth * 0.42, 40)) * 1.8;
+      const { x: cx, y: cy } = circlePos(L, n.seq);
+      const r = circleRadius(L) * 1.8;
       if ((px - cx) ** 2 + (py - cy) ** 2 <= r * r) return true;
     }
     return false;
@@ -325,7 +324,7 @@ export class GameSession {
       if (prevCombo >= 10) {
         this.comboBreakAt = this.lastJudgementAt;
         const L = this.renderer.layout;
-        this.renderer.comboBreak(L.laneX + L.laneAreaWidth / 2, L.hitY * 0.42, prevCombo);
+        this.renderer.comboBreak(L.laneX + L.laneAreaWidth / 2, this.renderer.comboAnchorY, prevCombo);
         this.opts.onEvent({ type: 'combo-break', combo: prevCombo });
       }
       const dead = this.lives.miss();

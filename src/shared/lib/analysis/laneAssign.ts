@@ -45,14 +45,24 @@ class Motion {
   }
 }
 
-/** Preferred chord shapes for `n` lanes: outer pair on downbeats, inner pair otherwise, then anything. */
+/**
+ * Which thumb plays a lane on a phone held in both hands: 0 = left half, 1 = right half,
+ * -1 = the middle lane of an odd count (either thumb). Every placement decision below is made
+ * per hand, not per lane — a busy thumb (hold / roll / slide) takes its whole half with it.
+ */
+export function handOf(lane: number, n: number): -1 | 0 | 1 {
+  const c = (lane + 0.5) / n;
+  return c < 0.5 ? 0 : c > 0.5 ? 1 : -1;
+}
+
+/** Preferred chord shapes for `n` lanes: one lane per thumb — outer pair on downbeats, inner pair otherwise, then any two-hand pair. */
 function chordPairs(n: number, down: boolean): number[][] {
   const outer = [0, n - 1];
   const m = Math.floor(n / 2);
   const inner = n % 2 === 0 ? [m - 1, m] : [m - 1, m + 1];
   const pairs = down ? [outer, inner] : [inner, outer];
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([i, j]);
-  return pairs.filter((p) => p[0] !== p[1] && p[0] >= 0 && p[1] < n);
+  return pairs.filter((p) => p[0] !== p[1] && p[0] >= 0 && p[1] < n && handOf(p[0], n) !== handOf(p[1], n));
 }
 
 /** Lanes whose centre falls in the band's third of the playfield (thirds overlap so none is empty). */
@@ -99,6 +109,8 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
   let circleOffset = 0;
   let lastCircleSi = -100;
   let accentSide = 0;
+  /** The thumb holding a hold / roll / slide, and the slot it is busy until (inclusive). */
+  let busy: { hand: 0 | 1; until: number } | null = null;
 
   for (const ev of events) {
     const slot = slots[ev.si];
@@ -107,9 +119,12 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       heldUntil.fill(-1);
       lastLanes = n;
     }
+    if (busy && busy.until < ev.si) busy = null;
+    // Only lanes the free thumb can reach: not held, and not on the busy thumb's half.
     const free: number[] = [];
-    for (let l = 0; l < n; l++) if (heldUntil[l] < ev.si) free.push(l);
+    for (let l = 0; l < n; l++) if (heldUntil[l] < ev.si && (!busy || handOf(l, n) !== busy.hand)) free.push(l);
     if (!free.length) continue;
+    if (busy && (ev.kind === 'circle' || ev.hold > 0)) continue; // one thumb is busy: no circles, no second long note
     const gap = ev.si - lastSi;
 
     if (ev.bar.index !== motionBar) {
@@ -122,7 +137,7 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
     if (!candidates.length) candidates = free;
 
     let lanes: number[];
-    if (ev.size >= 2) {
+    if (ev.size >= 2 && !busy) {
       const pair = chordPairs(n, ev.step === 0).find((p) => p.every((l) => candidates.includes(l)));
       lanes = pair ? [...pair] : [candidates[Math.floor(random() * candidates.length)]];
     } else if (ev.kind === 'circle') {
@@ -174,12 +189,17 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       if (ev.hold > 0) {
         const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);
         const dur = round3(slots[endIdx].time - slot.time);
+        // The thumb that takes a long note: its own half; the middle lane goes to the thumb that just played.
+        const h = handOf(lane, n);
+        const hand: 0 | 1 = h === -1 ? (lastSide as 0 | 1) : h;
+        busy = { hand, until: endIdx };
         if (ev.kind === 'roll') {
           notes.push([time, lane, dur, 'roll', ev.taps]);
           heldUntil[lane] = endIdx;
         } else if (ev.kind === 'slide') {
-          // Slide into the free lane next door (never across a lane); both lanes are blocked for the duration.
-          const options = [lane + 1, lane - 1].filter((l) => l >= 0 && l < n && heldUntil[l] < ev.si);
+          // Slide into the free lane next door (never across a lane), staying on the same thumb's half;
+          // both lanes are blocked for the duration.
+          const options = [lane + 1, lane - 1].filter((l) => l >= 0 && l < n && heldUntil[l] < ev.si && handOf(l, n) !== 1 - hand);
           if (options.length) {
             const end = options[Math.floor(random() * Math.min(2, options.length))];
             notes.push([time, lane, dur, 'slide', end]);
