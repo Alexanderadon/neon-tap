@@ -1,0 +1,143 @@
+@keyframes install-banner-in {
+  from {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+.install-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + var(--safe-bottom));
+  transform: translate(-50%, 0);
+  z-index: 7000;
+  width: min(94vw, 480px);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 40px 12px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  background: rgba(10, 13, 20, 0.95);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.18), 0 10px 32px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  animation: install-banner-in 0.3s cubic-bezier(0.2, 1, 0.3, 1) both;
+}
+.install-banner-mark {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 12px;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+}
+.install-banner-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.install-banner-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--c-cyan);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+.install-banner-hint {
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.75);
+}
+.install-banner-ios {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.install-banner-steps {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  color: #fff;
+  font-size: 13px;
+}
+.install-banner-glyph {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--c-cyan);
+}
+.install-banner-arrow {
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0 2px;
+}
+.install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.install-banner-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #05060a;
+  background: var(--c-cyan);
+  border: none;
+  border-radius: 9px;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+  touch-action: manipulation;
+}
+.install-banner-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.install-banner-later {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  padding: 8px 6px;
+  min-height: 36px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.install-banner-later:hover,
+.install-banner-later:focus-visible,
+.install-banner-close:hover,
+.install-banner-close:focus-visible {
+  color: #fff;
+  outline: none;
+}
+.install-banner-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+@media (prefers-reduced-motion: reduce) {
+  .install-banner {
+    animation: none;
+  }
+}

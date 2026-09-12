@@ -62,6 +62,7 @@ Audio output latency: desktop 20–60 ms, Android 80–200 ms, Bluetooth up to 3
 - **Records** — an attempt history with an accuracy sparkline on every card ("Records"), an optional online leaderboard (see below).
 - **Result screen** — the judgement timeline is written into typed arrays directly in the game loop; from it: a "where the misses are" strip across the whole song, an accuracy/combo graph, best streak and weakest spot, a **replay of the best moment** (a mini playfield on canvas) and a 1080×1350 card for "Share" / copy (`entities/score/lib/resultStats`, `widgets/result-breakdown`).
 - **Mobile** — safe-area (notch and home indicator), touch zones with finger highlight, multitouch via `PointerLanes`, a "rotate your phone" hint with pause, **economy mode** (automatic: FPS < 45 for three seconds → fewer particles and background effects), PWA manifest and icons. Checklist — `docs/mobile-checklist.md`.
+- **App** — a hand-written service worker with no libraries (`public/sw.js`): the shell is precached from a list that `scripts/build-sw.ts` injects after the build, music/charts/sounds are cached on first use with a 200 MB cap, so played tracks work offline; an "Update available" toast on a new version; an "Install the app" banner (Android/desktop: the system dialog, iOS: a "Share → Add to Home Screen" hint); a dark splash before the first frame, no zoom or gestures when installed. PNG icons come from a pure-Node PNG encoder (`npm run assets:icons`). Google Play via Trusted Web Activity — `docs/android-app.md`; privacy policy — `/privacy.html`.
 - **Content** — 30 tracks in 12 genres, genre in the registry and in the chart, **procedural covers** (SVG from the id hash + genre palette/motif, `entities/track/ui/TrackCover`).
 - **Feel** — a visual theme per track (by genre or deterministically by id: lane palette, accent, background motif), background synced to the music (pulse on beats from the chart + spectrum from an AnalyserNode, one read per frame), animated menu and cards.
 
@@ -73,10 +74,11 @@ Feature-Sliced Design: `app → pages → widgets → features → entities → 
 src/
 ├── app/         screen router
 ├── pages/       menu · game · result · calibration · settings · custom · tutorial
-├── widgets/     track-list · goals-panel · game-canvas · tutorial-overlay · result-breakdown · history-panel · online-leaderboard · song-drop-zone · audio-gate · calibration-meter · settings-panel
+├── widgets/     track-list · goals-panel · game-canvas · tutorial-overlay · result-breakdown · history-panel · online-leaderboard · song-drop-zone · audio-gate · calibration-meter · settings-panel · install-banner · update-toast
 ├── features/    play-chart · generate-chart · calibrate-offset · save-result · submit-score · track-progress · voice-feedback · tutorial
 ├── entities/    track · chart · score · progress · history · settings · play-session
-└── shared/lib/  audio · analysis · render · input · store · router
+└── shared/lib/  audio · analysis · render · input · store · router · pwa
+public/sw.js     service worker (app shell + media cache); the asset list is injected by scripts/build-sw.ts
 api/             scores.ts — Vercel serverless function for the online leaderboard (Node, no dependencies); api/_lib — pure helpers with tests
 ```
 
@@ -107,6 +109,7 @@ User files for "Custom music" are processed in the browser and never uploaded an
 - [GDD.md](GDD.md) — game design document: retention mechanics, references, progression, chart format, analysis pipeline
 - [docs/plans/](docs/plans/) — phase-by-phase plan
 - [docs/mobile-checklist.md](docs/mobile-checklist.md) — what was verified in emulation and what remains for a real device
+- [docs/android-app.md](docs/android-app.md) — publishing to Google Play: Trusted Web Activity (Bubblewrap), assetlinks, signing, listing; Capacitor as the alternative
 
 ## License
 
