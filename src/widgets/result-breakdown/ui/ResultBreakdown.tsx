@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxRank } from '@/shared/lib/audio';
@@ -19,6 +19,8 @@ interface Props {
   title: string;
   subtitle: string;
   onRetry: () => void;
+  /** "Next" — the following playable track; hidden when there is none or the run failed. */
+  onNext?: () => void;
   /** Extra one-line celebrations (daily bonus, completed goal), one per entry. */
   notes?: readonly string[];
   /** Optional compact line rendered right under the breakdown grid (e.g. attempt history). */
@@ -40,8 +42,9 @@ const NO_NOTES: readonly ParsedNote[] = [];
  * Result screen body: rank, breakdown, near-miss hint and a dominant RETRY (GDD §1.3), followed by
  * "where did I miss" — song strip, accuracy/combo chart, highlights, best-moment replay and sharing.
  */
-export function ResultBreakdown({ result, meta, title, subtitle, onRetry, notes: noteLines, belowGrid, chart, extraTop, extraBottom }: Props) {
+export function ResultBreakdown({ result, meta, title, subtitle, onRetry, onNext, notes: noteLines, belowGrid, chart, extraTop, extraBottom }: Props) {
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
+  const [details, setDetails] = useState(false);
 
   useEffect(() => {
     if (result.failed) {
@@ -118,6 +121,22 @@ export function ResultBreakdown({ result, meta, title, subtitle, onRetry, notes:
   const shareData = { title, artist: chart?.artist ?? '', result, sections };
   const fileName = fmt(dict.shareFileName, { id: result.trackId.replace(/[^\w-]+/g, '_') || 'result' });
 
+  // One line that says what this run meant — the only analysis shown before "details".
+  const failedAt = result.failed && hasTimeline ? timeline.t[timeline.t.length - 1] : null;
+  const meaning = result.failed
+    ? failedAt !== null && duration > 0
+      ? fmt(dict.resultReachedAt, { at: formatClock(failedAt), total: formatClock(duration) })
+      : dict.failedHint
+    : result.fullCombo
+      ? dict.fullCombo
+      : meta?.newRecord && result.rank !== 'D'
+        ? dict.newRecord
+        : result.notesToS > 0 && result.accuracy > 0.9
+          ? fmt(dict.toRankS, { n: result.notesToS, noun: plural(result.notesToS, ['ноты', 'нот', 'нот']) })
+          : starsGained > 0
+            ? fmt(dict.starsEarned, { n: starsGained })
+            : null;
+
   return (
     <div className="result">
       <div className="result-track">
@@ -126,113 +145,117 @@ export function ResultBreakdown({ result, meta, title, subtitle, onRetry, notes:
       </div>
       {extraTop}
 
-      {result.failed ? (
-        <>
-          <div className="result-rank result-failed">{dict.failed}</div>
-          <div className="result-failed-hint">{dict.failedHint}</div>
-        </>
-      ) : (
-        <>
-          <div className={`result-rank rank-${result.rank}`}>{result.rank}</div>
-          <div className="result-acc">{(result.accuracy * 100).toFixed(2)}%</div>
-        </>
-      )}
+      {result.failed ? <div className="result-rank result-failed">{dict.failed}</div> : <div className={`result-rank rank-${result.rank}`}>{result.rank}</div>}
+      {meaning && <div className={`result-meaning${result.failed ? ' is-failed' : ''}`}>{meaning}</div>}
 
-      {result.fullCombo && <div className="result-badge result-fc">{dict.fullCombo}</div>}
-      {meta?.newRecord && result.rank !== 'D' && <div className="result-badge result-record">{dict.newRecord}</div>}
-      {starsGained > 0 && (
-        <div className="result-stars">
-          <Stars value={meta!.starsAfter} size="md" /> <span>{fmt(dict.starsEarned, { n: starsGained })}</span>
+      <div className="result-numbers">
+        <div className="result-number">
+          <b>{result.score.toLocaleString('ru-RU')}</b>
+          <span className="micro">{dict.score}</span>
         </div>
-      )}
-      {noteLines && noteLines.length > 0 && (
-        <div className="result-notes">
-          {noteLines.map((n) => (
-            <div key={n}>{n}</div>
+        <div className="result-number">
+          <b>{(result.accuracy * 100).toFixed(1)}%</b>
+          <span className="micro">{dict.accuracy}</span>
+        </div>
+        <div className="result-number">
+          <b>{result.maxCombo}</b>
+          <span className="micro">{dict.maxCombo}</span>
+        </div>
+      </div>
+
+      {(noteLines?.length || meta?.crystals || (starsGained > 0 && meaning !== fmt(dict.starsEarned, { n: starsGained }))) && (
+        <div className="result-pills">
+          {starsGained > 0 && meaning !== fmt(dict.starsEarned, { n: starsGained }) && (
+            <span className="result-pill result-pill-star">
+              <Stars value={meta!.starsAfter} /> +{starsGained}
+            </span>
+          )}
+          {noteLines?.map((n) => (
+            <span key={n} className="result-pill">
+              {n}
+            </span>
           ))}
         </div>
       )}
 
-      <div className="result-grid">
-        {rows.map(([label, n, color]) => (
-          <div key={label} className="result-row">
-            <span style={{ color }}>{label}</span>
-            <b>{n}</b>
-          </div>
-        ))}
-        <div className="result-row">
-          <span>{dict.maxCombo}</span>
-          <b>{result.maxCombo}</b>
-        </div>
-        <div className="result-row">
-          <span>{dict.score}</span>
-          <b>{result.score.toLocaleString('ru-RU')}</b>
-        </div>
-      </div>
-      {belowGrid}
-
-      {!result.failed && result.notesToS > 0 && result.accuracy > 0.9 && (
-        <div className="result-nearmiss">
-          {fmt(dict.toRankS, { n: result.notesToS, noun: plural(result.notesToS, ['ноты', 'нот', 'нот']) })}
-        </div>
-      )}
-
       <div className="result-actions">
-        <Button size="xl" onClick={onRetry} autoFocus>
+        {!result.failed && onNext && (
+          <Button size="xl" onClick={onNext} autoFocus>
+            {dict.next}
+          </Button>
+        )}
+        <Button size={result.failed || !onNext ? 'xl' : 'md'} onClick={onRetry} autoFocus={result.failed || !onNext}>
           {dict.retry}
         </Button>
-        <Button variant="ghost" onClick={() => navigate('menu')}>
-          {dict.toMenu}
-        </Button>
-        <div className="result-hint">{dict.pressRToRetry}</div>
+        <div className="result-secondary">
+          <Button variant="ghost" onClick={() => navigate('menu')}>
+            {dict.toMenu}
+          </Button>
+          <Button variant="ghost" onClick={() => setDetails((d) => !d)} aria-expanded={details}>
+            {details ? dict.resultLess : dict.resultMore}
+          </Button>
+        </div>
       </div>
 
-      {hasTimeline && (
-        <>
-          <section className="result-section">
-            <h3 className="result-section-title">{dict.resultWhereMissed}</h3>
-            <SongStrip timeline={timeline} sections={sections} duration={duration} />
-          </section>
-
-          <section className="result-section">
-            <h3 className="result-section-title">{dict.resultChartTitle}</h3>
-            <AccuracyChart timeline={timeline} duration={duration} />
-          </section>
-
-          {items.length > 0 && (
-            <section className="result-section">
-              <h3 className="result-section-title">{dict.resultHighlights}</h3>
-              <ul className="result-highlights">
-                {items.map((it) => (
-                  <li key={it.key} style={{ borderLeftColor: it.color }}>
-                    {it.text}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {replayRange && highlights.bestStreak && (
-            <section className="result-section">
-              <h3 className="result-section-title">{dict.resultReplay}</h3>
-              <div className="result-section-sub">
-                {fmt(dict.resultReplayHint, {
-                  n: highlights.bestStreak.count,
-                  noun: plural(highlights.bestStreak.count, dict.notesNoun),
-                  from: formatClock(replayRange.from),
-                  to: formatClock(replayRange.to),
-                })}
+      {details && (
+        <div className="result-details">
+          <div className="result-grid">
+            {rows.map(([label, n, color]) => (
+              <div key={label} className="result-row">
+                <span style={{ color }}>{label}</span>
+                <b>{n}</b>
               </div>
-              <BestMomentReplay notes={notes} sections={sections} timeline={timeline} range={replayRange} />
-            </section>
+            ))}
+          </div>
+          {belowGrid}
+
+          {hasTimeline && (
+            <>
+              <section className="result-section">
+                <h3 className="result-section-title">{dict.resultWhereMissed}</h3>
+                <SongStrip timeline={timeline} sections={sections} duration={duration} />
+              </section>
+
+              <section className="result-section">
+                <h3 className="result-section-title">{dict.resultChartTitle}</h3>
+                <AccuracyChart timeline={timeline} duration={duration} />
+              </section>
+
+              {items.length > 0 && (
+                <section className="result-section">
+                  <h3 className="result-section-title">{dict.resultHighlights}</h3>
+                  <ul className="result-highlights">
+                    {items.map((it) => (
+                      <li key={it.key} style={{ borderLeftColor: it.color }}>
+                        {it.text}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {replayRange && highlights.bestStreak && (
+                <section className="result-section">
+                  <h3 className="result-section-title">{dict.resultReplay}</h3>
+                  <div className="result-section-sub">
+                    {fmt(dict.resultReplayHint, {
+                      n: highlights.bestStreak.count,
+                      noun: plural(highlights.bestStreak.count, dict.notesNoun),
+                      from: formatClock(replayRange.from),
+                      to: formatClock(replayRange.to),
+                    })}
+                  </div>
+                  <BestMomentReplay notes={notes} sections={sections} timeline={timeline} range={replayRange} />
+                </section>
+              )}
+            </>
           )}
 
-        </>
+          <ShareRow data={shareData} fileName={fileName} />
+
+          {extraBottom}
+        </div>
       )}
-
-      <ShareRow data={shareData} fileName={fileName} />
-
-      {extraBottom}
     </div>
   );
 }

@@ -393,6 +393,10 @@ export const ru = {
   welcomeTitle: 'Как тебя зовут?',
   welcomeLead: 'Имя будет в таблице рекордов. Поменять можно в настройках.',
   welcomeHint: '1–16 символов',
+  next: 'Дальше',
+  resultMore: 'Подробнее',
+  resultLess: 'Скрыть',
+  resultReachedAt: 'Дошёл до {at} из {total}',
 } as const;
 
 export type Dictionary = typeof ru;

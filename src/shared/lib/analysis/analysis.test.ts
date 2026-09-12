@@ -424,6 +424,8 @@ describe('composeChart', () => {
     expect(easy.notes.length).toBeLessThan(hard.notes.length * 0.7);
     expect(easy.stars).toBeLessThan(hard.stars);
     expect(easy.notes.some((n) => n[3] === 'roll' || n[3] === 'slide')).toBe(false);
+    expect(easy.notes.some((n) => n[3] === 'slow')).toBe(false); // slow-motion is a hard-song tool
+    expect(easy.notes.some((n) => n[3] === 'heart')).toBe(true);
     const times = [...new Set(easy.notes.map((n) => n[0]))];
     expect(times.length).toBe(easy.notes.length); // no chords
     for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1]).toBeGreaterThanOrEqual(0.5 - 1e-6); // a beat at 120 BPM
