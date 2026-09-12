@@ -95,7 +95,9 @@ function MechanicIcon({ kind, lanes }: { kind: TutorialKind; lanes: number }) {
           <line x1="18" y1="19" x2="30" y2="19" className="ic-stripe" />
           <line x1="18" y1="25" x2="30" y2="25" className="ic-stripe" />
           <circle cx="24" cy="38" r="5" className="ic-finger ic-roll-tap" />
-          <text x="40" y="12" className="ic-count">3</text>
+          <text x="40" y="12" className="ic-count">
+            3
+          </text>
         </svg>
       );
     case 'circle':
@@ -103,7 +105,9 @@ function MechanicIcon({ kind, lanes }: { kind: TutorialKind; lanes: number }) {
         <svg {...props}>
           <circle cx="24" cy="24" r="11" className="ic-circle" />
           <circle cx="24" cy="24" r="20" className="ic-ring ic-shrink" />
-          <text x="24" y="29" className="ic-num">1</text>
+          <text x="24" y="29" className="ic-num">
+            1
+          </text>
         </svg>
       );
     case 'spell':
@@ -115,6 +119,20 @@ function MechanicIcon({ kind, lanes }: { kind: TutorialKind; lanes: number }) {
           <line x1="24" y1="24" x2="24" y2="14" className="ic-hand ic-hand-spin" />
           <line x1="24" y1="24" x2="31" y2="24" className="ic-hand ic-hand-short" />
           <circle cx="24" cy="24" r="1.8" className="ic-hand-pin" />
+        </svg>
+      );
+    case 'spin':
+      // The wheel: a ring with three blades that keep turning, and a finger circling it.
+      return (
+        <svg {...props}>
+          <circle cx="24" cy="24" r="17" className="ic-ring" />
+          <g className="ic-blades ic-spin-turn">
+            <line x1="24" y1="24" x2="24" y2="10" className="ic-hand" />
+            <line x1="24" y1="24" x2="36.1" y2="31" className="ic-hand" />
+            <line x1="24" y1="24" x2="11.9" y2="31" className="ic-hand" />
+          </g>
+          <circle cx="24" cy="24" r="4" className="ic-circle" />
+          <circle cx="24" cy="6" r="4" className="ic-finger ic-spin-orbit" />
         </svg>
       );
     case 'lanes':
@@ -142,7 +160,18 @@ function LanesIcon({ n, ...props }: { n: number; className: string; viewBox: str
         const x = 3 + i * (w + gap);
         // Bars spread from the centre: the outer ones appear last.
         const order = Math.abs(i - (n - 1) / 2);
-        return <rect key={i} x={x} y="4" width={w} height="40" rx="2" className="ic-lane ic-lane-grow" style={{ animationDelay: `${order * 0.12}s`, transformOrigin: `${x + w / 2}px 24px` }} />;
+        return (
+          <rect
+            key={i}
+            x={x}
+            y="4"
+            width={w}
+            height="40"
+            rx="2"
+            className="ic-lane ic-lane-grow"
+            style={{ animationDelay: `${order * 0.12}s`, transformOrigin: `${x + w / 2}px 24px` }}
+          />
+        );
       })}
       <line x1="2" y1="38" x2="46" y2="38" className="ic-line" />
       <text x="44" y="12" className="ic-count">

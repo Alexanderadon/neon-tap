@@ -4,7 +4,7 @@ import { detectOnsets } from './OnsetDetector';
 import { estimateBpm } from './BpmEstimator';
 import { estimateDownbeatPhase, trackBeats } from './BeatTracker';
 import { analyzeSong, STEPS_PER_BAR, type Slot } from './SongAnalyzer';
-import { EASY, composeChart } from './ChartGenerator';
+import { EASY, MEDIUM, composeChart } from './ChartGenerator';
 import { patternSteps } from './phrasePattern';
 import { circleSpread } from './laneAssign';
 import { chartFeatures, rateStars } from './stars';
@@ -366,6 +366,37 @@ describe('composeChart', () => {
     for (const t of times) expect(times.filter((x) => x >= t && x < t + 1).length).toBeLessThanOrEqual(2);
     for (const [, lanes] of easy.sections!) expect(lanes === 3 || lanes === 4).toBe(true);
     expect(thumbViolations(easy.notes, easy.sections!)).toEqual([]);
+  });
+
+  it('turns a breakdown into a spinner with an empty field around it, never for beginners', () => {
+    // 8 loud bars, a 3-bar quiet but audible breakdown, loud again — twice, 32 bars apart.
+    const breakdown = (bar: number, step: number): Partial<Slot> => {
+      const quiet = (bar >= 8 && bar < 11) || (bar >= 40 && bar < 43);
+      if (quiet) return { strength: step % 4 === 0 ? 0.12 : 0.02, low: 0.2, mid: 0.6, high: 0.2 };
+      return drumLoop(bar + 8, step); // always the intense reading of drumLoop
+    };
+    const analysis = fakeAnalysis(48, breakdown);
+    const chart = composeChart(analysis);
+    const spins = chart.notes.filter((n) => n[3] === 'spin');
+    expect(spins.length).toBe(2);
+    for (const sp of spins) {
+      const [t, lane, dur] = sp as [number, number, number, string];
+      expect(lane).toBe(0);
+      expect(dur).toBeGreaterThanOrEqual(2); // ≥ a bar at 120 BPM
+      const others = chart.notes.filter((n) => n !== sp);
+      // A beat of empty field before the wheel, nothing during it, and after it the notes' whole
+      // fall (3.5 beats) so nothing is on its way while the wheel is still up.
+      for (const n of others) {
+        const end = n[0] + ((n[2] as number | undefined) ?? 0);
+        expect(end <= t - 0.5 + 1e-6 || n[0] >= t + dur + 1.75 - 1e-6, `note at ${n[0]} vs spinner ${t}–${t + dur}`).toBe(true);
+      }
+    }
+    expect(thumbViolations(chart.notes, chart.sections!)).toEqual([]);
+    expect(composeChart(analysis, { profile: EASY }).notes.some((n) => n[3] === 'spin')).toBe(false);
+    expect(composeChart(analysis, { profile: MEDIUM }).notes.filter((n) => n[3] === 'spin').length).toBe(1);
+    // A song without a breakdown gets no spinner.
+    expect(chart.notes.length).toBeGreaterThan(50);
+    expect(composeChart(fakeAnalysis(48, drumLoop)).notes.some((n) => n[3] === 'spin')).toBe(false);
   });
 
   it('is deterministic for the same seed', () => {

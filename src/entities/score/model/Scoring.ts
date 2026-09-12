@@ -82,6 +82,11 @@ export class Scoring {
     this.score += Math.round(JUDGEMENT_SCORE[j] * comboMultiplier(this.combo));
   }
 
+  /** Extra points outside the judgement system (spinner revolutions): no combo, no accuracy. */
+  addBonus(points: number): void {
+    this.score += Math.max(0, Math.round(points));
+  }
+
   get accuracy(): number {
     return accuracyOf(this.counts);
   }

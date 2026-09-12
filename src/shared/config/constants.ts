@@ -42,10 +42,18 @@ export const KEY_LABELS: Record<number, readonly string[]> = {
   6: ['S', 'D', 'F', 'J', 'K', 'L'],
 };
 
+/** Spinners live outside the lanes too: any finger / mouse circling the field, any key mashing. */
+export const SPIN_BUCKET = 6;
+/** Revolutions per second a spinner asks for (its `extra` = required revolutions = duration × this). */
+export const SPIN_REV_PER_SEC = 1.2;
+/** Bonus score for every full revolution beyond the required ones. */
+export const SPIN_BONUS_PER_REV = 100;
+/** A key press / tap during a spinner is worth this much of a revolution (keyboard fallback). */
+export const SPIN_TAP_REV = 0.15;
 /** Hit circles live outside the lanes: tapped on screen, or Space on a keyboard. */
 export const CIRCLE_BUCKET = 7;
 export const CIRCLE_KEY = 'Space';
-/** Input slots: lanes 0..5 plus the circle bucket. */
+/** Input slots: lanes 0..5, the spin bucket and the circle bucket. */
 export const INPUT_SLOTS = 8;
 
 /** Legacy 4-lane bindings (calibration screen). */

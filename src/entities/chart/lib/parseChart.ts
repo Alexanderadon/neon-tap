@@ -2,7 +2,7 @@ import { LANE_COUNT, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 import { lowerBound } from '@/shared/lib/math';
 import type { ChartLevel, NoteTuple, ParsedNote, Section } from '../model/types';
 
-const KINDS = ['slow', 'heart', 'circle', 'roll', 'slide'] as const;
+const KINDS = ['slow', 'heart', 'circle', 'roll', 'slide', 'spin'] as const;
 /** Circles closer than this form one numbered group (1, 2, 3 …). */
 const CIRCLE_GROUP_GAP = 2.5;
 
@@ -50,6 +50,7 @@ function parseNote(t: NoteTuple, i: number, lanes: number): ParsedNote {
   if (kind !== undefined && !KINDS.includes(kind)) throw new Error(`note ${i}: bad kind ${String(kind)}`);
   if ((kind === 'slow' || kind === 'heart' || kind === 'circle') && duration > 0) throw new Error(`note ${i}: ${kind} cannot be a hold`);
   if (kind === 'roll' && (duration <= 0 || !Number.isInteger(extra) || extra < 2)) throw new Error(`note ${i}: roll needs a duration and ≥ 2 taps`);
+  if (kind === 'spin' && duration <= 0) throw new Error(`note ${i}: spin needs a duration`);
   if (kind === 'slide' && (duration <= 0 || !Number.isInteger(extra) || extra < 0 || extra >= lanes || extra === lane)) {
     throw new Error(`note ${i}: slide needs a duration and a different end lane inside the section`);
   }
@@ -59,6 +60,6 @@ function parseNote(t: NoteTuple, i: number, lanes: number): ParsedNote {
 /** Number of judgements a chart yields: holds, rolls and slides count twice (head + tail). */
 export function countJudgements(notes: readonly ParsedNote[]): number {
   let n = 0;
-  for (const note of notes) n += note.duration > 0 ? 2 : 1;
+  for (const note of notes) n += note.duration > 0 && note.kind !== 'spin' ? 2 : 1; // a spinner is judged once, at its end
   return n;
 }

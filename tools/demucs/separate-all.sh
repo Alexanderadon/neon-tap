@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PY=D:/neon-tap-tools/demucs-venv/Scripts/python.exe
 OUT=D:/neon-tap-tools/stems
 LOG=D:/neon-tap-tools/separate-all.log
-if [ $# -gt 0 ]; then ids="$*"; else ids=$(node -e "console.log(require('$ROOT/assets-src/tracks.json').map(t=>t.id).join(' '))"); fi
+if [ $# -gt 0 ]; then ids="$*"; else ids=$(node -e "console.log(require('$(cygpath -m "$ROOT")/assets-src/tracks.json').map(t=>t.id).join(' '))"); fi
 for id in $ids; do
   if [ -f "$OUT/$id/stem-vocals.mp3" ]; then echo "skip $id"; continue; fi
   echo "== $id $(date +%H:%M:%S)" | tee -a "$LOG"

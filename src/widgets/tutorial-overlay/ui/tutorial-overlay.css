@@ -346,6 +346,28 @@
   animation: ic-hand-spin 3s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
 }
 
+/* --- spinner: blades turn, a finger orbits the ring --- */
+.ic-blades {
+  transform-origin: 24px 24px;
+}
+@keyframes ic-spin-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ic-spin-turn {
+  animation: ic-spin-turn 1.6s linear infinite;
+}
+@keyframes ic-spin-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ic-spin-orbit {
+  transform-origin: 24px 24px;
+  animation: ic-spin-orbit 1.6s linear infinite;
+}
+
 /* --- lanes chip: "Полосы: N" + key caps / zone hint --- */
 @keyframes tut-chip-in {
   0% {

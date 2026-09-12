@@ -12,6 +12,7 @@
     "notes": 65,
     "features": {
       "circles": 4,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 18,
@@ -31,6 +32,7 @@
     "notes": 74,
     "features": {
       "circles": 12,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 19,
@@ -47,12 +49,13 @@
     "bpm": 110.1,
     "duration": 87.38,
     "stars": 1,
-    "notes": 84,
+    "notes": 78,
     "features": {
-      "circles": 8,
+      "circles": 7,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 27,
+      "holds": 24,
       "laneChanges": 2
     }
   },
@@ -69,29 +72,11 @@
     "notes": 87,
     "features": {
       "circles": 4,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 20,
       "laneChanges": 3
-    }
-  },
-  {
-    "id": "hardstyler",
-    "title": "Hardstyler",
-    "artist": "Of Far Different Nature",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/hardstyler",
-    "genre": "hardstyle",
-    "bpm": 139.8,
-    "duration": 112.9,
-    "stars": 1,
-    "notes": 87,
-    "features": {
-      "circles": 7,
-      "rolls": 0,
-      "slides": 0,
-      "holds": 24,
-      "laneChanges": 6
     }
   },
   {
@@ -107,6 +92,7 @@
     "notes": 88,
     "features": {
       "circles": 8,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 11,
@@ -126,6 +112,7 @@
     "notes": 92,
     "features": {
       "circles": 12,
+      "spins": 0,
       "rolls": 0,
       "slides": 6,
       "holds": 4,
@@ -145,29 +132,11 @@
     "notes": 95,
     "features": {
       "circles": 0,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 30,
       "laneChanges": 5
-    }
-  },
-  {
-    "id": "november-snow",
-    "title": "November Snow",
-    "artist": "cynicmusic",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/november-snow",
-    "genre": "ambient",
-    "bpm": 123.9,
-    "duration": 150.05,
-    "stars": 1,
-    "notes": 108,
-    "features": {
-      "circles": 8,
-      "rolls": 0,
-      "slides": 0,
-      "holds": 30,
-      "laneChanges": 2
     }
   },
   {
@@ -183,10 +152,51 @@
     "notes": 109,
     "features": {
       "circles": 12,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 14,
       "laneChanges": 2
+    }
+  },
+  {
+    "id": "the-rift",
+    "title": "The Rift",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/the-rift",
+    "genre": "electronic",
+    "bpm": 129.4,
+    "duration": 150.05,
+    "stars": 1,
+    "notes": 109,
+    "features": {
+      "circles": 8,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 28,
+      "laneChanges": 2
+    }
+  },
+  {
+    "id": "slow-stride",
+    "title": "Slow Stride",
+    "artist": "isaiah658",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/slow-stride",
+    "genre": "lofi",
+    "bpm": 108.5,
+    "duration": 130.95,
+    "stars": 1,
+    "notes": 112,
+    "features": {
+      "circles": 8,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 26,
+      "laneChanges": 3
     }
   },
   {
@@ -202,6 +212,7 @@
     "notes": 129,
     "features": {
       "circles": 8,
+      "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 14,
@@ -209,41 +220,43 @@
     }
   },
   {
-    "id": "the-rift",
-    "title": "The Rift",
-    "artist": "vitalezzz",
+    "id": "november-snow",
+    "title": "November Snow",
+    "artist": "cynicmusic",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/the-rift",
-    "genre": "electronic",
-    "bpm": 129.4,
+    "sourceUrl": "https://opengameart.org/content/november-snow",
+    "genre": "ambient",
+    "bpm": 123.9,
     "duration": 150.05,
     "stars": 1,
-    "notes": 156,
+    "notes": 177,
     "features": {
       "circles": 12,
+      "spins": 0,
       "rolls": 0,
-      "slides": 10,
-      "holds": 21,
-      "laneChanges": 2
+      "slides": 6,
+      "holds": 27,
+      "laneChanges": 4
     }
   },
   {
-    "id": "slow-stride",
-    "title": "Slow Stride",
-    "artist": "isaiah658",
+    "id": "hardstyler",
+    "title": "Hardstyler",
+    "artist": "Of Far Different Nature",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/slow-stride",
-    "genre": "lofi",
-    "bpm": 108.5,
-    "duration": 130.95,
+    "sourceUrl": "https://opengameart.org/content/hardstyler",
+    "genre": "hardstyle",
+    "bpm": 139.8,
+    "duration": 112.9,
     "stars": 2,
-    "notes": 165,
+    "notes": 142,
     "features": {
-      "circles": 12,
+      "circles": 10,
+      "spins": 1,
       "rolls": 0,
-      "slides": 3,
-      "holds": 26,
-      "laneChanges": 3
+      "slides": 6,
+      "holds": 21,
+      "laneChanges": 6
     }
   },
   {
@@ -256,13 +269,54 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 2,
-    "notes": 197,
+    "notes": 193,
     "features": {
       "circles": 12,
+      "spins": 1,
       "rolls": 0,
       "slides": 9,
-      "holds": 32,
+      "holds": 31,
       "laneChanges": 5
+    }
+  },
+  {
+    "id": "up-in-the-sky",
+    "title": "Up in the Sky",
+    "artist": "Memoraphile (You're Perfect Studio)",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/up-in-the-sky",
+    "genre": "ambient",
+    "bpm": 136,
+    "duration": 150.05,
+    "stars": 2,
+    "notes": 199,
+    "features": {
+      "circles": 6,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 25,
+      "laneChanges": 4
+    }
+  },
+  {
+    "id": "vengeance-electro",
+    "title": "Vengeance Electro",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
+    "genre": "house",
+    "bpm": 128.8,
+    "duration": 150.05,
+    "stars": 2,
+    "notes": 200,
+    "features": {
+      "circles": 12,
+      "spins": 1,
+      "rolls": 0,
+      "slides": 4,
+      "holds": 28,
+      "laneChanges": 4
     }
   },
   {
@@ -278,48 +332,11 @@
     "notes": 201,
     "features": {
       "circles": 24,
+      "spins": 0,
       "rolls": 0,
       "slides": 8,
       "holds": 15,
       "laneChanges": 1
-    }
-  },
-  {
-    "id": "up-in-the-sky",
-    "title": "Up in the Sky",
-    "artist": "Memoraphile (You're Perfect Studio)",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/up-in-the-sky",
-    "genre": "ambient",
-    "bpm": 136,
-    "duration": 150.05,
-    "stars": 2,
-    "notes": 202,
-    "features": {
-      "circles": 6,
-      "rolls": 0,
-      "slides": 10,
-      "holds": 26,
-      "laneChanges": 4
-    }
-  },
-  {
-    "id": "vengeance-electro",
-    "title": "Vengeance Electro",
-    "artist": "Of Far Different Nature",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
-    "genre": "house",
-    "bpm": 128.8,
-    "duration": 150.05,
-    "stars": 2,
-    "notes": 206,
-    "features": {
-      "circles": 12,
-      "rolls": 0,
-      "slides": 4,
-      "holds": 30,
-      "laneChanges": 4
     }
   },
   {
@@ -332,12 +349,13 @@
     "bpm": 129.6,
     "duration": 145.97,
     "stars": 2,
-    "notes": 206,
+    "notes": 203,
     "features": {
       "circles": 18,
+      "spins": 1,
       "rolls": 0,
       "slides": 15,
-      "holds": 22,
+      "holds": 21,
       "laneChanges": 10
     }
   },
@@ -351,13 +369,14 @@
     "bpm": 143.7,
     "duration": 150.05,
     "stars": 3,
-    "notes": 238,
+    "notes": 240,
     "features": {
-      "circles": 12,
+      "circles": 11,
+      "spins": 0,
       "rolls": 0,
-      "slides": 17,
-      "holds": 31,
-      "laneChanges": 7
+      "slides": 12,
+      "holds": 18,
+      "laneChanges": 10
     }
   },
   {
@@ -370,12 +389,13 @@
     "bpm": 160.9,
     "duration": 150.05,
     "stars": 3,
-    "notes": 267,
+    "notes": 259,
     "features": {
       "circles": 18,
+      "spins": 1,
       "rolls": 0,
       "slides": 17,
-      "holds": 59,
+      "holds": 55,
       "laneChanges": 5
     }
   },
@@ -389,12 +409,13 @@
     "bpm": 172.1,
     "duration": 150.05,
     "stars": 5,
-    "notes": 315,
+    "notes": 292,
     "features": {
       "circles": 34,
+      "spins": 2,
       "rolls": 0,
       "slides": 18,
-      "holds": 35,
+      "holds": 33,
       "laneChanges": 11
     }
   },
@@ -411,6 +432,7 @@
     "notes": 191,
     "features": {
       "circles": 76,
+      "spins": 0,
       "rolls": 1,
       "slides": 4,
       "holds": 8,
@@ -427,9 +449,10 @@
     "bpm": 160.9,
     "duration": 83.88,
     "stars": 6,
-    "notes": 212,
+    "notes": 208,
     "features": {
       "circles": 20,
+      "spins": 1,
       "rolls": 2,
       "slides": 7,
       "holds": 14,
@@ -446,12 +469,13 @@
     "bpm": 199.2,
     "duration": 92.06,
     "stars": 6,
-    "notes": 245,
+    "notes": 241,
     "features": {
       "circles": 24,
+      "spins": 1,
       "rolls": 0,
       "slides": 16,
-      "holds": 34,
+      "holds": 33,
       "laneChanges": 9
     }
   },
@@ -465,32 +489,14 @@
     "bpm": 128.7,
     "duration": 106.84,
     "stars": 6,
-    "notes": 271,
+    "notes": 246,
     "features": {
       "circles": 82,
+      "spins": 1,
       "rolls": 0,
-      "slides": 4,
-      "holds": 10,
+      "slides": 6,
+      "holds": 8,
       "laneChanges": 7
-    }
-  },
-  {
-    "id": "hot-roadway",
-    "title": "Hot Roadway",
-    "artist": "mintodog",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/hot-roadway",
-    "genre": "techno",
-    "bpm": 161.1,
-    "duration": 120.03,
-    "stars": 6,
-    "notes": 306,
-    "features": {
-      "circles": 79,
-      "rolls": 1,
-      "slides": 10,
-      "holds": 29,
-      "laneChanges": 12
     }
   },
   {
@@ -503,32 +509,114 @@
     "bpm": 217,
     "duration": 128.81,
     "stars": 6,
-    "notes": 336,
+    "notes": 318,
     "features": {
       "circles": 62,
+      "spins": 2,
       "rolls": 0,
       "slides": 13,
-      "holds": 51,
+      "holds": 44,
       "laneChanges": 11
     }
   },
   {
-    "id": "the-lab",
-    "title": "The Lab",
-    "artist": "tricksntraps",
+    "id": "hot-roadway",
+    "title": "Hot Roadway",
+    "artist": "mintodog",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1",
+    "sourceUrl": "https://opengameart.org/content/hot-roadway",
+    "genre": "techno",
+    "bpm": 161.1,
+    "duration": 120.03,
+    "stars": 6,
+    "notes": 322,
+    "features": {
+      "circles": 79,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 11,
+      "holds": 24,
+      "laneChanges": 11
+    }
+  },
+  {
+    "id": "apparatus-overlord",
+    "title": "Apparatus Overlord",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/apparatus-overlord",
     "genre": "electronic",
-    "bpm": 143.6,
+    "bpm": 120.1,
     "duration": 150.05,
     "stars": 6,
-    "notes": 355,
+    "notes": 334,
     "features": {
-      "circles": 99,
+      "circles": 101,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 14,
+      "laneChanges": 4
+    }
+  },
+  {
+    "id": "final-hour",
+    "title": "Final Hour",
+    "artist": "isaiah658",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/final-hour",
+    "genre": "dnb",
+    "bpm": 171.4,
+    "duration": 136.96,
+    "stars": 6,
+    "notes": 348,
+    "features": {
+      "circles": 42,
+      "spins": 2,
       "rolls": 1,
       "slides": 10,
-      "holds": 18,
-      "laneChanges": 12
+      "holds": 26,
+      "laneChanges": 7
+    }
+  },
+  {
+    "id": "lucid-trigger",
+    "title": "Lucid Trigger",
+    "artist": "khtlrpzvgm",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/lucid-trigger",
+    "genre": "breakbeat",
+    "bpm": 151.3,
+    "duration": 135.24,
+    "stars": 6,
+    "notes": 364,
+    "features": {
+      "circles": 127,
+      "spins": 2,
+      "rolls": 2,
+      "slides": 7,
+      "holds": 20,
+      "laneChanges": 9
+    }
+  },
+  {
+    "id": "technomania101",
+    "title": "Technomania101 - 2000's europop electronic dance music",
+    "artist": "Fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
+    "genre": "eurobeat",
+    "bpm": 142.9,
+    "duration": 141.98,
+    "stars": 6,
+    "notes": 366,
+    "features": {
+      "circles": 102,
+      "spins": 1,
+      "rolls": 1,
+      "slides": 14,
+      "holds": 19,
+      "laneChanges": 7
     }
   },
   {
@@ -544,86 +632,11 @@
     "notes": 367,
     "features": {
       "circles": 137,
+      "spins": 0,
       "rolls": 3,
       "slides": 13,
       "holds": 12,
       "laneChanges": 4
-    }
-  },
-  {
-    "id": "apparatus-overlord",
-    "title": "Apparatus Overlord",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/apparatus-overlord",
-    "genre": "electronic",
-    "bpm": 120.1,
-    "duration": 150.05,
-    "stars": 6,
-    "notes": 369,
-    "features": {
-      "circles": 89,
-      "rolls": 0,
-      "slides": 11,
-      "holds": 18,
-      "laneChanges": 8
-    }
-  },
-  {
-    "id": "final-hour",
-    "title": "Final Hour",
-    "artist": "isaiah658",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/final-hour",
-    "genre": "dnb",
-    "bpm": 171.4,
-    "duration": 136.96,
-    "stars": 6,
-    "notes": 369,
-    "features": {
-      "circles": 42,
-      "rolls": 1,
-      "slides": 10,
-      "holds": 27,
-      "laneChanges": 7
-    }
-  },
-  {
-    "id": "technomania101",
-    "title": "Technomania101 - 2000's europop electronic dance music",
-    "artist": "Fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
-    "genre": "eurobeat",
-    "bpm": 142.9,
-    "duration": 141.98,
-    "stars": 6,
-    "notes": 375,
-    "features": {
-      "circles": 109,
-      "rolls": 1,
-      "slides": 14,
-      "holds": 19,
-      "laneChanges": 7
-    }
-  },
-  {
-    "id": "midnight-drive",
-    "title": "Midnight Drive",
-    "artist": "congusbongus",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/midnight-drive",
-    "genre": "synthwave",
-    "bpm": 161,
-    "duration": 150.05,
-    "stars": 6,
-    "notes": 382,
-    "features": {
-      "circles": 41,
-      "rolls": 0,
-      "slides": 18,
-      "holds": 59,
-      "laneChanges": 9
     }
   },
   {
@@ -637,9 +650,10 @@
     "bpm": 128.8,
     "duration": 137.46,
     "stars": 6,
-    "notes": 385,
+    "notes": 371,
     "features": {
       "circles": 46,
+      "spins": 1,
       "rolls": 0,
       "slides": 9,
       "holds": 46,
@@ -647,41 +661,23 @@
     }
   },
   {
-    "id": "action-track",
-    "title": "Action Track",
-    "artist": "lushogames",
+    "id": "all-night-road",
+    "title": "All Night Road",
+    "artist": "iamoneabe",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/action-track",
-    "genre": "rock",
-    "bpm": 113.4,
-    "duration": 138.92,
-    "stars": 6,
-    "notes": 387,
-    "features": {
-      "circles": 60,
-      "rolls": 2,
-      "slides": 4,
-      "holds": 31,
-      "laneChanges": 10
-    }
-  },
-  {
-    "id": "elevate-instrument-tracks",
-    "title": "Elevate (+ instrument tracks)",
-    "artist": "fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
-    "genre": "electronic",
-    "bpm": 172.8,
+    "sourceUrl": "https://opengameart.org/content/all-night-road",
+    "genre": "synthpop",
+    "bpm": 207,
     "duration": 150.05,
     "stars": 6,
-    "notes": 450,
+    "notes": 426,
     "features": {
-      "circles": 58,
-      "rolls": 0,
-      "slides": 3,
-      "holds": 48,
-      "laneChanges": 10
+      "circles": 66,
+      "spins": 1,
+      "rolls": 6,
+      "slides": 8,
+      "holds": 26,
+      "laneChanges": 8
     }
   },
   {
@@ -697,6 +693,7 @@
     "notes": 244,
     "features": {
       "circles": 90,
+      "spins": 0,
       "rolls": 0,
       "slides": 12,
       "holds": 7,
@@ -704,22 +701,23 @@
     }
   },
   {
-    "id": "lunar-arrow",
-    "title": "Lunar Arrow",
-    "artist": "mmry",
+    "id": "trance-boss-battle",
+    "title": "Trance Boss Battle",
+    "artist": "MintoDog",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/lunar-arrow",
-    "genre": "electronic",
-    "bpm": 152.6,
-    "duration": 127.35,
+    "sourceUrl": "https://opengameart.org/content/trance-boss-battle",
+    "genre": "trance",
+    "bpm": 151.4,
+    "duration": 102.43,
     "stars": 7,
-    "notes": 307,
+    "notes": 277,
     "features": {
-      "circles": 83,
-      "rolls": 1,
-      "slides": 7,
-      "holds": 25,
-      "laneChanges": 6
+      "circles": 127,
+      "spins": 1,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 14,
+      "laneChanges": 5
     }
   },
   {
@@ -735,29 +733,11 @@
     "notes": 318,
     "features": {
       "circles": 123,
+      "spins": 0,
       "rolls": 3,
       "slides": 15,
       "holds": 13,
       "laneChanges": 10
-    }
-  },
-  {
-    "id": "neon-hyperdrive",
-    "title": "Neon Hyperdrive",
-    "artist": "adiutorium",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/neon-hyperdrive",
-    "genre": "techno",
-    "bpm": 139.8,
-    "duration": 129.57,
-    "stars": 7,
-    "notes": 359,
-    "features": {
-      "circles": 103,
-      "rolls": 1,
-      "slides": 8,
-      "holds": 23,
-      "laneChanges": 9
     }
   },
   {
@@ -773,48 +753,11 @@
     "notes": 371,
     "features": {
       "circles": 114,
+      "spins": 0,
       "rolls": 2,
       "slides": 15,
       "holds": 23,
       "laneChanges": 17
-    }
-  },
-  {
-    "id": "virtual-rush",
-    "title": "Virtual Rush",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/virtual-rush",
-    "genre": "synthwave",
-    "bpm": 161.1,
-    "duration": 150.05,
-    "stars": 7,
-    "notes": 375,
-    "features": {
-      "circles": 98,
-      "rolls": 1,
-      "slides": 16,
-      "holds": 19,
-      "laneChanges": 15
-    }
-  },
-  {
-    "id": "lucid-trigger",
-    "title": "Lucid Trigger",
-    "artist": "khtlrpzvgm",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/lucid-trigger",
-    "genre": "breakbeat",
-    "bpm": 151.3,
-    "duration": 135.24,
-    "stars": 7,
-    "notes": 377,
-    "features": {
-      "circles": 127,
-      "rolls": 2,
-      "slides": 7,
-      "holds": 21,
-      "laneChanges": 9
     }
   },
   {
@@ -827,51 +770,54 @@
     "bpm": 113.2,
     "duration": 150.05,
     "stars": 7,
-    "notes": 380,
+    "notes": 374,
     "features": {
       "circles": 109,
+      "spins": 1,
       "rolls": 0,
-      "slides": 6,
+      "slides": 5,
       "holds": 21,
       "laneChanges": 4
     }
   },
   {
-    "id": "all-night-road",
-    "title": "All Night Road",
-    "artist": "iamoneabe",
+    "id": "neon-hyperdrive",
+    "title": "Neon Hyperdrive",
+    "artist": "adiutorium",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/all-night-road",
-    "genre": "synthpop",
-    "bpm": 207,
-    "duration": 150.05,
+    "sourceUrl": "https://opengameart.org/content/neon-hyperdrive",
+    "genre": "techno",
+    "bpm": 139.8,
+    "duration": 129.57,
     "stars": 7,
-    "notes": 433,
+    "notes": 401,
     "features": {
-      "circles": 66,
-      "rolls": 6,
-      "slides": 8,
-      "holds": 27,
-      "laneChanges": 8
+      "circles": 111,
+      "spins": 1,
+      "rolls": 1,
+      "slides": 7,
+      "holds": 6,
+      "laneChanges": 6
     }
   },
   {
-    "id": "night-prowler",
-    "title": "Night Prowler",
-    "artist": "Section31",
+    "id": "virtual-rush",
+    "title": "Virtual Rush",
+    "artist": "vitalezzz",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/night-prowler",
-    "genre": "techno",
-    "bpm": 216.8,
-    "duration": 149.97,
+    "sourceUrl": "https://opengameart.org/content/virtual-rush",
+    "genre": "synthwave",
+    "bpm": 161.1,
+    "duration": 150.05,
     "stars": 7,
-    "notes": 436,
+    "notes": 428,
     "features": {
-      "circles": 38,
-      "rolls": 3,
-      "slides": 28,
-      "holds": 36,
-      "laneChanges": 15
+      "circles": 128,
+      "spins": 1,
+      "rolls": 0,
+      "slides": 7,
+      "holds": 26,
+      "laneChanges": 10
     }
   },
   {
@@ -884,13 +830,94 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 7,
-    "notes": 437,
+    "notes": 431,
     "features": {
       "circles": 133,
+      "spins": 0,
       "rolls": 1,
       "slides": 13,
       "holds": 31,
       "laneChanges": 12
+    }
+  },
+  {
+    "id": "action-track",
+    "title": "Action Track",
+    "artist": "lushogames",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/action-track",
+    "genre": "rock",
+    "bpm": 113.4,
+    "duration": 138.92,
+    "stars": 7,
+    "notes": 444,
+    "features": {
+      "circles": 59,
+      "spins": 1,
+      "rolls": 3,
+      "slides": 0,
+      "holds": 4,
+      "laneChanges": 10
+    }
+  },
+  {
+    "id": "the-lab",
+    "title": "The Lab",
+    "artist": "tricksntraps",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1",
+    "genre": "electronic",
+    "bpm": 143.6,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 449,
+    "features": {
+      "circles": 123,
+      "spins": 1,
+      "rolls": 0,
+      "slides": 2,
+      "holds": 15,
+      "laneChanges": 10
+    }
+  },
+  {
+    "id": "elevate-instrument-tracks",
+    "title": "Elevate (+ instrument tracks)",
+    "artist": "fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "genre": "electronic",
+    "bpm": 172.8,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 454,
+    "features": {
+      "circles": 60,
+      "spins": 1,
+      "rolls": 0,
+      "slides": 3,
+      "holds": 36,
+      "laneChanges": 10
+    }
+  },
+  {
+    "id": "midnight-drive",
+    "title": "Midnight Drive",
+    "artist": "congusbongus",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/midnight-drive",
+    "genre": "synthwave",
+    "bpm": 161,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 462,
+    "features": {
+      "circles": 44,
+      "spins": 0,
+      "rolls": 2,
+      "slides": 1,
+      "holds": 26,
+      "laneChanges": 9
     }
   },
   {
@@ -903,13 +930,14 @@
     "bpm": 143.4,
     "duration": 150.05,
     "stars": 7,
-    "notes": 469,
+    "notes": 497,
     "features": {
-      "circles": 134,
-      "rolls": 2,
-      "slides": 3,
-      "holds": 26,
-      "laneChanges": 8
+      "circles": 117,
+      "spins": 2,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 19,
+      "laneChanges": 9
     }
   },
   {
@@ -926,29 +954,11 @@
     "notes": 260,
     "features": {
       "circles": 100,
+      "spins": 0,
       "rolls": 1,
       "slides": 9,
       "holds": 15,
       "laneChanges": 8
-    }
-  },
-  {
-    "id": "trance-boss-battle",
-    "title": "Trance Boss Battle",
-    "artist": "MintoDog",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/trance-boss-battle",
-    "genre": "trance",
-    "bpm": 151.4,
-    "duration": 102.43,
-    "stars": 8,
-    "notes": 285,
-    "features": {
-      "circles": 127,
-      "rolls": 0,
-      "slides": 10,
-      "holds": 15,
-      "laneChanges": 5
     }
   },
   {
@@ -965,6 +975,7 @@
     "notes": 337,
     "features": {
       "circles": 147,
+      "spins": 0,
       "rolls": 3,
       "slides": 9,
       "holds": 18,
@@ -985,29 +996,11 @@
     "notes": 340,
     "features": {
       "circles": 139,
+      "spins": 0,
       "rolls": 9,
       "slides": 6,
       "holds": 16,
       "laneChanges": 12
-    }
-  },
-  {
-    "id": "dance-field",
-    "title": "Dance Field",
-    "artist": "centurionofwar",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/dance-field",
-    "genre": "chiptune",
-    "bpm": 185,
-    "duration": 109.77,
-    "stars": 8,
-    "notes": 352,
-    "features": {
-      "circles": 114,
-      "rolls": 4,
-      "slides": 13,
-      "holds": 24,
-      "laneChanges": 11
     }
   },
   {
@@ -1021,9 +1014,10 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 8,
-    "notes": 406,
+    "notes": 395,
     "features": {
       "circles": 185,
+      "spins": 1,
       "rolls": 1,
       "slides": 16,
       "holds": 12,
@@ -1041,12 +1035,13 @@
     "bpm": 216.8,
     "duration": 137.48,
     "stars": 8,
-    "notes": 439,
+    "notes": 418,
     "features": {
       "circles": 112,
+      "spins": 2,
       "rolls": 1,
       "slides": 11,
-      "holds": 38,
+      "holds": 37,
       "laneChanges": 18
     }
   },
@@ -1060,12 +1055,53 @@
     "bpm": 163,
     "duration": 150.05,
     "stars": 8,
-    "notes": 456,
+    "notes": 475,
     "features": {
-      "circles": 172,
+      "circles": 155,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 14,
+      "holds": 19,
+      "laneChanges": 8
+    }
+  },
+  {
+    "id": "lunar-arrow",
+    "title": "Lunar Arrow",
+    "artist": "mmry",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/lunar-arrow",
+    "genre": "electronic",
+    "bpm": 152.6,
+    "duration": 127.35,
+    "stars": 9,
+    "notes": 393,
+    "features": {
+      "circles": 98,
+      "spins": 1,
       "rolls": 1,
-      "slides": 19,
-      "holds": 34,
+      "slides": 2,
+      "holds": 10,
+      "laneChanges": 6
+    }
+  },
+  {
+    "id": "dance-field",
+    "title": "Dance Field",
+    "artist": "centurionofwar",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/dance-field",
+    "genre": "chiptune",
+    "bpm": 185,
+    "duration": 109.77,
+    "stars": 9,
+    "notes": 400,
+    "features": {
+      "circles": 116,
+      "spins": 0,
+      "rolls": 5,
+      "slides": 12,
+      "holds": 11,
       "laneChanges": 8
     }
   },
@@ -1078,33 +1114,35 @@
     "genre": "techno",
     "bpm": 129.5,
     "duration": 150.05,
-    "stars": 8,
-    "notes": 516,
+    "stars": 9,
+    "notes": 550,
     "features": {
-      "circles": 132,
-      "rolls": 3,
-      "slides": 6,
-      "holds": 20,
+      "circles": 130,
+      "spins": 1,
+      "rolls": 5,
+      "slides": 0,
+      "holds": 8,
       "laneChanges": 5
     }
   },
   {
-    "id": "black-diamond",
-    "title": "Black Diamond",
-    "artist": "joth",
+    "id": "night-prowler",
+    "title": "Night Prowler",
+    "artist": "Section31",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/black-diamond",
-    "genre": "dnb",
-    "bpm": 143.5,
-    "duration": 150.05,
-    "stars": 8,
-    "notes": 522,
+    "sourceUrl": "https://opengameart.org/content/night-prowler",
+    "genre": "techno",
+    "bpm": 216.8,
+    "duration": 149.97,
+    "stars": 9,
+    "notes": 639,
     "features": {
-      "circles": 178,
-      "rolls": 0,
-      "slides": 10,
-      "holds": 24,
-      "laneChanges": 9
+      "circles": 36,
+      "spins": 0,
+      "rolls": 6,
+      "slides": 4,
+      "holds": 13,
+      "laneChanges": 13
     }
   },
   {
@@ -1116,14 +1154,35 @@
     "genre": "ambient",
     "bpm": 199.2,
     "duration": 150.05,
-    "stars": 9,
-    "notes": 551,
+    "stars": 10,
+    "notes": 616,
     "features": {
-      "circles": 156,
+      "circles": 154,
+      "spins": 0,
+      "rolls": 6,
+      "slides": 3,
+      "holds": 13,
+      "laneChanges": 18
+    }
+  },
+  {
+    "id": "black-diamond",
+    "title": "Black Diamond",
+    "artist": "joth",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/black-diamond",
+    "genre": "dnb",
+    "bpm": 143.5,
+    "duration": 150.05,
+    "stars": 10,
+    "notes": 674,
+    "features": {
+      "circles": 153,
+      "spins": 0,
       "rolls": 4,
-      "slides": 8,
-      "holds": 33,
-      "laneChanges": 15
+      "slides": 2,
+      "holds": 6,
+      "laneChanges": 6
     }
   }
 ]

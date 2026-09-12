@@ -166,6 +166,7 @@ describe('public/charts/tutorial.json', () => {
       lanes5: [],
       mixed: ['tap', 'hold', 'roll', 'slide'],
       lanes6: [],
+      spin: ['spin'],
       finale: ['tap', 'hold'],
     };
     const seen = new Set<string>();
@@ -207,6 +208,16 @@ describe('public/charts/tutorial.json', () => {
     ]);
     expect(notesIn('roll')).toHaveLength(3);
     expect(notesIn('circle')).toHaveLength(4);
+    // One spinner, alone on the field: a beat of nothing before it and the notes' whole fall (3.5 beats) after it.
+    const spin = notesIn('spin');
+    expect(spin).toHaveLength(1);
+    expect(spin[0].duration).toBeGreaterThanOrEqual(1.5);
+    for (const n of notes) {
+      if (n === spin[0]) continue;
+      const end = n.time + n.duration;
+      const beatsAfter = beatIndex(beats, n.time) - beatIndex(beats, spin[0].time + spin[0].duration);
+      expect(end <= spin[0].time - 0.4 || beatsAfter >= 3.5 - 0.05, `note at ${n.time} too close to the spinner`).toBe(true);
+    }
     expect(notesIn('mixed').map(kindOf)).toEqual(expect.arrayContaining(['tap', 'hold', 'roll', 'slide']));
     // The mixed step ends on a chord (two taps at once), the finale contains a chord too.
     const chord = (id: TutorialStepId) => {
@@ -230,6 +241,6 @@ describe('public/charts/tutorial.json', () => {
       expect(s.hintDesktop).not.toMatch(/\{\w+\}/);
       expect(s.hintTouch).not.toMatch(/\{\w+\}/);
     }
-    expect(script.map((s) => s.lanes)).toEqual([1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6]);
+    expect(script.map((s) => s.lanes)).toEqual([1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6]);
   });
 });
