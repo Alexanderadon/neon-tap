@@ -20,3 +20,12 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.4);
 }
+
+.page-lead {
+  margin: -6px 0 6px;
+  max-width: 320px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+}

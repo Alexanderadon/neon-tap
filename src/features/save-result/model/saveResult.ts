@@ -49,8 +49,14 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
   }
 
   const chart = sessionStore.get().chart;
-  const trackStars = source === 'catalog' && chart && chart.id === result.trackId ? chart.chart.stars : 0;
-  recordRun({ maxCombo: result.maxCombo, trackStars });
+  const catalogChart = source === 'catalog' && chart && chart.id === result.trackId ? chart : null;
+  recordRun({
+    maxCombo: result.maxCombo,
+    trackStars: catalogChart ? catalogChart.chart.stars : 0,
+    perfects: result.counts.perfect,
+    genre: catalogChart?.genre,
+    custom: source !== 'catalog',
+  });
 
   let meta: ResultMeta;
   if (source !== 'catalog') {

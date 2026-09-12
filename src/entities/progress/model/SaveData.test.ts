@@ -14,7 +14,7 @@ describe('SaveData', () => {
   it('migrates v1 (three charts per track) up to the current version keeping the best result', () => {
     const v1 = { version: 1, tracks: { a: { easy: res('B', 900), hard: res('A', 500) }, b: { normal: res('D', 50) } }, plays: 3 };
     const out = migrate(v1);
-    expect(out.version).toBe(4);
+    expect(out.version).toBe(5);
     expect(out.tracks.a.rank).toBe('A');
     expect(out.tracks.b.rank).toBe('D');
     expect(out.plays).toBe(3);
@@ -25,11 +25,11 @@ describe('SaveData', () => {
   it('migrates v2 to v3 with back-filled counters, empty daily state and no claimed goals', () => {
     const v2 = { version: 2, tracks: { a: res('A', 900, 120), b: res('D', 50, 40), c: res('C', 300, 77) }, plays: 9 };
     const out = migrate(v2);
-    expect(out.version).toBe(4);
+    expect(out.version).toBe(5);
     expect(out.tracks).toEqual(v2.tracks);
     expect(out.plays).toBe(9);
     // derived from the stored bests: best combo ever, passes (rank ≥ C)
-    expect(out.counters).toEqual({ spells: { slow: 0, heart: 0 }, tracksPlayed: 2, maxCombo: 120, maxTrackStars: 0 });
+    expect(out.counters).toEqual({ spells: { slow: 0, heart: 0 }, tracksPlayed: 2, maxCombo: 120, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 });
     expect(out.daily).toEqual({ date: '', done: false, streak: 0, total: 0 });
     expect(out.goalsClaimed).toEqual([]);
   });
@@ -44,13 +44,13 @@ describe('SaveData', () => {
       goalsClaimed: ['pass-5', 42, null],
     };
     const out = migrate(v3);
-    expect(out.counters).toEqual({ spells: { slow: 4, heart: 0 }, tracksPlayed: 2, maxCombo: 150, maxTrackStars: 0 });
+    expect(out.counters).toEqual({ spells: { slow: 4, heart: 0 }, tracksPlayed: 2, maxCombo: 150, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 });
     expect(out.daily).toEqual({ date: '2026-09-05', done: true, streak: 2, total: 5 });
     expect(out.goalsClaimed).toEqual(['pass-5']);
-    expect(migrate({ version: 99 }).version).toBe(4);
+    expect(migrate({ version: 99 }).version).toBe(5);
   });
 
-  it('migrates v3 to v4 with an empty wallet and keeps everything else', () => {
+  it('migrates v3 through v4 to v5: empty wallet, zeroed achievement counters, everything else kept', () => {
     const v3 = {
       version: 3,
       tracks: { a: res('S') },
@@ -60,11 +60,14 @@ describe('SaveData', () => {
       goalsClaimed: ['pass-5'],
     };
     const out = migrate(v3);
-    expect(out.version).toBe(4);
-    expect(out).toMatchObject({ ...v3, version: 4, crystals: 0, lifetimeCrystals: 0, purchased: [] });
+    expect(out.version).toBe(5);
+    expect(out).toMatchObject({ ...v3, version: 5, counters: { ...v3.counters, genres: [], perfects: 0, customPlays: 0 }, crystals: 0, lifetimeCrystals: 0, purchased: [] });
     // v2 walks through both steps
     const fromV2 = migrate({ version: 2, tracks: {}, plays: 0 });
-    expect(fromV2).toMatchObject({ version: 4, crystals: 0, lifetimeCrystals: 0, purchased: [] });
+    expect(fromV2).toMatchObject({ version: 5, crystals: 0, lifetimeCrystals: 0, purchased: [] });
+    // v4 with the new counters already present keeps them (unique genres, numbers sanitised)
+    const v4 = { version: 4, tracks: {}, plays: 0, counters: { spells: {}, genres: ['rock', 'rock', 3], perfects: '9', customPlays: 2 }, daily: {}, goalsClaimed: [], crystals: 5, lifetimeCrystals: 5, purchased: [] };
+    expect(migrate(v4).counters).toMatchObject({ genres: ['rock'], perfects: 0, customPlays: 2 });
   });
 
   it('sanitises the wallet: no negative / fractional balance, lifetime ≥ balance, unique string ids', () => {

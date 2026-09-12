@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { navigate, useRouteKey, useScreen } from '@/shared/lib/router';
-import { getSettings } from '@/entities/settings';
-import { CALIBRATION_VERSION } from '@/shared/config/constants';
+import { firstLaunchStep, getSettings, isWelcomeSkipped } from '@/entities/settings';
 import { MenuPage } from '@/pages/menu';
 import { GamePage } from '@/pages/game';
 import { ResultPage } from '@/pages/result';
@@ -10,6 +9,7 @@ import { SettingsPage } from '@/pages/settings';
 import { CustomSongPage } from '@/pages/custom';
 import { TutorialPage } from '@/pages/tutorial';
 import { ShopPage } from '@/pages/shop';
+import { WelcomePage } from '@/pages/welcome';
 import { AudioGate } from '@/widgets/audio-gate';
 import { OrientationHint } from '@/widgets/orientation-hint';
 import { InstallBanner } from '@/widgets/install-banner';
@@ -20,13 +20,12 @@ export function App() {
   const screen = useScreen();
   const key = useRouteKey();
 
-  // First launch → latency calibration (GDD §4, critical requirement 2), then the tutorial once.
-  // Calibration returns to the menu, so the check runs every time the menu opens.
+  // First launch: name → latency calibration (GDD §4) → tutorial, each once. Every step returns
+  // to the menu, so the check runs every time the menu opens.
   useEffect(() => {
     if (screen !== 'menu') return;
-    const s = getSettings();
-    if (!s.calibrated || s.calibrationVersion < CALIBRATION_VERSION) navigate('calibration');
-    else if (!s.tutorialDone) navigate('tutorial');
+    const step = firstLaunchStep(getSettings(), isWelcomeSkipped());
+    if (step) navigate(step);
   }, [screen]);
 
   let page;
@@ -48,6 +47,9 @@ export function App() {
       break;
     case 'tutorial':
       page = <TutorialPage key={key} />;
+      break;
+    case 'welcome':
+      page = <WelcomePage key={key} />;
       break;
     case 'shop':
       page = <ShopPage key={key} />;

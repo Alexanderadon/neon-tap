@@ -1,6 +1,6 @@
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
-export type Screen = 'menu' | 'game' | 'result' | 'calibration' | 'settings' | 'custom' | 'tutorial' | 'shop';
+export type Screen = 'menu' | 'game' | 'result' | 'calibration' | 'settings' | 'custom' | 'tutorial' | 'shop' | 'welcome';
 
 interface RouterState {
   screen: Screen;

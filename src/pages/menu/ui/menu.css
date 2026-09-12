@@ -89,8 +89,9 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(10, 12, 20, 0.85);
   color: rgba(255, 255, 255, 0.85);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -112,8 +113,15 @@
   right: calc(50% - 48px - 56px - 24px);
   border-color: rgba(0, 240, 255, 0.35);
 }
-.menu-wallet {
-  pointer-events: none;
+.menu-round-shop {
+  flex-direction: column;
+  gap: 0;
+  color: #7df9ff;
+}
+.menu-round-n {
+  font-size: 11px;
+  line-height: 1;
+  margin-top: 2px;
 }
 @media (max-width: 379px) {
   .menu-round-shop {

@@ -1,10 +1,13 @@
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { Button, Screen } from '@/shared/ui';
+import { Button, Screen, useSwipeBack } from '@/shared/ui';
 import { SettingsPanel } from '@/widgets/settings-panel';
 import '../../page.css';
 
+const toMenu = () => navigate('menu');
+
 export function SettingsPage() {
+  useSwipeBack(toMenu);
   return (
     <Screen center>
       <h1 className="page-title">{dict.settings}</h1>
