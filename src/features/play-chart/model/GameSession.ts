@@ -35,6 +35,8 @@ export type SessionEvent =
 export interface SessionOptions {
   chart: ChartFile;
   audioBuffer: AudioBuffer;
+  /** Lead layer (vocal / melody stem) played in sync with `audioBuffer`; opened by hits. */
+  leadBuffer?: AudioBuffer | null;
   canvas: HTMLCanvasElement;
   /** Seconds; from calibration. */
   userOffset: number;
@@ -63,6 +65,8 @@ export interface SessionOptions {
 const TIME_REPORT_MS = 100;
 
 const LEAD_IN = 2.0;
+/** How long a tap keeps the lead layer open (a beat at 150 BPM). */
+const LEAD_TAP_SEC = 0.4;
 const MILESTONES = [50, 100, 250, 500, 1000];
 const ASSIST_WINDOW = 0.4;
 export const MAX_HEARTS = 5;
@@ -173,6 +177,7 @@ export class GameSession {
     this.notes.onJudge = this.handleJudge;
     this.notes.onRollTap = (note) => {
       sfxHit(1);
+      audioEngine.leadOpen(LEAD_TAP_SEC);
       this.renderer.rollTap(note.lane, note.lanes, note.taps, note.extra);
     };
     this.resizeObserver = new ResizeObserver(() => this.renderer.resize());
@@ -247,7 +252,7 @@ export class GameSession {
     this.rollGems();
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
-    const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN);
+    const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN, this.opts.leadBuffer ?? null);
     this.clock.start(startTime);
     this.opts.onEvent({ type: 'start' });
     cancelAnimationFrame(this.raf);
@@ -266,7 +271,7 @@ export class GameSession {
   resume(): void {
     if (!this.paused) return;
     const pos = Math.max(0, this.clock.position() - 1);
-    const startTime = audioEngine.play(this.opts.audioBuffer, pos, () => this.finish(), 0.3);
+    const startTime = audioEngine.play(this.opts.audioBuffer, pos, () => this.finish(), 0.3, this.opts.leadBuffer ?? null);
     this.clock.start(startTime, pos);
     this.slowUntil = -1;
     this.slowReleasing = false;
@@ -318,6 +323,7 @@ export class GameSession {
 
     if (judgement === 'miss') {
       audioEngine.missEffect();
+      audioEngine.leadHold(false);
       this.perfectStreak = 0;
       if (prevCombo >= 10) sfxComboBreak();
       else sfxMiss();
@@ -341,7 +347,10 @@ export class GameSession {
     if (!tail) {
       sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
       if (!note.assisted) this.learnOffset(note.hitDelta);
-    }
+      // The hit plays the song: a tap opens the lead layer for a beat, a long note keeps it open.
+      if (note.duration > 0) audioEngine.leadHold(true);
+      else audioEngine.leadOpen(LEAD_TAP_SEC);
+    } else audioEngine.leadHold(false);
     this.comboGrewAt = this.lastJudgementAt;
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
     if (this.perfectStreak > 0 && this.perfectStreak % 25 === 0) this.opts.onEvent({ type: 'perfect-streak', streak: this.perfectStreak });

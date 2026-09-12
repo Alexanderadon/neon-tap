@@ -331,7 +331,7 @@ export class Renderer {
     const { laneWidth, noteHeight, hitY } = layout;
     const bodyW = laneWidth * 0.82;
     const colors = Array.from({ length: n }, (_, i) => this.laneColors[i % this.laneColors.length]);
-    const spellSize = Math.round(Math.min(laneWidth * 0.7, noteHeight * 2.6));
+    const spellSize = Math.max(16, Math.round(Math.min(laneWidth * 0.7, noteHeight * 2.6)));
     const gemSize = Math.round(Math.min(laneWidth * 0.6, noteHeight * 2.3));
     return {
       lanes: n,

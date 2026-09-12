@@ -203,14 +203,14 @@ export function renderSpell(kind: 'slow' | 'heart', size: number, dpr: number): 
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(2, size * 0.1);
   ctx.beginPath();
-  ctx.arc(c, c, r - ctx.lineWidth, 0, Math.PI * 2);
+  ctx.arc(c, c, Math.max(0.5, r - ctx.lineWidth), 0, Math.PI * 2);
   ctx.stroke();
   ctx.stroke();
   // Dark disc so the icon reads on top of the lane.
   ctx.shadowBlur = 0;
   ctx.fillStyle = 'rgba(5,6,10,0.85)';
   ctx.beginPath();
-  ctx.arc(c, c, r - ctx.lineWidth * 1.6, 0, Math.PI * 2);
+  ctx.arc(c, c, Math.max(0.5, r - ctx.lineWidth * 1.6), 0, Math.PI * 2);
   ctx.fill();
 
   // Icon.
