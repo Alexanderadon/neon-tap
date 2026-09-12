@@ -62,6 +62,8 @@ export interface Profile {
   circlesPerWindow: number;
   lanePools: typeof LANE_POOLS;
   keepLanesChance: number;
+  /** Which spells the chart may carry: the slow-motion spell is a tool for hard songs, not a beginner's first surprise. */
+  spells: readonly SpellKind[];
 }
 
 export const NORMAL: Profile = {
@@ -79,6 +81,7 @@ export const NORMAL: Profile = {
   circlesPerWindow: Infinity,
   lanePools: LANE_POOLS,
   keepLanesChance: 0.4,
+  spells: ['slow', 'heart'],
 };
 
 /** Chapter two: eighths allowed, a few holds and slides, still no rolls or chords, up to five lanes. */
@@ -97,6 +100,7 @@ export const MEDIUM: Profile = {
   circlesPerWindow: 6,
   lanePools: [[3], [3, 4], [4, 5]],
   keepLanesChance: 0.6,
+  spells: ['heart'],
 };
 
 export const EASY: Profile = {
@@ -114,6 +118,7 @@ export const EASY: Profile = {
   circlesPerWindow: 4,
   lanePools: EASY_LANE_POOLS,
   keepLanesChance: 0.8,
+  spells: ['heart'],
 };
 /** Slots of silence before a lane-count change so the player can move their hands (2 beats). */
 const SECTION_GAP_SLOTS = 8;
@@ -138,7 +143,6 @@ const ROLL_ON_BASS_CHANCE = 0.5;
 
 /** A spell note every this many bars, starting at bar 4 (after the intro). */
 const SPELL_EVERY_BARS = 8;
-const SPELL_ORDER: readonly SpellKind[] = ['slow', 'heart'];
 
 /** Circle windows: an intense phrase start switches to circles ONLY, on every pattern hit, for 2–4 bars while the pattern stays strong. */
 const CIRCLE_WINDOW_MIN_BARS = 2;
@@ -445,7 +449,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
     const ev = events.find((e) => e.bar.index === b && !e.kind && !e.hold) ?? events.find((e) => e.bar.index === b + 1 && !e.kind && !e.hold);
     if (!ev) continue;
-    ev.kind = SPELL_ORDER[spellCount++ % SPELL_ORDER.length];
+    ev.kind = P.spells[spellCount++ % P.spells.length];
   }
 
   // 2. Holds on sustained melodic sounds (some become slides), chords on accents — under the

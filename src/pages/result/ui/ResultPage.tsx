@@ -1,10 +1,12 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { Screen } from '@/shared/ui';
-import { useSession } from '@/entities/play-session';
+import { startSession, useSession } from '@/entities/play-session';
+import { CATALOG, loadChart } from '@/entities/track';
 import { findGoal } from '@/entities/progress';
 import { ResultBreakdown } from '@/widgets/result-breakdown';
+import { useCatalogState } from '@/widgets/track-list';
 import { AttemptLine } from '@/widgets/history-panel';
 import { OnlineLeaderboard } from '@/widgets/online-leaderboard';
 import { CrystalsEarned } from '@/widgets/wallet-badge';
@@ -17,6 +19,20 @@ export function ResultPage() {
   }, [chart, result]);
 
   const retry = useCallback(() => navigate('game'), []);
+
+  // "Next": the following playable catalog track (hidden for custom songs and after the last one).
+  const catalog = useCatalogState();
+  const nextId = useMemo(() => {
+    if (source !== 'catalog' || !result) return null;
+    const i = CATALOG.findIndex((t) => t.id === result.trackId);
+    for (let j = i + 1; j < CATALOG.length; j++) if (catalog.unlocks.get(CATALOG[j].id)?.unlocked) return CATALOG[j].id;
+    return null;
+  }, [source, result, catalog]);
+  const next = useCallback(async () => {
+    if (!nextId) return;
+    startSession(await loadChart(nextId), 'catalog');
+    navigate('game');
+  }, [nextId]);
 
   if (!chart || !result) return null;
 
@@ -34,6 +50,7 @@ export function ResultPage() {
         title={chart.title}
         subtitle={`★ ${chart.chart.stars}`}
         onRetry={retry}
+        onNext={nextId ? () => void next() : undefined}
         chart={chart}
         notes={notes}
         belowGrid={
