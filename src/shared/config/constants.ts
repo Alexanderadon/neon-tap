@@ -1,5 +1,8 @@
 /** Judgement windows in seconds. Outside `good` → miss. */
 export const HIT_WINDOWS = { perfect: 0.05, great: 0.1, good: 0.15 } as const;
+/** Circles are aimed at on screen, not caught on a line: almost twice the time to react. */
+export const CIRCLE_HIT_WINDOWS = { perfect: 0.09, great: 0.18, good: 0.28 } as const;
+export type HitWindows = { readonly perfect: number; readonly great: number; readonly good: number };
 
 /**
  * Default lane count; sections of a chart may switch between MIN_LANES and MAX_LANES.

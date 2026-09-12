@@ -1,12 +1,12 @@
-import { HIT_WINDOWS, JUDGEMENT_SCORE, RANK_THRESHOLDS } from '@/shared/config/constants';
+import { HIT_WINDOWS, JUDGEMENT_SCORE, RANK_THRESHOLDS , type HitWindows } from '@/shared/config/constants';
 import type { Judgement, JudgementCounts, Rank } from '@/shared/types/result';
 
 /** Classify a hit by its timing error (seconds). `null` = outside the good window → not a hit. */
-export function judgeDelta(delta: number): Judgement | null {
+export function judgeDelta(delta: number, windows: HitWindows = HIT_WINDOWS): Judgement | null {
   const d = Math.abs(delta);
-  if (d <= HIT_WINDOWS.perfect) return 'perfect';
-  if (d <= HIT_WINDOWS.great) return 'great';
-  if (d <= HIT_WINDOWS.good) return 'good';
+  if (d <= windows.perfect) return 'perfect';
+  if (d <= windows.great) return 'great';
+  if (d <= windows.good) return 'good';
   return null;
 }
 
