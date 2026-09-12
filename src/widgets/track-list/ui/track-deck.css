@@ -134,8 +134,11 @@
   overflow: hidden;
   background: #0b0d16;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  /* Position, scale and dimming come from JS every frame (one continuous motion for drags and flights). */
+  /* Position, scale and opacity are written by the motion loop each frame (drags and flights are one motion);
+     a fresh card is placed in a layout effect before its first paint. */
   will-change: transform, opacity;
+  backface-visibility: hidden;
+  contain: layout paint;
   cursor: pointer;
 }
 .deck-card.is-locked .deck-art {
