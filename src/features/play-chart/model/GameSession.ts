@@ -450,6 +450,7 @@ export class GameSession {
     if (judgement === 'miss') {
       audioEngine.missEffect();
       audioEngine.leadHold(false);
+      if (note.pitch > 0 && tail) audioEngine.noteOff(note.pitch);
       this.perfectStreak = 0;
       if (prevCombo >= 10) sfxComboBreak();
       else sfxMiss();
@@ -471,12 +472,18 @@ export class GameSession {
     }
 
     if (!tail) {
-      sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
+      // The hit plays the song, Magic Tiles style: the tile's melody note sounds (louder the cleaner
+      // the hit); tiles without a note (drum breaks, circles, spells) keep the hit sound. A long note
+      // rings while held. With stems the lead layer opens as well.
+      if (note.pitch > 0) audioEngine.noteOn(note.pitch, note.duration > 0, judgement === 'perfect' ? 1 : judgement === 'great' ? 0.8 : 0.6);
+      else sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
       if (!note.assisted) this.learnOffset(note.hitDelta);
-      // The hit plays the song: a tap opens the lead layer for a beat, a long note keeps it open.
       if (note.duration > 0) audioEngine.leadHold(true);
       else audioEngine.leadOpen(LEAD_TAP_SEC);
-    } else audioEngine.leadHold(false);
+    } else {
+      audioEngine.leadHold(false);
+      if (note.pitch > 0) audioEngine.noteOff(note.pitch);
+    }
     this.comboGrewAt = this.lastJudgementAt;
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
     if (this.perfectStreak > 0 && this.perfectStreak % 25 === 0) this.opts.onEvent({ type: 'perfect-streak', streak: this.perfectStreak });

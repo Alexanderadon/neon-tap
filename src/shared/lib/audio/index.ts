@@ -9,3 +9,4 @@ export { SampleBank } from './SampleBank';
 export type { PlayOptions } from './SampleBank';
 export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxGem, sfxRank, sfxUi, sfxLanes, sfxSwipe } from './sfx';
 export { unlockAudio, useAudioUnlocked, audioUnlockStore } from './unlock';
+export { NoteSynth } from './NoteSynth';
