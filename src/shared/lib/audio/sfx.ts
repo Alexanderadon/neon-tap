@@ -63,6 +63,12 @@ export function sfxMilestone(): void {
   if (!sfxBank.play('milestone', { gain: 0.9 })) fallbackTone(880, 0.25, 0.15, 'sine');
 }
 
+/** Crystal collected: the milestone chime pitched up (big gems a touch lower and louder) — no extra sample. */
+export function sfxGem(big = false): void {
+  const rate = big ? 1.35 : 1.6;
+  if (!sfxBank.play('milestone', { gain: big ? 1 : 0.8, rate })) fallbackTone(880 * rate, 0.2, 0.15, 'sine');
+}
+
 /** Rank reveal on the result screen. */
 export function sfxRank(): void {
   if (!sfxBank.play('rank', { gain: 0.9 })) fallbackTone(660, 0.3, 0.15, 'sine');

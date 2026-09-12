@@ -21,6 +21,8 @@ interface RawTrack {
   raw: string;
   sourceUrl: string;
   license: string;
+  /** Shop-only track: never opens by stars, bought with crystals. */
+  premium?: boolean;
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -48,6 +50,7 @@ for (const t of tracks) {
     license: t.license,
     sourceUrl: t.sourceUrl,
     genre: t.genre,
+    ...(t.premium ? { premium: true } : {}),
     audio: `music/${t.id}.mp3`,
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
@@ -73,6 +76,7 @@ const catalog = built.map((c) => ({
   license: c.license,
   sourceUrl: c.sourceUrl,
   genre: c.genre,
+  ...(c.premium ? { premium: true } : {}),
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,

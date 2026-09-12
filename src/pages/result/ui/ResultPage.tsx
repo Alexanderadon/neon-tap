@@ -7,6 +7,7 @@ import { findGoal } from '@/entities/progress';
 import { ResultBreakdown } from '@/widgets/result-breakdown';
 import { AttemptLine } from '@/widgets/history-panel';
 import { OnlineLeaderboard } from '@/widgets/online-leaderboard';
+import { CrystalsEarned } from '@/widgets/wallet-badge';
 
 export function ResultPage() {
   const { chart, result, resultMeta, source } = useSession((s) => s);
@@ -35,7 +36,12 @@ export function ResultPage() {
         onRetry={retry}
         chart={chart}
         notes={notes}
-        belowGrid={source === 'catalog' ? <AttemptLine trackId={result.trackId} /> : undefined}
+        belowGrid={
+          <>
+            {resultMeta?.crystals ? <CrystalsEarned n={resultMeta.crystals} /> : null}
+            {source === 'catalog' && <AttemptLine trackId={result.trackId} />}
+          </>
+        }
         extraBottom={<OnlineLeaderboard result={result} source={source} />}
       />
     </Screen>

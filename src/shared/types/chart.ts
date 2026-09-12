@@ -56,6 +56,8 @@ export interface ChartFile {
   sourceUrl: string;
   /** Genre tag from the track registry; absent for user-supplied songs. */
   genre?: Genre;
+  /** Premium track: never opens by stars, only bought with crystals in the shop. */
+  premium?: boolean;
   audio: string;
   bpm: number;
   /** Seconds to the first downbeat. */

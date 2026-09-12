@@ -5,6 +5,7 @@ import {
   goodJudgementColor,
   hexToRgba,
   renderBeam,
+  renderCrystal,
   renderGlowBar,
   renderGlowDot,
   renderGlowRing,
@@ -39,6 +40,10 @@ export interface FrameState {
   heartLostAge: number;
   /** Remaining slow-spell time as 0..1, or -1 when inactive. */
   slowRemaining: number;
+  /** Crystals collected so far; -1 hides the counter (tutorial). */
+  crystals: number;
+  /** Seconds since the last crystal was collected (Infinity when none). */
+  gemAge: number;
   held: (lane: number) => boolean;
   lastJudgement: Judgement | null;
   lastJudgementAge: number;
@@ -70,6 +75,14 @@ const RING_SPRITE_RADIUS = 64;
 const HAZE_RADIUS = 96;
 const GRID_LINES = 7;
 const AMBIENT_RINGS = 3;
+/** Crystal colour — ice cyan with a white core, distinct from every lane palette. */
+const GEM_COLOR = '#8be9ff';
+/** Palette slot of the crystal glow dot (after the lane colours). */
+const GEM_DOT = MAX_LANES;
+/** Flying crystals (note → HUD counter) in flight at once. */
+const FLY_POOL = 4;
+const FLY_SEC = 0.55;
+const GEM_POP_SEC = 0.3;
 
 /** Everything that depends on the lane count: geometry, static layer, sized sprites. */
 interface LaneSet {
@@ -80,6 +93,9 @@ interface LaneSet {
   holdSprites: NoteSprite[];
   beams: NoteSprite[];
   spells: Record<SpellKind, NoteSprite>;
+  /** Crystal sprites for gem notes: regular and the rare big one. */
+  gem: NoteSprite;
+  gemBig: NoteSprite;
   /** Per-lane fill for the touched zone (touch devices), precomputed — no string building per frame. */
   zoneFill: string[];
 }
@@ -129,6 +145,15 @@ export class Renderer {
   private readonly popText: string[] = new Array(POP_POOL).fill('');
   private popCursor = 0;
   private shockAge = 1;
+  // Crystals flying from the hit line to the HUD counter (SoA pool).
+  private readonly flyX = new Float32Array(FLY_POOL);
+  private readonly flyY = new Float32Array(FLY_POOL);
+  private readonly flyAge = new Float32Array(FLY_POOL).fill(1);
+  private readonly flyBig = new Uint8Array(FLY_POOL);
+  private flyCursor = 0;
+  /** Counter pop after a crystal lands in the HUD. */
+  private gemPopAge = 1;
+  private hudGem!: NoteSprite;
   private bannerText = '';
   private bannerAge = 1;
   private sparkTimer = 0;
@@ -246,7 +271,9 @@ export class Renderer {
     const base = computeLayout(this.width, this.height, this.touch, LANE_COUNT);
     this.baseLayer = this.buildStaticLayer(base, true);
     this.glowDots = this.laneColors.map((c) => renderGlowDot(c, 16, this.dpr));
+    this.glowDots.push(renderGlowDot(GEM_COLOR, 16, this.dpr)); // GEM_DOT
     this.heartSize = this.height > this.width ? 16 : 20;
+    this.hudGem = renderCrystal(GEM_COLOR, this.heartSize * 1.15, this.dpr);
     this.heartOn = renderHeart(HEART_COLOR, this.heartSize, this.dpr, true);
     this.heartOff = renderHeart(HEART_COLOR, this.heartSize, this.dpr, false);
     // Background layer sprites — sized once here, only scaled with drawImage per frame.
@@ -280,6 +307,7 @@ export class Renderer {
     const bodyW = laneWidth * 0.82;
     const colors = Array.from({ length: n }, (_, i) => this.laneColors[i % this.laneColors.length]);
     const spellSize = Math.round(Math.min(laneWidth * 0.7, noteHeight * 2.6));
+    const gemSize = Math.round(Math.min(laneWidth * 0.6, noteHeight * 2.3));
     return {
       lanes: n,
       layout,
@@ -288,6 +316,8 @@ export class Renderer {
       holdSprites: colors.map((c) => renderNoteSprite(c, bodyW * 0.5, noteHeight * 0.6, this.dpr)),
       beams: colors.map((c) => renderBeam(hexToRgba(c, 0.55), laneWidth, hitY, this.dpr)),
       spells: { slow: renderSpell('slow', spellSize, this.dpr), heart: renderSpell('heart', spellSize, this.dpr) },
+      gem: renderCrystal(GEM_COLOR, gemSize, this.dpr),
+      gemBig: renderCrystal(GEM_COLOR, Math.round(gemSize * 1.35), this.dpr, true),
       zoneFill: colors.map((c) => hexToRgba(c, 0.12)),
     };
   }
@@ -488,6 +518,27 @@ export class Renderer {
     this.shake.trigger(2);
   }
 
+  /** A gem note was hit: burst at the hit line and the crystal takes off towards the HUD counter. */
+  gemCollected(lane: number, lanes: number, value: number): void {
+    const { laneX, laneWidth, hitY } = this.set(lanes).layout;
+    const cx = laneX + (lane + 0.5) * laneWidth;
+    const big = value > 1;
+    this.particles.emit(cx, hitY, big ? 30 : 16, GEM_DOT, big ? 420 : 300, 5, 0.7);
+    this.ring(cx, hitY, GEM_DOT);
+    if (big) this.shake.trigger(2);
+    const i = this.flyCursor;
+    this.flyCursor = (this.flyCursor + 1) % FLY_POOL;
+    this.flyX[i] = cx;
+    this.flyY[i] = hitY;
+    this.flyAge[i] = 0;
+    this.flyBig[i] = big ? 1 : 0;
+  }
+
+  /** Where the crystal counter sits (right side, hearts row). */
+  private gemHudPos(): { x: number; y: number } {
+    return { x: this.layout.width - 14 - this.heartSize * 0.6, y: 50 + this.safeTop + this.heartSize / 2 };
+  }
+
   comboMilestone(combo: number): void {
     this.shake.trigger(2.5);
     if (this.fxLevel === 'full') this.shockAge = 0;
@@ -517,6 +568,17 @@ export class Renderer {
     for (let i = 0; i < MAX_LANES; i++) if (this.pressAge[i] < 1) this.pressAge[i] += dt;
     if (this.shockAge < 1) this.shockAge += dt / 0.5;
     if (this.bannerAge < 1) this.bannerAge += dt / 1.1;
+    if (this.gemPopAge < 1) this.gemPopAge += dt / GEM_POP_SEC;
+    for (let i = 0; i < FLY_POOL; i++) {
+      if (this.flyAge[i] >= 1) continue;
+      this.flyAge[i] += dt / FLY_SEC;
+      if (this.flyAge[i] >= 1) {
+        // Landed: the counter pops and sparks off.
+        const { x, y } = this.gemHudPos();
+        this.particles.emit(x, y, this.flyBig[i] ? 12 : 6, GEM_DOT, 160, 3, 0.4);
+        this.gemPopAge = 0;
+      }
+    }
     if (this.beatAge < 1) this.beatAge += dt / BEAT_SEC;
     this.sparkTimer += dt;
     this.ambientTime += dt;
@@ -659,6 +721,18 @@ export class Renderer {
         ctx.rotate(spin);
         ctx.drawImage(sp.canvas, (-sp.width / 2) * bob, (-sp.height / 2) * bob, sp.width * bob, sp.height * bob);
         ctx.restore();
+      } else if (n.gem > 0) {
+        // Crystal: slow spin + a sparkle trail while it is still on its way.
+        const sp = n.gem > 1 ? set.gemBig : set.gem;
+        const bob = 1 + 0.05 * Math.sin(s.songTime * 5 + i);
+        ctx.save();
+        ctx.translate(cx, y);
+        ctx.rotate(spin * 0.6 + i);
+        ctx.drawImage(sp.canvas, (-sp.width / 2) * bob, (-sp.height / 2) * bob, sp.width * bob, sp.height * bob);
+        ctx.restore();
+        if (sparkTick && n.state === NoteState.Pending && this.fxLevel === 'full' && y > 0) {
+          this.particles.emit(cx, y - set.layout.noteHeight * 0.6, n.gem > 1 ? 2 : 1, GEM_DOT, 70, 2.5, 0.4);
+        }
       } else {
         const sp = set.noteSprites[n.lane];
         if (n.state === NoteState.Pending) {
@@ -685,7 +759,7 @@ export class Renderer {
     for (let i = 0; i < RING_POOL; i++) {
       const a = this.ringAge[i];
       if (a >= 1) continue;
-      ctx.strokeStyle = this.laneColors[this.ringColor[i]];
+      ctx.strokeStyle = this.ringColor[i] === GEM_DOT ? GEM_COLOR : this.laneColors[this.ringColor[i]];
       ctx.globalAlpha = 1 - a;
       ctx.beginPath();
       ctx.arc(this.ringX[i], this.ringY[i], 8 + a * (laneWidth * 0.55), 0, Math.PI * 2);
@@ -703,6 +777,25 @@ export class Renderer {
       ctx.drawImage(dot.canvas, p.x[i] - size / 2, p.y[i] - size / 2, size, size);
     }
     ctx.globalAlpha = 1;
+
+    // Crystals in flight: ease from the hit line to the HUD counter, shrinking on the way.
+    {
+      const { x: hx, y: hy } = this.gemHudPos();
+      for (let i = 0; i < FLY_POOL; i++) {
+        const a = this.flyAge[i];
+        if (a >= 1) continue;
+        const e = a * a * (3 - 2 * a);
+        const sp = this.flyBig[i] ? cur.gemBig : cur.gem;
+        const k = 1 - 0.55 * e;
+        const x = this.flyX[i] + (hx - this.flyX[i]) * e;
+        const y = this.flyY[i] + (hy - this.flyY[i]) * e - Math.sin(Math.PI * e) * 40;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(e * 4);
+        ctx.drawImage(sp.canvas, (-sp.width / 2) * k, (-sp.height / 2) * k, sp.width * k, sp.height * k);
+        ctx.restore();
+      }
+    }
 
     // Roll counters.
     ctx.textAlign = 'center';
@@ -1198,6 +1291,23 @@ export class Renderer {
       const sp = i < s.hearts ? this.heartOn : this.heartOff;
       const dx = lostShake ? (Math.random() * 2 - 1) * lostShake : 0;
       ctx.drawImage(sp.canvas, x - sp.width / 2 + dx, y - sp.height / 2, sp.width, sp.height);
+    }
+
+    // Crystal counter (right, hearts row): icon + count; pops when a crystal lands, dimmed until the first pick-up.
+    if (s.crystals >= 0) {
+      const { x, y } = this.gemHudPos();
+      const pop = this.gemPopAge < 1 ? (1 - this.gemPopAge) ** 2 : 0;
+      const k = 1 + 0.45 * pop;
+      const sp = this.hudGem;
+      const iw = this.heartSize * 1.15;
+      ctx.globalAlpha = s.crystals > 0 || s.gemAge < 1 ? 1 : 0.55;
+      ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
+      ctx.font = `700 ${Math.round((portrait ? 14 : 16) * (1 + 0.25 * pop))}px ${FONT}`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = pop > 0 ? '#ffffff' : GEM_COLOR;
+      ctx.fillText(String(s.crystals), x - iw * 0.7, y);
+      ctx.globalAlpha = 1;
     }
 
     if (s.slowRemaining >= 0) {
