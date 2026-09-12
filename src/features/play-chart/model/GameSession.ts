@@ -69,6 +69,8 @@ const SPIN_FADE_SEC = 0.35;
 const MILESTONES = [50, 100, 250, 500, 1000];
 const ASSIST_WINDOW = 0.4;
 export const MAX_HEARTS = 5;
+/** A heart caught with all ten lives already there pays this many crystals. */
+const HEART_OVERFLOW_CRYSTALS = 50;
 /** Slow-motion spell: the whole song (music + notes + judgement) runs at this rate for SLOW_DURATION song-seconds. */
 const SLOW_RATE = 0.72;
 const SLOW_DURATION = 6;
@@ -182,6 +184,9 @@ export class GameSession {
       },
     });
     this.notes.onJudge = this.handleJudge;
+    this.notes.onSkip = () => {
+      if (!this.finished) this.scoring.forgive();
+    };
     this.notes.onRollTap = (note) => {
       sfxHit(1);
       this.renderer.rollTap(note.lane, note.lanes, note.taps, note.extra);
@@ -519,7 +524,15 @@ export class GameSession {
       this.clock.setRate(SLOW_RATE, SLOW_RAMP_IN, now);
       audioEngine.setPlaybackRate(SLOW_RATE, SLOW_RAMP_IN);
       audioEngine.tapeEffect(true, SLOW_RAMP_IN);
-    } else if (this.lives.gain()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
+    } else if (this.lives.catchHeart()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
+    else {
+      // Ten lives already (five shown, five gilded): the heart turns into crystals instead.
+      this.crystals += HEART_OVERFLOW_CRYSTALS;
+      this.gemAt = this.clock.songTime();
+      this.renderer.gemCollected(lane, lanes, HEART_OVERFLOW_CRYSTALS);
+      sfxGem(true);
+      this.opts.onEvent({ type: 'gem', value: HEART_OVERFLOW_CRYSTALS, total: this.crystals });
+    }
     this.opts.onEvent({ type: 'spell', kind });
   }
 
@@ -598,6 +611,7 @@ export class GameSession {
       accuracy: s.accuracy,
       progress: Math.max(0, Math.min(1, songTime / this.endTime)),
       hearts: this.lives.hearts,
+      goldHearts: this.lives.gold,
       maxHearts: this.opts.hideHearts ? 0 : MAX_HEARTS,
       heartLostAge: this.heartLostAt < 0 ? Infinity : songTime - this.heartLostAt,
       slowRemaining: slowLeft > 0 ? Math.min(1, slowLeft / SLOW_DURATION) : -1,

@@ -52,6 +52,8 @@ export interface FrameState {
   accuracy: number;
   progress: number;
   hearts: number;
+  /** Lives beyond the shown five: that many shown hearts are drawn gold. */
+  goldHearts: number;
   maxHearts: number;
   /** Seconds since a heart was lost (Infinity when none). */
   heartLostAge: number;
@@ -80,6 +82,8 @@ export type FxLevel = 'full' | 'low';
 
 const FONT = "'Unbounded', 'Segoe UI', system-ui, sans-serif";
 const HEART_COLOR = '#ff2bd6';
+/** A gilded heart: an extra life drawn over one of the five slots. */
+const GOLD_HEART_COLOR = '#ffd700';
 const TRANSITION_SEC = 0.75;
 const RING_POOL = 16;
 const PRESS_BOUNCE_SEC = 0.12;
@@ -179,6 +183,7 @@ export class Renderer {
   private glowDots: NoteSprite[] = [];
   private heartOn!: NoteSprite;
   private heartOff!: NoteSprite;
+  private heartGold!: NoteSprite;
   private heartSize = 18;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
   private baseLayer!: HTMLCanvasElement | OffscreenCanvas;
@@ -328,6 +333,7 @@ export class Renderer {
     this.hudGem = renderCrystal(GEM_COLOR, this.heartSize * 1.15, this.dpr);
     this.heartOn = renderHeart(HEART_COLOR, this.heartSize, this.dpr, true);
     this.heartOff = renderHeart(HEART_COLOR, this.heartSize, this.dpr, false);
+    this.heartGold = renderHeart(GOLD_HEART_COLOR, this.heartSize, this.dpr, true);
     // Background layer sprites — sized once here, only scaled with drawImage per frame.
     const { accent, glow } = this.theme;
     this.barW = base.laneAreaWidth / SPECTRUM_BANDS;
@@ -1469,7 +1475,7 @@ export class Renderer {
     const lostShake = s.heartLostAge < 0.35 ? (1 - s.heartLostAge / 0.35) * 4 : 0;
     for (let i = 0; i < s.maxHearts; i++) {
       const { x, y } = this.heartPos(i);
-      const sp = i < s.hearts ? this.heartOn : this.heartOff;
+      const sp = i < s.goldHearts ? this.heartGold : i < s.hearts ? this.heartOn : this.heartOff;
       const dx = lostShake ? (Math.random() * 2 - 1) * lostShake : 0;
       ctx.drawImage(sp.canvas, x - sp.width / 2 + dx, y - sp.height / 2, sp.width, sp.height);
     }

@@ -229,4 +229,27 @@ describe('NoteManager', () => {
       expect(events).toEqual([{ note: nm.pool[0], judgement: 'miss', tail: true }]);
     });
   });
+
+  describe('bonus items', () => {
+    it('lets a missed spell or crystal go without a judgement, while a hit one counts like any note', () => {
+      const { nm, events } = make([
+        [1, 0, 0, 'heart'],
+        [2, 1],
+        [3, 2, 0, 'slow'],
+        [4, 3],
+      ]);
+      nm.setGems([{ index: 3, value: 1 }]);
+      const skipped: number[] = [];
+      nm.onSkip = (n) => skipped.push(n.time);
+      expect(nm.press(1, 2.02)).toBe('perfect'); // the plain note is hit
+      nm.update(5, notHeld); // everything else goes by
+      expect(skipped).toEqual([1, 3, 4]);
+      expect(events.map((e) => [e.note.time, e.judgement])).toEqual([[2, 'perfect']]);
+      expect(nm.pool[0].state).toBe(NoteState.Missed);
+      // Hit, a bonus item is a normal judgement.
+      const { nm: nm2, events: ev2 } = make([[1, 0, 0, 'heart']]);
+      expect(nm2.press(0, 1.01)).toBe('perfect');
+      expect(ev2).toHaveLength(1);
+    });
+  });
 });

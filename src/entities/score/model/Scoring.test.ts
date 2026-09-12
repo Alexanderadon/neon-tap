@@ -64,4 +64,16 @@ describe('Scoring', () => {
     s.register('perfect');
     expect(s.score - before).toBe(375);
   });
+
+  it('forgives bonus items that went by: they leave the total, so full combo and progress stay reachable', () => {
+    const s = new Scoring(3);
+    s.register('perfect');
+    s.forgive();
+    s.register('great');
+    expect(s.totalNotes).toBe(2);
+    expect(s.isFullCombo).toBe(true);
+    expect(s.progress).toBe(1);
+    s.reset();
+    expect(s.totalNotes).toBe(3);
+  });
 });
