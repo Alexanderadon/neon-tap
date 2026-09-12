@@ -40,7 +40,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 12px 6px 10px;
+  padding: 10px 6px 8px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -78,24 +78,49 @@
   background: conic-gradient(#ffd700 100%, #ffd700 0);
   box-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
 }
-.ach-tier {
+.ach-hit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ach-target {
   position: relative;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+}
+/* Tap → the description, progress and reward; the badge spans the row while open. */
+.ach-badge.is-open {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.ach-badge.is-open .ach-hit {
+  width: auto;
+  flex-shrink: 0;
+}
+.ach-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.75);
 }
 .ach-name {
   font-size: 11px;
   line-height: 1.2;
   font-weight: 600;
-  min-height: 2.4em;
 }
-.ach-sub {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.ach-badge.is-earned .ach-sub {
+.ach-badge.is-earned .ach-detail .mono {
   color: #ffd700;
 }
