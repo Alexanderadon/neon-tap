@@ -12,7 +12,19 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
-import { EASY, LAYERS, MEDIUM, analyzeSong, chartFeatures, composeChart, layerEnergy, layerStrengths, type LayerStrengths, type Profile, type StemLayers } from '../src/shared/lib/analysis';
+import {
+  EASY,
+  LAYERS,
+  MEDIUM,
+  analyzeSong,
+  chartFeatures,
+  composeChart,
+  layerEnergy,
+  layerStrengths,
+  type LayerStrengths,
+  type Profile,
+  type StemLayers,
+} from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
 
 interface RawTrack {
@@ -31,7 +43,6 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
-const STEMS_DIR = join(ROOT, 'public', 'stems');
 /** Raw Demucs output (stem-{drums,bass,other,vocals}.mp3): the chart follows these instruments; never shipped. */
 const STEMS_SRC = process.env.STEMS_DIR ?? 'D:/neon-tap-tools/stems';
 const RATE = 22050;
@@ -101,10 +112,7 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
     sourceUrl: t.sourceUrl,
     genre: t.genre,
     ...(t.premium ? { premium: true } : {}),
-    // With stems the client plays backing + lead in sync (see prepare-stems.ts); analysis always uses the full mix.
-    ...(existsSync(join(STEMS_DIR, t.id, 'lead.mp3'))
-      ? { audio: `stems/${t.id}/backing.mp3`, lead: `stems/${t.id}/lead.mp3` }
-      : { audio: `music/${t.id}.mp3` }),
+    audio: `music/${t.id}.mp3`,
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
     duration: Math.round(duration * 100) / 100,

@@ -103,18 +103,12 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         const settings = getSettings();
         audioEngine.setVolumes({ music: settings.musicVolume, sfx: settings.sfxVolume, voice: settings.voiceVolume });
         voice.setVoice(settings.voice);
-        const [buffer, leadBuffer] = await Promise.all([
-          audioBuffer ?? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`),
-          chart.lead && !audioBuffer ? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.lead}`) : Promise.resolve(null),
-          preloadSfx(),
-          voice.preload(),
-        ]);
+        const [buffer] = await Promise.all([audioBuffer ?? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`), preloadSfx(), voice.preload()]);
         if (cancelled || !canvasRef.current) return;
         const noFailFlag = new URLSearchParams(window.location.search).has('nofail');
         session = new GameSession({
           chart,
           audioBuffer: buffer,
-          leadBuffer,
           canvas: canvasRef.current,
           userOffset: settings.audioOffsetMs / 1000,
           touch: isTouchDevice(),

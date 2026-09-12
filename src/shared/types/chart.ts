@@ -69,8 +69,6 @@ export interface ChartFile {
   genre?: Genre;
   /** Premium track: never opens by stars, only bought with crystals in the shop. */
   premium?: boolean;
-  /** Stem pair (built-in tracks): `audio` is then the backing, `lead` the vocal / melody layer the player opens with hits. */
-  lead?: string;
   audio: string;
   bpm: number;
   /** Seconds to the first downbeat. */

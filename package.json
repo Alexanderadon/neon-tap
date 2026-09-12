@@ -17,7 +17,6 @@
     "assets:sfx": "tsx --tsconfig tsconfig.node.json scripts/prepare-sfx.ts",
     "assets:licenses": "tsx --tsconfig tsconfig.node.json scripts/write-licenses.ts",
     "assets:analyze": "tsx --tsconfig tsconfig.node.json scripts/analyze-tracks.ts",
-    "assets:stems": "tsx --tsconfig tsconfig.node.json scripts/prepare-stems.ts",
     "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts",
     "chart:tutorial": "node scripts/gen-tutorial.mjs",
     "assets:icons": "tsx --tsconfig tsconfig.node.json scripts/make-icons.ts"
