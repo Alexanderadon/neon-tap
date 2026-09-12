@@ -71,8 +71,8 @@ export const CALIBRATION_BPM = 120;
 export const CALIBRATION_VERSION = 2;
 export const CALIBRATION_TAPS = 16;
 
-/** Max distinct note times per second in the composed chart (sliding 1-second window). */
-export const DENSITY_LIMIT = 3.5;
+/** Max distinct note times per second in the composed chart (sliding 1-second window; reached only in intense phrases of energetic songs). */
+export const DENSITY_LIMIT = 5.5;
 
 /**
  * Progression gate. `true` = every track is playable from the start. The `?unlock=1` URL flag is
