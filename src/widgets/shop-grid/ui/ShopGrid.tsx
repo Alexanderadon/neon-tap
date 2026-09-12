@@ -14,18 +14,25 @@ interface Item {
 
 const TOAST_MS = 2600;
 
+/** Star-locked tracks on sale at a time: the next few on the road, not the whole catalog. */
+const LOCKED_ON_SALE = 6;
+
 /**
- * Everything the crystals can buy: premium tracks, tracks still closed by stars and the ones
- * already bought (shown as owned). Tracks open by stars alone are not listed — nothing to sell.
+ * What the crystals can buy: premium tracks, the next LOCKED_ON_SALE tracks still closed by stars
+ * (an early unlock) and the ones already bought (shown as owned, at the bottom). Tracks open by
+ * stars alone are not listed — nothing to sell.
  */
 export function ShopGrid() {
   const save = useProgress((s) => s);
   const stars = grandTotalStars(save, TRACK_IDS);
   const states = unlockStates(TRACK_IDS, { stars, premium: PREMIUM_IDS, purchased: save.purchased });
   const items: Item[] = [];
+  let lockedShown = 0;
   CATALOG.forEach((track, i) => {
     const info = states[i];
-    if (isForSale(info, stars)) items.push({ track, info, price: trackPrice(track.stars, track.premium === true) });
+    if (!isForSale(info, stars)) return;
+    if (!info.premium && !info.purchased && lockedShown++ >= LOCKED_ON_SALE) return;
+    items.push({ track, info, price: trackPrice(track.stars, track.premium === true) });
   });
   // Owned tracks sink to the bottom; the rest keep catalog order (easiest first).
   items.sort((a, b) => Number(a.info.purchased) - Number(b.info.purchased));

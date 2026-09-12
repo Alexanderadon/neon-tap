@@ -227,7 +227,6 @@ describe('public/charts/tutorial.json', () => {
         expect(s.hintDesktop).toContain(s.keys.join(' '));
         expect(s.hintTouch.length).toBeGreaterThan(0);
       }
-      expect(s.text).not.toMatch(/\{\w+\}/);
       expect(s.hintDesktop).not.toMatch(/\{\w+\}/);
       expect(s.hintTouch).not.toMatch(/\{\w+\}/);
     }

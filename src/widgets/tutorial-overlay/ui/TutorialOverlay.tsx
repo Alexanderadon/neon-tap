@@ -1,6 +1,5 @@
-import { dict, fmt } from '@/shared/i18n';
-import { Button } from '@/shared/ui';
-import { zoneHint, type TutorialKind, type TutorialStep } from '@/features/tutorial';
+import { dict } from '@/shared/i18n';
+import type { TutorialKind, TutorialStep } from '@/features/tutorial';
 import './tutorial-overlay.css';
 
 interface Props {
@@ -32,17 +31,12 @@ export function TutorialOverlay({ step, index, total, progress, succeeded, touch
             <MechanicIcon kind={step.kind} lanes={step.lanes} />
             <div className="tut-titles">
               <div className="tut-title">{step.title}</div>
-              <div className="tut-step">{fmt(dict.tutorialStepOf, { n: index + 1, total })}</div>
+              <div className="tut-hint">{touch ? step.hintTouch : step.hintDesktop}</div>
             </div>
-            <Button variant="ghost" className="tut-skip" onClick={onSkip}>
-              {dict.tutorialSkip}
-            </Button>
-          </div>
-          <div className="tut-text">{step.text}</div>
-          <div className="tut-hint">{touch ? step.hintTouch : step.hintDesktop}</div>
-          <div className="tut-foot">
-            <LanesChip lanes={step.lanes} keys={step.keys} touch={touch} />
             <div className={`tut-great ${succeeded ? 'on' : ''}`}>{step.id === 'finale' ? dict.tutorialDone : dict.tutorialGreat}</div>
+            <button type="button" className="tut-skip" onClick={onSkip} aria-label={dict.tutorialSkip}>
+              ×
+            </button>
           </div>
           <div className="tut-dots">
             {Array.from({ length: total }, (_, i) => (
@@ -53,26 +47,6 @@ export function TutorialOverlay({ step, index, total, progress, succeeded, touch
             <div className="tut-bar-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-/** "Полосы: N" + key caps (desktop) or the zone hint (touch). The card remounts per step, so the chip pops in with it. */
-function LanesChip({ lanes, keys, touch }: { lanes: number; keys: readonly string[]; touch: boolean }) {
-  return (
-    <div className="tut-lanes">
-      <span className="tut-lanes-n">{fmt(dict.tutorialLanes, { n: lanes })}</span>
-      {touch ? (
-        <span className="tut-lanes-zones">{zoneHint(lanes)}</span>
-      ) : (
-        <span className="tut-keys" aria-label={fmt(dict.tutorialLanesKeys, { keys: keys.join(' ') })}>
-          {keys.map((k, i) => (
-            <kbd key={i} className="tut-key">
-              {k}
-            </kbd>
-          ))}
-        </span>
       )}
     </div>
   );
