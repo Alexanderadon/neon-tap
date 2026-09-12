@@ -31,12 +31,12 @@ describe('PointerLanes', () => {
     expect(log).toEqual(['P0', 'P3', 'R0', 'R3']);
   });
 
-  it('two thumbs on one lane: pressed once (by the handler side) and released only when the last one lifts', () => {
+  it('two thumbs on one lane: both downs reach the handler (each is a tap for the judge), released only when the last one lifts', () => {
     const { pl, log } = harness();
     pl.down(1, 1);
     pl.down(2, 1);
     pl.up(1);
-    expect(log).toEqual(['P1', 'P1']); // second press is a no-op for Input.held; no release yet
+    expect(log).toEqual(['P1', 'P1']); // HeldLanes turns the second one into a fresh tap; no release yet
     pl.up(2);
     expect(log).toEqual(['P1', 'P1', 'R1']);
   });

@@ -1,5 +1,6 @@
 import { INPUT_SLOTS } from '@/shared/config/constants';
 import { PointerLanes } from './PointerLanes';
+import { HeldLanes, eventAge } from './heldLanes';
 
 export interface LaneEvent {
   lane: number;
@@ -31,11 +32,12 @@ interface Options {
  * Key → lane mapping is delegated so the playfield can change its lane count mid-song.
  * A finger that slides into another lane releases the old lane and presses the new one
  * with `viaMove` set, which is how slide notes are followed. Which pointer is in which lane
- * (multi-touch, slides, cancel) is the pure `PointerLanes` module; this class only adds the
- * DOM listeners and the audio-time stamps.
+ * (multi-touch, slides, cancel) is the pure `PointerLanes` module, and which contacts count as
+ * taps is the pure `HeldLanes` module; this class only adds the DOM listeners and the audio-time
+ * stamps.
  */
 export class Input {
-  private readonly held = new Uint8Array(INPUT_SLOTS);
+  private readonly held = new HeldLanes(INPUT_SLOTS);
   private readonly keyLane = new Map<string, number>();
   /** Audio time of the pointer event being dispatched (set before PointerLanes calls back). */
   private pointerTime = 0;
@@ -74,29 +76,27 @@ export class Input {
     this.target.removeEventListener('contextmenu', prevent);
     this.target = null;
     this.handlers = null;
-    this.held.fill(0);
+    this.held.clear();
     this.keyLane.clear();
     this.pointers.clear();
   }
 
   isHeld(lane: number): boolean {
-    return this.held[lane] === 1;
+    return this.held.isHeld(lane);
   }
 
   private eventAudioTime(e: Event): number {
-    const ageSec = Math.max(0, (performance.now() - e.timeStamp) / 1000);
-    return this.opts.audioNow() - Math.min(ageSec, 0.1);
+    return this.opts.audioNow() - eventAge(performance.now(), e.timeStamp);
   }
 
   private press(lane: number, audioTime: number, viaMove = false): void {
-    if (this.held[lane]) return;
-    this.held[lane] = 1;
-    this.handlers?.onPress({ lane, audioTime, viaMove });
+    const contact = this.held.press(lane, viaMove);
+    if (contact === 'none') return;
+    this.handlers?.onPress({ lane, audioTime, viaMove: contact === 'slide' });
   }
 
   private release(lane: number, audioTime: number, viaMove = false): void {
-    if (!this.held[lane]) return;
-    this.held[lane] = 0;
+    if (!this.held.release(lane)) return;
     this.handlers?.onRelease({ lane, audioTime, viaMove });
   }
 
