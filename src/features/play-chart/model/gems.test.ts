@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ParsedNote } from '@/entities/chart';
 import { BIG_GEM_VALUE, GEM_MAX_COUNT, GEM_MIN_COUNT, GEM_MIN_TIME, gemTotal, isGemCandidate, pickGems } from './gems';
 
-const tap = (time: number, over: Partial<ParsedNote> = {}): ParsedNote => ({ time, lane: 0, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4, pitch: 0, ...over });
+const tap = (time: number, over: Partial<ParsedNote> = {}): ParsedNote => ({ time, lane: 0, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4, ...over });
 
 /** A 120 s song with a tap every 0.5 s plus some holds / spells / circles sprinkled in. */
 function song(length = 120, step = 0.5): ParsedNote[] {

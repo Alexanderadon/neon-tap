@@ -15,5 +15,3 @@ export type { ComposeOptions, Profile } from './ChartGenerator';
 export type { PhrasePattern } from './phrasePattern';
 export { layerEnergy, layerStrengths, pickLayer, LAYERS } from './layers';
 export type { Layer, LayerStrengths, StemLayers } from './layers';
-export { detectPitch, midiToHz } from './pitch';
-export { tilePitches } from './tilePitches';

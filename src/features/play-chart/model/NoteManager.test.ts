@@ -9,7 +9,7 @@ function make(notes: Spec[], assistWindow = 0) {
   const nm = new NoteManager(50, { assistWindow });
   const events: JudgeEvent[] = [];
   nm.onJudge = (e) => events.push(e);
-  nm.load(notes.map(([time, lane, duration = 0, kind = null, extra = 0]) => ({ time, lane, duration, kind, seq: 0, extra, lanes: 4, pitch: 0 })));
+  nm.load(notes.map(([time, lane, duration = 0, kind = null, extra = 0]) => ({ time, lane, duration, kind, seq: 0, extra, lanes: 4 })));
   return { nm, events };
 }
 
@@ -127,8 +127,8 @@ describe('NoteManager', () => {
     it('are open for the last half of their approach: any tap while the ring is closing counts as good', () => {
       const nm = new NoteManager(50, { approachTime: 2 }); // circles open 1.0 s early
       nm.load([
-        { time: 3, lane: 1, duration: 0, kind: 'circle', seq: 1, extra: 0, lanes: 4, pitch: 0 },
-        { time: 6, lane: 2, duration: 0, kind: 'circle', seq: 2, extra: 0, lanes: 4, pitch: 0 },
+        { time: 3, lane: 1, duration: 0, kind: 'circle', seq: 1, extra: 0, lanes: 4 },
+        { time: 6, lane: 2, duration: 0, kind: 'circle', seq: 2, extra: 0, lanes: 4 },
       ]);
       expect(nm.press(7, 1.9)).toBeNull(); // 1.1 s early: the ring is still wide, nothing happens
       expect(nm.pool[0].state).toBe(NoteState.Pending);
@@ -136,7 +136,7 @@ describe('NoteManager', () => {
       expect(nm.press(7, 5.85)).toBe('great'); // 0.15 s early on the next one: the usual windows still grade
       // lane notes never get the wide lead
       const lane = new NoteManager(50, { approachTime: 2 });
-      lane.load([{ time: 3, lane: 1, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4, pitch: 0 }]);
+      lane.load([{ time: 3, lane: 1, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4 }]);
       expect(lane.press(1, 2.2)).toBeNull();
     });
   });

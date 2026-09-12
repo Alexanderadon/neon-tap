@@ -241,7 +241,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
       const idx: number[] = [];
       for (const b of phrase) for (let k = 0; k < b.slots.length; k++) idx.push(b.start + k);
-      const layer = pickLayer(opts.layers, idx);
+      const prev = phraseLayer[phraseLayer.length - 1] ?? null;
+      let run = 0;
+      for (let q = phraseLayer.length - 1; q >= 0 && phraseLayer[q] === prev; q--) run++;
+      const layer = pickLayer(opts.layers, idx, prev, run);
       phraseLayer.push(layer);
       if (!layer) continue;
       const v = opts.layers.onset[layer];
@@ -310,14 +313,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     P.keepLanesChance,
     layered ? musicChanges : undefined,
   );
-  // With stems the melody decides how many notes a bar has (a quiet verse with six sung notes keeps
-  // all six, as in Magic Tiles); only the profile's ceiling applies. The mix reading keeps its
-  // intensity-based caps.
-  const capIntensity = (bar: Bar): 0 | 1 | 2 => (layered ? 2 : bar.intensity);
-  const densityLimit = (bar: Bar): number => (capIntensity(bar) === 2 && (energetic || layered) ? P.densityPeak : P.density[capIntensity(bar)]);
+  const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? P.densityPeak : P.density[bar.intensity]);
   const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
   const barCap = (bar: Bar): number =>
-    Math.max(1, Math.min(P.maxNotes[capIntensity(bar)], P.maxNotesByLanes[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
+    Math.max(1, Math.min(P.maxNotes[bar.intensity], P.maxNotesByLanes[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
 
   // 1. The rhythm profile of every 4-bar phrase → pattern steps (the figure) and accents.
   const phrases: PhrasePattern[] = phrasesRaw.map((phraseBars, index) => {
@@ -398,7 +397,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const cap = barCap(bar);
     const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
     const phraseEnd = bar.index % PHRASE_BARS === PHRASE_BARS - 1;
-    const gap = P.gap ?? (capIntensity(bar) === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS);
+    const gap = P.gap ?? (bar.intensity === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS);
     let rollFrom = -1;
     let rollTaps = 0;
     const fill = P.rolls && drummy(bar) ? fills.get(bar.index) : undefined;
