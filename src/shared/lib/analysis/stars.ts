@@ -21,14 +21,14 @@ export function eventsToTuples(events: readonly Event[], slots: readonly Slot[])
 
 /** Star-rating weights: felt difficulty = density first, then speed of hands, width of the field, mechanics, tempo. */
 const STAR_W = {
-  nps: 2.2,
+  nps: 2.3,
   sixteenths: 2.0,
-  peak: 0.45,
+  peak: 0.3,
   wide: 1.2,
   special: 2.5,
   chords: 1.5,
-  tempo: 1.0,
-  offset: -0.9,
+  tempo: 0.6,
+  offset: -2.2,
 } as const;
 
 /**
