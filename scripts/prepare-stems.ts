@@ -1,6 +1,7 @@
 /**
  * D:\neon-tap-tools\stems\<id>\{lead,backing}.mp3 (made by tools/demucs/separate.py, Demucs on CPU)
- * → public/stems/<id>/{lead,backing}.mp3 for every registry track that has them.
+ * → public/stems/<id>/{lead,backing}.mp3 for every registry track marked "stems": true (a stem pair doubles a
+ * track's download, so it is opt-in per track; the chart analysis reads the raw stems on D regardless).
  *
  * A track with stems plays as two synchronised layers: the backing always, the lead (vocal or the
  * melodic layer) only while the player hits — the Magic Tiles feel. generate-charts marks such
@@ -14,9 +15,10 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = process.env.STEMS_DIR ?? 'D:\\neon-tap-tools\\stems';
 const OUT = join(ROOT, 'public', 'stems');
 
-const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as { id: string }[];
+const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as { id: string; stems?: boolean }[];
 let n = 0;
 for (const t of tracks) {
+  if (!t.stems) continue;
   const lead = join(SRC, t.id, 'lead.mp3');
   const backing = join(SRC, t.id, 'backing.mp3');
   if (!existsSync(lead) || !existsSync(backing)) continue;

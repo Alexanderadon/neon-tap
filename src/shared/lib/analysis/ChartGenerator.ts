@@ -21,7 +21,7 @@ import {
   type PhrasePattern,
 } from './phrasePattern';
 import { eventsToTuples, rateStars } from './stars';
-import { BOOST_TARGET_LAYER, pickLayer, type Layer, type StemLayers } from './layers';
+import { BOOST_TARGET_LAYER, LAYERS, pickLayer, soundSustain, sustainFloor, type Layer, type StemLayers } from './layers';
 
 /**
  * Chart composer: turns the analysed beat grid into ONE playable, musical chart per song.
@@ -161,6 +161,14 @@ const CIRCLE_KEEP_REL = 0.75;
 const CIRCLE_EVERY_PHRASE_STARS = 6;
 /** Lane bars between two windows — at most a third of the song is circles. */
 const CIRCLE_COOLDOWN_BARS = 8;
+/** Sound-driven bars (stems): a hit counts when it is at least this share of the bar's loudest hit of the layer. */
+const BAR_REL = 0.35;
+/** With stems a sound must ring at least a beat to become a hold; shorter sounds are taps. */
+const HOLD_MIN_SLOTS_SOUND = 4;
+/** A chord needs a second instrument hitting at the same moment at least this hard. */
+const CHORD_OTHER = 0.6;
+/** With stems the lane count changes only where the music changes — or after this many phrases without one. */
+const LANES_FALLBACK_PHRASES = 4;
 /** Spinner: a quiet stretch (a breakdown after louder bars) of this many bars becomes a wheel. */
 const SPIN_MIN_BARS = 2;
 const SPIN_MAX_BARS = 4;
@@ -233,7 +241,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
       const idx: number[] = [];
       for (const b of phrase) for (let k = 0; k < b.slots.length; k++) idx.push(b.start + k);
-      const layer = pickLayer(opts.layers, idx);
+      const prev = phraseLayer[phraseLayer.length - 1] ?? null;
+      let run = 0;
+      for (let q = phraseLayer.length - 1; q >= 0 && phraseLayer[q] === prev; q--) run++;
+      const layer = pickLayer(opts.layers, idx, prev, run);
       phraseLayer.push(layer);
       if (!layer) continue;
       const v = opts.layers.onset[layer];
@@ -250,6 +261,31 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     opts.onLayers?.(phraseLayer);
   }
   const layerAt = (bar: Bar): Layer | null => phraseLayer[Math.floor(bar.index / PHRASE_BARS)] ?? null;
+  const layered = !!opts.layers;
+  /** How long the sound at a slot rings: from the followed instrument's own energy with stems, the mix's guess otherwise. */
+  const floors = new Map<Layer, number>();
+  const sustainAt = (si: number): number => {
+    const layer = opts.layers ? layerAt(bars[slots[si].bar]) : null;
+    if (!opts.layers || !layer) return slots[si].sustain;
+    if (!floors.has(layer)) floors.set(layer, sustainFloor(opts.layers, layer));
+    return soundSustain(opts.layers, layer, si, floors.get(layer));
+  };
+  /** Bars where the music changes (another instrument leads, or the energy level moves): lane counts may change there. */
+  const musicChanges = new Set<number>();
+  if (layered) {
+    let sinceChange = 0;
+    for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
+      const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
+      const level = Math.round(phrase.reduce((a, b) => a + b.intensity, 0) / phrase.length);
+      const prev = bars.slice((p - 1) * PHRASE_BARS, p * PHRASE_BARS);
+      const prevLevel = prev.length ? Math.round(prev.reduce((a, b) => a + b.intensity, 0) / prev.length) : level;
+      const changed = p > 0 && (phraseLayer[p] !== phraseLayer[p - 1] || level !== prevLevel);
+      if (p > 0 && (changed || ++sinceChange >= LANES_FALLBACK_PHRASES)) {
+        musicChanges.add(p * PHRASE_BARS);
+        sinceChange = 0;
+      }
+    }
+  }
   /** Long notes belong to melodic instruments; drums get rolls instead. */
   const melodic = (bar: Bar): boolean => layerAt(bar) !== 'drums';
   /** Fills and streams are drum figures: only when the phrase follows the drums (or nothing is separated). */
@@ -275,6 +311,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     new Set([...fills.keys(), ...turnarounds]),
     P.lanePools,
     P.keepLanesChance,
+    layered ? musicChanges : undefined,
   );
   const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? P.densityPeak : P.density[bar.intensity]);
   const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
@@ -315,7 +352,40 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   const sounds = (phrase: PhrasePattern, bar: Bar, step: number): boolean => {
     if (step >= bar.slots.length) return false;
     const gi = bar.start + step;
+    if (layered) return soundSteps(bar).includes(step);
     return raw[gi] >= MIN_RAW_STRENGTH && sal[gi] >= Math.max(MIN_NOTE_STRENGTH, SOUND_REL * phrase.profile[step]);
+  };
+  /**
+   * With stems every bar is read on its own: a note for every audible hit of the followed
+   * instrument (a local peak, at least BAR_REL of the bar's loudest), loudest first. This is what
+   * makes taps land on the sounds rather than on an averaged figure.
+   */
+  const soundStepsCache = new Map<number, number[]>();
+  const soundSteps = (bar: Bar): number[] => {
+    const hit = soundStepsCache.get(bar.index);
+    if (hit) return hit;
+    let barMax = 0;
+    for (let k = 0; k < bar.slots.length; k++) barMax = Math.max(barMax, sal[bar.start + k]);
+    const floor = Math.max(MIN_NOTE_STRENGTH, BAR_REL * barMax);
+    const found: { step: number; score: number }[] = [];
+    for (let k = 0; k < bar.slots.length; k++) {
+      const gi = bar.start + k;
+      const v = sal[gi];
+      if (v < floor || raw[gi] < MIN_RAW_STRENGTH) continue;
+      if (v < (sal[gi - 1] ?? 0) || v < (sal[gi + 1] ?? 0)) continue;
+      found.push({ step: k, score: v + gridBonus(k) });
+    }
+    found.sort((a, b) => b.score - a.score || a.step - b.step);
+    const steps = found.map((f) => f.step);
+    soundStepsCache.set(bar.index, steps);
+    return steps;
+  };
+  /** Two sounds at once (the followed instrument's accent plus another instrument hitting): a chord. */
+  const twoSounds = (bar: Bar, step: number): boolean => {
+    if (!opts.layers) return false;
+    const gi = bar.start + step;
+    const own = layerAt(bar);
+    return LAYERS.some((l) => l !== own && opts.layers!.onset[l][gi] >= CHORD_OTHER);
   };
 
   // 1a. Notes: every bar repeats the phrase figure where it sounds, plus very strong off-pattern hits.
@@ -362,7 +432,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
     const placed: number[] = [];
     const fits = (step: number) => !placed.some((st) => Math.abs(st - step) < gap);
-    for (const step of phrase.steps) {
+    for (const step of layered ? soundSteps(bar) : phrase.steps) {
       if (placed.length >= cap) break;
       if (rollFrom >= 0 && step >= rollFrom) continue;
       if (!sounds(phrase, bar, step) || !fits(step)) continue;
@@ -370,7 +440,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     }
     // Extras: off-pattern hits only when very strong (fills, stabs) and a clear local peak of this bar.
     const extras: { step: number; score: number }[] = [];
-    for (let step = 0; P.extras && step < bar.slots.length; step++) {
+    for (let step = 0; P.extras && !layered && step < bar.slots.length; step++) {
       if (rollFrom >= 0 && step >= rollFrom) continue;
       if (phrase.steps.includes(step)) continue;
       const gi = bar.start + step;
@@ -394,7 +464,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
         hold: 0,
         kind: null,
         taps: 0,
-        accent: phrase.accents.has(step),
+        accent: layered ? sal[bar.start + step] >= ACCENT_REL * phrase.salMax && twoSounds(bar, step) : phrase.accents.has(step),
       });
     if (rollFrom >= 0 && rollFrom < bar.slots.length) {
       const len = bar.slots.length - rollFrom;
@@ -586,14 +656,15 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     }
     if (ev.kind) continue; // spells and circles stay plain taps
     const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET;
-    const melodicSlot = slot.low < 0.55;
-    const bassLen = clampBeforeCircle(i, Math.min(slot.sustain, gapNext, 8));
+    const melodicSlot = layered ? layerAt(ev.bar) !== 'drums' : slot.low < 0.55;
+    const sustain = sustainAt(ev.si);
+    const bassLen = clampBeforeCircle(i, Math.min(sustain, gapNext, 8));
     const bassDur = slots[Math.min(slots.length - 1, ev.si + bassLen)].time - slot.time;
     const bassTaps = Math.min(ROLL_MAX_TAPS, Math.round(bassLen / 2) + 1, Math.floor(bassDur * ROLL_MAX_TAPS_PER_SEC));
     if (
       P.rolls &&
       drummy(ev.bar) &&
-      slot.sustain >= 4 &&
+      sustain >= 4 &&
       !melodicSlot &&
       intensity >= 1 &&
       budget > 0 &&
@@ -611,8 +682,16 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       activeHold = ev;
       continue;
     }
-    if (slot.sustain >= 2 && melodicSlot && melodic(ev.bar) && budget > 0 && !activeHold && decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity]) {
-      let dur = clampBeforeCircle(i, Math.min(slot.sustain, P.maxHoldSlots));
+    // A sustained sound is a hold — with stems always (the instrument really rings), from the mix by the intensity's chance.
+    if (
+      sustain >= (layered ? HOLD_MIN_SLOTS_SOUND : 2) &&
+      melodicSlot &&
+      melodic(ev.bar) &&
+      budget > 0 &&
+      !activeHold &&
+      (layered || decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity])
+    ) {
+      let dur = clampBeforeCircle(i, Math.min(sustain, gapNext, P.maxHoldSlots));
       const barEnd = ev.bar.start + ev.bar.slots.length;
       if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
       else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd + STEPS_PER_BAR - SECTION_GAP_SLOTS - ev.si);
