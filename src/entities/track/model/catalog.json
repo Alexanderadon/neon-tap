@@ -9,32 +9,13 @@
     "bpm": 79.5,
     "duration": 123.19,
     "stars": 1,
-    "notes": 125,
+    "notes": 65,
     "features": {
-      "circles": 20,
-      "rolls": 5,
-      "slides": 3,
-      "holds": 11,
-      "laneChanges": 3
-    }
-  },
-  {
-    "id": "technological-menace",
-    "title": "Technological Menace",
-    "artist": "umplix",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/technological-menace",
-    "genre": "electronic",
-    "bpm": 110.1,
-    "duration": 87.38,
-    "stars": 3,
-    "notes": 140,
-    "features": {
-      "circles": 18,
-      "rolls": 1,
-      "slides": 6,
-      "holds": 21,
-      "laneChanges": 3
+      "circles": 4,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 18,
+      "laneChanges": 1
     }
   },
   {
@@ -46,52 +27,33 @@
     "genre": "hardstyle",
     "bpm": 128.9,
     "duration": 93.81,
-    "stars": 3,
-    "notes": 153,
+    "stars": 1,
+    "notes": 74,
     "features": {
-      "circles": 35,
+      "circles": 12,
       "rolls": 0,
-      "slides": 5,
-      "holds": 17,
-      "laneChanges": 5
+      "slides": 0,
+      "holds": 19,
+      "laneChanges": 0
     }
   },
   {
-    "id": "fight-for-better-future",
-    "title": "Fight for Better Future [Rock/Metal]",
-    "artist": "nene",
+    "id": "technological-menace",
+    "title": "Technological Menace",
+    "artist": "umplix",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/fight-for-better-future-rockmetal",
-    "genre": "metal",
-    "bpm": 78,
-    "duration": 136.25,
-    "stars": 3,
-    "notes": 176,
+    "sourceUrl": "https://opengameart.org/content/technological-menace",
+    "genre": "electronic",
+    "bpm": 110.1,
+    "duration": 87.38,
+    "stars": 1,
+    "notes": 84,
     "features": {
-      "circles": 28,
-      "rolls": 1,
-      "slides": 8,
-      "holds": 10,
-      "laneChanges": 5
-    }
-  },
-  {
-    "id": "hard-boss-battle-2",
-    "title": "Hard Boss Battle 2",
-    "artist": "MintoDog",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-2",
-    "genre": "hardcore",
-    "bpm": 69.9,
-    "duration": 112.04,
-    "stars": 3,
-    "notes": 185,
-    "features": {
-      "circles": 60,
-      "rolls": 3,
-      "slides": 2,
-      "holds": 9,
-      "laneChanges": 1
+      "circles": 8,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 27,
+      "laneChanges": 2
     }
   },
   {
@@ -103,52 +65,14 @@
     "genre": "orchestral",
     "bpm": 119.7,
     "duration": 116.06,
-    "stars": 3,
-    "notes": 202,
+    "stars": 1,
+    "notes": 87,
     "features": {
-      "circles": 20,
-      "rolls": 3,
-      "slides": 2,
-      "holds": 20,
-      "laneChanges": 6
-    }
-  },
-  {
-    "id": "red-moon",
-    "title": "Red Moon",
-    "artist": "Pro Sensory",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/red-moon",
-    "genre": "jazz",
-    "bpm": 120.1,
-    "duration": 138,
-    "stars": 3,
-    "notes": 228,
-    "features": {
-      "circles": 0,
+      "circles": 4,
       "rolls": 0,
-      "slides": 8,
-      "holds": 40,
-      "laneChanges": 7
-    }
-  },
-  {
-    "id": "sky-trance",
-    "title": "Sky Trance",
-    "artist": "MintoDog",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/sky-trance",
-    "genre": "trance",
-    "bpm": 69.9,
-    "duration": 116.58,
-    "stars": 4,
-    "notes": 178,
-    "features": {
-      "circles": 28,
-      "rolls": 1,
-      "slides": 3,
-      "holds": 8,
-      "laneChanges": 6
+      "slides": 0,
+      "holds": 20,
+      "laneChanges": 3
     }
   },
   {
@@ -160,71 +84,71 @@
     "genre": "hardstyle",
     "bpm": 139.8,
     "duration": 112.9,
-    "stars": 4,
-    "notes": 218,
+    "stars": 1,
+    "notes": 87,
     "features": {
-      "circles": 23,
+      "circles": 7,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 24,
+      "laneChanges": 6
+    }
+  },
+  {
+    "id": "hard-boss-battle-2",
+    "title": "Hard Boss Battle 2",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-2",
+    "genre": "hardcore",
+    "bpm": 69.9,
+    "duration": 112.04,
+    "stars": 1,
+    "notes": 88,
+    "features": {
+      "circles": 8,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 11,
+      "laneChanges": 0
+    }
+  },
+  {
+    "id": "sky-trance",
+    "title": "Sky Trance",
+    "artist": "MintoDog",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/sky-trance",
+    "genre": "trance",
+    "bpm": 69.9,
+    "duration": 116.58,
+    "stars": 1,
+    "notes": 92,
+    "features": {
+      "circles": 12,
       "rolls": 0,
       "slides": 6,
-      "holds": 22,
-      "laneChanges": 6
+      "holds": 4,
+      "laneChanges": 4
     }
   },
   {
-    "id": "slow-stride",
-    "title": "Slow Stride",
-    "artist": "isaiah658",
+    "id": "red-moon",
+    "title": "Red Moon",
+    "artist": "Pro Sensory",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/slow-stride",
-    "genre": "lofi",
-    "bpm": 108.5,
-    "duration": 130.95,
-    "stars": 4,
-    "notes": 243,
+    "sourceUrl": "https://opengameart.org/content/red-moon",
+    "genre": "jazz",
+    "bpm": 120.1,
+    "duration": 138,
+    "stars": 1,
+    "notes": 95,
     "features": {
-      "circles": 49,
+      "circles": 0,
       "rolls": 0,
-      "slides": 3,
-      "holds": 25,
+      "slides": 0,
+      "holds": 30,
       "laneChanges": 5
-    }
-  },
-  {
-    "id": "the-rift",
-    "title": "The Rift",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/the-rift",
-    "genre": "electronic",
-    "bpm": 129.4,
-    "duration": 150.05,
-    "stars": 4,
-    "notes": 264,
-    "features": {
-      "circles": 46,
-      "rolls": 0,
-      "slides": 11,
-      "holds": 22,
-      "laneChanges": 6
-    }
-  },
-  {
-    "id": "space-cadet-training-montage",
-    "title": "Space Cadet Training Montage",
-    "artist": "Zane Little Music",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/space-cadet-training-montage",
-    "genre": "chiptune",
-    "bpm": 129.6,
-    "duration": 145.97,
-    "stars": 4,
-    "notes": 267,
-    "features": {
-      "circles": 33,
-      "rolls": 0,
-      "slides": 17,
-      "holds": 24,
-      "laneChanges": 15
     }
   },
   {
@@ -236,14 +160,14 @@
     "genre": "synthpop",
     "bpm": 123.5,
     "duration": 150.05,
-    "stars": 4,
-    "notes": 282,
+    "stars": 1,
+    "notes": 99,
     "features": {
-      "circles": 70,
+      "circles": 12,
       "rolls": 0,
-      "slides": 8,
-      "holds": 29,
-      "laneChanges": 6
+      "slides": 0,
+      "holds": 22,
+      "laneChanges": 2
     }
   },
   {
@@ -255,13 +179,184 @@
     "genre": "ambient",
     "bpm": 123.9,
     "duration": 150.05,
-    "stars": 4,
-    "notes": 296,
+    "stars": 1,
+    "notes": 108,
     "features": {
-      "circles": 46,
+      "circles": 8,
       "rolls": 0,
-      "slides": 6,
-      "holds": 29,
+      "slides": 0,
+      "holds": 30,
+      "laneChanges": 2
+    }
+  },
+  {
+    "id": "fight-for-better-future",
+    "title": "Fight for Better Future [Rock/Metal]",
+    "artist": "nene",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/fight-for-better-future-rockmetal",
+    "genre": "metal",
+    "bpm": 78,
+    "duration": 136.25,
+    "stars": 1,
+    "notes": 129,
+    "features": {
+      "circles": 8,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 14,
+      "laneChanges": 0
+    }
+  },
+  {
+    "id": "the-rift",
+    "title": "The Rift",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/the-rift",
+    "genre": "electronic",
+    "bpm": 129.4,
+    "duration": 150.05,
+    "stars": 1,
+    "notes": 156,
+    "features": {
+      "circles": 12,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 21,
+      "laneChanges": 2
+    }
+  },
+  {
+    "id": "slow-stride",
+    "title": "Slow Stride",
+    "artist": "isaiah658",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/slow-stride",
+    "genre": "lofi",
+    "bpm": 108.5,
+    "duration": 130.95,
+    "stars": 2,
+    "notes": 165,
+    "features": {
+      "circles": 12,
+      "rolls": 0,
+      "slides": 3,
+      "holds": 26,
+      "laneChanges": 3
+    }
+  },
+  {
+    "id": "espelhar",
+    "title": "Espelhar - LOUD Melodic EDM",
+    "artist": "Fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/espelhar-loud-melodic-edm",
+    "genre": "electronic",
+    "bpm": 139.8,
+    "duration": 150.05,
+    "stars": 2,
+    "notes": 197,
+    "features": {
+      "circles": 12,
+      "rolls": 0,
+      "slides": 9,
+      "holds": 32,
+      "laneChanges": 5
+    }
+  },
+  {
+    "id": "delta",
+    "title": "DELTA",
+    "artist": "tomcat",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/delta",
+    "genre": "breakbeat",
+    "bpm": 99.5,
+    "duration": 150.05,
+    "stars": 2,
+    "notes": 201,
+    "features": {
+      "circles": 24,
+      "rolls": 0,
+      "slides": 8,
+      "holds": 15,
+      "laneChanges": 1
+    }
+  },
+  {
+    "id": "up-in-the-sky",
+    "title": "Up in the Sky",
+    "artist": "Memoraphile (You're Perfect Studio)",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/up-in-the-sky",
+    "genre": "ambient",
+    "bpm": 136,
+    "duration": 150.05,
+    "stars": 2,
+    "notes": 202,
+    "features": {
+      "circles": 6,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 26,
+      "laneChanges": 4
+    }
+  },
+  {
+    "id": "vengeance-electro",
+    "title": "Vengeance Electro",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
+    "genre": "house",
+    "bpm": 128.8,
+    "duration": 150.05,
+    "stars": 2,
+    "notes": 206,
+    "features": {
+      "circles": 12,
+      "rolls": 0,
+      "slides": 4,
+      "holds": 30,
+      "laneChanges": 4
+    }
+  },
+  {
+    "id": "space-cadet-training-montage",
+    "title": "Space Cadet Training Montage",
+    "artist": "Zane Little Music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/space-cadet-training-montage",
+    "genre": "chiptune",
+    "bpm": 129.6,
+    "duration": 145.97,
+    "stars": 2,
+    "notes": 206,
+    "features": {
+      "circles": 18,
+      "rolls": 0,
+      "slides": 15,
+      "holds": 22,
+      "laneChanges": 10
+    }
+  },
+  {
+    "id": "achilles",
+    "title": "Achilles",
+    "artist": "zane-little-music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/achilles",
+    "genre": "rock",
+    "bpm": 143.7,
+    "duration": 150.05,
+    "stars": 3,
+    "notes": 238,
+    "features": {
+      "circles": 12,
+      "rolls": 0,
+      "slides": 17,
+      "holds": 31,
       "laneChanges": 7
     }
   },
@@ -274,33 +369,14 @@
     "genre": "lofi",
     "bpm": 160.9,
     "duration": 150.05,
-    "stars": 4,
-    "notes": 315,
+    "stars": 3,
+    "notes": 267,
     "features": {
-      "circles": 26,
+      "circles": 18,
       "rolls": 0,
-      "slides": 18,
-      "holds": 58,
-      "laneChanges": 9
-    }
-  },
-  {
-    "id": "vengeance-electro",
-    "title": "Vengeance Electro",
-    "artist": "Of Far Different Nature",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
-    "genre": "house",
-    "bpm": 128.8,
-    "duration": 150.05,
-    "stars": 4,
-    "notes": 343,
-    "features": {
-      "circles": 42,
-      "rolls": 0,
-      "slides": 5,
-      "holds": 36,
-      "laneChanges": 6
+      "slides": 17,
+      "holds": 59,
+      "laneChanges": 5
     }
   },
   {
@@ -320,82 +396,6 @@
       "slides": 18,
       "holds": 35,
       "laneChanges": 11
-    }
-  },
-  {
-    "id": "delta",
-    "title": "DELTA",
-    "artist": "tomcat",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/delta",
-    "genre": "breakbeat",
-    "bpm": 99.5,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 321,
-    "features": {
-      "circles": 124,
-      "rolls": 4,
-      "slides": 7,
-      "holds": 13,
-      "laneChanges": 2
-    }
-  },
-  {
-    "id": "espelhar",
-    "title": "Espelhar - LOUD Melodic EDM",
-    "artist": "Fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/espelhar-loud-melodic-edm",
-    "genre": "electronic",
-    "bpm": 139.8,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 327,
-    "features": {
-      "circles": 41,
-      "rolls": 1,
-      "slides": 8,
-      "holds": 35,
-      "laneChanges": 7
-    }
-  },
-  {
-    "id": "up-in-the-sky",
-    "title": "Up in the Sky",
-    "artist": "Memoraphile (You're Perfect Studio)",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/up-in-the-sky",
-    "genre": "ambient",
-    "bpm": 136,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 335,
-    "features": {
-      "circles": 21,
-      "rolls": 0,
-      "slides": 11,
-      "holds": 26,
-      "laneChanges": 5
-    }
-  },
-  {
-    "id": "achilles",
-    "title": "Achilles",
-    "artist": "zane-little-music",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/achilles",
-    "genre": "rock",
-    "bpm": 143.7,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 355,
-    "features": {
-      "circles": 54,
-      "rolls": 4,
-      "slides": 10,
-      "holds": 32,
-      "laneChanges": 15
     }
   },
   {

@@ -132,7 +132,7 @@ export class GameSession {
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset);
-    this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0 });
+    this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0, approachTime: this.approachTime });
     const level = opts.chart.chart;
     const parsed = parseChartLevel(level);
     this.parsed = parsed;

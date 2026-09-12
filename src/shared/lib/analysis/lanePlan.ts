@@ -2,12 +2,15 @@ import { LANE_COUNT, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 import type { SectionTuple } from '@/shared/types/chart';
 import { isEnergetic, round3, type Bar } from './bars';
 
+export type LanePools = readonly [readonly number[], readonly number[], readonly number[]];
 /** Lane-count sections: pools by [quiet, medium, intense]; decisions every 4 bars in energetic songs, else 8. */
-const LANE_POOLS: readonly [readonly number[], readonly number[], readonly number[]] = [
+export const LANE_POOLS: LanePools = [
   [2, 3],
   [3, 4],
   [4, 5, 6],
 ];
+/** Beginner charts: three or four lanes, nothing wider. */
+export const EASY_LANE_POOLS: LanePools = [[3], [3, 4], [4]];
 const SECTION_BARS_CALM = 8;
 const SECTION_BARS_ENERGETIC = 4;
 const KEEP_LANES_CHANCE = 0.4;
@@ -25,6 +28,8 @@ export function planSections(
   random: () => number,
   energetic = isEnergetic(bars),
   keepAfter: ReadonlySet<number> = new Set(),
+  pools: LanePools = LANE_POOLS,
+  keepChance = KEEP_LANES_CHANCE,
 ): SectionTuple[] {
   for (const b of bars) b.lanes = LANE_COUNT;
   const block = energetic ? SECTION_BARS_ENERGETIC : SECTION_BARS_CALM;
@@ -35,9 +40,9 @@ export function planSections(
     const phrase = bars.slice(p * block, (p + 1) * block);
     const intensity = Math.round(phrase.reduce((a, b) => a + b.intensity, 0) / phrase.length) as 0 | 1 | 2;
     let lanes: number;
-    const pool = LANE_POOLS[intensity];
+    const pool = pools[intensity];
     if (p === 0) lanes = LANE_COUNT;
-    else if (pool.includes(prevLanes) && (keepAfter.has(p * block - 1) || random() < KEEP_LANES_CHANCE)) lanes = prevLanes;
+    else if (pool.includes(prevLanes) && (keepAfter.has(p * block - 1) || random() < keepChance)) lanes = prevLanes;
     else {
       const fresh = pool.filter((n) => n !== prevLanes);
       const from = fresh.length ? fresh : pool;

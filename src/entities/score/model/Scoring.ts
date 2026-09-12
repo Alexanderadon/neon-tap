@@ -2,11 +2,13 @@ import { HIT_WINDOWS, JUDGEMENT_SCORE, RANK_THRESHOLDS , type HitWindows } from 
 import type { Judgement, JudgementCounts, Rank } from '@/shared/types/result';
 
 /** Classify a hit by its timing error (seconds). `null` = outside the good window → not a hit. */
-export function judgeDelta(delta: number, windows: HitWindows = HIT_WINDOWS): Judgement | null {
+/** `early` widens the accepted lead (seconds before the note) beyond `good` — such taps are Good. */
+export function judgeDelta(delta: number, windows: HitWindows = HIT_WINDOWS, early = windows.good): Judgement | null {
   const d = Math.abs(delta);
   if (d <= windows.perfect) return 'perfect';
   if (d <= windows.great) return 'great';
   if (d <= windows.good) return 'good';
+  if (delta < 0 && -delta <= early) return 'good';
   return null;
 }
 

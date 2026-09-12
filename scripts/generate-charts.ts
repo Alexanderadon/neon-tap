@@ -4,13 +4,15 @@
  * Runs the exact same analysis pipeline the browser uses for custom songs
  * (src/shared/lib/analysis): onsets → tempo → DP beat tracking → 16th grid → per-bar rhythm
  * templates → holds / slides / rolls / circle windows / lane-count sections. One chart per song;
- * the catalog is sorted easiest-first by the chart's star rating.
+ * the catalog is sorted easiest-first by the chart's star rating. The BEGINNER_TRACKS calmest
+ * songs (by their normal rating) are re-read with the EASY profile so chapter one is a real
+ * on-ramp: beats only, no rolls / slides / chords, 3–4 lanes.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
-import { analyzeSong, chartFeatures, composeChart } from '../src/shared/lib/analysis';
+import { EASY, MEDIUM, analyzeSong, chartFeatures, composeChart, type Profile } from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
 
 interface RawTrack {
@@ -30,19 +32,43 @@ const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
 const RATE = 22050;
+/** The calmest songs get the beginner reading (chapter one), the next ones the medium reading (chapter two). */
+const BEGINNER_TRACKS = 10;
+const MEDIUM_TRACKS = 10;
 
 mkdirSync(CHART_DIR, { recursive: true });
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
 
-const built: ChartFile[] = [];
+interface Analysed {
+  t: RawTrack;
+  duration: number;
+  analysis: ReturnType<typeof analyzeSong>;
+  ms: number;
+}
+const analysed: Analysed[] = [];
 for (const t of tracks) {
   if (!GENRES.includes(t.genre)) throw new Error(`${t.id}: unknown genre "${t.genre}" (tracks.json)`);
   const file = join(MUSIC_DIR, `${t.id}.mp3`);
   const t0 = Date.now();
   const samples = decodePcm(file, RATE);
   const duration = probeDuration(file);
-  const analysis = analyzeSong(samples, RATE);
-  const chart = composeChart(analysis, { seed: hash(t.id) });
+  analysed.push({ t, duration, analysis: analyzeSong(samples, RATE), ms: Date.now() - t0 });
+}
+
+// The calmest songs by their normal rating become the beginner chapter.
+const normalStars = new Map(analysed.map((a) => [a.t.id, composeChart(a.analysis, { seed: hash(a.t.id) }).stars]));
+const calmest = [...analysed]
+  .filter((a) => !a.t.premium)
+  .sort((a, b) => normalStars.get(a.t.id)! - normalStars.get(b.t.id)! || a.t.id.localeCompare(b.t.id))
+  .map((a) => a.t.id);
+const profiles = new Map<string, Profile>();
+calmest.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
+calmest.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
+
+const built: ChartFile[] = [];
+for (const { t, duration, analysis, ms } of analysed) {
+  const profile = profiles.get(t.id);
+  const chart = composeChart(analysis, { seed: hash(t.id), profile });
   const file2: ChartFile = {
     id: t.id,
     title: t.title,
@@ -63,8 +89,8 @@ for (const t of tracks) {
   const f = chartFeatures(chart);
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
-    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
-      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${Date.now() - t0} ms`,
+    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : profile === EASY ? ' E' : profile === MEDIUM ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
+      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${ms} ms`,
   );
 }
 

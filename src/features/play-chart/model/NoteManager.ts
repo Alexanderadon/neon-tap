@@ -1,4 +1,4 @@
-import { CIRCLE_BUCKET, CIRCLE_HIT_WINDOWS, HIT_WINDOWS, INPUT_SLOTS, type HitWindows } from '@/shared/config/constants';
+import { CIRCLE_BUCKET, CIRCLE_HIT_WINDOWS, CIRCLE_OPEN_SHARE, HIT_WINDOWS, INPUT_SLOTS, type HitWindows } from '@/shared/config/constants';
 import { judgeDelta, type Judgement } from '@/entities/score';
 import type { NoteKind, ParsedNote } from '@/entities/chart';
 
@@ -53,6 +53,8 @@ export interface NoteManagerOptions {
    * Great when it reaches the line. 0 = off.
    */
   assistWindow?: number;
+  /** Note approach time in seconds — circles are open for the last CIRCLE_OPEN_SHARE of it. */
+  approachTime?: number;
 }
 
 const POOL_SIZE = 2000;
@@ -81,9 +83,12 @@ export class NoteManager {
   /** Extra tap registered on an active roll (for feedback). */
   onRollTap: ((note: PooledNote) => void) | null = null;
   readonly assistWindow: number;
+  /** Seconds before a circle's moment from which a tap on it counts (at least as Good). */
+  readonly circleEarly: number;
 
   constructor(capacity = POOL_SIZE, opts: NoteManagerOptions = {}) {
     this.assistWindow = opts.assistWindow ?? 0;
+    this.circleEarly = Math.max(CIRCLE_HIT_WINDOWS.good, (opts.approachTime ?? 0) * CIRCLE_OPEN_SHARE);
     for (let i = 0; i < capacity; i++) {
       this.pool.push({
         time: 0,
@@ -241,11 +246,12 @@ export class NoteManager {
       if (note.state !== NoteState.Pending) continue;
       const delta = songTime - note.time;
       const w = windowsFor(note);
-      if (delta < -w.good) {
+      const early = note.kind === 'circle' ? this.circleEarly : w.good;
+      if (delta < -early) {
         if (this.assistWindow > 0 && -delta <= this.assistWindow && !note.armed) note.armed = true;
         return null;
       }
-      const j = judgeDelta(delta, w);
+      const j = judgeDelta(delta, w, early);
       if (!j) continue; // overdue note — update() will miss it
       this.hit(note, j, delta);
       return j;

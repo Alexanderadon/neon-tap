@@ -2,6 +2,8 @@
 export const HIT_WINDOWS = { perfect: 0.05, great: 0.1, good: 0.15 } as const;
 /** Circles are aimed at on screen, not caught on a line: almost twice the time to react. */
 export const CIRCLE_HIT_WINDOWS = { perfect: 0.09, great: 0.18, good: 0.28 } as const;
+/** A circle is open from this share of its approach (the ring has shrunk halfway): any tap until it closes counts, at least as Good. */
+export const CIRCLE_OPEN_SHARE = 0.5;
 export type HitWindows = { readonly perfect: number; readonly great: number; readonly good: number };
 
 /**

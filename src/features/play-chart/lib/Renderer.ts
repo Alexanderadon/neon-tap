@@ -1,4 +1,4 @@
-import { COMBO_THRESHOLDS, KEY_LABELS, LANE_COUNT, MAX_LANES } from '@/shared/config/constants';
+import { CIRCLE_OPEN_SHARE, COMBO_THRESHOLDS, KEY_LABELS, LANE_COUNT, MAX_LANES } from '@/shared/config/constants';
 import { SPECTRUM_BANDS } from '@/shared/lib/audio';
 import {
   DEFAULT_THEME,
@@ -1112,11 +1112,19 @@ export class Renderer {
       ctx.stroke();
       ctx.globalAlpha = base;
     }
+    // The number is hollow while the circle is still closed and fills in the moment a tap would count.
+    const open = t <= CIRCLE_OPEN_SHARE;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `900 ${Math.round(r * 1.1)}px ${FONT}`;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(n.seq || 1), cx, cy + 1);
+    if (open) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(String(n.seq || 1), cx, cy + 1);
+    } else {
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.strokeText(String(n.seq || 1), cx, cy + 1);
+    }
     ctx.globalAlpha = 1;
   }
 

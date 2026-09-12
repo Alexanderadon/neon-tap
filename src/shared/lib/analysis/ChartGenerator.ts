@@ -4,7 +4,7 @@ import type { ChartLevel, SpellKind } from '@/shared/types/chart';
 import { STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
 import { PHRASE_BARS, decide, groupBars, isEnergetic, rateIntensity, rng, salience, type Bar, type Event } from './bars';
 import { assignLanes } from './laneAssign';
-import { planSections } from './lanePlan';
+import { EASY_LANE_POOLS, LANE_POOLS, planSections } from './lanePlan';
 import {
   ACCENT_REL,
   EXTRA_REL,
@@ -38,12 +38,83 @@ import { eventsToTuples, rateStars } from './stars';
  * everything is playable with two thumbs.
  */
 
-/** Max notes per bar by intensity [quiet, medium, intense]. */
-const MAX_NOTES: readonly [number, number, number] = [3, 6, 9];
-/** Fewer lanes → fewer notes per bar. */
-const MAX_NOTES_BY_LANES: Record<number, number> = { 2: 4, 3: 6 };
-/** Rolling 1-second cap by bar intensity; intense bars of energetic songs go up to DENSITY_LIMIT. */
-const DENSITY_BY_INTENSITY: readonly [number, number, number] = [3, 4, 4.5];
+/**
+ * Difficulty profile. `normal` is the song as it is; `easy` is the beginner reading of the same
+ * song for the first chapter: beats only (a beat between notes), a few notes per bar, no rolls,
+ * slides, chords or sixteenths, holds no longer than a bar, sparse circles, 3–4 lanes.
+ */
+export interface Profile {
+  /** Max notes per bar by intensity [quiet, medium, intense]. */
+  maxNotes: readonly [number, number, number];
+  /** Fewer lanes → fewer notes per bar. */
+  maxNotesByLanes: Record<number, number>;
+  /** Rolling 1-second cap by bar intensity; intense bars of energetic songs go up to `densityPeak`. */
+  density: readonly [number, number, number];
+  densityPeak: number;
+  /** Min slots between plain notes; null = the phrase rule (a sixteenth in intense bars, an eighth elsewhere). */
+  gap: number | null;
+  rolls: boolean;
+  slides: boolean;
+  chords: boolean;
+  extras: boolean;
+  maxHoldSlots: number;
+  circleGapSlots: number;
+  circlesPerWindow: number;
+  lanePools: typeof LANE_POOLS;
+  keepLanesChance: number;
+}
+
+export const NORMAL: Profile = {
+  maxNotes: [3, 6, 9],
+  maxNotesByLanes: { 2: 4, 3: 6 },
+  density: [3, 4, 4.5],
+  densityPeak: DENSITY_LIMIT,
+  gap: null,
+  rolls: true,
+  slides: true,
+  chords: true,
+  extras: true,
+  maxHoldSlots: 16,
+  circleGapSlots: 2,
+  circlesPerWindow: Infinity,
+  lanePools: LANE_POOLS,
+  keepLanesChance: 0.4,
+};
+
+/** Chapter two: eighths allowed, a few holds and slides, still no rolls or chords, up to five lanes. */
+export const MEDIUM: Profile = {
+  maxNotes: [3, 5, 7],
+  maxNotesByLanes: { 2: 3, 3: 5 },
+  density: [2.5, 3, 3.5],
+  densityPeak: 3.5,
+  gap: 2,
+  rolls: false,
+  slides: true,
+  chords: false,
+  extras: false,
+  maxHoldSlots: 16,
+  circleGapSlots: 4,
+  circlesPerWindow: 6,
+  lanePools: [[3], [3, 4], [4, 5]],
+  keepLanesChance: 0.6,
+};
+
+export const EASY: Profile = {
+  maxNotes: [2, 3, 4],
+  maxNotesByLanes: { 2: 2, 3: 3 },
+  density: [1.5, 2, 2],
+  densityPeak: 2,
+  gap: 4,
+  rolls: false,
+  slides: false,
+  chords: false,
+  extras: false,
+  maxHoldSlots: 16,
+  circleGapSlots: 4,
+  circlesPerWindow: 4,
+  lanePools: EASY_LANE_POOLS,
+  keepLanesChance: 0.8,
+};
 /** Slots of silence before a lane-count change so the player can move their hands (2 beats). */
 const SECTION_GAP_SLOTS = 8;
 /** Notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
@@ -53,7 +124,6 @@ const MAX_BOOST = 10;
 
 const HOLD_CHANCE = [0.9, 0.7, 0.45] as const; // by intensity
 const HOLD_BUDGET = 3;
-const MAX_HOLD_SLOTS = 16;
 /** Share of long holds (≥ 1 beat) that become slides into a neighbouring lane. */
 const SLIDE_CHANCE = 0.4;
 /** Two-finger rule: at most ONE hold-type note (hold / roll / slide) at a time (`activeHold` below), chords only while nothing is held. */
@@ -73,7 +143,6 @@ const SPELL_ORDER: readonly SpellKind[] = ['slow', 'heart'];
 /** Circle windows: an intense phrase start switches to circles ONLY, on every pattern hit, for 2–4 bars while the pattern stays strong. */
 const CIRCLE_WINDOW_MIN_BARS = 2;
 const CIRCLE_WINDOW_MAX_BARS = 4;
-const CIRCLE_MIN_GAP_SLOTS = 2; // an eighth
 /** A bar extends the window while its pattern hits keep this share of the first bar's strength. */
 const CIRCLE_KEEP_REL = 0.75;
 /** Songs this hard may open a window at EVERY intense phrase start (others only on 8-bar boundaries). */
@@ -83,6 +152,8 @@ const CIRCLE_COOLDOWN_BARS = 8;
 
 export interface ComposeOptions {
   seed?: number;
+  /** Difficulty profile; default NORMAL. */
+  profile?: Profile;
   /** Let the lane count follow the music (2–6 lanes). Default on. */
   laneVariation?: boolean;
 }
@@ -105,6 +176,7 @@ function capDensity(events: Event[], slots: readonly Slot[], limit: (bar: Bar) =
 
 export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}): ChartLevel {
   const seed = opts.seed ?? 1337;
+  const P = opts.profile ?? NORMAL;
   const random = rng(seed);
   const slots = analysis.slots;
   if (slots.length < STEPS_PER_BAR) return { stars: 1, notes: [], sections: [[0, LANE_COUNT]] };
@@ -139,11 +211,11 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     if (bar.index % PHRASE_BARS === PHRASE_BARS - 1 && bar.intensity === 2 && [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH))
       turnarounds.add(bar.index);
   }
-  const sections = planSections(bars, opts.laneVariation ?? true, random, energetic, new Set([...fills.keys(), ...turnarounds]));
-  const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? DENSITY_LIMIT : DENSITY_BY_INTENSITY[bar.intensity]);
+  const sections = planSections(bars, opts.laneVariation ?? true, random, energetic, new Set([...fills.keys(), ...turnarounds]), P.lanePools, P.keepLanesChance);
+  const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? P.densityPeak : P.density[bar.intensity]);
   const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
   const barCap = (bar: Bar): number =>
-    Math.max(1, Math.min(MAX_NOTES[bar.intensity], MAX_NOTES_BY_LANES[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
+    Math.max(1, Math.min(P.maxNotes[bar.intensity], P.maxNotesByLanes[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
 
   // 1. The rhythm profile of every 4-bar phrase → pattern steps (the figure) and accents.
   const phrases: PhrasePattern[] = phrasesRaw.map((phraseBars, index) => {
@@ -161,7 +233,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     for (let k = 0; k < STEPS_PER_BAR; k++) profile[k] = counts[k] ? profile[k] / counts[k] : 0;
     const intense = phraseBars.reduce((a, b) => a + b.intensity, 0) / phraseBars.length >= 1.5;
     const cap = Math.max(...phraseBars.map(barCap));
-    const steps = patternSteps(profile, intense, cap);
+    const steps = patternSteps(profile, intense, cap, P.gap ?? undefined);
     const pmax = Math.max(...profile);
     const accents = new Set(steps.filter((s) => profile[s] >= ACCENT_REL * pmax));
     return {
@@ -191,10 +263,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const cap = barCap(bar);
     const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
     const phraseEnd = bar.index % PHRASE_BARS === PHRASE_BARS - 1;
-    const gap = bar.intensity === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS;
+    const gap = P.gap ?? (bar.intensity === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS);
     let rollFrom = -1;
     let rollTaps = 0;
-    const fill = fills.get(bar.index);
+    const fill = P.rolls ? fills.get(bar.index) : undefined;
     if (fill) {
       rollFrom = fill.from;
       rollTaps = fill.taps;
@@ -203,6 +275,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     // (at least two of them part of the figure) ends in "drum it" — the same four hits, in one lane as a Taiko-style roll. Always
     // on the phrase end, so the 4-bar figure reads as three bars of pattern + one turnaround.
     if (
+      P.rolls &&
       rollFrom < 0 &&
       phraseEnd &&
       bar.intensity === 2 &&
@@ -232,7 +305,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     }
     // Extras: off-pattern hits only when very strong (fills, stabs) and a clear local peak of this bar.
     const extras: { step: number; score: number }[] = [];
-    for (let step = 0; step < bar.slots.length; step++) {
+    for (let step = 0; P.extras && step < bar.slots.length; step++) {
       if (rollFrom >= 0 && step >= rollFrom) continue;
       if (phrase.steps.includes(step)) continue;
       const gi = bar.start + step;
@@ -346,7 +419,8 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     hits.sort((a, b) => b.score - a.score || a.si - b.si);
     const chosen: { si: number; bar: Bar }[] = [];
     for (const h of hits) {
-      if (chosen.some((c) => Math.abs(c.si - h.si) < CIRCLE_MIN_GAP_SLOTS)) continue;
+      if (chosen.length >= P.circlesPerWindow) break;
+      if (chosen.some((c) => Math.abs(c.si - h.si) < P.circleGapSlots)) continue;
       chosen.push(h);
     }
     for (const c of chosen)
@@ -416,6 +490,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const bassDur = slots[Math.min(slots.length - 1, ev.si + bassLen)].time - slot.time;
     const bassTaps = Math.min(ROLL_MAX_TAPS, Math.round(bassLen / 2) + 1, Math.floor(bassDur * ROLL_MAX_TAPS_PER_SEC));
     if (
+      P.rolls &&
       slot.sustain >= 4 &&
       !melodic &&
       intensity >= 1 &&
@@ -441,14 +516,14 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       !activeHold &&
       decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity]
     ) {
-      let dur = clampBeforeCircle(i, Math.min(slot.sustain, MAX_HOLD_SLOTS));
+      let dur = clampBeforeCircle(i, Math.min(slot.sustain, P.maxHoldSlots));
       const barEnd = ev.bar.start + ev.bar.slots.length;
       if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
       else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd + STEPS_PER_BAR - SECTION_GAP_SLOTS - ev.si);
       if (dur >= 2) {
         ev.hold = dur;
         ev.size = 1;
-        if (dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && decide(seed, phraseIdx, ev.step, 3) < SLIDE_CHANCE) ev.kind = 'slide';
+        if (P.slides && dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && decide(seed, phraseIdx, ev.step, 3) < SLIDE_CHANCE) ev.kind = 'slide';
         holdBudget.set(ev.bar.index, budget - 1);
         activeHold = ev;
         continue;
@@ -457,7 +532,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
     if (activeHold) continue; // two-finger rule: one thumb is busy → an accent lands in an outer lane instead
     const inStream = gapPrev <= 1 || gapNext <= 1;
-    if (!ev.accent || inStream || ev.bar.lanes < 2) continue;
+    if (!P.chords || !ev.accent || inStream || ev.bar.lanes < 2) continue;
     ev.size = MAX_CHORD;
   }
 

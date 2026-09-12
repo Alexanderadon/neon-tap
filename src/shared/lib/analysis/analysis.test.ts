@@ -4,7 +4,7 @@ import { detectOnsets } from './OnsetDetector';
 import { estimateBpm } from './BpmEstimator';
 import { estimateDownbeatPhase, trackBeats } from './BeatTracker';
 import { analyzeSong, STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
-import { composeChart } from './ChartGenerator';
+import { EASY, composeChart } from './ChartGenerator';
 import { patternSteps } from './phrasePattern';
 import { circleSpread, handOf } from './laneAssign';
 import { chartFeatures, rateStars } from './stars';
@@ -415,6 +415,21 @@ describe('composeChart', () => {
     expect(spells[0][3]).toBe('slow');
     expect(spells[1][3]).toBe('heart');
     for (const s of spells) expect(s[2]).toBe(0);
+  });
+
+  it('reads the same song for beginners: beats only, sparse, no rolls / slides / chords, 3–4 lanes', () => {
+    const easy = composeChart(analysis, { profile: EASY });
+    const hard = composeChart(analysis);
+    expect(easy.notes.length).toBeGreaterThan(0);
+    expect(easy.notes.length).toBeLessThan(hard.notes.length * 0.7);
+    expect(easy.stars).toBeLessThan(hard.stars);
+    expect(easy.notes.some((n) => n[3] === 'roll' || n[3] === 'slide')).toBe(false);
+    const times = [...new Set(easy.notes.map((n) => n[0]))];
+    expect(times.length).toBe(easy.notes.length); // no chords
+    for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1]).toBeGreaterThanOrEqual(0.5 - 1e-6); // a beat at 120 BPM
+    for (const t of times) expect(times.filter((x) => x >= t && x < t + 1).length).toBeLessThanOrEqual(2);
+    for (const [, lanes] of easy.sections!) expect(lanes === 3 || lanes === 4).toBe(true);
+    expect(thumbViolations(easy.notes, easy.sections!)).toEqual([]);
   });
 
   it('is deterministic for the same seed', () => {
