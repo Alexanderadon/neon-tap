@@ -143,6 +143,8 @@ const ROLL_ON_BASS_CHANCE = 0.5;
 
 /** A spell note every this many bars, starting at bar 4 (after the intro). */
 const SPELL_EVERY_BARS = 8;
+/** Slow-motion is a tool for the hard songs: only charts rated at least this many stars carry it. */
+const SLOW_FROM_STARS = 7;
 
 /** Circle windows: an intense phrase start switches to circles ONLY, on every pattern hit, for 2–4 bars while the pattern stays strong. */
 const CIRCLE_WINDOW_MIN_BARS = 2;
@@ -444,12 +446,15 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   events.length = 0;
   events.push(...filtered);
 
-  // 1d. Spell notes: the first plain lane note of every 8th bar (from bar 4) alternates slow / heart.
+  // 1d. Spell notes: the first plain lane note of every 8th bar (from bar 4) alternates through the
+  //     profile's spells (slow-motion is swapped for a heart below SLOW_FROM_STARS once the chart is rated).
+  const spells = P.spells;
   let spellCount = 0;
   for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
     const ev = events.find((e) => e.bar.index === b && !e.kind && !e.hold) ?? events.find((e) => e.bar.index === b + 1 && !e.kind && !e.hold);
     if (!ev) continue;
-    ev.kind = P.spells[spellCount++ % P.spells.length];
+    if (!spells.length) break;
+    ev.kind = spells[spellCount++ % spells.length];
   }
 
   // 2. Holds on sustained melodic sounds (some become slides), chords on accents — under the
@@ -546,5 +551,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
   // 3. Lanes.
   const notes = assignLanes(playable, slots, random);
-  return { stars: rateStars(notes, analysis.bpm, sections), notes, sections };
+  const stars = rateStars(notes, analysis.bpm, sections);
+  if (stars < SLOW_FROM_STARS) for (const n of notes) if (n[3] === 'slow') n[3] = 'heart';
+  return { stars, notes, sections };
 }

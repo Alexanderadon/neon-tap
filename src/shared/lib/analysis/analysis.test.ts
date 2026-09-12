@@ -409,12 +409,18 @@ describe('composeChart', () => {
     expect(notes.filter((n) => n[0] >= 8 && n[0] < 16).length).toBeGreaterThan(0);
   });
 
-  it('places alternating slow / heart spell notes as plain taps', () => {
+  it('places alternating slow / heart spell notes as plain taps; slow-motion only on hard charts', () => {
     const spells = chart.notes.filter((n) => n[3] === 'slow' || n[3] === 'heart');
     expect(spells.length).toBeGreaterThanOrEqual(2);
+    expect(chart.stars).toBeGreaterThanOrEqual(7);
     expect(spells[0][3]).toBe('slow');
     expect(spells[1][3]).toBe('heart');
     for (const s of spells) expect(s[2]).toBe(0);
+    // a calm song rates low and never carries slow-motion, its spell slots all become hearts
+    const calm = composeChart(fakeAnalysis(48, (_bar, step) => (step % 8 === 0 ? { strength: 0.6, low: 0.6 } : { strength: 0.02 })));
+    expect(calm.stars).toBeLessThan(7);
+    expect(calm.notes.some((n) => n[3] === 'slow')).toBe(false);
+    expect(calm.notes.some((n) => n[3] === 'heart')).toBe(true);
   });
 
   it('reads the same song for beginners: beats only, sparse, no rolls / slides / chords, 3–4 lanes', () => {
