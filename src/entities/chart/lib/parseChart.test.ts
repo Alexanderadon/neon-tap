@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countJudgements, lanesAt, parseChartLevel, parseSections } from './parseChart';
+import type { ChartLevel } from '../model/types';
 
 describe('parseChartLevel', () => {
   it('expands tuples, sorts by time and tags the section lane count', () => {
@@ -38,6 +39,25 @@ describe('parseChartLevel', () => {
     expect(lanesAt(sections, 16)).toBe(2);
     expect(parseChartLevel(level).map((n) => n.lanes)).toEqual([2, 6, 2]);
     expect(() => parseChartLevel({ ...level, notes: [[0.5, 3]] })).toThrow(/outside 2-lane/);
+  });
+
+  it('accepts single-lane sections: taps, holds and rolls in lane 0, but no slides (nowhere to go)', () => {
+    const level: ChartLevel = {
+      stars: 1,
+      notes: [[1, 0], [2, 0, 1], [4, 0, 1, 'roll', 3], [9, 2]],
+      sections: [[0, 1], [8, 3]],
+    };
+    const sections = parseSections(level);
+    expect(sections).toEqual([
+      { time: 0, lanes: 1 },
+      { time: 8, lanes: 3 },
+    ]);
+    expect(lanesAt(sections, 7.9)).toBe(1);
+    const notes = parseChartLevel(level);
+    expect(notes.map((n) => n.lanes)).toEqual([1, 1, 1, 3]);
+    expect(() => parseChartLevel({ ...level, notes: [[1, 1]] })).toThrow(/outside 1-lane/);
+    expect(() => parseChartLevel({ ...level, notes: [[1, 0, 1, 'slide', 1]] })).toThrow(/slide/);
+    expect(() => parseSections({ stars: 1, notes: [], sections: [[0, 0]] })).toThrow(/bad lane count/);
   });
 
   it('rejects invalid lanes, kinds, hold-specials and sections', () => {

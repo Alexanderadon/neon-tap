@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeLayout, laneAtPoint, MIN_TOUCH_ZONE_PX, touchZoneRect, touchZoneWidth, touchZonesComfortable } from './layout';
-import { KEY_LAYOUTS, KEY_LABELS, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
+import { computeLayout, laneAtPoint, MIN_TOUCH_ZONE_PX, SINGLE_LANE_MAX_WIDTH, touchZoneRect, touchZoneWidth, touchZonesComfortable } from './layout';
+import { CIRCLE_KEY, KEY_LAYOUTS, KEY_LABELS, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 
 describe('layout', () => {
   it('splits the lane area evenly for any lane count', () => {
@@ -10,6 +10,78 @@ describe('layout', () => {
       expect(l.laneWidth * n).toBeCloseTo(l.laneAreaWidth);
       expect(l.noteHeight).toBeGreaterThanOrEqual(14);
     }
+  });
+
+  it('single lane: a centred column no wider than 220 px, on phones and desktops alike', () => {
+    expect(MIN_LANES).toBe(1);
+    for (const [w, h, touch] of [
+      [375, 812, true],
+      [390, 844, true],
+      [844, 390, true],
+      [1440, 900, false],
+      [800, 450, false],
+    ] as const) {
+      const L = computeLayout(w, h, touch, 1);
+      expect(L.lanes).toBe(1);
+      expect(L.laneAreaWidth).toBeLessThanOrEqual(SINGLE_LANE_MAX_WIDTH);
+      expect(L.laneWidth).toBe(L.laneAreaWidth);
+      // Centred: equal margins on both sides (±1 px from rounding).
+      expect(Math.abs(L.laneX - (w - L.laneAreaWidth) / 2)).toBeLessThanOrEqual(0.5);
+      expect(L.laneX).toBeGreaterThan(0);
+      // Never narrower than the same screen's 4-lane column.
+      expect(L.laneAreaWidth).toBeLessThanOrEqual(computeLayout(w, h, touch, 4).laneAreaWidth);
+      expect(L.noteHeight).toBe(34);
+    }
+    // A screen narrower than the cap keeps the full width.
+    expect(computeLayout(200, 400, true, 1).laneAreaWidth).toBe(200);
+  });
+
+  it('single lane: the touch zone is the whole bottom half and every touch lands in lane 0', () => {
+    const L = computeLayout(375, 812, true, 1);
+    expect(touchZoneWidth(L)).toBe(375);
+    expect(touchZoneRect(L, 0)).toEqual({ x: 0, y: 406, width: 375, height: 406 });
+    expect(touchZonesComfortable(L)).toBe(true);
+    for (const x of [0, 5, 100, 187, 300, 374, 375]) {
+      expect(laneAtPoint(L, x, 406, true)).toBe(0);
+      expect(laneAtPoint(L, x, 811, true)).toBe(0);
+      // Above the zone a finger still lands in the only lane, inside the column or beside it.
+      expect(laneAtPoint(L, x, 100, true)).toBe(0);
+    }
+    // Desktop mouse: only inside the column.
+    const D = computeLayout(1440, 900, false, 1);
+    expect(laneAtPoint(D, D.laneX + 1, 100, false)).toBe(0);
+    expect(laneAtPoint(D, D.laneX + D.laneWidth - 1, 890, false)).toBe(0);
+    expect(laneAtPoint(D, D.laneX - 1, 890, false)).toBe(-1);
+    expect(laneAtPoint(D, D.laneX + D.laneWidth + 1, 890, false)).toBe(-1);
+  });
+
+  it('six lanes: touch zones tile the bottom half and pointer positions map to all six lanes', () => {
+    const L = computeLayout(390, 844, true, 6);
+    expect(touchZoneWidth(L)).toBe(65);
+    for (let i = 0; i < 6; i++) {
+      const z = touchZoneRect(L, i);
+      expect(laneAtPoint(L, z.x + 1, z.y + 10, true)).toBe(i);
+      expect(laneAtPoint(L, z.x + z.width - 1, L.height - 1, true)).toBe(i);
+      expect(laneAtPoint(L, z.x + z.width / 2, 100, true)).toBe(i);
+    }
+    expect(laneAtPoint(L, 390, 700, true)).toBe(5);
+    expect(laneAtPoint(L, -10, 700, true)).toBe(0);
+    const D = computeLayout(1280, 720, false, 6);
+    for (let i = 0; i < 6; i++) expect(laneAtPoint(D, D.laneX + (i + 0.5) * D.laneWidth, 300, false)).toBe(i);
+    expect(laneAtPoint(D, D.laneX - 1, 300, false)).toBe(-1);
+    expect(laneAtPoint(D, D.laneX + D.laneAreaWidth + 1, 300, false)).toBe(-1);
+  });
+
+  it('single lane keys: D F J K (and the outer / middle / arrow keys) all hit lane 0, Space stays free for circles', () => {
+    const map = KEY_LAYOUTS[1];
+    for (const code of ['KeyD', 'KeyF', 'KeyJ', 'KeyK', 'KeyS', 'KeyL', 'KeyG', 'KeyH', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) {
+      expect(map[code], code).toBe(0);
+    }
+    expect(map[CIRCLE_KEY]).toBeUndefined();
+    expect(new Set(Object.values(map))).toEqual(new Set([0]));
+    expect(KEY_LABELS[1]).toEqual(['F J']);
+    // No layout binds Space to a lane.
+    for (let n = MIN_LANES; n <= MAX_LANES; n++) expect(KEY_LAYOUTS[n][CIRCLE_KEY]).toBeUndefined();
   });
 
   it('maps pointer positions to lanes (desktop inside the area, touch zones full width)', () => {

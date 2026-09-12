@@ -85,7 +85,9 @@
 }
 .tut-dots {
   display: flex;
-  gap: 5px;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
 }
 .tut-dot {
   width: 7px;
@@ -310,54 +312,133 @@
     opacity: 0;
   }
 }
-@keyframes ic-lanes-fold {
-  0%,
-  35% {
-    opacity: 1;
-    transform: none;
-  }
-  55%,
-  85% {
+/* --- lanes icon: bars grow out of the field one after another, then settle --- */
+@keyframes ic-lane-grow {
+  0% {
     opacity: 0;
     transform: scaleX(0);
   }
+  35% {
+    opacity: 1;
+    transform: scaleX(1.12);
+  }
+  50%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0.35;
+    transform: scaleX(0.9);
+  }
+}
+.ic-lane-grow {
+  animation: ic-lane-grow 2.6s ease-in-out infinite;
+}
+
+/* --- spell (slow-motion clock) --- */
+.ic-clock {
+  fill: rgba(5, 6, 10, 0.85);
+  stroke: var(--c-cyan);
+  stroke-width: 2;
+}
+.ic-clock-glow {
+  fill: rgba(0, 240, 255, 0.18);
+  transform-origin: 24px 24px;
+}
+@keyframes ic-breathe {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+.ic-breathe {
+  animation: ic-breathe 2.4s ease-in-out infinite;
+}
+.ic-hand {
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform-origin: 24px 24px;
+}
+.ic-hand-short {
+  stroke: var(--c-magenta);
+}
+.ic-hand-pin {
+  fill: #fff;
+}
+@keyframes ic-hand-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(300deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.ic-hand-spin {
+  animation: ic-hand-spin 3s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+/* --- lanes chip: "Полосы: N" + key caps / zone hint --- */
+@keyframes tut-chip-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
   100% {
     opacity: 1;
     transform: none;
   }
 }
-@keyframes ic-lanes-widen {
-  0%,
-  35% {
-    transform: none;
-  }
-  55%,
-  85% {
-    transform: translateX(var(--dx)) scaleX(1.35);
-  }
-  100% {
-    transform: none;
-  }
+.tut-lanes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  animation: tut-chip-in 0.25s ease-out both;
 }
-.tut-icon-lanes .ic-lane {
-  transform-origin: 24px 24px;
-  animation: ic-lanes-widen 2.4s ease-in-out infinite;
+.tut-lanes-n {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-cyan);
+  white-space: nowrap;
 }
-.tut-icon-lanes .ic-lane-a {
-  --dx: -1px;
-  transform-origin: 3px 24px;
+.tut-lanes-zones {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.tut-icon-lanes .ic-lane-b {
-  --dx: 3px;
-  transform-origin: 14px 24px;
+.tut-keys {
+  display: flex;
+  gap: 3px;
 }
-.tut-icon-lanes .ic-lane-c {
-  --dx: 7px;
-  transform-origin: 25px 24px;
-}
-.tut-icon-lanes .ic-lane-d {
-  animation: ic-lanes-fold 2.4s ease-in-out infinite;
-  transform-origin: 45px 24px;
+.tut-key {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  color: #fff;
 }
 
 @media (max-width: 400px) {

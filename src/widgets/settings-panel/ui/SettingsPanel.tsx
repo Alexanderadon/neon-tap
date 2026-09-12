@@ -106,6 +106,8 @@ export function SettingsPanel() {
 
       <NicknameField value={s.nickname} />
 
+      <TutorialRow done={s.tutorialDone} />
+
       <div className="settings-actions">
         <Button variant="ghost" onClick={() => navigate('calibration')}>
           {dict.settingsRecalibrate}
@@ -117,6 +119,26 @@ export function SettingsPanel() {
           }}
         >
           {dict.settingsReset}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Tutorial state ("passed" badge with a check mark, or "not yet") and a button to replay it. */
+function TutorialRow({ done }: { done: boolean }) {
+  return (
+    <div className="settings-group">
+      <span className="settings-group-label">{dict.tutorial}</span>
+      <div className="settings-row settings-tutorial">
+        <span className={`settings-badge ${done ? 'settings-badge-on' : ''}`}>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" className="settings-badge-icon">
+            {done ? <path d="M3 8.5 L6.5 12 L13 4.5" /> : <circle cx="8" cy="8" r="5" />}
+          </svg>
+          {done ? dict.tutorialPassed : dict.tutorialNotPassed}
+        </span>
+        <Button variant="ghost" onClick={() => navigate('tutorial')}>
+          {dict.tutorialReplay}
         </Button>
       </div>
     </div>

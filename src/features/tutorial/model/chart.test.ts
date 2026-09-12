@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DENSITY_LIMIT } from '@/shared/config/constants';
+import { DENSITY_LIMIT, KEY_LABELS, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 import type { ChartFile } from '@/shared/types/chart';
 import { parseChartLevel, parseSections, type ParsedNote } from '@/entities/chart';
-import { TUTORIAL_PLAN, beatTime, buildScript, captionAt } from './script';
+import { SPELL_LANE, TUTORIAL_PLAN, beatIndex, beatTime, buildScript, captionAt, type TutorialStepId } from './script';
 
 const ROOT = new URL('../../../../', import.meta.url);
 const file = JSON.parse(readFileSync(new URL('public/charts/tutorial.json', ROOT), 'utf8')) as ChartFile;
@@ -27,6 +27,11 @@ const beatLen = (t: number): number => {
   return beats[i + 1] - beats[i];
 };
 
+/** tap / hold / slide / roll / circle / slow / heart. */
+const kindOf = (n: ParsedNote): string => (n.kind === null ? (n.duration > 0 ? 'hold' : 'tap') : n.kind);
+const stepOf = (n: ParsedNote) => script[captionAt(script, n.time)];
+const notesIn = (id: TutorialStepId) => notes.filter((n) => stepOf(n)?.id === id);
+
 describe('public/charts/tutorial.json', () => {
   it('is a valid ChartFile that reuses a CC0 catalog track', () => {
     expect(file.id).toBe('tutorial');
@@ -41,7 +46,7 @@ describe('public/charts/tutorial.json', () => {
     expect(file.license).toBe(src.license);
     expect(file.sourceUrl).toBe(src.sourceUrl);
     expect(file.artist).toBe(src.artist);
-    expect(notes.length).toBeGreaterThan(30);
+    expect(notes.length).toBeGreaterThan(40);
     const last = Math.max(...notes.map((n) => n.time + n.duration));
     expect(last).toBeGreaterThan(55);
     expect(last).toBeLessThan(80);
@@ -54,9 +59,38 @@ describe('public/charts/tutorial.json', () => {
     }
   });
 
+  it('walks the lane counts 1 → 2 → 3 → 4 → 5 → 6, each change after ≥ 2 beats of silence', () => {
+    expect(sections.map((s) => s.lanes)).toEqual([1, 2, 3, 4, 5, 6]);
+    // The one-lane section starts at song time 0, so the parser does not prepend a default one.
+    expect(sections[0].time).toBe(0);
+    for (const s of sections) {
+      expect(s.lanes).toBeGreaterThanOrEqual(MIN_LANES);
+      expect(s.lanes).toBeLessThanOrEqual(MAX_LANES);
+    }
+    for (let i = 1; i < sections.length; i++) {
+      const change = sections[i].time;
+      expect(gridError(change), `section at ${change}`).toBeLessThanOrEqual(0.03);
+      const before = Math.max(...notes.filter((n) => n.time < change).map((n) => n.time + n.duration));
+      expect(beatIndex(beats, change) - beatIndex(beats, before), `gap before ${sections[i].lanes} lanes`).toBeGreaterThanOrEqual(2 - 0.05);
+      // The first note of the new section lands ≥ 2 beats after the change.
+      const first = Math.min(...notes.filter((n) => n.time >= change).map((n) => n.time));
+      expect(beatIndex(beats, first) - beatIndex(beats, change)).toBeGreaterThanOrEqual(2 - 0.05);
+    }
+    // Every note fits its section, and every lane of every section is used at least once.
+    for (const n of notes) {
+      const sec = [...sections].reverse().find((s) => s.time <= n.time)!;
+      expect(n.lanes, `lanes at ${n.time}`).toBe(sec.lanes);
+      expect(n.lane).toBeLessThan(sec.lanes);
+    }
+    for (const sec of sections) {
+      const used = new Set(notes.filter((n) => n.lanes === sec.lanes).flatMap((n) => (n.kind === 'slide' ? [n.lane, n.extra] : [n.lane])));
+      expect(used.size, `${sec.lanes} lanes`).toBe(sec.lanes);
+    }
+  });
+
   it('keeps rolls at 3+ taps and ≤ 6 taps per second', () => {
     const rolls = notes.filter((n) => n.kind === 'roll');
-    expect(rolls).toHaveLength(3);
+    expect(rolls.length).toBeGreaterThanOrEqual(3);
     for (const r of rolls) {
       expect(r.extra).toBeGreaterThanOrEqual(3);
       expect(r.extra / r.duration).toBeLessThanOrEqual(6);
@@ -89,59 +123,114 @@ describe('public/charts/tutorial.json', () => {
     }
   });
 
-  it('has a circle window with 3 numbered circles and no lane notes around it', () => {
+  it('has one circle window: 4 numbered circles ≥ an 8th apart, zig-zagging, no lane notes around it', () => {
     const circles = notes.filter((n) => n.kind === 'circle');
-    expect(circles.map((c) => c.seq)).toEqual([1, 2, 3]);
+    expect(circles.map((c) => c.seq)).toEqual([1, 2, 3, 4]);
+    for (let i = 1; i < circles.length; i++) {
+      expect(circles[i].time - circles[i - 1].time).toBeGreaterThanOrEqual(beatLen(circles[i].time) / 2 - 0.01);
+      expect(circles[i].lane).not.toBe(circles[i - 1].lane);
+    }
     const from = circles[0].time - beatLen(circles[0].time);
-    const to = circles[2].time + beatLen(circles[2].time);
+    const to = circles[circles.length - 1].time + beatLen(circles[circles.length - 1].time);
     const inside = notes.filter((n) => n.kind !== 'circle' && n.time + n.duration >= from && n.time <= to);
     expect(inside).toHaveLength(0);
-    // Zig-zag across the field: consecutive circles never share a lane.
-    for (let i = 1; i < circles.length; i++) expect(circles[i].lane).not.toBe(circles[i - 1].lane);
+    expect(circles.every((c) => c.lanes === 4)).toBe(true);
   });
 
-  it('changes lanes 4 → 3 once, with at least 2 beats of silence before the change', () => {
-    expect(sections.map((s) => s.lanes)).toEqual([4, 3]);
-    const change = sections[1].time;
-    for (const s of sections) expect(s.lanes).toBeGreaterThanOrEqual(3);
-    for (const s of sections) expect(s.lanes).toBeLessThanOrEqual(5);
-    const before = Math.max(...notes.filter((n) => n.time < change).map((n) => n.time + n.duration));
-    expect(change - before).toBeGreaterThanOrEqual(2 * beatLen(change) - 0.01);
-    for (const n of notes) expect(n.lane, `lane at ${n.time}`).toBeLessThan(n.time >= change ? 3 : 4);
+  it('has exactly one spell (slow-motion) on the 4-lane section, and no heart (there are no hearts)', () => {
+    const spells = notes.filter((n) => n.kind === 'slow' || n.kind === 'heart');
+    expect(spells).toHaveLength(1);
+    expect(spells[0].kind).toBe('slow');
+    expect(spells[0].lanes).toBe(4);
+    // The caption's `{key}` is derived from SPELL_LANE — the chart must agree.
+    expect(spells[0].lane).toBe(SPELL_LANE);
+    // The slow-motion (6 song-seconds) is over before the next section's first note.
+    const next = sections.find((s) => s.time > spells[0].time)!;
+    const first = Math.min(...notes.filter((n) => n.time >= next.time).map((n) => n.time));
+    expect(first - spells[0].time).toBeGreaterThanOrEqual(6);
   });
 
-  it('teaches the mechanics in the scripted order: every note falls inside a step of its kind', () => {
-    const kindOf = (n: ParsedNote): string => (n.kind === null ? (n.duration > 0 ? 'hold' : 'tap') : n.kind);
+  it('teaches the mechanics in the scripted order: every note falls inside a step that allows its kind', () => {
+    const allowed: Record<TutorialStepId, readonly string[]> = {
+      intro: [],
+      tap: ['tap'],
+      hold: ['hold'],
+      lanes2: [],
+      alt: ['tap'],
+      slide: ['slide'],
+      lanes3: [],
+      roll: ['roll'],
+      lanes4: [],
+      circle: ['circle'],
+      spell: ['slow', 'tap'],
+      lanes5: [],
+      mixed: ['tap', 'hold', 'roll', 'slide'],
+      lanes6: [],
+      finale: ['tap', 'hold'],
+    };
     const seen = new Set<string>();
     for (const n of notes) {
       const i = captionAt(script, n.time);
       expect(i, `no caption at ${n.time}`).toBeGreaterThanOrEqual(0);
       const step = script[i];
       seen.add(step.id);
-      if (step.kind === 'free') continue;
-      if (step.kind === 'lanes') {
-        expect(kindOf(n)).toBe('tap');
-        continue;
-      }
-      expect(kindOf(n), `note at ${n.time} in step ${step.id}`).toBe(step.kind);
+      expect(allowed[step.id], `${kindOf(n)} at ${n.time} in step ${step.id}`).toContain(kindOf(n));
+      expect(step.lanes, `step ${step.id} lanes at ${n.time}`).toBe(n.lanes);
       // The step's caption is up 2+ beats before its first note lands.
-      expect(n.time - step.from).toBeGreaterThanOrEqual(2 * beatLen(n.time) - 0.01);
+      expect(beatIndex(beats, n.time) - beatIndex(beats, step.from), `lead of ${step.id}`).toBeGreaterThanOrEqual(2 - 0.05);
     }
-    expect(TUTORIAL_PLAN.filter((p) => p.id !== 'intro').every((p) => seen.has(p.id))).toBe(true);
-    const intro = script[0];
-    expect(notes.some((n) => n.time < intro.to)).toBe(false);
-    // Step counts as designed: 4 taps in one lane, then alternating lanes.
-    const tapStep = script.find((s) => s.id === 'tap')!;
-    const first = notes.filter((n) => n.time >= tapStep.from && n.time < tapStep.to);
-    expect(first).toHaveLength(4);
-    expect(new Set(first.map((n) => n.lane)).size).toBe(1);
+    // Every mechanic step has notes; lane-change steps and the intro are note-free.
+    for (const p of TUTORIAL_PLAN) expect(seen.has(p.id), p.id).toBe(allowed[p.id].length > 0);
+    // Each `lanes` step sits over its lane change: the change happens inside it.
+    for (const p of TUTORIAL_PLAN.filter((p) => p.kind === 'lanes')) {
+      const step = script.find((s) => s.id === p.id)!;
+      const sec = sections.find((s) => s.lanes === p.lanes)!;
+      expect(sec.time, p.id).toBeGreaterThanOrEqual(step.from);
+      expect(sec.time, p.id).toBeLessThan(step.to);
+      // …and the previous step's last note is already gone when the caption changes.
+      const prevEnd = Math.max(...notes.filter((n) => n.time < step.from).map((n) => n.time + n.duration));
+      expect(prevEnd).toBeLessThanOrEqual(step.from + 1e-6);
+    }
+    // Step counts as designed.
+    const first = notesIn('tap');
+    expect(first).toHaveLength(8);
+    expect(first.every((n) => n.lane === 0 && n.lanes === 1)).toBe(true);
     for (const n of first) expect(gridError(n.time)).toBeLessThanOrEqual(0.03);
     expect(beatTime(beats, 10)).toBeCloseTo(first[0].time, 3);
-    const alt = script.find((s) => s.id === 'alt')!;
-    const second = notes.filter((n) => n.time >= alt.from && n.time < alt.to);
-    for (let i = 1; i < second.length; i++) expect(second[i].lane).not.toBe(second[i - 1].lane);
-    const lanes = script.find((s) => s.id === 'lanes')!;
-    expect(sections[1].time).toBeGreaterThan(lanes.from);
-    expect(sections[1].time).toBeLessThan(lanes.to);
+    expect(notesIn('hold')).toHaveLength(3);
+    const alt = notesIn('alt');
+    expect(alt.length).toBeGreaterThanOrEqual(6);
+    for (let i = 1; i < alt.length; i++) expect(alt[i].lane).not.toBe(alt[i - 1].lane);
+    expect(notesIn('slide').map((n) => [n.lane, n.extra])).toEqual([
+      [0, 1],
+      [1, 0],
+    ]);
+    expect(notesIn('roll')).toHaveLength(3);
+    expect(notesIn('circle')).toHaveLength(4);
+    expect(notesIn('mixed').map(kindOf)).toEqual(expect.arrayContaining(['tap', 'hold', 'roll', 'slide']));
+    // The mixed step ends on a chord (two taps at once), the finale contains a chord too.
+    const chord = (id: TutorialStepId) => {
+      const t = notesIn(id).map((n) => n.time);
+      return t.some((x, i) => t.indexOf(x) !== i);
+    };
+    expect(chord('mixed')).toBe(true);
+    expect(chord('finale')).toBe(true);
+    expect(notesIn('finale').length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('captions carry the lane count, its key caps and a "Полосы: N" title on every lane change', () => {
+    for (const s of script) {
+      expect(s.keys).toEqual(KEY_LABELS[s.lanes]);
+      expect(s.keys).toHaveLength(s.lanes);
+      if (s.kind === 'lanes') {
+        expect(s.title).toBe(`Полосы: ${s.lanes}`);
+        expect(s.hintDesktop).toContain(s.keys.join(' '));
+        expect(s.hintTouch.length).toBeGreaterThan(0);
+      }
+      expect(s.text).not.toMatch(/\{\w+\}/);
+      expect(s.hintDesktop).not.toMatch(/\{\w+\}/);
+      expect(s.hintTouch).not.toMatch(/\{\w+\}/);
+    }
+    expect(script.map((s) => s.lanes)).toEqual([1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6]);
   });
 });

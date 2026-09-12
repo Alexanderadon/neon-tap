@@ -1,9 +1,13 @@
 /** Judgement windows in seconds. Outside `good` → miss. */
 export const HIT_WINDOWS = { perfect: 0.05, great: 0.1, good: 0.15 } as const;
 
-/** Default lane count; sections of a chart may switch between MIN_LANES and MAX_LANES. */
+/**
+ * Default lane count; sections of a chart may switch between MIN_LANES and MAX_LANES.
+ * A single lane (Magic-Tiles style) is only used by the hand-made tutorial — the generator
+ * never emits it — but the engine (layout, renderer, input, parser) supports it everywhere.
+ */
 export const LANE_COUNT = 4;
-export const MIN_LANES = 2;
+export const MIN_LANES = 1;
 export const MAX_LANES = 6;
 
 /** Neon palette per lane index: cyan / magenta / lime / orange / violet / yellow. */
@@ -12,8 +16,10 @@ export const LANE_COLORS = ['#00f0ff', '#ff2bd6', '#b6ff00', '#ff8a00', '#b56bff
 /**
  * Keyboard layouts per lane count. Both hands stay on D F / J K; extra lanes add G/H (middle)
  * and S / L (outer). Arrow keys mirror the 4-lane layout. Space is reserved for circles.
+ * One lane: every lane key (D F J K, S L, G H, arrows) hits lane 0 — Space stays with circles.
  */
 export const KEY_LAYOUTS: Record<number, Record<string, number>> = {
+  1: { KeyF: 0, KeyJ: 0, KeyD: 0, KeyK: 0, KeyS: 0, KeyL: 0, KeyG: 0, KeyH: 0, ArrowLeft: 0, ArrowRight: 0, ArrowDown: 0, ArrowUp: 0 },
   2: { KeyF: 0, KeyJ: 1, KeyD: 0, KeyK: 1, KeyS: 0, KeyL: 1, ArrowLeft: 0, ArrowRight: 1, ArrowDown: 0, ArrowUp: 1 },
   3: { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 2, KeyS: 0, KeyL: 2, KeyG: 1, KeyH: 1, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 1, ArrowRight: 2 },
   4: { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3, KeyS: 0, KeyL: 3, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3 },
@@ -23,6 +29,7 @@ export const KEY_LAYOUTS: Record<number, Record<string, number>> = {
 
 /** Key caps shown under the receptors, per lane count. */
 export const KEY_LABELS: Record<number, readonly string[]> = {
+  1: ['F J'],
   2: ['F', 'J'],
   3: ['D', 'F', 'J'],
   4: ['D', 'F', 'J', 'K'],
