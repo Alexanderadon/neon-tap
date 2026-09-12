@@ -67,9 +67,10 @@ export interface Profile {
 }
 
 export const NORMAL: Profile = {
-  maxNotes: [3, 6, 9],
-  maxNotesByLanes: { 2: 4, 3: 6 },
-  density: [3, 4, 4.5],
+  // The song decides how many tiles a bar has; these are physical ceilings for two thumbs.
+  maxNotes: [12, 12, 12],
+  maxNotesByLanes: { 2: 8, 3: 10 },
+  density: [DENSITY_LIMIT, DENSITY_LIMIT, DENSITY_LIMIT],
   densityPeak: DENSITY_LIMIT,
   gap: null,
   rolls: true,
@@ -87,12 +88,12 @@ export const NORMAL: Profile = {
 
 /** Chapter two: eighths allowed, a few holds and slides, still no rolls or chords, up to five lanes. */
 export const MEDIUM: Profile = {
-  // The second chapter already gets the song's whole stream of hits ("every note, every bass");
-  // what it spares the player is rolls, chords and wide fields.
-  maxNotes: [3, 6, 9],
-  maxNotesByLanes: { 2: 4, 3: 6 },
-  density: [3, 4, 4.5],
-  densityPeak: 5,
+  // Every chapter gets the song's whole stream of hits (Magic Tiles has no "easy version" of a
+  // song); what the second chapter spares the player is rolls, chords and wide fields.
+  maxNotes: [12, 12, 12],
+  maxNotesByLanes: { 2: 8, 3: 10 },
+  density: [DENSITY_LIMIT, DENSITY_LIMIT, DENSITY_LIMIT],
+  densityPeak: DENSITY_LIMIT,
   gap: null,
   rolls: false,
   slides: true,
@@ -108,11 +109,12 @@ export const MEDIUM: Profile = {
 };
 
 export const EASY: Profile = {
-  maxNotes: [2, 3, 4],
-  maxNotesByLanes: { 2: 2, 3: 3 },
-  density: [1.5, 2, 2],
-  densityPeak: 2,
-  gap: 4,
+  // The first chapter: the same stream of hits, but no slides / rolls / chords / spinners, few circles, 3–4 lanes.
+  maxNotes: [12, 12, 12],
+  maxNotesByLanes: { 2: 8, 3: 10 },
+  density: [DENSITY_LIMIT, DENSITY_LIMIT, DENSITY_LIMIT],
+  densityPeak: DENSITY_LIMIT,
+  gap: null,
   rolls: false,
   slides: false,
   chords: false,
@@ -153,15 +155,15 @@ const SLOW_FROM_STARS = 7;
 
 /** Circle windows: an intense phrase start switches to circles ONLY, on every pattern hit, for 2–4 bars while the pattern stays strong. */
 const CIRCLE_WINDOW_MIN_BARS = 2;
-const CIRCLE_WINDOW_MAX_BARS = 4;
+const CIRCLE_WINDOW_MAX_BARS = 2;
 /** A bar extends the window while its pattern hits keep this share of the first bar's strength. */
 const CIRCLE_KEEP_REL = 0.75;
 /** Songs this hard may open a window at EVERY intense phrase start (others only on 8-bar boundaries). */
 const CIRCLE_EVERY_PHRASE_STARS = 6;
 /** Lane bars between two windows — at most a third of the song is circles. */
-const CIRCLE_COOLDOWN_BARS = 8;
+const CIRCLE_COOLDOWN_BARS = 16;
 /** Sound-driven bars (stems): a hit counts when it is at least this share of the bar's loudest hit of the layer. */
-const BAR_REL = 0.35;
+const BAR_REL = 0.25;
 /** A slot next to a louder one still counts as its own hit when it reaches this share of it. */
 const PEAK_TOLERANCE = 0.8;
 /** A sound must ring at least a beat to become a hold; shorter sounds are taps. */
@@ -170,6 +172,8 @@ const HOLD_MIN_SLOTS_SOUND = 4;
 const SOUND_AT = 0.3;
 /** A stem's own onset (on its own scale) counts as a hit of this strength next to the mix's. */
 const STEM_HIT_WEIGHT = 0.8;
+/** Drum-stem onsets (hi-hats the mix hides) join the stream at this strength. */
+const DRUM_HIT_WEIGHT = 0.6;
 /** A chord needs a second instrument hitting at the same moment at least this hard. */
 const CHORD_OTHER = 0.6;
 /** With stems the lane count changes only where the music changes — or after this many phrases without one. */
@@ -363,7 +367,10 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   const heard = (gi: number): number => {
     if (gi < 0 || gi >= sal.length) return 0;
     let v = sal[gi];
-    if (opts.layers) for (const l of MELODIC_LAYERS) v = Math.max(v, STEM_HIT_WEIGHT * opts.layers.onset[l][gi]);
+    if (opts.layers) {
+      for (const l of MELODIC_LAYERS) v = Math.max(v, STEM_HIT_WEIGHT * opts.layers.onset[l][gi]);
+      v = Math.max(v, DRUM_HIT_WEIGHT * opts.layers.onset.drums[gi]);
+    }
     return v;
   };
   const soundSteps = (bar: Bar): number[] => {

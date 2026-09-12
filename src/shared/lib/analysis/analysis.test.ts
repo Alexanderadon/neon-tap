@@ -130,8 +130,9 @@ const fillLoop = (bar: number, step: number): Partial<Slot> => {
   return drumLoop(bar, step);
 };
 
+/** A ringing pad on every beat (no hits in between): the sound has room to become a hold. */
 const sustainedLoop = (bar: number, step: number): Partial<Slot> => ({
-  ...drumLoop(bar, step),
+  strength: step % 4 === 0 ? (bar % 24 >= 8 ? 1 : 0.7) : 0.02,
   sustain: step % 4 === 0 ? 6 : 0,
   low: 0.2,
   mid: 0.7,
@@ -190,16 +191,18 @@ describe('composeChart', () => {
     }
   });
 
-  it('opens intense phrases with circle-only windows that follow the pattern', () => {
+  it('opens intense phrases with short circle-only windows that follow the hits', () => {
     const circles = chart.notes.filter((n) => n[3] === 'circle');
     expect(circles.length).toBeGreaterThan(0);
-    // bars 8–11 are the first intense phrase → a window there with no lane notes (nor one beat before).
-    const win = chart.notes.filter((n) => n[0] >= 16 && n[0] < 24);
+    // bars 8–9 are the start of the first intense phrase → a two-bar window there with no lane notes (nor one beat before).
+    const win = chart.notes.filter((n) => n[0] >= 16 && n[0] < 20);
     expect(win.length).toBeGreaterThan(0);
     expect(win.every((n) => n[3] === 'circle')).toBe(true);
     expect(chart.notes.filter((n) => n[0] >= 15.5 && n[0] < 16)).toEqual([]);
-    // Circles keep coming while the rhythm keeps going: a 4-bar window of eighths gives ≥ 12 of them.
-    expect(win.length).toBeGreaterThanOrEqual(12);
+    // The stream resumes right after the window: bars 10–11 are lane notes again.
+    expect(chart.notes.filter((n) => n[0] >= 20 && n[0] < 24 && n[3] !== 'circle').length).toBeGreaterThan(8);
+    // Circles keep coming while the rhythm keeps going: a 2-bar window of eighths gives ≥ 6 of them.
+    expect(win.length).toBeGreaterThanOrEqual(6);
     for (let i = 1; i < win.length; i++) {
       expect(win[i][0] - win[i - 1][0]).toBeGreaterThanOrEqual(0.25 - 1e-6);
       expect(win[i][1]).not.toBe(win[i - 1][1]);
@@ -259,14 +262,14 @@ describe('composeChart', () => {
     expect([...new Set(tail.map((n) => stepOf(n[0])))].sort((x, y) => x - y)).toEqual([0, 8]);
   });
 
-  it('keeps quiet phrases sparse and lets intense phrases of energetic songs reach the density limit', () => {
+  it("follows the song's own stream of hits, never above the density limit", () => {
     const starts = [...new Set(chart.notes.map((n) => n[0]))].sort((a, b) => a - b);
-    const intro = starts.filter((t) => t < 16);
-    for (const t of intro) expect(intro.filter((s) => s >= t && s < t + 1).length).toBeLessThanOrEqual(3);
+    for (const t of starts) expect(starts.filter((s) => s >= t && s < t + 1).length).toBeLessThanOrEqual(DENSITY_LIMIT);
+    // drumLoop hits on every eighth everywhere: the quiet intro is as much a stream as the drop.
     const perBar = new Map<number, number>();
     for (const t of starts) perBar.set(Math.floor(t / 2), (perBar.get(Math.floor(t / 2)) ?? 0) + 1);
-    // drumLoop: bars 8–23 and 32–47 are intense (≤ 9 per bar), the rest quiet or medium (≤ 6).
-    for (const [bar, count] of perBar) expect(count).toBeLessThanOrEqual(bar < 8 || (bar >= 24 && bar < 32) ? 6 : 9);
+    const full = [...perBar.entries()].filter(([, n]) => n >= 6).length;
+    expect(full).toBeGreaterThanOrEqual(perBar.size * 0.6);
   });
 
   it('draws lane counts from the intensity pools (2–6, intro on 4)', () => {
@@ -313,10 +316,10 @@ describe('composeChart', () => {
     }
   });
 
-  it('gets denser with intensity', () => {
-    const quiet = chart.notes.filter((n) => n[0] < 16).length;
-    const intense = chart.notes.filter((n) => n[0] >= 20 && n[0] < 36).length;
-    expect(intense).toBeGreaterThan(quiet);
+  it('gets denser when the song has more hits', () => {
+    const eighths = composeChart(fakeAnalysis(24, drumLoop), { laneVariation: false }).notes.length;
+    const beats = composeChart(fakeAnalysis(24, sustainedLoop), { laneVariation: false }).notes.length;
+    expect(eighths).toBeGreaterThan(beats * 1.4);
   });
 
   it('gives quiet intros sparse notes but leaves true silence empty', () => {
@@ -344,19 +347,16 @@ describe('composeChart', () => {
     expect(calm.notes.some((n) => n[3] === 'heart')).toBe(true);
   });
 
-  it('reads the same song for beginners: beats only, sparse, no rolls / slides / chords, 3–4 lanes', () => {
+  it('reads the same song for beginners: the same stream of hits, but no rolls / slides / chords / spinners, 3–4 lanes', () => {
     const easy = composeChart(analysis, { profile: EASY });
     const hard = composeChart(analysis);
-    expect(easy.notes.length).toBeGreaterThan(0);
-    expect(easy.notes.length).toBeLessThan(hard.notes.length * 0.7);
-    expect(easy.stars).toBeLessThan(hard.stars);
-    expect(easy.notes.some((n) => n[3] === 'roll' || n[3] === 'slide')).toBe(false);
+    expect(easy.notes.length).toBeGreaterThan(hard.notes.length * 0.7);
+    expect(easy.stars).toBeLessThanOrEqual(hard.stars);
+    expect(easy.notes.some((n) => n[3] === 'roll' || n[3] === 'slide' || n[3] === 'spin')).toBe(false);
     expect(easy.notes.some((n) => n[3] === 'slow')).toBe(false); // slow-motion is a hard-song tool
     expect(easy.notes.some((n) => n[3] === 'heart')).toBe(true);
     const times = [...new Set(easy.notes.map((n) => n[0]))];
     expect(times.length).toBe(easy.notes.length); // no chords
-    for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1]).toBeGreaterThanOrEqual(0.5 - 1e-6); // a beat at 120 BPM
-    for (const t of times) expect(times.filter((x) => x >= t && x < t + 1).length).toBeLessThanOrEqual(2);
     for (const [, lanes] of easy.sections!) expect(lanes === 3 || lanes === 4).toBe(true);
     expect(thumbViolations(easy.notes, easy.sections!)).toEqual([]);
   });

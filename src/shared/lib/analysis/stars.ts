@@ -25,21 +25,21 @@ export function eventsToTuples(events: readonly Event[], slots: readonly Slot[])
 
 /** Star-rating weights: felt difficulty = density first, then speed of hands, width of the field, mechanics, tempo. */
 const STAR_W = {
-  nps: 2.3,
+  nps: 1.6,
   sixteenths: 2.0,
   peak: 0.3,
   wide: 1.2,
   special: 2.5,
   chords: 1.5,
   tempo: 0.6,
-  offset: -2.2,
+  offset: -2.0,
 } as const;
 
 /**
  * Difficulty rating 1–10 = felt difficulty: notes per second (dominant), share of sixteenth gaps,
  * peak 2-second density above the average, share of the song played on ≥ 5 lanes, share of
- * slides / rolls / circles, chord share and tempo. Calibrated so the easiest catalog track is
- * ★2–3 and the hardest ★8–9.
+ * slides / rolls / circles, chord share and tempo. Calibrated for the stream of hits: about ★3 at
+ * 2 notes/s, ★6 at 4, ★9–10 at 5.5.
  */
 export function rateStars(notes: readonly NoteTuple[], bpm = 120, sections?: readonly SectionTuple[]): number {
   if (notes.length < 2) return 1;
