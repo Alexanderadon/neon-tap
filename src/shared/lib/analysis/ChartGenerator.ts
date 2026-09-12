@@ -21,6 +21,7 @@ import {
   type PhrasePattern,
 } from './phrasePattern';
 import { eventsToTuples, rateStars } from './stars';
+import { BOOST_TARGET_LAYER, pickLayer, type Layer, type StemLayers } from './layers';
 
 /**
  * Chart composer: turns the analysed beat grid into ONE playable, musical chart per song.
@@ -160,6 +161,13 @@ export interface ComposeOptions {
   seed?: number;
   /** Difficulty profile; default NORMAL. */
   profile?: Profile;
+  /**
+   * Per-instrument onset strengths from separated stems. With them every 4-bar phrase follows ONE
+   * instrument — the singer, the hi-hat, the bass line — instead of "whatever is loud".
+   */
+  layers?: StemLayers;
+  /** Reports the layer chosen per phrase (tooling / logs). */
+  onLayers?: (layers: (Layer | null)[]) => void;
   /** Let the lane count follow the music (2–6 lanes). Default on. */
   laneVariation?: boolean;
 }
@@ -204,6 +212,36 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     for (const b of phrase) boost.set(b.index, factor);
   }
   const sal = slots.map((s) => Math.min(1, salience(s) * (boost.get(s.bar) ?? 1)));
+  /** Unscaled hit evidence per slot (the mix, or the followed instrument): silence gate for notes. */
+  const raw = slots.map((s) => s.strength);
+  // Instrument layers: a phrase follows the instrument that carries it; the mix is the fallback.
+  const phraseLayer: (Layer | null)[] = [];
+  if (opts.layers) {
+    for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
+      const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
+      const idx: number[] = [];
+      for (const b of phrase) for (let k = 0; k < b.slots.length; k++) idx.push(b.start + k);
+      const layer = pickLayer(opts.layers, idx);
+      phraseLayer.push(layer);
+      if (!layer) continue;
+      const v = opts.layers.onset[layer];
+      const peak = percentile(
+        idx.map((i) => v[i]),
+        0.9,
+      );
+      const k = peak >= MIN_RAW_STRENGTH ? Math.min(MAX_BOOST, Math.max(1, BOOST_TARGET_LAYER / peak)) : 1;
+      for (const i of idx) {
+        sal[i] = Math.min(1, v[i] * k);
+        raw[i] = v[i];
+      }
+    }
+    opts.onLayers?.(phraseLayer);
+  }
+  const layerAt = (bar: Bar): Layer | null => phraseLayer[Math.floor(bar.index / PHRASE_BARS)] ?? null;
+  /** Long notes belong to melodic instruments; drums get rolls instead. */
+  const melodic = (bar: Bar): boolean => layerAt(bar) !== 'drums';
+  /** Fills and streams are drum figures: only when the phrase follows the drums (or nothing is separated). */
+  const drummy = (bar: Bar): boolean => layerAt(bar) === 'drums' || layerAt(bar) === null;
   // Drum fills are found before the lane plan: a lane change needs two beats of silence, and a
   // fill lives exactly there — so the plan keeps the lane count across a boundary that ends in a fill.
   const fills = new Map<number, { from: number; taps: number }>();
@@ -217,7 +255,15 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     if (bar.index % PHRASE_BARS === PHRASE_BARS - 1 && bar.intensity === 2 && [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH))
       turnarounds.add(bar.index);
   }
-  const sections = planSections(bars, opts.laneVariation ?? true, random, energetic, new Set([...fills.keys(), ...turnarounds]), P.lanePools, P.keepLanesChance);
+  const sections = planSections(
+    bars,
+    opts.laneVariation ?? true,
+    random,
+    energetic,
+    new Set([...fills.keys(), ...turnarounds]),
+    P.lanePools,
+    P.keepLanesChance,
+  );
   const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? P.densityPeak : P.density[bar.intensity]);
   const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
   const barCap = (bar: Bar): number =>
@@ -257,7 +303,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   const sounds = (phrase: PhrasePattern, bar: Bar, step: number): boolean => {
     if (step >= bar.slots.length) return false;
     const gi = bar.start + step;
-    return bar.slots[step].strength >= MIN_RAW_STRENGTH && sal[gi] >= Math.max(MIN_NOTE_STRENGTH, SOUND_REL * phrase.profile[step]);
+    return raw[gi] >= MIN_RAW_STRENGTH && sal[gi] >= Math.max(MIN_NOTE_STRENGTH, SOUND_REL * phrase.profile[step]);
   };
 
   // 1a. Notes: every bar repeats the phrase figure where it sounds, plus very strong off-pattern hits.
@@ -272,7 +318,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const gap = P.gap ?? (bar.intensity === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS);
     let rollFrom = -1;
     let rollTaps = 0;
-    const fill = P.rolls ? fills.get(bar.index) : undefined;
+    const fill = P.rolls && drummy(bar) ? fills.get(bar.index) : undefined;
     if (fill) {
       rollFrom = fill.from;
       rollTaps = fill.taps;
@@ -282,6 +328,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     // on the phrase end, so the 4-bar figure reads as three bars of pattern + one turnaround.
     if (
       P.rolls &&
+      drummy(bar) &&
       rollFrom < 0 &&
       phraseEnd &&
       bar.intensity === 2 &&
@@ -316,7 +363,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       if (phrase.steps.includes(step)) continue;
       const gi = bar.start + step;
       const v = sal[gi];
-      if (v < EXTRA_REL * phrase.salMax || bar.slots[step].strength < MIN_RAW_STRENGTH) continue;
+      if (v < EXTRA_REL * phrase.salMax || raw[gi] < MIN_RAW_STRENGTH) continue;
       if (v < (sal[gi - 1] ?? 0) || v < (sal[gi + 1] ?? 0)) continue;
       extras.push({ step, score: v + gridBonus(step) });
     }
@@ -494,14 +541,15 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     }
     if (ev.kind) continue; // spells and circles stay plain taps
     const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET;
-    const melodic = slot.low < 0.55;
+    const melodicSlot = slot.low < 0.55;
     const bassLen = clampBeforeCircle(i, Math.min(slot.sustain, gapNext, 8));
     const bassDur = slots[Math.min(slots.length - 1, ev.si + bassLen)].time - slot.time;
     const bassTaps = Math.min(ROLL_MAX_TAPS, Math.round(bassLen / 2) + 1, Math.floor(bassDur * ROLL_MAX_TAPS_PER_SEC));
     if (
       P.rolls &&
+      drummy(ev.bar) &&
       slot.sustain >= 4 &&
-      !melodic &&
+      !melodicSlot &&
       intensity >= 1 &&
       budget > 0 &&
       !activeHold &&
@@ -518,13 +566,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       activeHold = ev;
       continue;
     }
-    if (
-      slot.sustain >= 2 &&
-      melodic &&
-      budget > 0 &&
-      !activeHold &&
-      decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity]
-    ) {
+    if (slot.sustain >= 2 && melodicSlot && melodic(ev.bar) && budget > 0 && !activeHold && decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity]) {
       let dur = clampBeforeCircle(i, Math.min(slot.sustain, P.maxHoldSlots));
       const barEnd = ev.bar.start + ev.bar.slots.length;
       if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
@@ -532,7 +574,8 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       if (dur >= 2) {
         ev.hold = dur;
         ev.size = 1;
-        if (P.slides && dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && decide(seed, phraseIdx, ev.step, 3) < SLIDE_CHANCE) ev.kind = 'slide';
+        if (P.slides && layerAt(ev.bar) !== 'bass' && dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && decide(seed, phraseIdx, ev.step, 3) < SLIDE_CHANCE)
+          ev.kind = 'slide';
         holdBudget.set(ev.bar.index, budget - 1);
         activeHold = ev;
         continue;

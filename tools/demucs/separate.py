@@ -46,5 +46,8 @@ for mp3 in sys.argv[1:]:
     backing = sum(sources[i] for i, n in enumerate(names) if n not in lead_names)
     encode(out / "lead.mp3", lead, sr)
     encode(out / "backing.mp3", backing, sr)
+    # The four raw stems (analysis only, never shipped): the chart generator reads onsets per instrument.
+    for i, n in enumerate(names):
+        encode(out / f"stem-{n}.mp3", sources[i], sr)
     (out / "lead.txt").write_text("+".join(lead_names))
     print(f"{track_id}: lead={'+'.join(lead_names)} " + " ".join(f"{n}={rms[n] / mix_rms:.2f}" for n in names), flush=True)
