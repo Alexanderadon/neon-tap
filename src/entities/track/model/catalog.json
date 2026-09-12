@@ -152,25 +152,6 @@
     }
   },
   {
-    "id": "bright-stars",
-    "title": "Bright Stars",
-    "artist": "Gena Sealov",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/bright-stars",
-    "genre": "synthpop",
-    "bpm": 123.5,
-    "duration": 150.05,
-    "stars": 1,
-    "notes": 99,
-    "features": {
-      "circles": 12,
-      "rolls": 0,
-      "slides": 0,
-      "holds": 22,
-      "laneChanges": 2
-    }
-  },
-  {
     "id": "november-snow",
     "title": "November Snow",
     "artist": "cynicmusic",
@@ -186,6 +167,25 @@
       "rolls": 0,
       "slides": 0,
       "holds": 30,
+      "laneChanges": 2
+    }
+  },
+  {
+    "id": "bright-stars",
+    "title": "Bright Stars",
+    "artist": "Gena Sealov",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/bright-stars",
+    "genre": "synthpop",
+    "bpm": 123.5,
+    "duration": 150.05,
+    "stars": 1,
+    "notes": 109,
+    "features": {
+      "circles": 12,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 14,
       "laneChanges": 2
     }
   },
@@ -532,25 +532,6 @@
     }
   },
   {
-    "id": "silver-bullet",
-    "title": "Silver Bullet",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/silver-bullet",
-    "genre": "rock",
-    "bpm": 113.2,
-    "duration": 150.05,
-    "stars": 6,
-    "notes": 362,
-    "features": {
-      "circles": 144,
-      "rolls": 3,
-      "slides": 7,
-      "holds": 19,
-      "laneChanges": 7
-    }
-  },
-  {
     "id": "8-bit-mechanical-complex",
     "title": "8-bit Mechanical Complex",
     "artist": "HydroGene",
@@ -682,25 +663,6 @@
       "slides": 4,
       "holds": 31,
       "laneChanges": 10
-    }
-  },
-  {
-    "id": "all-night-road",
-    "title": "All Night Road",
-    "artist": "iamoneabe",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/all-night-road",
-    "genre": "synthpop",
-    "bpm": 207,
-    "duration": 150.05,
-    "stars": 6,
-    "notes": 419,
-    "features": {
-      "circles": 79,
-      "rolls": 1,
-      "slides": 8,
-      "holds": 42,
-      "laneChanges": 8
     }
   },
   {
@@ -853,6 +815,44 @@
       "slides": 7,
       "holds": 21,
       "laneChanges": 9
+    }
+  },
+  {
+    "id": "silver-bullet",
+    "title": "Silver Bullet",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/silver-bullet",
+    "genre": "rock",
+    "bpm": 113.2,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 380,
+    "features": {
+      "circles": 109,
+      "rolls": 0,
+      "slides": 6,
+      "holds": 21,
+      "laneChanges": 4
+    }
+  },
+  {
+    "id": "all-night-road",
+    "title": "All Night Road",
+    "artist": "iamoneabe",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/all-night-road",
+    "genre": "synthpop",
+    "bpm": 207,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 433,
+    "features": {
+      "circles": 66,
+      "rolls": 6,
+      "slides": 8,
+      "holds": 27,
+      "laneChanges": 8
     }
   },
   {

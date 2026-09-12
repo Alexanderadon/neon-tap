@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
-import { EASY, MEDIUM, analyzeSong, chartFeatures, composeChart, type Profile } from '../src/shared/lib/analysis';
+import { EASY, LAYERS, MEDIUM, analyzeSong, chartFeatures, composeChart, layerEnergy, layerStrengths, type LayerStrengths, type Profile, type StemLayers } from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
 
 interface RawTrack {
@@ -32,6 +32,8 @@ const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
 const STEMS_DIR = join(ROOT, 'public', 'stems');
+/** Raw Demucs output (stem-{drums,bass,other,vocals}.mp3): the chart follows these instruments; never shipped. */
+const STEMS_SRC = process.env.STEMS_DIR ?? 'D:/neon-tap-tools/stems';
 const RATE = 22050;
 /** The calmest songs get the beginner reading (chapter one), the next ones the medium reading (chapter two). */
 const BEGINNER_TRACKS = 10;
@@ -44,7 +46,21 @@ interface Analysed {
   t: RawTrack;
   duration: number;
   analysis: ReturnType<typeof analyzeSong>;
+  layers?: StemLayers;
   ms: number;
+}
+/** Onset strengths of every separated instrument on the mix's grid; undefined when the track has no stems yet. */
+function loadLayers(id: string, analysis: ReturnType<typeof analyzeSong>): StemLayers | undefined {
+  const files = LAYERS.map((l) => join(STEMS_SRC, id, `stem-${l}.mp3`));
+  if (!files.every((p) => existsSync(p))) return undefined;
+  const onset = {} as LayerStrengths;
+  const energy = {} as LayerStrengths;
+  LAYERS.forEach((l, i) => {
+    const pcm = decodePcm(files[i], RATE);
+    onset[l] = layerStrengths(pcm, RATE, analysis);
+    energy[l] = layerEnergy(pcm, RATE, analysis);
+  });
+  return { onset, energy };
 }
 const analysed: Analysed[] = [];
 for (const t of tracks) {
@@ -53,7 +69,8 @@ for (const t of tracks) {
   const t0 = Date.now();
   const samples = decodePcm(file, RATE);
   const duration = probeDuration(file);
-  analysed.push({ t, duration, analysis: analyzeSong(samples, RATE), ms: Date.now() - t0 });
+  const analysis = analyzeSong(samples, RATE);
+  analysed.push({ t, duration, analysis, layers: loadLayers(t.id, analysis), ms: Date.now() - t0 });
 }
 
 // The calmest songs by their normal rating become the beginner chapter.
@@ -67,9 +84,15 @@ calmest.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
 calmest.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
 
 const built: ChartFile[] = [];
-for (const { t, duration, analysis, ms } of analysed) {
+for (const { t, duration, analysis, layers, ms } of analysed) {
   const profile = profiles.get(t.id);
-  const chart = composeChart(analysis, { seed: hash(t.id), profile });
+  let followed = '';
+  const chart = composeChart(analysis, {
+    seed: hash(t.id),
+    profile,
+    layers,
+    onLayers: (per) => (followed = per.map((l) => (l ? l[0] : '-')).join('')),
+  });
   const file2: ChartFile = {
     id: t.id,
     title: t.title,
@@ -79,7 +102,9 @@ for (const { t, duration, analysis, ms } of analysed) {
     genre: t.genre,
     ...(t.premium ? { premium: true } : {}),
     // With stems the client plays backing + lead in sync (see prepare-stems.ts); analysis always uses the full mix.
-    ...(existsSync(join(STEMS_DIR, t.id, 'lead.mp3')) ? { audio: `stems/${t.id}/backing.mp3`, lead: `stems/${t.id}/lead.mp3` } : { audio: `music/${t.id}.mp3` }),
+    ...(existsSync(join(STEMS_DIR, t.id, 'lead.mp3'))
+      ? { audio: `stems/${t.id}/backing.mp3`, lead: `stems/${t.id}/lead.mp3` }
+      : { audio: `music/${t.id}.mp3` }),
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
     duration: Math.round(duration * 100) / 100,
@@ -92,7 +117,7 @@ for (const { t, duration, analysis, ms } of analysed) {
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
     `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : profile === EASY ? ' E' : profile === MEDIUM ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
-      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${ms} ms`,
+      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${ms} ms${followed ? ' ' + followed : ''}`,
   );
 }
 
