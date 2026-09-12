@@ -158,6 +158,7 @@ export const ru = {
   goalsDone: '{done} / {total}',
   goalReward: '+{n}',
   goalCompleted: 'Достижение: {title}',
+  resultBadges: 'Новые достижения',
   achEarned: 'получено',
   achievements: {
     pass: { title: 'Пройди {n} {noun}', desc: 'Встроенные треки с рангом C и выше', noun: ['трек', 'трека', 'треков'] },

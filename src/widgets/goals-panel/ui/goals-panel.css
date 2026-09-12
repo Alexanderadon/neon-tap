@@ -91,6 +91,24 @@
   font: inherit;
   cursor: pointer;
 }
+/* The family glyph in the ring's corner: a small dark coin so it reads over the conic track. */
+.ach-glyph {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #0b0d16;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: inherit;
+}
+.ach-badge.is-earned .ach-glyph {
+  border-color: rgba(255, 215, 0, 0.6);
+  color: #ffd700;
+}
 .ach-target {
   position: relative;
   font-size: 12px;
