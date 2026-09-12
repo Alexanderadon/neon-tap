@@ -124,7 +124,8 @@
     "genre": "rock",
     "raw": "silver-bullet.mp3",
     "sourceUrl": "https://opengameart.org/content/silver-bullet",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "stems": true
   },
   {
     "id": "apparatus-overlord",
@@ -418,7 +419,8 @@
     "genre": "synthpop",
     "raw": "bright-stars.mp3",
     "sourceUrl": "https://opengameart.org/content/bright-stars",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "stems": true
   },
   {
     "id": "happier-tune",
@@ -436,7 +438,8 @@
     "genre": "synthpop",
     "raw": "all-night-road.mp3",
     "sourceUrl": "https://opengameart.org/content/all-night-road",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "stems": true
   },
   {
     "id": "boss-battle-9-metal",

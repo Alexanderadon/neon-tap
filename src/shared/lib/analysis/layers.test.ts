@@ -14,17 +14,38 @@ const drumMix = (_bar: number, step: number): Partial<Slot> =>
   step % 2 === 0 ? { strength: step % 4 === 0 ? 1 : 0.8, low: 0.6, mid: 0.3, high: 0.4 } : { strength: 0.3, low: 0.1, mid: 0.3, high: 0.6 };
 
 /** Stem layers from a per-slot onset rule; a layer's energy is its onset level, so silent rules mean an absent instrument. */
-function fakeLayers(bars: number, rule: (layer: Layer, bar: number, step: number) => number, energyOf?: (layer: Layer) => number): StemLayers {
+function fakeLayers(
+  bars: number,
+  rule: (layer: Layer, bar: number, step: number) => number,
+  energyOf?: (layer: Layer, bar: number, step: number) => number,
+): StemLayers {
   const n = bars * STEPS_PER_BAR;
   const onset = {} as LayerStrengths;
   const energy = {} as LayerStrengths;
   for (const l of ['vocals', 'drums', 'bass', 'other'] as const) {
     onset[l] = new Float32Array(n);
     for (let i = 0; i < n; i++) onset[l][i] = rule(l, Math.floor(i / STEPS_PER_BAR), i % STEPS_PER_BAR);
-    const e = energyOf ? energyOf(l) : Math.max(...onset[l]) * 0.3;
-    energy[l] = new Float32Array(n).fill(e);
+    const flat = Math.max(...onset[l]) * 0.3;
+    energy[l] = new Float32Array(n);
+    for (let i = 0; i < n; i++) energy[l][i] = energyOf ? energyOf(l, Math.floor(i / STEPS_PER_BAR), i % STEPS_PER_BAR) : flat;
   }
   return { onset, energy };
+}
+
+/** Notes grouped by bar → their steps, for reading a chart against the sounds that made it. */
+function stepsByBar(analysis: SongAnalysis, notes: readonly NoteTuple[]): Map<number, number[]> {
+  const out = new Map<number, number[]>();
+  for (const n of notes) {
+    const slot = analysis.slots.find((s) => Math.abs(s.time - n[0]) < 1e-6);
+    if (!slot) continue;
+    const list = out.get(slot.bar) ?? [];
+    if (!list.includes(slot.step)) list.push(slot.step);
+    out.set(
+      slot.bar,
+      list.sort((a, b) => a - b),
+    );
+  }
+  return out;
 }
 
 const stepOf = (analysis: SongAnalysis, t: number) => analysis.slots.find((s) => Math.abs(s.time - t) < 1e-6)?.step;
@@ -92,6 +113,27 @@ describe('pickLayer', () => {
     expect(pickLayer(softSinger, idx)).toBe('vocals');
   });
 
+  it('judges by the clearest hits, not by busyness, and takes turns between close instruments', () => {
+    const idx = Array.from({ length: 64 }, (_, i) => i);
+    // A hi-hat on every eighth at 0.7 against a melody with two clean hits per bar at 1.0: the melody leads.
+    const busyHats = fakeLayers(
+      4,
+      (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 0.7 : 0) : l === 'other' ? (step % 8 === 0 ? 1 : 0) : 0),
+      (l) => (l === 'drums' || l === 'other' ? 1 : 0.01),
+    );
+    expect(pickLayer(busyHats, idx)).toBe('other');
+    // Voice and bass equally clear: the voice wins fresh and keeps the next phrase; after two phrases the bass gets its turn.
+    const duet = fakeLayers(
+      4,
+      (l, _b, step) => (l === 'vocals' || l === 'bass' ? (step % 4 === 0 ? 1 : 0) : 0),
+      (l) => (l === 'vocals' || l === 'bass' ? 1 : 0.01),
+    );
+    expect(pickLayer(duet, idx)).toBe('vocals');
+    expect(pickLayer(duet, idx, 'vocals', 1)).toBe('vocals');
+    expect(pickLayer(duet, idx, 'vocals', 2)).toBe('bass');
+    expect(pickLayer(duet, idx, 'bass', 2)).toBe('vocals');
+  });
+
   it('returns null when nothing audible plays', () => {
     const quiet = fakeLayers(4, () => 0.1);
     expect(
@@ -130,7 +172,7 @@ describe('composeChart with layers', () => {
     const drumChart = composeChart(sustained, { layers: drums });
     const isLong = (n: NoteTuple) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'roll';
     expect(drumChart.notes.filter(isLong)).toEqual([]);
-    const melodic = fakeLayers(bars, (l, _b, step) => (l === 'other' ? (step % 4 === 0 ? 1 : 0) : 0));
+    const melodic = fakeLayers(bars, (l, _b, step) => (l === 'other' ? (step % 8 === 0 ? 1 : 0) : 0));
     const melodyChart = composeChart(sustained, { layers: melodic });
     expect(melodyChart.notes.filter((n) => n[3] === 'roll')).toEqual([]);
     expect(melodyChart.notes.filter(isLong).length).toBeGreaterThan(0);
@@ -145,6 +187,91 @@ describe('composeChart with layers', () => {
       expect(maxFingers(c.notes)).toBeLessThanOrEqual(2);
       expect(thumbViolations(c.notes, c.sections!)).toEqual([]);
     }
+  });
+
+  it('reads every bar on its own: a note for each sound of the instrument, none where it is silent', () => {
+    // The singer sings a different figure in every bar — no 4-bar average could reproduce it.
+    const figure = (bar: number): number[] =>
+      [
+        [0, 6, 10],
+        [2, 8],
+        [0, 4, 8, 12],
+        [3, 9, 14],
+      ][bar % 4];
+    const sung = fakeLayers(bars, (l, bar, step) => (l === 'vocals' ? (figure(bar).includes(step) ? 1 : 0) : 0.05));
+    const c = composeChart(analysis, { layers: sung });
+    const byBar = stepsByBar(analysis, c.notes);
+    let checked = 0;
+    for (let b = 0; b < bars; b++) {
+      const got = byBar.get(b) ?? [];
+      // Circle windows and the lane-change gap may drop a hit; nothing may be invented.
+      for (const s of got) expect(figure(b), `bar ${b} step ${s}`).toContain(s);
+      if (got.length === figure(b).length) checked++;
+    }
+    expect(checked).toBeGreaterThanOrEqual(bars * 0.5);
+  });
+
+  it('holds only where the sound rings for a beat or more; a drum layer never holds', () => {
+    // Step 0 rings for six slots in even bars (energy stays up, no new onset); everything else is a short hit.
+    const ringing = (bar: number, step: number) => bar % 2 === 0 && step >= 0 && step <= 6;
+    const sung = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'vocals' ? (step === 0 || step === 8 ? 1 : 0) : 0.05),
+      (l, bar, step) => (l === 'vocals' ? (ringing(bar, step) ? 1 : step === 8 ? 1 : 0.1) : 0.02),
+    );
+    const c = composeChart(analysis, { layers: sung });
+    const holds = c.notes.filter((n) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin');
+    expect(holds.length).toBeGreaterThanOrEqual(bars / 4);
+    for (const h of holds) {
+      const slot = analysis.slots.find((s) => Math.abs(s.time - h[0]) < 1e-6)!;
+      expect(slot.step).toBe(0);
+      expect(slot.bar % 2).toBe(0);
+      expect(h[2]).toBeGreaterThanOrEqual(0.5); // ≥ a beat at 120 BPM
+      expect(h[2]).toBeLessThanOrEqual(0.75 + 1e-6); // six slots: the ring ends there
+    }
+    const drums = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'drums' ? (step % 4 === 0 ? 1 : 0) : 0.05),
+      (l) => (l === 'drums' ? 1 : 0.02),
+    );
+    expect(composeChart(analysis, { layers: drums }).notes.filter((n) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'roll' && n[3] !== 'spin')).toEqual(
+      [],
+    );
+  });
+
+  it('makes a chord where two instruments hit together on the accent', () => {
+    const together = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'vocals' ? (step === 0 ? 1 : step === 4 || step === 8 || step === 12 ? 0.5 : 0) : l === 'drums' ? (step === 0 ? 1 : 0) : 0),
+      (l) => (l === 'vocals' || l === 'drums' ? 1 : 0.02),
+    );
+    const c = composeChart(analysis, { layers: together });
+    const times = c.notes.map((n) => n[0]);
+    const chords = times.filter((x, i) => times.indexOf(x) !== i);
+    expect(chords.length).toBeGreaterThan(0);
+    for (const x of chords) expect(analysis.slots.find((s) => Math.abs(s.time - x) < 1e-6)!.step).toBe(0);
+    // The same singer alone (no second instrument) gets no chords.
+    const alone = fakeLayers(bars, (l, _b, step) => (l === 'vocals' ? (step === 0 ? 1 : step % 4 === 0 ? 0.5 : 0) : 0.05));
+    const t2 = composeChart(analysis, { layers: alone }).notes.map((n) => n[0]);
+    expect(t2.filter((x, i) => t2.indexOf(x) !== i)).toEqual([]);
+  });
+
+  it('changes the lane count only where the music changes', () => {
+    const long = 64;
+    const steady = fakeAnalysis(long, drumMix);
+    const oneVoice = fakeLayers(long, (l, _b, step) => (l === 'vocals' ? (step % 4 === 0 ? 1 : 0) : 0.05));
+    const c1 = composeChart(steady, { layers: oneVoice });
+    // Nothing changes in the music: only the every-16-bars fallback may switch lanes.
+    for (const [time] of c1.sections!.slice(1)) expect(Math.round(time / 2) % 16).toBe(0);
+    // The drums take over at bar 12 (phrase 3): the lane count changes right there.
+    const handOver = fakeLayers(long, (l, bar, step) =>
+      bar >= 12 && bar < 28 ? (l === 'drums' ? (step % 2 === 0 ? 1 : 0) : 0.05) : l === 'vocals' ? (step % 4 === 0 ? 1 : 0) : 0.05,
+    );
+    const c2 = composeChart(steady, { layers: handOver, seed: 3 });
+    expect(c2.sections!.some(([time]) => Math.abs(time - 24) < 1e-6)).toBe(true);
+    // Every other boundary is a music change (bars 12, 28) or the fallback 16 bars after the previous one.
+    const barsAt = c2.sections!.map(([time]) => Math.round(time / 2));
+    for (let i = 1; i < barsAt.length; i++) expect([12, 28].includes(barsAt[i]) || barsAt[i] === barsAt[i - 1] + 16, `boundary at bar ${barsAt[i]}`).toBe(true);
   });
 
   it('is deterministic and still on the grid', () => {

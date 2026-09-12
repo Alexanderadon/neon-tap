@@ -30,6 +30,8 @@ export function planSections(
   keepAfter: ReadonlySet<number> = new Set(),
   pools: LanePools = LANE_POOLS,
   keepChance = KEEP_LANES_CHANCE,
+  /** When given, the lane count may change only at blocks starting on these bars (where the music changes). */
+  changeAt?: ReadonlySet<number>,
 ): SectionTuple[] {
   for (const b of bars) b.lanes = LANE_COUNT;
   const block = energetic ? SECTION_BARS_ENERGETIC : SECTION_BARS_CALM;
@@ -42,7 +44,10 @@ export function planSections(
     let lanes: number;
     const pool = pools[intensity];
     if (p === 0) lanes = LANE_COUNT;
-    else if (pool.includes(prevLanes) && (keepAfter.has(p * block - 1) || random() < keepChance)) lanes = prevLanes;
+    else if (
+      changeAt ? !changeAt.has(p * block) && pool.includes(prevLanes) : pool.includes(prevLanes) && (keepAfter.has(p * block - 1) || random() < keepChance)
+    )
+      lanes = prevLanes;
     else {
       const fresh = pool.filter((n) => n !== prevLanes);
       const from = fresh.length ? fresh : pool;
