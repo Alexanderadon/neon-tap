@@ -56,8 +56,7 @@ const HOLD_BUDGET = 3;
 const MAX_HOLD_SLOTS = 16;
 /** Share of long holds (≥ 1 beat) that become slides into a neighbouring lane. */
 const SLIDE_CHANCE = 0.4;
-/** Two-finger rule: at most ONE hold-type note (hold / roll / slide) at a time, chords only while nothing is held. */
-const MAX_ACTIVE_HOLDS = 1;
+/** Two-finger rule: at most ONE hold-type note (hold / roll / slide) at a time (`activeHold` below), chords only while nothing is held. */
 const MAX_CHORD = 2;
 /** Streams: the last bar of an intense phrase whose pattern has four audible eighths on the second half ends in a 4-tap roll. */
 const ROLL_STREAM_MIN_STRENGTH = 0.35;
@@ -130,14 +129,17 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   // Drum fills are found before the lane plan: a lane change needs two beats of silence, and a
   // fill lives exactly there — so the plan keeps the lane count across a boundary that ends in a fill.
   const fills = new Map<number, { from: number; taps: number }>();
+  // Phrase-end turnarounds (an intense last bar with four audible eighths on its second half) are
+  // roll candidates too — see the stream rule below — so they keep the lane count as well.
+  const turnarounds = new Set<number>();
   for (const bar of bars) {
-    const f = detectFill(
-      bar,
-      bar.slots.map((_s, k) => sal[bar.start + k]),
-    );
+    const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
+    const f = detectFill(bar, strength);
     if (f) fills.set(bar.index, f);
+    if (bar.index % PHRASE_BARS === PHRASE_BARS - 1 && bar.intensity === 2 && [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH))
+      turnarounds.add(bar.index);
   }
-  const sections = planSections(bars, opts.laneVariation ?? true, random, energetic, new Set(fills.keys()));
+  const sections = planSections(bars, opts.laneVariation ?? true, random, energetic, new Set([...fills.keys(), ...turnarounds]));
   const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? DENSITY_LIMIT : DENSITY_BY_INTENSITY[bar.intensity]);
   const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
   const barCap = (bar: Bar): number =>
@@ -197,15 +199,16 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       rollFrom = fill.from;
       rollTaps = fill.taps;
     }
-    // Stream → roll: the last bar of an intense phrase whose figure has four audible eighths on the
-    // second half ends in "drum it" — the same four hits, in one lane as a Taiko-style roll. Always
+    // Stream → roll: the last bar of an intense phrase with four audible eighths on the second half
+    // (at least two of them part of the figure) ends in "drum it" — the same four hits, in one lane as a Taiko-style roll. Always
     // on the phrase end, so the 4-bar figure reads as three bars of pattern + one turnaround.
     if (
       rollFrom < 0 &&
       phraseEnd &&
       bar.intensity === 2 &&
       bar.index - lastRollBar >= ROLL_COOLDOWN_BARS &&
-      [8, 10, 12, 14].every((i) => phrase.steps.includes(i) && strength[i] >= ROLL_STREAM_MIN_STRENGTH)
+      [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH) &&
+      [8, 10, 12, 14].filter((i) => phrase.steps.includes(i)).length >= 2
     ) {
       rollFrom = 8;
       rollTaps = 4;
@@ -375,7 +378,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   //    two-finger rule. Hold / slide / bass-roll decisions are taken per (phrase, step), so the
   //    same step of the figure gets the same treatment in every bar of the phrase.
   const holdBudget = new Map<number, number>();
-  const activeHoldEnds: number[] = [];
+  let activeHold: Event | null = null;
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
     const slot = slots[ev.si];
@@ -384,16 +387,18 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const intensity = ev.bar.intensity;
     const phraseIdx = Math.floor(ev.bar.index / PHRASE_BARS);
 
-    while (activeHoldEnds.length && activeHoldEnds[0] <= ev.si) activeHoldEnds.shift();
+    if (activeHold && activeHold.si + activeHold.hold <= ev.si) activeHold = null;
     if (ev.kind === 'roll') {
-      if (activeHoldEnds.length) {
+      // A drum fill beats a sustained note: a plain hold still ringing is cut short at the roll
+      // (if that leaves it ≥ 2 slots); a roll or slide in progress keeps its thumb, the fill stays taps.
+      if (activeHold && !activeHold.kind && ev.si - activeHold.si >= 2) activeHold.hold = ev.si - activeHold.si;
+      else if (activeHold) {
         ev.kind = null;
         ev.hold = 0;
         ev.taps = 0;
-      } else {
-        activeHoldEnds.push(ev.si + ev.hold);
-        activeHoldEnds.sort((a, b) => a - b);
+        continue;
       }
+      activeHold = ev;
       continue;
     }
     if (ev.kind) continue; // spells and circles stay plain taps
@@ -407,8 +412,8 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       !melodic &&
       intensity >= 1 &&
       budget > 0 &&
-      !activeHoldEnds.length &&
-      gapNext >= 4 &&
+      !activeHold &&
+      gapNext >= 3 &&
       bassTaps >= ROLL_MIN_TAPS &&
       decide(seed, phraseIdx, ev.step, 1) < ROLL_ON_BASS_CHANCE
     ) {
@@ -418,15 +423,14 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       ev.taps = bassTaps;
       ev.size = 1;
       holdBudget.set(ev.bar.index, budget - 1);
-      activeHoldEnds.push(ev.si + len);
-      activeHoldEnds.sort((a, b) => a - b);
+      activeHold = ev;
       continue;
     }
     if (
       slot.sustain >= 2 &&
       melodic &&
       budget > 0 &&
-      activeHoldEnds.length < MAX_ACTIVE_HOLDS &&
+      !activeHold &&
       decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity]
     ) {
       let dur = Math.min(slot.sustain, MAX_HOLD_SLOTS);
@@ -438,13 +442,12 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
         ev.size = 1;
         if (dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && decide(seed, phraseIdx, ev.step, 3) < SLIDE_CHANCE) ev.kind = 'slide';
         holdBudget.set(ev.bar.index, budget - 1);
-        activeHoldEnds.push(ev.si + dur);
-        activeHoldEnds.sort((a, b) => a - b);
+        activeHold = ev;
         continue;
       }
     }
 
-    if (activeHoldEnds.length) continue; // two-finger rule: one thumb is busy → an accent lands in an outer lane instead
+    if (activeHold) continue; // two-finger rule: one thumb is busy → an accent lands in an outer lane instead
     const inStream = gapPrev <= 1 || gapNext <= 1;
     if (!ev.accent || inStream || ev.bar.lanes < 2) continue;
     ev.size = MAX_CHORD;

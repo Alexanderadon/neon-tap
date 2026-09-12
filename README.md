@@ -33,11 +33,13 @@ AudioBuffer → mono 22 050 Hz → STFT (Hann 1024, hop 512)
   → envelope autocorrelation 60–220 BPM → tempo (+ octave check)
   → beat tracker (DP, Ellis 2007): beats on real hits, even spacing, no drift
   → 16th-note grid between beats: hit strength, frequency band, sustain per slot
-  → notes "by ear": a slot gets a note if it is a local hit peak that stands out within the phrase
-    (priority to beats and eighths, note budget by bar intensity, ≤ 3.5 notes/s, two fingers)
-  → holds on sustained sounds (some become slides into the neighbouring lane), rolls on fills and chorus streams,
-    circle windows at chorus start, spells, chords on strong beats
-  → sections with 3 / 4 / 5 lanes by phrase energy → one chart, ★ 1–10
+  → the figure of each 4-bar phrase: a per-step rhythm profile, its peaks are the pattern the ear hears
+    ("ta ta TA") — every bar of the phrase repeats it where it actually sounds; accents become chords,
+    very strong off-pattern hits (fills, stabs) are added; note budget by bar intensity, up to 5.5 notes/s
+    in energetic choruses, two thumbs
+  → holds on sustained sounds (some become slides into the neighbouring lane), rolls on fills and phrase-end
+    streams, circle windows at chorus starts with a circle on every pattern hit (dozens in a row), spells
+  → sections with 2–6 lanes by phrase energy (every 4 bars in energetic songs) → one chart, ★ 3–9
 ```
 
 The whole pipeline lives in `src/shared/lib/analysis` with no DOM access, so the same code runs in a Web Worker for user files and in Node for the built-in tracks (`npm run assets:charts`). On a synthetic signal the detector finds ≥ 90 % of hits within a ±30 ms window, the beat tracker lands on every click within 30 ms, and a 128 BPM tempo is detected within ±2 (tests in `analysis.test.ts`). A 150-second track is analysed in about 1.5 s.
