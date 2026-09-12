@@ -167,18 +167,23 @@ function maxFingers(notes: readonly NoteTuple[]): number {
  * be on the OTHER thumb's half (the middle lane of an odd count counts for either), no circle may
  * start, and no second long note may start. Returns human-readable offenders.
  */
-function thumbViolations(notes: readonly NoteTuple[], sections: readonly [number, number][]): string[] {
+function thumbViolations(notes: readonly NoteTuple[], sections: readonly [number, number][], releaseGap = 0.25): string[] {
   const lanesAt = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).pop()![1];
+  const startsAt = (t: number) => notes.filter((m) => m[0] === t).length;
   const out: string[] = [];
   for (const h of notes.filter(isHoldType)) {
     const n = lanesAt(h[0]);
     const end = h[0] + (h[2] as number);
     const hand = handOf(h[1], n);
     for (const m of notes) {
-      if (m === h || m[0] <= h[0] || m[0] >= end - 1e-6) continue;
-      if (m[3] === 'circle') out.push(`circle at ${m[0]} during long note at ${h[0]}`);
-      else if (isHoldType(m)) out.push(`long note at ${m[0]} during long note at ${h[0]}`);
-      else if (hand !== -1 && handOf(m[1], lanesAt(m[0])) === hand) out.push(`note at ${m[0]} lane ${m[1]} on the busy thumb's half (hold lane ${h[1]}, ${n} lanes)`);
+      if (m === h || m[0] <= h[0]) continue;
+      const during = m[0] < end - 1e-6;
+      const releasing = !during && m[0] < end + releaseGap - 1e-6;
+      if (!during && !releasing) continue;
+      if (during && m[3] === 'circle') out.push(`circle at ${m[0]} during long note at ${h[0]}`);
+      else if (during && isHoldType(m)) out.push(`long note at ${m[0]} during long note at ${h[0]}`);
+      else if (hand !== -1 && handOf(m[1], lanesAt(m[0])) === hand) out.push(`note at ${m[0]} lane ${m[1]} on the busy thumb's half (hold lane ${h[1]}, ${n} lanes, ${during ? 'during' : 'while releasing'})`);
+      else if (startsAt(m[0]) >= 2) out.push(`chord at ${m[0]} ${during ? 'during' : 'right after'} long note at ${h[0]}`);
     }
   }
   return out;
@@ -217,7 +222,7 @@ describe('composeChart', () => {
     expect(maxFingers(composeChart(fakeAnalysis(24, sustainedLoop)).notes)).toBeLessThanOrEqual(2);
   });
 
-  it('keeps the free thumb on its own half while the other holds, rolls or slides', () => {
+  it('keeps the free thumb on its own half while the other holds, rolls or slides, and gives it an eighth to let go', () => {
     for (const a of [chart, composeChart(fakeAnalysis(32, sustainedLoop)), composeChart(fakeAnalysis(16, fillLoop))]) {
       expect(a.notes.filter(isHoldType).length).toBeGreaterThan(0);
       expect(thumbViolations(a.notes, a.sections!)).toEqual([]);

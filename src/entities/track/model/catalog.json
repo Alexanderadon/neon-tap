@@ -8,13 +8,13 @@
     "genre": "lofi",
     "bpm": 79.5,
     "duration": 123.19,
-    "stars": 2,
-    "notes": 133,
+    "stars": 1,
+    "notes": 125,
     "features": {
       "circles": 20,
-      "rolls": 4,
-      "slides": 5,
-      "holds": 17,
+      "rolls": 5,
+      "slides": 3,
+      "holds": 11,
       "laneChanges": 3
     }
   },
@@ -28,13 +28,32 @@
     "bpm": 110.1,
     "duration": 87.38,
     "stars": 3,
-    "notes": 148,
+    "notes": 140,
     "features": {
       "circles": 18,
       "rolls": 1,
-      "slides": 8,
-      "holds": 30,
+      "slides": 6,
+      "holds": 21,
       "laneChanges": 3
+    }
+  },
+  {
+    "id": "bouncer",
+    "title": "Bouncer",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/bouncer-0",
+    "genre": "hardstyle",
+    "bpm": 128.9,
+    "duration": 93.81,
+    "stars": 3,
+    "notes": 153,
+    "features": {
+      "circles": 35,
+      "rolls": 0,
+      "slides": 5,
+      "holds": 17,
+      "laneChanges": 5
     }
   },
   {
@@ -47,12 +66,12 @@
     "bpm": 78,
     "duration": 136.25,
     "stars": 3,
-    "notes": 186,
+    "notes": 176,
     "features": {
       "circles": 28,
-      "rolls": 0,
-      "slides": 14,
-      "holds": 14,
+      "rolls": 1,
+      "slides": 8,
+      "holds": 10,
       "laneChanges": 5
     }
   },
@@ -66,13 +85,32 @@
     "bpm": 69.9,
     "duration": 112.04,
     "stars": 3,
-    "notes": 192,
+    "notes": 185,
     "features": {
       "circles": 60,
-      "rolls": 1,
-      "slides": 4,
-      "holds": 16,
+      "rolls": 3,
+      "slides": 2,
+      "holds": 9,
       "laneChanges": 1
+    }
+  },
+  {
+    "id": "battle-theme",
+    "title": "Battle Theme",
+    "artist": "Wolfgang_",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/battle-theme-0",
+    "genre": "orchestral",
+    "bpm": 119.7,
+    "duration": 116.06,
+    "stars": 3,
+    "notes": 202,
+    "features": {
+      "circles": 20,
+      "rolls": 3,
+      "slides": 2,
+      "holds": 20,
+      "laneChanges": 6
     }
   },
   {
@@ -85,32 +123,13 @@
     "bpm": 120.1,
     "duration": 138,
     "stars": 3,
-    "notes": 252,
+    "notes": 228,
     "features": {
       "circles": 0,
       "rolls": 0,
-      "slides": 10,
-      "holds": 54,
+      "slides": 8,
+      "holds": 40,
       "laneChanges": 7
-    }
-  },
-  {
-    "id": "bouncer",
-    "title": "Bouncer",
-    "artist": "Of Far Different Nature",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/bouncer-0",
-    "genre": "hardstyle",
-    "bpm": 128.9,
-    "duration": 93.81,
-    "stars": 4,
-    "notes": 171,
-    "features": {
-      "circles": 35,
-      "rolls": 0,
-      "slides": 10,
-      "holds": 28,
-      "laneChanges": 5
     }
   },
   {
@@ -123,31 +142,12 @@
     "bpm": 69.9,
     "duration": 116.58,
     "stars": 4,
-    "notes": 184,
+    "notes": 178,
     "features": {
       "circles": 28,
       "rolls": 1,
-      "slides": 4,
-      "holds": 13,
-      "laneChanges": 6
-    }
-  },
-  {
-    "id": "battle-theme",
-    "title": "Battle Theme",
-    "artist": "Wolfgang_",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/battle-theme-0",
-    "genre": "orchestral",
-    "bpm": 119.7,
-    "duration": 116.06,
-    "stars": 4,
-    "notes": 218,
-    "features": {
-      "circles": 20,
-      "rolls": 3,
       "slides": 3,
-      "holds": 34,
+      "holds": 8,
       "laneChanges": 6
     }
   },
@@ -161,12 +161,12 @@
     "bpm": 139.8,
     "duration": 112.9,
     "stars": 4,
-    "notes": 237,
+    "notes": 218,
     "features": {
       "circles": 23,
       "rolls": 0,
-      "slides": 9,
-      "holds": 38,
+      "slides": 6,
+      "holds": 22,
       "laneChanges": 6
     }
   },
@@ -180,12 +180,12 @@
     "bpm": 108.5,
     "duration": 130.95,
     "stars": 4,
-    "notes": 256,
+    "notes": 243,
     "features": {
       "circles": 49,
       "rolls": 0,
-      "slides": 4,
-      "holds": 35,
+      "slides": 3,
+      "holds": 25,
       "laneChanges": 5
     }
   },
@@ -199,12 +199,12 @@
     "bpm": 129.4,
     "duration": 150.05,
     "stars": 4,
-    "notes": 289,
+    "notes": 264,
     "features": {
       "circles": 46,
       "rolls": 0,
-      "slides": 19,
-      "holds": 37,
+      "slides": 11,
+      "holds": 22,
       "laneChanges": 6
     }
   },
@@ -218,12 +218,12 @@
     "bpm": 129.6,
     "duration": 145.97,
     "stars": 4,
-    "notes": 290,
+    "notes": 267,
     "features": {
       "circles": 33,
       "rolls": 0,
-      "slides": 25,
-      "holds": 36,
+      "slides": 17,
+      "holds": 24,
       "laneChanges": 15
     }
   },
@@ -237,12 +237,12 @@
     "bpm": 123.5,
     "duration": 150.05,
     "stars": 4,
-    "notes": 301,
+    "notes": 282,
     "features": {
       "circles": 70,
       "rolls": 0,
-      "slides": 13,
-      "holds": 39,
+      "slides": 8,
+      "holds": 29,
       "laneChanges": 6
     }
   },
@@ -256,12 +256,12 @@
     "bpm": 123.9,
     "duration": 150.05,
     "stars": 4,
-    "notes": 316,
+    "notes": 296,
     "features": {
       "circles": 46,
       "rolls": 0,
-      "slides": 8,
-      "holds": 45,
+      "slides": 6,
+      "holds": 29,
       "laneChanges": 7
     }
   },
@@ -275,13 +275,51 @@
     "bpm": 160.9,
     "duration": 150.05,
     "stars": 4,
-    "notes": 324,
+    "notes": 315,
     "features": {
       "circles": 26,
       "rolls": 0,
-      "slides": 19,
-      "holds": 59,
+      "slides": 18,
+      "holds": 58,
       "laneChanges": 9
+    }
+  },
+  {
+    "id": "vengeance-electro",
+    "title": "Vengeance Electro",
+    "artist": "Of Far Different Nature",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
+    "genre": "house",
+    "bpm": 128.8,
+    "duration": 150.05,
+    "stars": 4,
+    "notes": 343,
+    "features": {
+      "circles": 42,
+      "rolls": 0,
+      "slides": 5,
+      "holds": 36,
+      "laneChanges": 6
+    }
+  },
+  {
+    "id": "wasteland-caravan",
+    "title": "Wasteland Caravan",
+    "artist": "vitalezzz",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/wasteland-caravan",
+    "genre": "acoustic",
+    "bpm": 172.1,
+    "duration": 150.05,
+    "stars": 5,
+    "notes": 315,
+    "features": {
+      "circles": 34,
+      "rolls": 0,
+      "slides": 18,
+      "holds": 35,
+      "laneChanges": 11
     }
   },
   {
@@ -294,12 +332,12 @@
     "bpm": 99.5,
     "duration": 150.05,
     "stars": 5,
-    "notes": 333,
+    "notes": 321,
     "features": {
       "circles": 124,
-      "rolls": 1,
-      "slides": 13,
-      "holds": 20,
+      "rolls": 4,
+      "slides": 7,
+      "holds": 13,
       "laneChanges": 2
     }
   },
@@ -313,51 +351,13 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 5,
-    "notes": 345,
+    "notes": 327,
     "features": {
       "circles": 41,
       "rolls": 1,
-      "slides": 12,
-      "holds": 47,
+      "slides": 8,
+      "holds": 35,
       "laneChanges": 7
-    }
-  },
-  {
-    "id": "wasteland-caravan",
-    "title": "Wasteland Caravan",
-    "artist": "vitalezzz",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/wasteland-caravan",
-    "genre": "acoustic",
-    "bpm": 172.1,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 351,
-    "features": {
-      "circles": 34,
-      "rolls": 0,
-      "slides": 26,
-      "holds": 56,
-      "laneChanges": 11
-    }
-  },
-  {
-    "id": "vengeance-electro",
-    "title": "Vengeance Electro",
-    "artist": "Of Far Different Nature",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/vengeance-electro",
-    "genre": "house",
-    "bpm": 128.8,
-    "duration": 150.05,
-    "stars": 5,
-    "notes": 362,
-    "features": {
-      "circles": 42,
-      "rolls": 0,
-      "slides": 7,
-      "holds": 48,
-      "laneChanges": 6
     }
   },
   {
@@ -370,13 +370,32 @@
     "bpm": 136,
     "duration": 150.05,
     "stars": 5,
-    "notes": 364,
+    "notes": 335,
     "features": {
       "circles": 21,
       "rolls": 0,
-      "slides": 16,
-      "holds": 43,
+      "slides": 11,
+      "holds": 26,
       "laneChanges": 5
+    }
+  },
+  {
+    "id": "achilles",
+    "title": "Achilles",
+    "artist": "zane-little-music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/achilles",
+    "genre": "rock",
+    "bpm": 143.7,
+    "duration": 150.05,
+    "stars": 5,
+    "notes": 355,
+    "features": {
+      "circles": 54,
+      "rolls": 4,
+      "slides": 10,
+      "holds": 32,
+      "laneChanges": 15
     }
   },
   {
@@ -389,12 +408,12 @@
     "bpm": 99.5,
     "duration": 80.14,
     "stars": 6,
-    "notes": 198,
+    "notes": 191,
     "features": {
       "circles": 76,
-      "rolls": 0,
-      "slides": 7,
-      "holds": 12,
+      "rolls": 1,
+      "slides": 4,
+      "holds": 8,
       "laneChanges": 2
     }
   },
@@ -408,12 +427,12 @@
     "bpm": 160.9,
     "duration": 83.88,
     "stars": 6,
-    "notes": 224,
+    "notes": 212,
     "features": {
       "circles": 20,
-      "rolls": 0,
-      "slides": 11,
-      "holds": 22,
+      "rolls": 2,
+      "slides": 7,
+      "holds": 14,
       "laneChanges": 3
     }
   },
@@ -427,13 +446,32 @@
     "bpm": 199.2,
     "duration": 92.06,
     "stars": 6,
-    "notes": 258,
+    "notes": 245,
     "features": {
       "circles": 24,
       "rolls": 0,
-      "slides": 17,
-      "holds": 44,
+      "slides": 16,
+      "holds": 34,
       "laneChanges": 9
+    }
+  },
+  {
+    "id": "hardcore-chiptune-theme",
+    "title": "hardcore chiptune theme",
+    "artist": "obscure music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hardcore-chiptune-theme",
+    "genre": "chiptune",
+    "bpm": 128.7,
+    "duration": 106.84,
+    "stars": 6,
+    "notes": 271,
+    "features": {
+      "circles": 82,
+      "rolls": 0,
+      "slides": 4,
+      "holds": 10,
+      "laneChanges": 7
     }
   },
   {
@@ -446,31 +484,12 @@
     "bpm": 161.1,
     "duration": 120.03,
     "stars": 6,
-    "notes": 328,
+    "notes": 306,
     "features": {
       "circles": 79,
       "rolls": 1,
-      "slides": 16,
-      "holds": 43,
-      "laneChanges": 12
-    }
-  },
-  {
-    "id": "the-lab",
-    "title": "The Lab",
-    "artist": "tricksntraps",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1",
-    "genre": "electronic",
-    "bpm": 143.6,
-    "duration": 150.05,
-    "stars": 6,
-    "notes": 367,
-    "features": {
-      "circles": 99,
-      "rolls": 2,
-      "slides": 14,
-      "holds": 25,
+      "slides": 10,
+      "holds": 29,
       "laneChanges": 12
     }
   },
@@ -484,32 +503,32 @@
     "bpm": 217,
     "duration": 128.81,
     "stars": 6,
-    "notes": 373,
+    "notes": 336,
     "features": {
       "circles": 62,
       "rolls": 0,
-      "slides": 23,
-      "holds": 67,
+      "slides": 13,
+      "holds": 51,
       "laneChanges": 11
     }
   },
   {
-    "id": "achilles",
-    "title": "Achilles",
-    "artist": "zane-little-music",
+    "id": "the-lab",
+    "title": "The Lab",
+    "artist": "tricksntraps",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/achilles",
-    "genre": "rock",
-    "bpm": 143.7,
+    "sourceUrl": "https://opengameart.org/content/free-rhythm-game-music-pack-1",
+    "genre": "electronic",
+    "bpm": 143.6,
     "duration": 150.05,
     "stars": 6,
-    "notes": 377,
+    "notes": 355,
     "features": {
-      "circles": 54,
-      "rolls": 5,
-      "slides": 14,
-      "holds": 45,
-      "laneChanges": 15
+      "circles": 99,
+      "rolls": 1,
+      "slides": 10,
+      "holds": 18,
+      "laneChanges": 12
     }
   },
   {
@@ -522,13 +541,32 @@
     "bpm": 113.2,
     "duration": 150.05,
     "stars": 6,
-    "notes": 379,
+    "notes": 362,
     "features": {
       "circles": 144,
-      "rolls": 1,
-      "slides": 13,
-      "holds": 29,
+      "rolls": 3,
+      "slides": 7,
+      "holds": 19,
       "laneChanges": 7
+    }
+  },
+  {
+    "id": "8-bit-mechanical-complex",
+    "title": "8-bit Mechanical Complex",
+    "artist": "HydroGene",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/8-bit-mechanical-complex",
+    "genre": "chiptune",
+    "bpm": 117.5,
+    "duration": 150.05,
+    "stars": 6,
+    "notes": 367,
+    "features": {
+      "circles": 137,
+      "rolls": 3,
+      "slides": 13,
+      "holds": 12,
+      "laneChanges": 4
     }
   },
   {
@@ -541,12 +579,12 @@
     "bpm": 120.1,
     "duration": 150.05,
     "stars": 6,
-    "notes": 379,
+    "notes": 369,
     "features": {
       "circles": 89,
       "rolls": 0,
-      "slides": 14,
-      "holds": 25,
+      "slides": 11,
+      "holds": 18,
       "laneChanges": 8
     }
   },
@@ -560,32 +598,32 @@
     "bpm": 171.4,
     "duration": 136.96,
     "stars": 6,
-    "notes": 386,
+    "notes": 369,
     "features": {
       "circles": 42,
       "rolls": 1,
-      "slides": 17,
-      "holds": 36,
+      "slides": 10,
+      "holds": 27,
       "laneChanges": 7
     }
   },
   {
-    "id": "action-track",
-    "title": "Action Track",
-    "artist": "lushogames",
+    "id": "technomania101",
+    "title": "Technomania101 - 2000's europop electronic dance music",
+    "artist": "Fupi",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/action-track",
-    "genre": "rock",
-    "bpm": 113.4,
-    "duration": 138.92,
+    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
+    "genre": "eurobeat",
+    "bpm": 142.9,
+    "duration": 141.98,
     "stars": 6,
-    "notes": 400,
+    "notes": 375,
     "features": {
-      "circles": 60,
-      "rolls": 2,
-      "slides": 7,
-      "holds": 36,
-      "laneChanges": 10
+      "circles": 109,
+      "rolls": 1,
+      "slides": 14,
+      "holds": 19,
+      "laneChanges": 7
     }
   },
   {
@@ -598,12 +636,12 @@
     "bpm": 161,
     "duration": 150.05,
     "stars": 6,
-    "notes": 411,
+    "notes": 382,
     "features": {
       "circles": 41,
       "rolls": 0,
-      "slides": 22,
-      "holds": 75,
+      "slides": 18,
+      "holds": 59,
       "laneChanges": 9
     }
   },
@@ -618,13 +656,70 @@
     "bpm": 128.8,
     "duration": 137.46,
     "stars": 6,
-    "notes": 418,
+    "notes": 385,
     "features": {
       "circles": 46,
       "rolls": 0,
-      "slides": 10,
-      "holds": 54,
+      "slides": 9,
+      "holds": 46,
       "laneChanges": 11
+    }
+  },
+  {
+    "id": "action-track",
+    "title": "Action Track",
+    "artist": "lushogames",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/action-track",
+    "genre": "rock",
+    "bpm": 113.4,
+    "duration": 138.92,
+    "stars": 6,
+    "notes": 387,
+    "features": {
+      "circles": 60,
+      "rolls": 2,
+      "slides": 4,
+      "holds": 31,
+      "laneChanges": 10
+    }
+  },
+  {
+    "id": "all-night-road",
+    "title": "All Night Road",
+    "artist": "iamoneabe",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/all-night-road",
+    "genre": "synthpop",
+    "bpm": 207,
+    "duration": 150.05,
+    "stars": 6,
+    "notes": 419,
+    "features": {
+      "circles": 79,
+      "rolls": 1,
+      "slides": 8,
+      "holds": 42,
+      "laneChanges": 8
+    }
+  },
+  {
+    "id": "elevate-instrument-tracks",
+    "title": "Elevate (+ instrument tracks)",
+    "artist": "fupi",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
+    "genre": "electronic",
+    "bpm": 172.8,
+    "duration": 150.05,
+    "stars": 6,
+    "notes": 450,
+    "features": {
+      "circles": 58,
+      "rolls": 0,
+      "slides": 3,
+      "holds": 48,
+      "laneChanges": 10
     }
   },
   {
@@ -637,32 +732,13 @@
     "bpm": 135.1,
     "duration": 98.56,
     "stars": 7,
-    "notes": 257,
+    "notes": 244,
     "features": {
       "circles": 90,
-      "rolls": 2,
-      "slides": 19,
-      "holds": 11,
-      "laneChanges": 3
-    }
-  },
-  {
-    "id": "hardcore-chiptune-theme",
-    "title": "hardcore chiptune theme",
-    "artist": "obscure music",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/hardcore-chiptune-theme",
-    "genre": "chiptune",
-    "bpm": 128.7,
-    "duration": 106.84,
-    "stars": 7,
-    "notes": 283,
-    "features": {
-      "circles": 82,
       "rolls": 0,
-      "slides": 7,
-      "holds": 19,
-      "laneChanges": 7
+      "slides": 12,
+      "holds": 7,
+      "laneChanges": 3
     }
   },
   {
@@ -675,12 +751,12 @@
     "bpm": 152.6,
     "duration": 127.35,
     "stars": 7,
-    "notes": 319,
+    "notes": 307,
     "features": {
       "circles": 83,
-      "rolls": 0,
-      "slides": 10,
-      "holds": 33,
+      "rolls": 1,
+      "slides": 7,
+      "holds": 25,
       "laneChanges": 6
     }
   },
@@ -694,12 +770,12 @@
     "bpm": 151.7,
     "duration": 127.43,
     "stars": 7,
-    "notes": 328,
+    "notes": 318,
     "features": {
       "circles": 123,
-      "rolls": 1,
-      "slides": 20,
-      "holds": 19,
+      "rolls": 3,
+      "slides": 15,
+      "holds": 13,
       "laneChanges": 10
     }
   },
@@ -713,32 +789,13 @@
     "bpm": 139.8,
     "duration": 129.57,
     "stars": 7,
-    "notes": 376,
+    "notes": 359,
     "features": {
       "circles": 103,
-      "rolls": 0,
-      "slides": 11,
-      "holds": 34,
+      "rolls": 1,
+      "slides": 8,
+      "holds": 23,
       "laneChanges": 9
-    }
-  },
-  {
-    "id": "8-bit-mechanical-complex",
-    "title": "8-bit Mechanical Complex",
-    "artist": "HydroGene",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/8-bit-mechanical-complex",
-    "genre": "chiptune",
-    "bpm": 117.5,
-    "duration": 150.05,
-    "stars": 7,
-    "notes": 379,
-    "features": {
-      "circles": 137,
-      "rolls": 2,
-      "slides": 21,
-      "holds": 18,
-      "laneChanges": 4
     }
   },
   {
@@ -751,12 +808,12 @@
     "bpm": 152,
     "duration": 150.05,
     "stars": 7,
-    "notes": 384,
+    "notes": 371,
     "features": {
       "circles": 114,
       "rolls": 2,
-      "slides": 18,
-      "holds": 30,
+      "slides": 15,
+      "holds": 23,
       "laneChanges": 17
     }
   },
@@ -770,32 +827,13 @@
     "bpm": 161.1,
     "duration": 150.05,
     "stars": 7,
-    "notes": 393,
+    "notes": 375,
     "features": {
       "circles": 98,
       "rolls": 1,
-      "slides": 24,
-      "holds": 28,
+      "slides": 16,
+      "holds": 19,
       "laneChanges": 15
-    }
-  },
-  {
-    "id": "technomania101",
-    "title": "Technomania101 - 2000's europop electronic dance music",
-    "artist": "Fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music",
-    "genre": "eurobeat",
-    "bpm": 142.9,
-    "duration": 141.98,
-    "stars": 7,
-    "notes": 395,
-    "features": {
-      "circles": 109,
-      "rolls": 1,
-      "slides": 26,
-      "holds": 28,
-      "laneChanges": 7
     }
   },
   {
@@ -808,70 +846,13 @@
     "bpm": 151.3,
     "duration": 135.24,
     "stars": 7,
-    "notes": 399,
+    "notes": 377,
     "features": {
       "circles": 127,
-      "rolls": 0,
-      "slides": 13,
-      "holds": 37,
+      "rolls": 2,
+      "slides": 7,
+      "holds": 21,
       "laneChanges": 9
-    }
-  },
-  {
-    "id": "all-night-road",
-    "title": "All Night Road",
-    "artist": "iamoneabe",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/all-night-road",
-    "genre": "synthpop",
-    "bpm": 207,
-    "duration": 150.05,
-    "stars": 7,
-    "notes": 442,
-    "features": {
-      "circles": 79,
-      "rolls": 1,
-      "slides": 16,
-      "holds": 53,
-      "laneChanges": 8
-    }
-  },
-  {
-    "id": "wednesday-night",
-    "title": "Wednesday Night",
-    "artist": "Zane Little Music",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/wednesday-night-funk-fusion",
-    "genre": "jazz",
-    "bpm": 139.8,
-    "duration": 150.05,
-    "stars": 7,
-    "notes": 454,
-    "features": {
-      "circles": 133,
-      "rolls": 1,
-      "slides": 20,
-      "holds": 39,
-      "laneChanges": 12
-    }
-  },
-  {
-    "id": "elevate-instrument-tracks",
-    "title": "Elevate (+ instrument tracks)",
-    "artist": "fupi",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/elevate-instrument-tracks",
-    "genre": "electronic",
-    "bpm": 172.8,
-    "duration": 150.05,
-    "stars": 7,
-    "notes": 464,
-    "features": {
-      "circles": 58,
-      "rolls": 0,
-      "slides": 3,
-      "holds": 59,
-      "laneChanges": 10
     }
   },
   {
@@ -884,13 +865,32 @@
     "bpm": 216.8,
     "duration": 149.97,
     "stars": 7,
-    "notes": 470,
+    "notes": 436,
     "features": {
       "circles": 38,
-      "rolls": 4,
-      "slides": 37,
-      "holds": 55,
+      "rolls": 3,
+      "slides": 28,
+      "holds": 36,
       "laneChanges": 15
+    }
+  },
+  {
+    "id": "wednesday-night",
+    "title": "Wednesday Night",
+    "artist": "Zane Little Music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/wednesday-night-funk-fusion",
+    "genre": "jazz",
+    "bpm": 139.8,
+    "duration": 150.05,
+    "stars": 7,
+    "notes": 437,
+    "features": {
+      "circles": 133,
+      "rolls": 1,
+      "slides": 13,
+      "holds": 31,
+      "laneChanges": 12
     }
   },
   {
@@ -903,12 +903,12 @@
     "bpm": 143.4,
     "duration": 150.05,
     "stars": 7,
-    "notes": 489,
+    "notes": 469,
     "features": {
       "circles": 134,
-      "rolls": 0,
-      "slides": 6,
-      "holds": 43,
+      "rolls": 2,
+      "slides": 3,
+      "holds": 26,
       "laneChanges": 8
     }
   },
@@ -923,12 +923,12 @@
     "bpm": 163.1,
     "duration": 85.81,
     "stars": 8,
-    "notes": 276,
+    "notes": 260,
     "features": {
       "circles": 100,
       "rolls": 1,
-      "slides": 16,
-      "holds": 21,
+      "slides": 9,
+      "holds": 15,
       "laneChanges": 8
     }
   },
@@ -942,33 +942,13 @@
     "bpm": 151.4,
     "duration": 102.43,
     "stars": 8,
-    "notes": 303,
+    "notes": 285,
     "features": {
       "circles": 127,
       "rolls": 0,
-      "slides": 17,
-      "holds": 24,
+      "slides": 10,
+      "holds": 15,
       "laneChanges": 5
-    }
-  },
-  {
-    "id": "tech-rave",
-    "title": "Tech rave",
-    "artist": "Frenchyboy",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/tech-rave",
-    "genre": "techno",
-    "premium": true,
-    "bpm": 163.2,
-    "duration": 125.13,
-    "stars": 8,
-    "notes": 347,
-    "features": {
-      "circles": 139,
-      "rolls": 9,
-      "slides": 8,
-      "holds": 19,
-      "laneChanges": 12
     }
   },
   {
@@ -982,13 +962,33 @@
     "bpm": 144,
     "duration": 106.53,
     "stars": 8,
-    "notes": 350,
+    "notes": 337,
     "features": {
       "circles": 147,
       "rolls": 3,
-      "slides": 15,
-      "holds": 23,
+      "slides": 9,
+      "holds": 18,
       "laneChanges": 2
+    }
+  },
+  {
+    "id": "tech-rave",
+    "title": "Tech rave",
+    "artist": "Frenchyboy",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/tech-rave",
+    "genre": "techno",
+    "premium": true,
+    "bpm": 163.2,
+    "duration": 125.13,
+    "stars": 8,
+    "notes": 340,
+    "features": {
+      "circles": 139,
+      "rolls": 9,
+      "slides": 6,
+      "holds": 16,
+      "laneChanges": 12
     }
   },
   {
@@ -1001,12 +1001,12 @@
     "bpm": 185,
     "duration": 109.77,
     "stars": 8,
-    "notes": 369,
+    "notes": 352,
     "features": {
       "circles": 114,
-      "rolls": 2,
-      "slides": 16,
-      "holds": 35,
+      "rolls": 4,
+      "slides": 13,
+      "holds": 24,
       "laneChanges": 11
     }
   },
@@ -1021,12 +1021,12 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 8,
-    "notes": 427,
+    "notes": 406,
     "features": {
       "circles": 185,
       "rolls": 1,
-      "slides": 27,
-      "holds": 19,
+      "slides": 16,
+      "holds": 12,
       "laneChanges": 6
     }
   },
@@ -1041,12 +1041,12 @@
     "bpm": 216.8,
     "duration": 137.48,
     "stars": 8,
-    "notes": 470,
+    "notes": 439,
     "features": {
       "circles": 112,
       "rolls": 1,
-      "slides": 15,
-      "holds": 60,
+      "slides": 11,
+      "holds": 38,
       "laneChanges": 18
     }
   },
@@ -1060,12 +1060,12 @@
     "bpm": 163,
     "duration": 150.05,
     "stars": 8,
-    "notes": 476,
+    "notes": 456,
     "features": {
       "circles": 172,
       "rolls": 1,
-      "slides": 25,
-      "holds": 41,
+      "slides": 19,
+      "holds": 34,
       "laneChanges": 8
     }
   },
@@ -1079,12 +1079,12 @@
     "bpm": 129.5,
     "duration": 150.05,
     "stars": 8,
-    "notes": 520,
+    "notes": 516,
     "features": {
       "circles": 132,
       "rolls": 3,
-      "slides": 9,
-      "holds": 23,
+      "slides": 6,
+      "holds": 20,
       "laneChanges": 5
     }
   },
@@ -1097,13 +1097,13 @@
     "genre": "dnb",
     "bpm": 143.5,
     "duration": 150.05,
-    "stars": 9,
-    "notes": 545,
+    "stars": 8,
+    "notes": 522,
     "features": {
       "circles": 178,
-      "rolls": 1,
-      "slides": 14,
-      "holds": 40,
+      "rolls": 0,
+      "slides": 10,
+      "holds": 24,
       "laneChanges": 9
     }
   },
@@ -1117,12 +1117,12 @@
     "bpm": 199.2,
     "duration": 150.05,
     "stars": 9,
-    "notes": 581,
+    "notes": 551,
     "features": {
       "circles": 156,
-      "rolls": 2,
-      "slides": 11,
-      "holds": 51,
+      "rolls": 4,
+      "slides": 8,
+      "holds": 33,
       "laneChanges": 15
     }
   }
