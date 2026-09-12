@@ -1,4 +1,4 @@
-import { HIT_WINDOWS, JUDGEMENT_SCORE, RANK_THRESHOLDS , type HitWindows } from '@/shared/config/constants';
+import { HIT_WINDOWS, JUDGEMENT_SCORE, RANK_THRESHOLDS, type HitWindows } from '@/shared/config/constants';
 import type { Judgement, JudgementCounts, Rank } from '@/shared/types/result';
 
 /** Classify a hit by its timing error (seconds). `null` = outside the good window → not a hit. */
@@ -15,8 +15,7 @@ export function judgeDelta(delta: number, windows: HitWindows = HIT_WINDOWS, ear
 export function accuracyOf(counts: JudgementCounts): number {
   const total = counts.perfect + counts.great + counts.good + counts.miss;
   if (total === 0) return 1;
-  const earned =
-    counts.perfect * JUDGEMENT_SCORE.perfect + counts.great * JUDGEMENT_SCORE.great + counts.good * JUDGEMENT_SCORE.good;
+  const earned = counts.perfect * JUDGEMENT_SCORE.perfect + counts.great * JUDGEMENT_SCORE.great + counts.good * JUDGEMENT_SCORE.good;
   return earned / (total * JUDGEMENT_SCORE.perfect);
 }
 
@@ -63,11 +62,22 @@ export class Scoring {
   score = 0;
   judged = 0;
 
-  constructor(readonly totalNotes: number) {}
+  /** Judgements the run can still produce: bonus items that went by untouched leave the count. */
+  totalNotes: number;
+
+  constructor(private readonly allNotes: number) {
+    this.totalNotes = allNotes;
+  }
 
   reset(): void {
     this.counts.perfect = this.counts.great = this.counts.good = this.counts.miss = 0;
     this.combo = this.maxCombo = this.score = this.judged = 0;
+    this.totalNotes = this.allNotes;
+  }
+
+  /** A bonus item went by untouched: it is neither a hit nor a miss, so it no longer counts towards the total. */
+  forgive(): void {
+    this.totalNotes = Math.max(this.judged, this.totalNotes - 1);
   }
 
   register(j: Judgement): void {

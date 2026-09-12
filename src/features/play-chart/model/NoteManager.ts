@@ -83,6 +83,11 @@ export function spinJudgement(revolutions: number, required: number): Judgement 
   return share >= 1 - 1e-6 ? 'perfect' : share >= 0.75 ? 'great' : share >= 0.5 ? 'good' : 'miss';
 }
 
+/** A bonus item: a spell note or a tap carrying a crystal. Hit, it counts like any note and pays; missed, it is just gone. */
+export function isBonus(note: { kind: NoteKind | null; gem: number }): boolean {
+  return note.kind === 'slow' || note.kind === 'heart' || note.gem > 0;
+}
+
 /** Circles get the wider windows; everything on the lanes keeps the tight ones. */
 function windowsFor(note: { kind: string | null }): HitWindows {
   return note.kind === 'circle' ? CIRCLE_HIT_WINDOWS : HIT_WINDOWS;
@@ -99,6 +104,8 @@ export class NoteManager {
   onJudge: ((e: JudgeEvent) => void) | null = null;
   /** Extra tap registered on an active roll (for feedback). */
   onRollTap: ((note: PooledNote) => void) | null = null;
+  /** A bonus item (spell or crystal) went by untouched: no judgement, it is simply gone. */
+  onSkip: ((note: PooledNote) => void) | null = null;
   readonly assistWindow: number;
   /** Seconds before a circle's moment from which a tap on it counts (at least as Good). */
   readonly circleEarly: number;
@@ -217,6 +224,12 @@ export class NoteManager {
           }
           if (songTime - note.time > w.good) {
             note.state = NoteState.Missed;
+            if (isBonus(note)) {
+              // Spells and crystals are help, not homework: letting one go costs nothing.
+              this.onSkip?.(note);
+              cursor++;
+              continue;
+            }
             note.judgement = 'miss';
             this.emit(note, 'miss', false);
             if (note.duration > 0) {
