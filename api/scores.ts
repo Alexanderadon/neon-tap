@@ -163,7 +163,7 @@ export default async function handler(req: Req, res: ServerResponse): Promise<vo
       return;
     }
     const v = validateSubmission(body);
-    if (!v.ok) {
+    if (v.ok === false) {
       send(res, 400, { enabled: true, error: v.error });
       return;
     }
