@@ -1,61 +1,78 @@
+/* Sound gate: one big round button and two words; help only after a failed attempt. */
 .audio-gate {
   position: fixed;
   inset: 0;
   z-index: 10000;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 18px;
   padding: 24px;
-  background: rgba(5, 6, 10, 0.92);
+  background: rgba(5, 6, 10, 0.94);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
-@keyframes gate-pulse {
-  0%,
+.audio-gate-btn {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 0;
+  background: radial-gradient(circle at 40% 35%, #ffffff 0%, var(--c-cyan) 45%, #0090a8 100%);
+  color: #05060a;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.55), 0 12px 32px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease;
+}
+.audio-gate-btn:active {
+  transform: scale(0.94);
+}
+.audio-gate-btn.is-busy {
+  opacity: 0.7;
+}
+.audio-gate-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 240, 255, 0.7);
+  animation: gate-ring 1.2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes gate-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
   100% {
-    box-shadow: 0 0 24px rgba(0, 240, 255, 0.35), inset 0 0 20px rgba(0, 240, 255, 0.08);
+    transform: scale(1.4);
+    opacity: 0;
   }
-  50% {
-    box-shadow: 0 0 48px rgba(0, 240, 255, 0.75), inset 0 0 28px rgba(0, 240, 255, 0.18);
-  }
-}
-.audio-gate-card {
-  max-width: 420px;
-  width: 100%;
-  border: 2px solid var(--c-cyan);
-  border-radius: 18px;
-  padding: 28px 22px;
-  text-align: center;
-  background: rgba(0, 240, 255, 0.05);
-  animation: gate-pulse 1.6s ease-in-out infinite;
-}
-.audio-gate-icon {
-  font-size: 56px;
-  line-height: 1;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.8));
 }
 .audio-gate-title {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(22px, 6vw, 30px);
+  font-size: clamp(20px, 6vw, 26px);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--c-cyan);
   text-shadow: 0 0 16px rgba(0, 240, 255, 0.7);
 }
-.audio-gate-hint {
-  margin-top: 10px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 15px;
+.audio-gate-help {
+  max-width: 300px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
   line-height: 1.4;
 }
-.audio-gate-ios {
-  margin-top: 14px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 12px;
-  line-height: 1.4;
+@media (prefers-reduced-motion: reduce) {
+  .audio-gate-ring {
+    animation: none;
+  }
 }
