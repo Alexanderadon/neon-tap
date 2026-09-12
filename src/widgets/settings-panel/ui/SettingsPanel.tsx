@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { OFFSET_RANGE_MS } from '@/shared/config/constants';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
@@ -40,16 +39,6 @@ export function SettingsPanel() {
 
   return (
     <div className="settings">
-      <Slider
-        label={dict.settingsOffset}
-        value={s.audioOffsetMs}
-        min={OFFSET_RANGE_MS.min}
-        max={OFFSET_RANGE_MS.max}
-        step={1}
-        format={(v) => `${v > 0 ? '+' : ''}${v} ${dict.ms}`}
-        hint={dict.settingsOffsetHint}
-        onChange={(v) => updateSettings({ audioOffsetMs: v })}
-      />
       <Slider label={dict.settingsVolumeMusic} value={s.musicVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('musicVolume', v)} />
       <div className="settings-row">
         <Slider label={dict.settingsVolumeSfx} value={s.sfxVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('sfxVolume', v)} />
@@ -70,22 +59,6 @@ export function SettingsPanel() {
         </div>
         <div className="settings-hint">{dict.settingsVoiceHint}</div>
       </div>
-
-      <label className="settings-check">
-        <input type="checkbox" checked={s.autoOffset} onChange={(e) => updateSettings({ autoOffset: e.target.checked })} />
-        <span>
-          {dict.settingsAutoOffset}
-          <span className="settings-hint"> · {dict.settingsAutoOffsetHint}</span>
-        </span>
-      </label>
-
-      <label className="settings-check">
-        <input type="checkbox" checked={s.touchAssist} onChange={(e) => updateSettings({ touchAssist: e.target.checked })} />
-        <span>
-          {dict.settingsTouchAssist}
-          <span className="settings-hint"> · {dict.settingsTouchAssistHint}</span>
-        </span>
-      </label>
 
       <div className="settings-group">
         <div className="settings-group-label">{dict.settingsFxMode}</div>

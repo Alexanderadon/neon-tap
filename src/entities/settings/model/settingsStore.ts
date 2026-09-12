@@ -14,10 +14,6 @@ export interface Settings {
   sfxVolume: number;
   voiceVolume: number;
   voice: VoiceSetting;
-  /** Touch devices: early presses (≤ 0.4 s) count as Great. */
-  touchAssist: boolean;
-  /** Learn latency from the player's hits during play and persist it after a run. */
-  autoOffset: boolean;
   calibrated: boolean;
   /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
   calibrationVersion: number;
@@ -49,8 +45,6 @@ const DEFAULTS: Settings = {
   sfxVolume: 0.7,
   voiceVolume: 0.9,
   voice: 'dmitry',
-  touchAssist: true,
-  autoOffset: true,
   calibrated: false,
   calibrationVersion: 0,
   debugOverlay: false,

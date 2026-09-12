@@ -40,7 +40,7 @@ export function recordSpell(kind: SpellKind): void {
 }
 
 /** Lifetime counters after a finished, non-failed run. */
-export function recordRun(run: { maxCombo: number; trackStars: number }): void {
+export function recordRun(run: Parameters<typeof addRun>[1]): void {
   progressStore.set(addRun(progressStore.get(), run));
 }
 

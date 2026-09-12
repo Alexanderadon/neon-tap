@@ -53,7 +53,13 @@
   padding: 0 20px;
 }
 .deck-chapter {
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font: inherit;
   color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  text-align: left;
 }
 .deck-dots {
   display: flex;
@@ -63,11 +69,21 @@
   list-style: none;
 }
 .deck-dot {
+  position: relative;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.16);
   transition: transform 0.2s ease, background 0.2s ease;
+}
+/* Each dot is a 24 px tap target. */
+.deck-dot-hit {
+  position: absolute;
+  inset: -9px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 .deck-dot.is-done {
   background: #ffd700;

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { useSwipeBack } from './useSwipeBack';
 import './ui.css';
 
 interface Props {
@@ -24,6 +25,7 @@ export function Modal({ open, title, onClose, children, closeLabel = '×', varia
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<Element | null>(null);
+  useSwipeBack(onClose, open);
 
   useEffect(() => {
     if (!open) return;

@@ -5,3 +5,4 @@ export { ProgressBar } from './ProgressBar';
 export { Screen } from './Screen';
 export { Modal } from './Modal';
 export { CrystalIcon } from './CrystalIcon';
+export { useSwipeBack } from './useSwipeBack';

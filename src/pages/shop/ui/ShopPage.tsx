@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { Button, Screen } from '@/shared/ui';
+import { Button, Screen, useSwipeBack } from '@/shared/ui';
 import { ShopGrid } from '@/widgets/shop-grid';
 import { WalletBadge } from '@/widgets/wallet-badge';
 import '../../page.css';
 import './shop.css';
 
 /** Crystal shop: balance + how to earn on top, one card per track on sale, back to the menu. */
+const toMenu = () => navigate('menu');
+
 export function ShopPage() {
+  useSwipeBack(toMenu);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Escape') navigate('menu');

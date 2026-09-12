@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
+import { flickCards, velocityOf } from '@/shared/lib/input/gestures';
 import { CrystalIcon, Stars } from '@/shared/ui';
 import { CATALOG, TrackCover, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type CatalogState, type LockState } from '../model/useCatalogState';
 import { usePlayTrack } from '../model/usePlayTrack';
+import { readDeckIndex, writeDeckIndex } from '../model/deckPosition';
 import { LockIcon, PlayIcon, StarIcon, SunIcon } from './icons';
 import './track-deck.css';
 
@@ -22,8 +24,8 @@ interface Props {
 
 /** Tracks per chapter — the progress dots above the deck. */
 const CHAPTER = 10;
-/** Drag distance that flips a card, px. */
-const SWIPE_PX = 56;
+
+const storage = (): Storage | null => (typeof localStorage === 'undefined' ? null : localStorage);
 
 /** The card to open with: the first playable track without a result, else the daily one, else the first. */
 function startIndex(state: CatalogState): number {
@@ -41,20 +43,23 @@ function startIndex(state: CatalogState): number {
 export function TrackDeck({ onRecords }: Props) {
   const state = useCatalogState();
   const { busy, play } = usePlayTrack();
-  const [index, setIndex] = useState(() => startIndex(state));
+  const n = CATALOG.length;
+  const [index, setIndex] = useState(() => readDeckIndex(storage(), n) ?? startIndex(state));
   const [drag, setDrag] = useState(0);
   const [details, setDetails] = useState(false);
-  const pointer = useRef<{ id: number; x: number } | null>(null);
-  const n = CATALOG.length;
+  /** Active drag: pointer id, start x, and the last two samples for the release velocity. */
+  const pointer = useRef<{ id: number; x: number; prev: { x: number; t: number }; last: { x: number; t: number } } | null>(null);
   const track = CATALOG[index];
   const lock = useMemo(() => lockFor(state, track.id, track.stars), [state, track]);
 
   const go = useCallback(
     (to: number) => {
-      if (to < 0 || to >= n || to === index) return;
+      const clamped = Math.max(0, Math.min(n - 1, to));
+      if (clamped === index) return;
       sfxUi();
       setDetails(false);
-      setIndex(to);
+      setIndex(clamped);
+      writeDeckIndex(storage(), clamped);
     },
     [index, n],
   );
@@ -62,20 +67,24 @@ export function TrackDeck({ onRecords }: Props) {
   // Swipe: horizontal pointer drag on the deck.
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    pointer.current = { id: e.pointerId, x: e.clientX };
+    const sample = { x: e.clientX, t: e.timeStamp };
+    pointer.current = { id: e.pointerId, x: e.clientX, prev: sample, last: sample };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!pointer.current || pointer.current.id !== e.pointerId) return;
-    setDrag(e.clientX - pointer.current.x);
+    const p = pointer.current;
+    if (!p || p.id !== e.pointerId) return;
+    p.prev = p.last;
+    p.last = { x: e.clientX, t: e.timeStamp };
+    setDrag(e.clientX - p.x);
   };
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    if (!pointer.current || pointer.current.id !== e.pointerId) return;
-    const dx = e.clientX - pointer.current.x;
+    const p = pointer.current;
+    if (!p || p.id !== e.pointerId) return;
     pointer.current = null;
     setDrag(0);
-    if (dx <= -SWIPE_PX) go(index + 1);
-    else if (dx >= SWIPE_PX) go(index - 1);
+    // A flick flies as many cards as its speed earns (see gestures.ts); a slow drag flips one.
+    go(index + flickCards(e.clientX - p.x, velocityOf(p.prev, { x: e.clientX, t: e.timeStamp })));
   };
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight') go(index + 1);
@@ -108,13 +117,19 @@ export function TrackDeck({ onRecords }: Props) {
   return (
     <section className="deck" aria-label={dict.deckAria}>
       <header className="deck-head">
-        <div className="deck-chapter micro">{fmt(dict.deckChapter, { n: chapter + 1 })}</div>
+        <button type="button" className="deck-chapter micro" onClick={() => go(((chapter + 1) * CHAPTER) % n)} aria-label={dict.deckNextChapter}>
+          {fmt(dict.deckChapter, { n: chapter + 1 })}
+        </button>
         <ol className="deck-dots" aria-label={fmt(dict.deckChapterProgress, { done: chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length, total: chapterTracks.length })}>
           {chapterTracks.map((t, i) => {
             const idx = chapter * CHAPTER + i;
             const done = starsForTrack(state.save.tracks[t.id]) > 0;
             const cls = ['deck-dot', done && 'is-done', idx === index && 'is-current'].filter(Boolean).join(' ');
-            return <li key={t.id} className={cls} aria-current={idx === index ? 'true' : undefined} />;
+            return (
+              <li key={t.id} className={cls} aria-current={idx === index ? 'true' : undefined}>
+                <button type="button" className="deck-dot-hit" onClick={() => go(idx)} aria-label={t.title} />
+              </li>
+            );
           })}
         </ol>
         <div className="deck-total mono" aria-label={`${dict.deckStars}: ${state.stars}`}>

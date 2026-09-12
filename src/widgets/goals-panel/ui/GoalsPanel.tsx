@@ -1,75 +1,66 @@
-import { useState } from 'react';
 import { dict, fmt } from '@/shared/i18n';
-import { ProgressBar } from '@/shared/ui';
-import { TRACK_IDS } from '@/entities/track';
-import { GOALS, goalProgress, grandTotalStars, useProgress, type Goal, type SaveData } from '@/entities/progress';
+import { CrystalIcon } from '@/shared/ui';
+import { GOALS, goalProgress, isGoalDone, useProgress, type Goal, type SaveData } from '@/entities/progress';
 import './goals-panel.css';
 
-const OPEN_KEY = 'neon-tap:goals-open';
-
-function readOpen(): boolean {
-  try {
-    return localStorage.getItem(OPEN_KEY) !== '0';
-  } catch {
-    return true;
-  }
-}
-
-/** Collapsible quest list under the menu header; the header shows every star incl. bonuses. */
+/**
+ * Achievements as a wall of badges: earned ones glow, the rest are grey with a progress ring.
+ * Ordered so the wall reads as "what's next": the next tier of every family first, then the
+ * earned badges (newest first), then the far-away tiers.
+ */
 export function GoalsPanel() {
   const save = useProgress((s) => s);
-  const [open, setOpen] = useState(readOpen);
-  const stars = grandTotalStars(save, TRACK_IDS);
   const done = GOALS.filter((g) => save.goalsClaimed.includes(g.id)).length;
-
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    try {
-      localStorage.setItem(OPEN_KEY, next ? '1' : '0');
-    } catch {
-      /* storage unavailable */
-    }
-  };
+  const ordered = orderForWall(save);
 
   return (
-    <section className={`goals ${open ? 'goals-open' : ''}`}>
-      <button type="button" className="goals-head" onClick={toggle} aria-expanded={open}>
-        <span className="goals-title">{dict.goalsTitle}</span>
-        <span className="goals-count">{fmt(dict.goalsDone, { done, total: GOALS.length })}</span>
-        <span className="goals-stars">★ {stars}</span>
-        <span className="goals-toggle">{open ? dict.goalsHide : dict.goalsShow}</span>
-      </button>
-      {open && (
-        <ul className="goals-list">
-          {GOALS.map((g) => (
-            <GoalRow key={g.id} goal={g} save={save} />
-          ))}
-        </ul>
-      )}
+    <section className="ach" aria-labelledby="ach-title">
+      <header className="ach-head">
+        <h2 className="ach-title" id="ach-title">
+          {dict.goalsTitle}
+        </h2>
+        <span className="ach-count mono">{fmt(dict.goalsDone, { done, total: GOALS.length })}</span>
+      </header>
+      <ul className="ach-grid">
+        {ordered.map((g) => (
+          <Badge key={g.id} goal={g} save={save} />
+        ))}
+      </ul>
     </section>
   );
 }
 
-function GoalRow({ goal, save }: { goal: Goal; save: SaveData }) {
-  const claimed = save.goalsClaimed.includes(goal.id);
-  const progress = claimed ? goal.target : goalProgress(goal, save);
+function orderForWall(save: SaveData): Goal[] {
+  const next = new Set<string>();
+  for (const g of GOALS) {
+    if (!isGoalDone(g, save) && ![...next].some((id) => id.startsWith(g.family + '-'))) next.add(g.id);
+  }
+  const earned = GOALS.filter((g) => save.goalsClaimed.includes(g.id)).reverse();
+  const upcoming = GOALS.filter((g) => next.has(g.id));
+  const rest = GOALS.filter((g) => !next.has(g.id) && !save.goalsClaimed.includes(g.id));
+  return [...upcoming, ...earned, ...rest];
+}
+
+function Badge({ goal, save }: { goal: Goal; save: SaveData }) {
+  const earned = save.goalsClaimed.includes(goal.id);
+  const value = goalProgress(goal, save);
+  const ratio = goal.target > 0 ? value / goal.target : 0;
+  const cls = ['ach-badge', earned && 'is-earned'].filter(Boolean).join(' ');
   return (
-    <li className={`goal ${claimed ? 'goal-done' : ''}`}>
-      <div className="goal-mark" aria-hidden="true">
-        {claimed ? '✓' : ''}
-      </div>
-      <div className="goal-body">
-        <div className="goal-title">{goal.title}</div>
-        <div className="goal-desc">{goal.description}</div>
-        <ProgressBar value={progress / goal.target} color={claimed ? '#ffd700' : '#00f0ff'} />
-      </div>
-      <div className="goal-side">
-        <span className="goal-progress">
-          {progress} / {goal.target}
-        </span>
-        <span className="goal-reward">{fmt(dict.goalReward, { n: goal.reward })}</span>
-      </div>
+    <li className={cls} title={goal.description} aria-label={`${goal.title}: ${earned ? dict.achEarned : fmt(dict.goalsDone, { done: value, total: goal.target })}`}>
+      <span className="ach-ring" style={{ ['--p' as string]: ratio }} aria-hidden="true">
+        <span className="ach-tier mono">{goal.tier}</span>
+      </span>
+      <span className="ach-name">{goal.title}</span>
+      <span className="ach-sub mono">
+        {earned ? (
+          dict.achEarned
+        ) : (
+          <>
+            {value}/{goal.target} · <CrystalIcon size={9} /> {goal.reward}
+          </>
+        )}
+      </span>
     </li>
   );
 }

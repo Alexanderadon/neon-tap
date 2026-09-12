@@ -1,133 +1,101 @@
-.goals {
+/* Achievement wall: 3 badges per row on phones, 4 on wide sheets. */
+.ach {
   width: 100%;
-  max-width: 760px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  overflow: hidden;
-  /* `.screen` is a scrolling flex column: with `overflow: hidden` the panel's min-height is 0 and it
-   * would shrink to a 2 px sliver once the track list overflows — keep its intrinsic height. */
   flex-shrink: 0;
 }
-.goals-head {
-  width: 100%;
+.ach-head {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-  touch-action: manipulation;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
 }
-.goals-head:hover,
-.goals-head:focus-visible {
-  background: rgba(255, 255, 255, 0.05);
-  outline: none;
-}
-.goals-title {
+.ach-title {
+  margin: 0;
   font-family: var(--font-display);
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 15px;
   letter-spacing: 0.08em;
-  font-size: 13px;
+  text-transform: uppercase;
   color: var(--c-cyan);
 }
-.goals-count {
+.ach-count {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.55);
 }
-.goals-stars {
-  margin-left: auto;
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: #ffd700;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
-}
-.goals-toggle {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.45);
-}
-.goals-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 8px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.goal {
+.ach-grid {
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  align-items: center;
-  padding: 8px 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.goal-done {
-  background: rgba(255, 215, 0, 0.06);
+@media (min-width: 560px) {
+  .ach-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
-.goal-mark {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 13px;
-  color: #ffd700;
-}
-.goal-done .goal-mark {
-  border-color: #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-.goal-body {
+.ach-badge {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  filter: saturate(0.2);
+  transition: filter 0.25s ease, transform 0.25s ease;
 }
-.goal-title {
-  font-family: var(--font-display);
-  font-weight: 700;
+.ach-badge.is-earned {
+  color: #fff;
+  filter: none;
+  border-color: rgba(255, 215, 0, 0.45);
+  background: radial-gradient(80% 60% at 50% 0%, rgba(255, 215, 0, 0.18), rgba(255, 255, 255, 0.04));
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.18);
+}
+/* The ring: a conic progress track around the tier number; earned = full gold ring. */
+.ach-ring {
+  --p: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--c-cyan) calc(var(--p) * 100%), rgba(255, 255, 255, 0.1) 0);
+  position: relative;
+}
+.ach-ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #0b0d16;
+}
+.ach-badge.is-earned .ach-ring {
+  background: conic-gradient(#ffd700 100%, #ffd700 0);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+}
+.ach-tier {
+  position: relative;
   font-size: 13px;
+  font-weight: 700;
 }
-.goal-done .goal-title {
-  color: #ffd700;
-}
-.goal-desc {
+.ach-name {
   font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+  min-height: 2.4em;
+}
+.ach-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.5);
 }
-.goal-body .progress-track {
-  height: 5px;
-}
-.goal-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  white-space: nowrap;
-}
-.goal-progress {
-  font-family: var(--font-display);
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
-}
-.goal-reward {
-  font-size: 11px;
+.ach-badge.is-earned .ach-sub {
   color: #ffd700;
-}
-@media (max-width: 480px) {
-  .goals-toggle {
-    display: none;
-  }
 }

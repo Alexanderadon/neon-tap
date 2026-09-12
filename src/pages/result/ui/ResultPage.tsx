@@ -24,7 +24,7 @@ export function ResultPage() {
   const notes: string[] = [];
   if (resultMeta?.dailyBonus) notes.push(dict.dailyBonus);
   const goalTitles = (resultMeta?.goalsCompleted ?? []).map((id) => findGoal(id)?.title).filter((t): t is string => !!t);
-  if (goalTitles.length) notes.push(fmt(dict.goalCompleted, { title: goalTitles.join(' · ') }));
+  for (const title of goalTitles) notes.push(fmt(dict.goalCompleted, { title }));
 
   return (
     <Screen center>

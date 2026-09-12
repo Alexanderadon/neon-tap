@@ -1,2 +1,4 @@
 export { settingsStore, updateSettings, useSettings, getSettings, sanitizeNickname, NICKNAME_MAX, FX_MODES } from './model/settingsStore';
 export type { Settings, VoiceSetting, FxMode } from './model/settingsStore';
+export { firstLaunchStep, markWelcomeSkipped, isWelcomeSkipped } from './model/firstLaunch';
+export type { FirstLaunchStep } from './model/firstLaunch';

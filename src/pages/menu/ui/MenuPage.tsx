@@ -2,13 +2,12 @@ import { useCallback, useState } from 'react';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { Button, Modal, Screen } from '@/shared/ui';
+import { Button, CrystalIcon, Modal, Screen } from '@/shared/ui';
 import { useProgress } from '@/entities/progress';
 import { TrackDeck, type TrackRef } from '@/widgets/track-list';
 import { GoalsPanel } from '@/widgets/goals-panel';
 import { HistoryModal } from '@/widgets/history-panel';
-import { WalletBadge } from '@/widgets/wallet-badge';
-import { DockGoalsIcon, DockSettingsIcon } from './DockIcons';
+import { ProfileIcon, SettingsIcon } from './MenuIcons';
 import './menu.css';
 
 /**
@@ -42,7 +41,8 @@ export function MenuPage() {
         }}
         aria-label={`${dict.shop} · ${dict.crystalsTitle}: ${crystals}`}
       >
-        <WalletBadge link={false} className="menu-wallet" />
+        <CrystalIcon size={20} />
+        <span className="menu-round-n mono">{crystals}</span>
       </button>
       <button
         type="button"
@@ -53,7 +53,7 @@ export function MenuPage() {
         }}
         aria-label={dict.profile}
       >
-        <DockGoalsIcon size={22} />
+        <ProfileIcon size={24} />
       </button>
 
       <Modal open={profile} title={dict.profile} onClose={() => setProfile(false)}>
@@ -65,7 +65,7 @@ export function MenuPage() {
             {dict.customSong}
           </Button>
           <Button variant="ghost" onClick={() => open('settings')}>
-            <DockSettingsIcon size={16} /> {dict.settings}
+            <SettingsIcon size={16} /> {dict.settings}
           </Button>
         </div>
         <GoalsPanel />

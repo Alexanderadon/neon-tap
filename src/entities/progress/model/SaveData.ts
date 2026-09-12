@@ -27,6 +27,12 @@ export interface Counters {
   maxCombo: number;
   /** Hardest (★) built-in track completed without failing. */
   maxTrackStars: number;
+  /** Genres of built-in tracks completed without failing (ids, unique). */
+  genres: string[];
+  /** Perfect judgements over all finished runs. */
+  perfects: number;
+  /** Finished, non-failed runs of the player's own songs. */
+  customPlays: number;
 }
 
 /** Daily-track state: one bonus star per local day. */
@@ -66,15 +72,19 @@ export interface SaveDataV4 {
   purchased: string[];
 }
 
-export type SaveData = SaveDataV4;
+export interface SaveDataV5 extends Omit<SaveDataV4, 'version'> {
+  version: 5;
+}
 
-export const CURRENT_VERSION = 4;
+export type SaveData = SaveDataV5;
 
-export const EMPTY_COUNTERS: Counters = { spells: { slow: 0, heart: 0 }, tracksPlayed: 0, maxCombo: 0, maxTrackStars: 0 };
+export const CURRENT_VERSION = 5;
+
+export const EMPTY_COUNTERS: Counters = { spells: { slow: 0, heart: 0 }, tracksPlayed: 0, maxCombo: 0, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 };
 export const EMPTY_DAILY: DailyState = { date: '', done: false, streak: 0, total: 0 };
 
 export const EMPTY_SAVE: SaveData = {
-  version: 4,
+  version: 5,
   tracks: {},
   plays: 0,
   counters: EMPTY_COUNTERS,
@@ -88,7 +98,7 @@ export const EMPTY_SAVE: SaveData = {
 /** Fresh, unshared copy of the empty save (nested objects are cloned). */
 export function emptySave(): SaveData {
   return {
-    version: 4,
+    version: 5,
     tracks: {},
     plays: 0,
     counters: cloneCounters(EMPTY_COUNTERS),
@@ -120,6 +130,9 @@ function sanitizeCounters(raw: unknown): Counters {
     tracksPlayed: num(c.tracksPlayed),
     maxCombo: num(c.maxCombo),
     maxTrackStars: num(c.maxTrackStars),
+    genres: [...new Set(stringList(c.genres))],
+    perfects: num(c.perfects),
+    customPlays: num(c.customPlays),
   };
 }
 
@@ -168,6 +181,9 @@ const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<strin
     return { version: 3, tracks, plays: num(data.plays), counters, daily: { ...EMPTY_DAILY }, goalsClaimed: [] };
   },
   3: (data) => ({ ...data, version: 4, crystals: 0, lifetimeCrystals: 0, purchased: [] }),
+  // v4 → v5: achievements — genre / perfect / custom-song counters (start at zero; goals claimed
+  // under the old 8-quest list keep their ids, they simply never match a badge again).
+  4: (data) => ({ ...data, version: 5 }),
 };
 
 const stringList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((g): g is string => typeof g === 'string') : []);
@@ -184,7 +200,7 @@ export function migrate(raw: unknown): SaveData {
   }
   const crystals = Math.max(0, Math.floor(num(data.crystals)));
   return {
-    version: 4,
+    version: 5,
     tracks: (data.tracks as Record<string, BestResult>) ?? {},
     plays: num(data.plays),
     counters: sanitizeCounters(data.counters),
@@ -231,7 +247,7 @@ export function addSpell(save: SaveData, kind: SpellKind): SaveData {
 }
 
 /** Update the lifetime counters after a finished (non-failed) run. */
-export function addRun(save: SaveData, run: { maxCombo: number; trackStars: number }): SaveData {
+export function addRun(save: SaveData, run: { maxCombo: number; trackStars: number; perfects?: number; genre?: string; custom?: boolean }): SaveData {
   const c = save.counters;
   return {
     ...save,
@@ -240,6 +256,9 @@ export function addRun(save: SaveData, run: { maxCombo: number; trackStars: numb
       tracksPlayed: c.tracksPlayed + 1,
       maxCombo: Math.max(c.maxCombo, run.maxCombo),
       maxTrackStars: Math.max(c.maxTrackStars, run.trackStars),
+      genres: run.genre && !c.genres.includes(run.genre) ? [...c.genres, run.genre] : c.genres,
+      perfects: c.perfects + (run.perfects ?? 0),
+      customPlays: c.customPlays + (run.custom ? 1 : 0),
     },
   };
 }
