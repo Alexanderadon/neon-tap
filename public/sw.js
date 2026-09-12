@@ -10,7 +10,7 @@
  *   navigation / index.html      network-first, offline → cached shell
  *   /assets/*  (hashed)          cache-first (precached; anything missing is fetched and kept)
  *   /music /sfx /voice /icons    cache-first, runtime cache with a 200 MB cap, evicted oldest-first
- *   /charts                      cache-first + refresh in the background (charts are regenerated)
+ *   /charts                      network-first (charts are regenerated often; a fresh deploy must play fresh), offline → cache
  *   Google Fonts                 cache-first
  *   /api/* and everything else   untouched (network)
  *
@@ -28,7 +28,7 @@ const KEEP_CACHES = new Set([SHELL_CACHE, MEDIA_CACHE, FONT_CACHE]);
 const INDEX_KEY = '/__neon-media-index__';
 const MEDIA_CAP = 200 * 1024 * 1024;
 const MEDIA_PREFIXES = ['/music/', '/sfx/', '/voice/', '/icons/'];
-const REVALIDATE_PREFIXES = ['/charts/'];
+const CHART_PREFIXES = ['/charts/'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', (event) => {
@@ -72,12 +72,11 @@ self.addEventListener('fetch', (event) => {
       event.respondWith(cacheFirst(event, req, SHELL_CACHE));
     } else if (path === '/manifest.webmanifest' || path === '/privacy.html') {
       event.respondWith(networkFirst(event, req, SHELL_CACHE));
-    } else if (REVALIDATE_PREFIXES.some((p) => path.startsWith(p))) {
-      if (req.headers.has('range')) return;
-      event.respondWith(mediaCache(event, req, true));
+    } else if (CHART_PREFIXES.some((p) => path.startsWith(p))) {
+      event.respondWith(networkFirst(event, req, MEDIA_CACHE));
     } else if (MEDIA_PREFIXES.some((p) => path.startsWith(p))) {
       if (req.headers.has('range')) return;
-      event.respondWith(mediaCache(event, req, false));
+      event.respondWith(mediaCache(event, req));
     }
     return;
   }
@@ -137,21 +136,15 @@ async function cacheFirst(event, req, cacheName) {
 }
 
 /** Cache-first for media with the size-capped index; `revalidate` refreshes a hit in the background. */
-async function mediaCache(event, req, revalidate) {
+async function mediaCache(event, req) {
   const cache = await caches.open(MEDIA_CACHE);
   const hit = await cache.match(req);
   if (hit) {
-    if (revalidate) event.waitUntil(fetchAndStore(cache, req).catch(() => undefined));
     return hit;
   }
   const res = await fetch(req);
   if (cacheable(res)) event.waitUntil(store(cache, req, res.clone()).catch(() => undefined));
   return res;
-}
-
-async function fetchAndStore(cache, req) {
-  const res = await fetch(req);
-  if (cacheable(res)) await store(cache, req, res);
 }
 
 function offlineResponse() {
