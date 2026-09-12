@@ -9,14 +9,14 @@
     "bpm": 79.5,
     "duration": 123.19,
     "stars": 1,
-    "notes": 61,
+    "notes": 75,
     "features": {
       "circles": 4,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 27,
-      "laneChanges": 1
+      "holds": 6,
+      "laneChanges": 3
     }
   },
   {
@@ -80,26 +80,6 @@
     }
   },
   {
-    "id": "red-moon",
-    "title": "Red Moon",
-    "artist": "Pro Sensory",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/red-moon",
-    "genre": "jazz",
-    "bpm": 120.1,
-    "duration": 138,
-    "stars": 1,
-    "notes": 90,
-    "features": {
-      "circles": 0,
-      "spins": 0,
-      "rolls": 0,
-      "slides": 0,
-      "holds": 39,
-      "laneChanges": 5
-    }
-  },
-  {
     "id": "hardstyler",
     "title": "Hardstyler",
     "artist": "Of Far Different Nature",
@@ -140,23 +120,23 @@
     }
   },
   {
-    "id": "november-snow",
-    "title": "November Snow",
-    "artist": "cynicmusic",
+    "id": "red-moon",
+    "title": "Red Moon",
+    "artist": "Pro Sensory",
     "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/november-snow",
-    "genre": "ambient",
-    "bpm": 123.9,
-    "duration": 150.05,
+    "sourceUrl": "https://opengameart.org/content/red-moon",
+    "genre": "jazz",
+    "bpm": 120.1,
+    "duration": 138,
     "stars": 1,
-    "notes": 105,
+    "notes": 119,
     "features": {
-      "circles": 8,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 44,
-      "laneChanges": 2
+      "holds": 3,
+      "laneChanges": 7
     }
   },
   {
@@ -220,6 +200,26 @@
     }
   },
   {
+    "id": "november-snow",
+    "title": "November Snow",
+    "artist": "cynicmusic",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/november-snow",
+    "genre": "ambient",
+    "bpm": 123.9,
+    "duration": 150.05,
+    "stars": 1,
+    "notes": 131,
+    "features": {
+      "circles": 8,
+      "spins": 0,
+      "rolls": 0,
+      "slides": 0,
+      "holds": 7,
+      "laneChanges": 5
+    }
+  },
+  {
     "id": "slow-stride",
     "title": "Slow Stride",
     "artist": "isaiah658",
@@ -229,14 +229,14 @@
     "bpm": 108.5,
     "duration": 130.95,
     "stars": 2,
-    "notes": 169,
+    "notes": 188,
     "features": {
       "circles": 12,
       "spins": 1,
       "rolls": 0,
-      "slides": 5,
-      "holds": 49,
-      "laneChanges": 3
+      "slides": 1,
+      "holds": 4,
+      "laneChanges": 4
     }
   },
   {
@@ -417,6 +417,26 @@
       "slides": 1,
       "holds": 0,
       "laneChanges": 6
+    }
+  },
+  {
+    "id": "hardcore-chiptune-theme",
+    "title": "hardcore chiptune theme",
+    "artist": "obscure music",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/hardcore-chiptune-theme",
+    "genre": "chiptune",
+    "bpm": 128.7,
+    "duration": 106.84,
+    "stars": 5,
+    "notes": 243,
+    "features": {
+      "circles": 30,
+      "spins": 1,
+      "rolls": 4,
+      "slides": 4,
+      "holds": 10,
+      "laneChanges": 9
     }
   },
   {
@@ -661,26 +681,6 @@
     }
   },
   {
-    "id": "hardcore-chiptune-theme",
-    "title": "hardcore chiptune theme",
-    "artist": "obscure music",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/hardcore-chiptune-theme",
-    "genre": "chiptune",
-    "bpm": 128.7,
-    "duration": 106.84,
-    "stars": 7,
-    "notes": 308,
-    "features": {
-      "circles": 82,
-      "spins": 1,
-      "rolls": 0,
-      "slides": 0,
-      "holds": 41,
-      "laneChanges": 7
-    }
-  },
-  {
     "id": "lunar-arrow",
     "title": "Lunar Arrow",
     "artist": "mmry",
@@ -718,6 +718,27 @@
       "slides": 2,
       "holds": 5,
       "laneChanges": 13
+    }
+  },
+  {
+    "id": "tech-rave",
+    "title": "Tech rave",
+    "artist": "Frenchyboy",
+    "license": "CC0 1.0",
+    "sourceUrl": "https://opengameart.org/content/tech-rave",
+    "genre": "techno",
+    "premium": true,
+    "bpm": 163.2,
+    "duration": 125.13,
+    "stars": 7,
+    "notes": 368,
+    "features": {
+      "circles": 86,
+      "spins": 0,
+      "rolls": 7,
+      "slides": 2,
+      "holds": 11,
+      "laneChanges": 15
     }
   },
   {
@@ -921,27 +942,6 @@
     }
   },
   {
-    "id": "tech-rave",
-    "title": "Tech rave",
-    "artist": "Frenchyboy",
-    "license": "CC0 1.0",
-    "sourceUrl": "https://opengameart.org/content/tech-rave",
-    "genre": "techno",
-    "premium": true,
-    "bpm": 163.2,
-    "duration": 125.13,
-    "stars": 8,
-    "notes": 378,
-    "features": {
-      "circles": 139,
-      "spins": 0,
-      "rolls": 9,
-      "slides": 7,
-      "holds": 25,
-      "laneChanges": 12
-    }
-  },
-  {
     "id": "dance-field",
     "title": "Dance Field",
     "artist": "centurionofwar",
@@ -1012,14 +1012,14 @@
     "bpm": 216.8,
     "duration": 137.48,
     "stars": 8,
-    "notes": 457,
+    "notes": 443,
     "features": {
-      "circles": 112,
+      "circles": 81,
       "spins": 2,
-      "rolls": 1,
-      "slides": 16,
-      "holds": 79,
-      "laneChanges": 18
+      "rolls": 3,
+      "slides": 4,
+      "holds": 8,
+      "laneChanges": 22
     }
   },
   {
@@ -1155,14 +1155,14 @@
     "bpm": 144,
     "duration": 106.53,
     "stars": 9,
-    "notes": 383,
+    "notes": 393,
     "features": {
-      "circles": 147,
+      "circles": 106,
       "spins": 0,
-      "rolls": 3,
+      "rolls": 0,
       "slides": 0,
-      "holds": 51,
-      "laneChanges": 2
+      "holds": 0,
+      "laneChanges": 11
     }
   },
   {
