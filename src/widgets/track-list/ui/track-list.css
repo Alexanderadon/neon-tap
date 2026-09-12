@@ -1,193 +1,16 @@
-.tracklist {
-  width: 100%;
-  max-width: 760px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.tracklist-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding: 10px 0;
-  background: linear-gradient(#05060a 70%, transparent);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.tracklist-total {
-  font-family: var(--font-display);
-  color: #ffd700;
-  font-weight: 700;
-}
-.tracklist-hint {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.tracklist-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.tcard {
-  display: grid;
-  grid-template-columns: 34px 56px 1fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-left: 3px solid var(--tone);
-  transition: border-color 0.15s, background 0.15s, transform 0.15s ease, box-shadow 0.2s ease;
-  transform-style: preserve-3d;
-  /*
-   * Cards stagger in one after another; `--i` is the card's index, set inline. Fill-mode is
-   * `backwards` on purpose: the `to` frame equals the normal computed style, and with `both`/
-   * `forwards` the animation's `transform: none` would outrank the hover/active tilt for ever.
-   */
-  animation: tcard-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  animation-delay: calc(0.12s + var(--i, 0) * 45ms);
-}
-@keyframes tcard-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.tcard:hover,
-.tcard:focus-within {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: color-mix(in srgb, var(--tone) 60%, transparent);
-  transform: perspective(700px) rotateX(2deg) rotateY(-1.5deg) translateY(-2px);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.45),
-    0 0 18px color-mix(in srgb, var(--tone) 35%, transparent),
-    inset 0 0 24px color-mix(in srgb, var(--tone) 6%, transparent);
-}
-.tcard:active {
-  transform: perspective(700px) rotateX(-1deg) scale(0.985);
-  box-shadow: 0 0 26px color-mix(in srgb, var(--tone) 55%, transparent);
-  transition-duration: 0.06s;
-}
-/* Theme swatch: the five lane colours the song will be played in. */
-.tcard-swatch {
-  display: flex;
-  gap: 2px;
-  margin-top: 6px;
-  height: 4px;
-  width: 64px;
-  border-radius: 2px;
-  overflow: hidden;
-  opacity: 0.85;
-}
-.tcard-swatch i {
-  flex: 1;
-  display: block;
-  box-shadow: 0 0 6px currentColor;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tcard {
-    animation: none;
-    transition: none;
-  }
-  .tcard:hover,
-  .tcard:focus-within,
-  .tcard:active {
-    transform: none;
-  }
-}
-.tcard-num {
-  font-family: var(--font-display);
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.25);
-}
-.tcard-cover {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  display: block;
-  flex: none;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 25%, transparent);
-}
-.tcard-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-}
-.tcard-genre {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: color-mix(in srgb, var(--tone) 80%, white);
-  margin-top: 2px;
-}
-.tcard-artist {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 2px 0 6px;
-}
-.tcard-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.tcard-tags span {
+/* ==========================================================================
+   Shared micro-typography for the menu: uppercase spaced labels, mono digits,
+   rank colours (used by the hero, the reel and the dock).
+   ========================================================================== */
+.micro {
   font-size: 10px;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--tone) 50%, transparent);
-  color: color-mix(in srgb, var(--tone) 85%, white);
-}
-.tcard-records {
-  margin-top: 6px;
-  padding: 2px 0;
-  border: none;
-  background: none;
   color: rgba(255, 255, 255, 0.5);
-  font: inherit;
-  font-size: 12px;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  touch-action: manipulation;
 }
-.tcard-records:hover,
-.tcard-records:focus-visible {
-  color: var(--c-cyan);
-  outline: none;
-}
-.tcard-records-n {
-  margin-left: 6px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
-}
-.tcard-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-.tcard-stars {
-  font-family: var(--font-display);
-  font-weight: 900;
-  color: var(--tone);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--tone) 70%, transparent);
-}
-.tcard-rank {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 12px;
-  padding: 1px 8px;
-  border-radius: 6px;
-  border: 1px solid currentColor;
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 .rank-SS,
 .rank-S {
@@ -205,167 +28,891 @@
 .rank-D {
   color: var(--c-magenta);
 }
-.tcard-play {
-  margin-top: 4px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 12px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--tone);
-  color: var(--tone);
-  background: color-mix(in srgb, var(--tone) 8%, transparent);
-  cursor: pointer;
-  touch-action: manipulation;
+
+/* ==========================================================================
+   HERO — full-bleed "now selected" panel.
+   Layout: top bar (wordmark · star total) → body (label, cover + titles, stats, tags, theme)
+   → cta row (secondary actions left, big round PLAY right). Asymmetric on purpose: the body hangs
+   off a 1px tone rule on the left, the PLAY sits flush right.
+   ========================================================================== */
+.hero {
+  --hero-x: max(20px, var(--safe-left));
+  --hero-xr: max(20px, var(--safe-right));
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: min(72dvh, 680px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: max(14px, var(--safe-top)) var(--hero-xr) 24px var(--hero-x);
+  color: #fff;
+  /* Opaque on purpose: the blurred cover sits at 0.85 and the page's fixed grid floor must not show through. */
+  background: var(--c-bg);
 }
-.tcard-play:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--tone) 20%, transparent);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--tone) 50%, transparent);
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  overflow: hidden;
+  animation: hero-bg-in 0.6s ease-out both;
 }
-.tcard-play:disabled {
-  opacity: 0.5;
+.hero-bg .track-cover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(34px) saturate(1.6) brightness(0.75);
+  opacity: 0.85;
 }
-.tracklist-breakdown {
-  margin-left: 10px;
-  font-family: inherit;
-  font-weight: 400;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
+@keyframes hero-bg-in {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Legibility veil: dark at the bottom (text), a tone-coloured cast in the top-right corner. */
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(180deg, rgba(5, 6, 10, 0.25) 0%, rgba(5, 6, 10, 0.55) 45%, rgba(5, 6, 10, 0.92) 85%, var(--c-bg) 100%),
+    radial-gradient(70% 60% at 100% 0%, color-mix(in srgb, var(--tone) 22%, transparent), transparent 70%);
+}
+/* Scanlines live here only (the page-wide overlay is switched off while the menu is up). */
+.hero-scan {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 30%, transparent 100%);
+}
+/* Thin neon rule at the very bottom of the hero — where the reel begins. */
+.hero::after {
+  content: '';
+  position: absolute;
+  left: var(--hero-x);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--tone), color-mix(in srgb, var(--tone) 40%, transparent) 40%, transparent);
+  box-shadow: 0 0 10px var(--tone);
 }
 
-/* Daily track — pinned, gold accent. */
-.tcard-daily {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.03));
-  border-color: rgba(255, 215, 0, 0.35);
-  box-shadow: 0 0 18px rgba(255, 215, 0, 0.12);
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-.tcard-daily .tcard-num {
-  color: var(--tone);
+.hero-stars {
+  margin-left: auto; /* stays flush right when the wordmark is hidden (desktop top bar carries it) */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 12px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 999px;
+  color: #ffd700;
+  background: rgba(5, 6, 10, 0.45);
+  backdrop-filter: blur(6px);
+  cursor: help;
+}
+.hero-stars .micro {
+  color: rgba(255, 215, 0, 0.7);
+}
+.hero-stars b {
+  font-size: 15px;
+  font-weight: 700;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
 }
-.tcard-daily-label {
+
+.hero-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 14px;
+  border-left: 1px solid color-mix(in srgb, var(--tone) 70%, transparent);
+  box-shadow: -1px 0 10px -4px var(--tone);
+  animation: hero-body-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes hero-body-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: color-mix(in srgb, var(--tone) 85%, white);
+}
+.hero-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.hero-cover {
+  width: 76px;
+  height: 76px;
+  flex: none;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 22px color-mix(in srgb, var(--tone) 45%, transparent);
+}
+.hero-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hero-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(22px, 6.4vw, 40px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  text-shadow: 0 0 22px color-mix(in srgb, var(--tone) 45%, transparent);
+}
+.hero-artist {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.hero-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
-}
-.tcard-daily-badge {
-  font-family: var(--font-display);
-  font-weight: 900;
   font-size: 11px;
-  letter-spacing: 0.12em;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--tone);
-  color: #05060a;
-}
-.tcard-daily-hint {
-  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: color-mix(in srgb, var(--tone) 80%, white);
 }
-
-/* Locked track — dimmed, lock glyph, requirement instead of the play button. */
-.tcard-locked {
-  opacity: 0.55;
-  filter: saturate(0.4);
+.hero-meta i {
+  width: 14px;
+  height: 1px;
+  background: color-mix(in srgb, var(--tone) 60%, transparent);
 }
-.tcard-locked:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.09);
-  border-left-color: var(--tone);
-}
-.tcard-locked .tcard-num {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 16px;
-}
-.tcard-need {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  color: #ffd700;
-  white-space: nowrap;
-}
-.tcard-locked .tcard-play {
-  cursor: not-allowed;
-  border-style: dashed;
-}
-/* Premium track (shop-only): crystal price instead of the star requirement, magenta accent. */
-.tcard-premium {
-  filter: saturate(0.7);
-}
-.tcard-premium .tcard-num {
-  color: #7df9ff;
-  filter: drop-shadow(0 0 6px rgba(125, 249, 255, 0.7));
+.hero-row {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }
-.tcard-price {
+.hero-diff {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tone);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--tone) 70%, transparent);
+}
+.hero-rank {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
   font-family: var(--font-display);
-  font-size: 12px;
   font-weight: 900;
-  color: #7df9ff;
-  text-shadow: 0 0 10px rgba(125, 249, 255, 0.6);
-  white-space: nowrap;
+  font-size: 15px;
+  padding: 2px 10px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
 }
-.tcard-premium .tcard-play.tcard-shop {
-  cursor: pointer;
-  border-style: solid;
-  border-color: #7df9ff;
-  color: #7df9ff;
+.hero-rank .micro {
+  color: inherit;
+  opacity: 0.7;
 }
-.tcard-premium .tcard-play.tcard-shop:hover {
-  background: rgba(125, 249, 255, 0.18);
-  box-shadow: 0 0 16px rgba(125, 249, 255, 0.45);
+.hero-nobest {
+  color: rgba(255, 255, 255, 0.4);
 }
-.tcard-shoplink {
+.hero-records {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 0;
-  border: none;
-  background: none;
-  color: rgba(125, 249, 255, 0.75);
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(5, 6, 10, 0.35);
+  color: rgba(255, 255, 255, 0.75);
   font: inherit;
-  font-size: 11px;
-  white-space: nowrap;
+  font-size: 12px;
   cursor: pointer;
   touch-action: manipulation;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
 }
-.tcard-shoplink:hover,
-.tcard-shoplink:focus-visible {
-  color: #7df9ff;
+.hero-records .mono {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+.hero-records:hover,
+.hero-records:focus-visible {
+  border-color: var(--c-cyan);
+  color: var(--c-cyan);
   outline: none;
 }
-/* Bought in the shop: a small crystal next to the title. */
-.tcard-bought {
-  display: inline-flex;
-  vertical-align: middle;
-  margin-left: 6px;
-  color: #7df9ff;
-  filter: drop-shadow(0 0 4px rgba(125, 249, 255, 0.8));
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
-@media (max-width: 480px) {
-  .tcard {
-    grid-template-columns: 48px 1fr auto;
-    gap: 10px;
+.hero-tags span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  color: color-mix(in srgb, var(--tone) 85%, white);
+  background: rgba(5, 6, 10, 0.3);
+}
+.hero-daily-hint {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tone) 85%, white);
+}
+.hero-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-swatch {
+  display: inline-flex;
+  gap: 3px;
+  height: 4px;
+  width: 72px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hero-swatch i {
+  flex: 1;
+  display: block;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* CTA row — secondary actions stacked left, PLAY flush right (asymmetric weight). */
+.hero-cta {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.hero-secondary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.btn.hero-sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.1em;
+  background: rgba(5, 6, 10, 0.4);
+  backdrop-filter: blur(6px);
+}
+.hero-play-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.hero-play {
+  --size: clamp(112px, 34vw, 148px);
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  border: 2px solid var(--tone);
+  color: var(--tone);
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--tone) 28%, transparent), transparent 70%),
+    rgba(5, 6, 10, 0.55);
+  box-shadow:
+    0 0 28px color-mix(in srgb, var(--tone) 40%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--tone) 18%, transparent);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.08s ease, box-shadow 0.15s ease;
+}
+.hero-play:hover:not(:disabled),
+.hero-play:focus-visible {
+  box-shadow:
+    0 0 44px color-mix(in srgb, var(--tone) 65%, transparent),
+    inset 0 0 30px color-mix(in srgb, var(--tone) 28%, transparent);
+  outline: none;
+}
+.hero-play:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 6px;
+}
+.hero-play:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.hero-play:disabled {
+  cursor: not-allowed;
+  border-style: dashed;
+  color: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
+  background: rgba(5, 6, 10, 0.55);
+}
+.hero-play-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tone) 70%, transparent));
+}
+.hero-play-face svg {
+  margin-left: 4px; /* optical centre of a triangle */
+}
+.hero-play:disabled .hero-play-face svg {
+  margin-left: 0;
+}
+.hero-play-text {
+  color: inherit;
+  letter-spacing: 0.28em;
+  margin-right: -0.28em;
+}
+/* Pulsing ring: 120 BPM = one beat every 0.5 s; the second ring is the off-beat (0.25 s later). */
+.hero-play-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--tone);
+  opacity: 0;
+  pointer-events: none;
+  animation: play-pulse 0.5s cubic-bezier(0.2, 0.7, 0.4, 1) infinite;
+}
+.hero-play-ring-2 {
+  animation-delay: 0.25s;
+  border-width: 1px;
+}
+.hero-play:disabled .hero-play-ring {
+  animation: none;
+  opacity: 0.25;
+  inset: -8px;
+  border-style: dashed;
+}
+.hero-play:disabled .hero-play-ring-2 {
+  display: none;
+}
+@keyframes play-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
   }
-  .tcard-num {
+  100% {
+    transform: scale(1.32);
+    opacity: 0;
+  }
+}
+.hero-unlock {
+  font-size: 11px;
+  color: #ffd700;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* ==========================================================================
+   REEL — filters + snap-scrolling strip of square covers.
+   ========================================================================== */
+.reel {
+  --gutter: max(16px, var(--safe-left));
+  --reel-gap: 10px;
+  /* 2.85 → three cards visible, the third cut at the edge = "there is more to the right". */
+  --reel-cols: 2.85;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 0 6px;
+}
+.reel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 var(--gutter);
+}
+.reel-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--c-cyan);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+}
+.reel-count {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  text-shadow: none;
+}
+.reel-hint {
+  text-align: right;
+}
+.reel-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reel-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px var(--gutter) 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.reel-chips::-webkit-scrollbar {
+  display: none;
+}
+.reel-chip,
+.reel-seg {
+  flex: none;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.reel-chip[aria-checked='true'] {
+  border-color: var(--c-magenta);
+  color: #fff;
+  background: rgba(255, 43, 214, 0.16);
+  box-shadow: 0 0 12px rgba(255, 43, 214, 0.35);
+}
+.reel-chip:hover,
+.reel-seg:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+}
+.reel-chip:focus-visible,
+.reel-seg:focus-visible {
+  outline: 2px solid var(--c-cyan);
+  outline-offset: 2px;
+}
+.reel-sort {
+  display: inline-flex;
+  gap: 0;
+  margin: 0 var(--gutter);
+  align-self: flex-start;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.reel-seg {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 6px 12px;
+}
+.reel-seg + .reel-seg {
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+.reel-seg[aria-checked='true'] {
+  color: var(--c-bg);
+  background: var(--c-cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
+}
+.reel-seg:focus-visible {
+  outline-offset: -3px;
+}
+.reel-empty {
+  margin: 0;
+  padding: 24px var(--gutter);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+.reel-strip {
+  display: flex;
+  gap: var(--reel-gap);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px var(--gutter) 12px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.reel-strip::-webkit-scrollbar {
+  display: none;
+}
+.reel-card {
+  --card: calc((100% - (var(--reel-cols) - 1) * var(--reel-gap)) / var(--reel-cols));
+  position: relative;
+  flex: 0 0 var(--card);
+  width: var(--card);
+  scroll-snap-align: start;
+}
+.reel-card-main {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b0d16;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+  font: inherit;
+}
+.reel-card-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.reel-card-art .track-cover {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Bottom veil so the title sits on something dark, whatever the cover's colours. */
+.reel-card-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 6, 10, 0) 35%, rgba(5, 6, 10, 0.55) 62%, rgba(5, 6, 10, 0.92) 100%);
+}
+.reel-card-num {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.reel-card-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 7px;
+  border-radius: 0 9px 0 8px;
+  background: #ffd700;
+  color: var(--c-bg);
+  font-weight: 700;
+}
+.reel-card-text {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.reel-card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11.5px;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.reel-card-artist {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reel-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.reel-card-diff {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tone);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--tone) 70%, transparent);
+}
+.reel-card-earned {
+  font-size: 10px;
+  color: #ffd700;
+}
+.reel-card-rank {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 10px;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  line-height: 15px;
+}
+.reel-card-go {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px 6px 9px;
+  border-radius: 999px;
+  background: var(--tone);
+  color: var(--c-bg);
+  font-weight: 700;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 80%, transparent);
+  animation: go-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes go-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+.reel-card-lock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #ffd700;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.9));
+}
+.reel-card-lock .mono {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.is-locked .reel-card-art {
+  filter: saturate(0.25) brightness(0.55);
+}
+.is-locked .reel-card-title {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Focus / hover / selection: the card lifts and glows in its tone; selected stays lifted. */
+.reel-card-main:hover,
+.reel-card-main:focus-visible {
+  transform: scale(1.04);
+  border-color: color-mix(in srgb, var(--tone) 70%, transparent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px color-mix(in srgb, var(--tone) 35%, transparent);
+  z-index: 1;
+}
+.reel-card-main:focus-visible {
+  outline: 2px solid var(--c-cyan);
+  outline-offset: 3px;
+}
+.is-selected .reel-card-main {
+  transform: scale(1.04);
+  border-color: var(--tone);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 22px color-mix(in srgb, var(--tone) 55%, transparent);
+  z-index: 1;
+}
+.reel-card-main:disabled {
+  cursor: progress;
+}
+/* Records shortcut in the top-right corner (only when there is history). */
+.reel-card-rec {
+  position: absolute;
+  top: 26px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(5, 6, 10, 0.7);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.is-daily .reel-card-rec {
+  top: 30px;
+}
+.reel-card-rec:hover,
+.reel-card-rec:focus-visible {
+  border-color: var(--c-cyan);
+  color: var(--c-cyan);
+  outline: none;
+}
+.reel-card-rec:focus-visible {
+  outline: 2px solid var(--c-cyan);
+  outline-offset: 2px;
+}
+
+/* Scroll-driven peek: cards fade/scale in as they enter the strip (progressive enhancement). */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reel-card-art {
+      animation: reel-peek linear both;
+      animation-timeline: view(inline);
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}
+@keyframes reel-peek {
+  from {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- widths ------------------------------------------------------------- */
+@media (min-width: 480px) {
+  .reel {
+    --reel-cols: 3.85;
+  }
+}
+@media (min-width: 680px) {
+  .reel {
+    --reel-cols: 4.85;
+    --reel-gap: 12px;
+  }
+}
+/* Desktop: the strip becomes a 3-column grid (4 from 1200 px) — no snapping, no horizontal scroll. */
+@media (min-width: 900px) {
+  .reel {
+    --gutter: 0px;
+    padding: 0;
+  }
+  .reel-head {
+    padding: 0;
+  }
+  .reel-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    overflow: visible;
+    padding: 8px 0 12px;
+    scroll-snap-type: none;
+  }
+  .reel-card {
+    width: auto;
+    flex: none;
+  }
+  .reel-card-title {
+    font-size: 13px;
+  }
+  .reel-card-artist {
+    font-size: 11px;
+  }
+  .reel-filters {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .reel-chips {
+    flex-wrap: wrap;
+    padding: 0;
+    overflow: visible;
+  }
+  .reel-sort {
+    margin: 0;
+    flex: none;
+  }
+  .reel-card-art {
+    animation: none;
+  }
+}
+@media (min-width: 1200px) {
+  .reel-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* --- motion off ---------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg,
+  .hero-body,
+  .hero-play-ring,
+  .reel-card-go {
+    animation: none;
+  }
+  .hero-play-ring {
+    opacity: 0.35;
+  }
+  .hero-play-ring-2 {
     display: none;
   }
-  .tcard-cover {
-    width: 48px;
-    height: 48px;
+  .reel-card-main,
+  .hero-play {
+    transition: none;
   }
-  .tracklist-breakdown {
-    display: block;
-    margin-left: 0;
+  .reel-card-main:hover,
+  .reel-card-main:focus-visible,
+  .is-selected .reel-card-main {
+    transform: none;
   }
+}
+
+/* Premium lock: crystal instead of the padlock, magenta tint. */
+.reel-card.is-premium .reel-card-lock {
+  color: #ff2bd6;
+}
+.reel-card-lock .micro {
+  margin-top: 2px;
+  opacity: 0.8;
 }

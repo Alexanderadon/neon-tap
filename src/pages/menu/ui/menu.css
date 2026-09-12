@@ -1,14 +1,25 @@
+/* ==========================================================================
+   MENU — the neon console.
+   Phone: hero (full-bleed) → reel → goals → footer, dock fixed at the bottom.
+   Desktop ≥ 900 px: dock becomes a top bar; hero sticks in the left column, reel/goals scroll right.
+   ========================================================================== */
 .menu {
+  --dock-h: 60px;
+  --bar-h: 56px;
+  --gutter: max(16px, var(--safe-left));
   isolation: isolate;
+  /* The Screen wrapper centres a padded column; the console is edge-to-edge instead. */
+  padding: 0 0 calc(var(--dock-h) + var(--safe-bottom) + 12px);
+  gap: 0;
+  align-items: stretch;
+  scroll-padding-top: 12px;
 }
+
 /*
- * Slow-moving neon grid behind the menu: a perspective floor of cyan lines scrolling towards the
+ * Slow-moving neon grid behind the reel: a perspective floor of cyan lines scrolling towards the
  * viewer plus a magenta horizon glow. Pure gradients + keyframes — no images, no JS.
- *
  * `.menu-bg` is a fixed, masked, clipping window; its pseudo-element is the grid, one tile (44px)
- * taller than the window on each side and moved with `transform` only (compositor-driven — the
- * layer is painted once, unlike an animated `background-position`, which repaints every frame).
- * The grid repeats every 44px, so a 0 → 44px loop is seamless.
+ * taller than the window on each side and moved with `transform` only (compositor-driven).
  */
 .menu-bg {
   position: fixed;
@@ -21,7 +32,7 @@
   pointer-events: none;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
-  opacity: 0.55;
+  opacity: 0.4;
 }
 .menu-bg::before {
   content: '';
@@ -49,8 +60,8 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 50% 100%, rgba(255, 43, 214, 0.22), transparent 70%),
-    radial-gradient(40% 35% at 50% 100%, rgba(0, 240, 255, 0.12), transparent 70%);
+    radial-gradient(60% 50% at 50% 100%, rgba(255, 43, 214, 0.18), transparent 70%),
+    radial-gradient(40% 35% at 50% 100%, rgba(0, 240, 255, 0.1), transparent 70%);
   animation: menu-horizon 6s ease-in-out infinite alternate;
 }
 @keyframes menu-grid {
@@ -72,31 +83,26 @@
   }
 }
 
-.menu-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding-top: 12px;
-}
-.menu-logo {
+/* --- wordmark ------------------------------------------------------------ */
+.menu-wordmark {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(44px, 12vw, 84px);
-  line-height: 0.95;
-  letter-spacing: 0.04em;
-  display: flex;
-  gap: 0.25em;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  display: inline-flex;
+  gap: 0.35em;
+  white-space: nowrap;
 }
-.menu-logo .l1 {
+.menu-wordmark .l1 {
   color: var(--c-cyan);
-  text-shadow: 0 0 18px var(--c-cyan), 0 0 50px rgba(0, 240, 255, 0.5);
+  text-shadow: 0 0 10px var(--c-cyan), 0 0 26px rgba(0, 240, 255, 0.45);
   animation: logo-flicker 1.6s steps(1, end) both;
 }
-.menu-logo .l2 {
+.menu-wordmark .l2 {
   color: var(--c-magenta);
-  text-shadow: 0 0 18px var(--c-magenta), 0 0 50px rgba(255, 43, 214, 0.5);
+  text-shadow: 0 0 10px var(--c-magenta), 0 0 26px rgba(255, 43, 214, 0.45);
   animation: logo-flicker 1.9s steps(1, end) 0.15s both;
 }
 /* A neon tube warming up: a few dark blinks, then steady. */
@@ -128,54 +134,280 @@
     opacity: 1;
   }
 }
-.menu-tagline {
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  font-size: 12px;
-  animation: tagline-in 0.8s ease-out 0.5s both;
+.dock-wordmark {
+  display: none;
 }
-@keyframes tagline-in {
-  from {
-    opacity: 0;
-    letter-spacing: 0.5em;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    letter-spacing: 0.25em;
-    transform: none;
-  }
-}
-.menu-nav {
+
+/* --- columns -------------------------------------------------------------- */
+.menu-cols {
+  width: 100%;
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-  animation: tagline-in 0.6s ease-out 0.7s both;
+  flex-direction: column;
+}
+.menu-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.menu-goals {
+  padding: 0 var(--gutter);
+  scroll-margin-top: 12px;
+}
+.menu-goals .goals {
+  max-width: none;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-top: 1px solid rgba(0, 240, 255, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.05), transparent 60%);
 }
 .menu-foot {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
-  width: 100%;
-  max-width: 720px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.35);
-  padding-top: 16px;
+  padding: 4px var(--gutter) 8px;
 }
-.menu-foot a {
-  color: rgba(255, 255, 255, 0.55);
+.menu-foot .micro {
+  color: rgba(255, 255, 255, 0.3);
+}
+.menu-foot a.micro {
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+.menu-foot a.micro:hover,
+.menu-foot a.micro:focus-visible {
+  color: var(--c-cyan);
+  border-bottom-color: var(--c-cyan);
+  outline: none;
 }
 
+/* --- dock ------------------------------------------------------------------
+   Five slots. On phones a fixed bar at the bottom over a blurred dark glass, the top edge a thin
+   cyan rule; the primary slot (Играть) wears a filled disc so the bar is not five identical tiles.
+   --------------------------------------------------------------------------- */
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: rgba(5, 6, 10, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(0, 240, 255, 0.22);
+  box-shadow: 0 -1px 18px rgba(0, 240, 255, 0.08), 0 -12px 30px rgba(0, 0, 0, 0.45);
+}
+.dock-items {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  height: var(--dock-h);
+}
+.dock-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 0.12s ease;
+}
+.dock-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+.dock-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.dock-btn:hover,
+.dock-btn:focus-visible {
+  color: var(--c-cyan);
+  outline: none;
+}
+.dock-btn:focus-visible .dock-icon {
+  box-shadow: 0 0 0 2px var(--c-cyan);
+}
+.dock-btn:active .dock-icon {
+  transform: scale(0.9);
+}
+.dock-btn:disabled {
+  color: rgba(255, 255, 255, 0.25);
+  cursor: not-allowed;
+}
+.dock-btn.is-primary {
+  color: var(--c-cyan);
+}
+.dock-btn.is-primary .dock-icon {
+  color: var(--c-bg);
+  background: var(--c-cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.55);
+}
+.dock-btn.is-primary:focus-visible .dock-icon {
+  box-shadow: 0 0 0 2px #fff, 0 0 14px rgba(0, 240, 255, 0.55);
+}
+.dock-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ffd700;
+  color: var(--c-bg);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* --- widths ---------------------------------------------------------------- */
+@media (min-width: 480px) {
+  .dock-label {
+    font-size: 10px;
+  }
+}
+
+/* Desktop: dock → top bar with the wordmark; hero sticks left, reel/goals scroll on the right. */
+@media (min-width: 900px) {
+  .menu {
+    --gutter: 0px;
+    padding: var(--bar-h) 0 0;
+    /* The dock is a fixed bar over the top of this scroll container: every scrollIntoView target
+       and the sticky hero must sit below it, not under it. */
+    scroll-padding-top: calc(var(--bar-h) + 12px);
+  }
+  .menu-goals {
+    scroll-margin-top: 0;
+  }
+  .menu-cols {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 36px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px clamp(24px, 4vw, 56px) 40px;
+  }
+  .menu-cols .hero {
+    flex: 0 0 clamp(360px, 40%, 520px);
+    position: sticky;
+    /* Below the fixed top bar (+20px breathing room) — the panel's own top bar with the star pill
+       would otherwise slide under the dock as soon as the right column scrolls. */
+    top: calc(var(--bar-h) + 20px);
+    min-height: min(calc(100dvh - var(--bar-h) - 48px), 720px);
+    border-radius: 18px;
+    padding-top: 22px;
+  }
+  /* A sticky panel taller than the viewport would hide its own PLAY; on short screens it scrolls with the page. */
+  @media (max-height: 720px) {
+    .menu-cols .hero {
+      position: static;
+    }
+  }
+  .menu-cols .hero::after {
+    left: 0;
+    height: 2px;
+  }
+  .hero-wordmark {
+    display: none;
+  }
+  .dock-wordmark {
+    display: inline-flex;
+    align-self: center;
+  }
+  .menu-side {
+    flex: 1;
+    gap: 26px;
+  }
+  .menu-goals .goals {
+    border-radius: 12px;
+    border: 1px solid rgba(0, 240, 255, 0.18);
+  }
+  .dock {
+    top: 0;
+    bottom: auto;
+    align-items: center;
+    height: var(--bar-h);
+    padding: 0 clamp(24px, 4vw, 56px);
+    border-top: 0;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.22);
+    box-shadow: 0 1px 18px rgba(0, 240, 255, 0.08), 0 12px 30px rgba(0, 0, 0, 0.35);
+  }
+  .dock-items {
+    flex: 0 0 auto;
+    margin-left: auto;
+    gap: 4px;
+    height: auto;
+  }
+  .dock-btn {
+    flex: none;
+    flex-direction: row;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+  .dock-btn:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--c-cyan);
+  }
+  .dock-btn:focus-visible .dock-icon,
+  .dock-btn.is-primary:focus-visible .dock-icon {
+    box-shadow: none;
+  }
+  .dock-btn.is-primary .dock-icon {
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.55);
+  }
+  .dock-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .dock-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+  }
+}
+
+/* --- motion off ------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
   .menu-bg::before,
   .menu::after,
-  .menu-logo .l1,
-  .menu-logo .l2,
-  .menu-tagline,
-  .menu-nav {
+  .menu-wordmark .l1,
+  .menu-wordmark .l2 {
     animation: none;
   }
+  .dock-btn,
+  .dock-icon {
+    transition: none;
+  }
+}
+
+/* Crystal balance sits between the wordmark and the dock items. */
+.dock-wallet {
+  margin: 0 8px;
+  flex-shrink: 0;
 }
