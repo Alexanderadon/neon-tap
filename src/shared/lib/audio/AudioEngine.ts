@@ -1,7 +1,7 @@
 /**
  * Thin, dependency-free wrapper over the Web Audio API.
  *
- * Graph:  music (+ lead ─▶ leadGain) ─▶ lowpass ─▶ musicGain ─┐
+ * Graph:  music ─▶ lowpass ─▶ musicGain ─┐
  *         sfxGain ──────────────────────┼─▶ master ─▶ destination
  *         voiceGain ────────────────────┘
  *
@@ -17,10 +17,6 @@ export interface Volumes {
 }
 
 const LOWPASS_OPEN_HZ = 20000;
-/** Lead layer at rest (between hits): audible enough to keep the song recognisable, clearly "off". */
-const LEAD_IDLE = 0.12;
-const LEAD_ATTACK = 0.008;
-const LEAD_RELEASE = 0.25;
 const LOWPASS_MISS_HZ = 800;
 const MISS_DURATION = 0.25;
 const MISS_GAIN_DIP = 0.6;
@@ -35,9 +31,6 @@ export class AudioEngine {
   private analyser: AnalyserNode | null = null;
   private spectrumBins: Uint8Array<ArrayBuffer> | null = null;
   private source: AudioBufferSourceNode | null = null;
-  /** The lead layer (vocal / melody stem) — plays in sync with `source`, audible only while the player hits. */
-  private lead: AudioBufferSourceNode | null = null;
-  private leadGain!: GainNode;
   private startTime = 0;
   private pausePosition: number | null = null;
   private volumes: Volumes = { master: 1, music: 0.9, sfx: 0.8, voice: 1 };
@@ -57,9 +50,6 @@ export class AudioEngine {
       this.lowpass.frequency.value = LOWPASS_OPEN_HZ;
       this.lowpass.Q.value = 0.7;
       this.lowpass.connect(this.musicGain);
-      this.leadGain = this.ctx.createGain();
-      this.leadGain.gain.value = LEAD_IDLE;
-      this.leadGain.connect(this.lowpass);
       this.musicGain.connect(this.master);
       // Analyser taps the music bus for audio-reactive visuals (bass pulse). Not in the audible path.
       this.analyser = this.ctx.createAnalyser();
@@ -161,7 +151,7 @@ export class AudioEngine {
    * Start playback of `buffer` at song position `position`.
    * Returns the audio-clock time that corresponds to song position 0 (feed it to Clock.start).
    */
-  play(buffer: AudioBuffer, position = 0, onEnded?: () => void, delay = 0.08, lead: AudioBuffer | null = null): number {
+  play(buffer: AudioBuffer, position = 0, onEnded?: () => void, delay = 0.08): number {
     const ctx = this.ctx;
     if (!ctx) throw new Error('AudioContext not initialised');
     this.stop();
@@ -171,15 +161,6 @@ export class AudioEngine {
     src.connect(this.lowpass);
     const when = ctx.currentTime + Math.max(0.08, delay); // small lead so start() is sample-accurate
     src.start(when, position);
-    if (lead) {
-      const l = ctx.createBufferSource();
-      l.buffer = lead;
-      l.connect(this.leadGain);
-      l.start(when, position);
-      this.lead = l;
-      this.leadGain.gain.cancelScheduledValues(when);
-      this.leadGain.gain.setValueAtTime(LEAD_IDLE, when);
-    }
     src.onended = () => {
       if (this.source === src) {
         this.source = null;
@@ -206,7 +187,6 @@ export class AudioEngine {
     this.source = null;
     src.onended = null;
     src.stop();
-    this.stopLead();
   }
 
   stop(): void {
@@ -220,52 +200,8 @@ export class AudioEngine {
         /* already stopped */
       }
     }
-    this.stopLead();
     this.pausePosition = null;
     this.resetFilter();
-  }
-
-  private stopLead(): void {
-    if (!this.lead) return;
-    const l = this.lead;
-    this.lead = null;
-    try {
-      l.stop();
-    } catch {
-      /* already stopped */
-    }
-  }
-
-  /** Is a lead layer playing (the song came as stems)? */
-  get hasLead(): boolean {
-    return this.lead !== null;
-  }
-
-  /**
-   * A hit opens the lead layer: full volume at once, held for `seconds`, then back to idle over
-   * LEAD_RELEASE. This is what makes a tap "play the song" — miss, and the melody stays down.
-   */
-  leadOpen(seconds: number): void {
-    const ctx = this.ctx;
-    if (!ctx || !this.lead) return;
-    const t = ctx.currentTime;
-    const g = this.leadGain.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(1, t + LEAD_ATTACK);
-    g.setValueAtTime(1, t + seconds);
-    g.linearRampToValueAtTime(LEAD_IDLE, t + seconds + LEAD_RELEASE);
-  }
-
-  /** Holds / slides / rolls keep the lead open while the finger is down. */
-  leadHold(on: boolean): void {
-    const ctx = this.ctx;
-    if (!ctx || !this.lead) return;
-    const t = ctx.currentTime;
-    const g = this.leadGain.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(on ? 1 : LEAD_IDLE, t + (on ? LEAD_ATTACK : LEAD_RELEASE));
   }
 
   get isPlaying(): boolean {
@@ -277,13 +213,10 @@ export class AudioEngine {
     const ctx = this.ctx;
     if (!ctx || !this.source) return;
     const t = ctx.currentTime;
-    for (const node of [this.source, this.lead]) {
-      if (!node) continue;
-      const p = node.playbackRate;
-      p.cancelScheduledValues(t);
-      p.setValueAtTime(p.value, t);
-      p.linearRampToValueAtTime(rate, t + Math.max(0.001, duration));
-    }
+    const p = this.source.playbackRate;
+    p.cancelScheduledValues(t);
+    p.setValueAtTime(p.value, t);
+    p.linearRampToValueAtTime(rate, t + Math.max(0.001, duration));
   }
 
   /** "Tape stop" colour for slow-motion: muffle + duck while slowed, open back up on release. */

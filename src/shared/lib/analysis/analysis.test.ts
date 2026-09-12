@@ -232,8 +232,8 @@ describe('composeChart', () => {
     expect(maxFingers(notes)).toBeLessThanOrEqual(2);
   });
 
-  it('allows sixteenth pairs in intense bars when the pattern has them, an eighth apart otherwise', () => {
-    // "ta-ka" before beat 3 in every bar of an intense song: 0 4 7 8 12.
+  it('keeps "ta-ka" sixteenths as two hits even when the second is louder', () => {
+    // "ta-ka" before beat 3 in every bar: 0 4 7 8 12 (14 softer).
     const figure: Record<number, number> = {
       0: 1,
       4: 0.9,
@@ -250,20 +250,13 @@ describe('composeChart', () => {
     const early = notes.filter((n) => n[0] < 8); // bars 0–3: no circle window yet
     expect([...new Set(early.map((n) => stepOf(n[0])))].sort((x, y) => x - y)).toEqual([0, 4, 7, 8, 12, 14]);
     expect(maxFingers(notes)).toBeLessThanOrEqual(2);
-    // Quiet figures never get sixteenth gaps.
-    const soft: Record<number, number> = {
-      0: 0.2,
-      4: 0.18,
-      7: 0.16,
-      8: 0.2,
-      12: 0.18,
-    };
-    const sparse = composeChart(
-      fakeAnalysis(16, (_bar, step) => ({ strength: soft[step] ?? 0 })),
+    // A slot that is only the tail of a louder neighbour is not a hit of its own.
+    const smeared: Record<number, number> = { 0: 1, 1: 0.5, 8: 1, 9: 0.45 };
+    const tail = composeChart(
+      fakeAnalysis(16, (_bar, step) => ({ strength: smeared[step] ?? 0 })),
       { laneVariation: false },
-    ).notes;
-    const times = [...new Set(sparse.map((n) => n[0]))].sort((a, b) => a - b);
-    for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1]).toBeGreaterThanOrEqual(0.25 - 1e-6);
+    ).notes.filter((n) => n[0] < 8);
+    expect([...new Set(tail.map((n) => stepOf(n[0])))].sort((x, y) => x - y)).toEqual([0, 8]);
   });
 
   it('keeps quiet phrases sparse and lets intense phrases of energetic songs reach the density limit', () => {

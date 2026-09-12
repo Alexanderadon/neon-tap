@@ -60,8 +60,8 @@ export function layerEnergy(samples: Float32Array, sampleRate: number, analysis:
   return out;
 }
 
-/** A layer-driven phrase is scaled so its 90th-percentile hit reaches this salience (same idea as the quiet-phrase boost). */
-export const BOOST_TARGET_LAYER = 0.7;
+/** Layers whose sounds can ring on (holds); drums never sustain. */
+export const MELODIC_LAYERS: readonly Layer[] = ['vocals', 'other', 'bass'];
 
 /** A sound keeps ringing while its layer's energy stays above this share of the onset slot's energy… */
 const HOLD_KEEP = 0.45;

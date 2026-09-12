@@ -3,7 +3,7 @@
   "framework": "vite",
   "headers": [
     {
-      "source": "/(music|voice|stems)/(.*)",
+      "source": "/(music|voice)/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

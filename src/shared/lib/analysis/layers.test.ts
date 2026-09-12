@@ -48,6 +48,8 @@ function stepsByBar(analysis: SongAnalysis, notes: readonly NoteTuple[]): Map<nu
   return out;
 }
 
+/** Any two tiles at the same moment (a chord)? */
+const twoAtOnce = (notes: readonly NoteTuple[]): boolean => notes.some((n, i) => notes.findIndex((m) => m[0] === n[0]) !== i);
 const stepOf = (analysis: SongAnalysis, t: number) => analysis.slots.find((s) => Math.abs(s.time - t) < 1e-6)?.step;
 
 describe('layerStrengths', () => {
@@ -153,9 +155,10 @@ describe('composeChart with layers', () => {
   const withVoice = composeChart(analysis, { layers: vocal });
   const plain = composeChart(analysis);
 
-  it('puts notes on the followed instrument, not on the loud mix', () => {
-    const steps = withVoice.notes.map((n) => stepOf(analysis, n[0]));
-    expect(steps.every((s) => s === 0 || s === 6)).toBe(true);
+  it("keeps the tiles on the song's own audible hits: stems never move a tile", () => {
+    // The mix hits on every eighth; a singer on 0 and 6 changes nothing about where tiles are.
+    const steps = withVoice.notes.filter((n) => !n[3] || n[3] === 'slide').map((n) => stepOf(analysis, n[0]));
+    expect(steps.every((s) => s !== undefined && s % 2 === 0)).toBe(true);
     expect(plain.notes.some((n) => stepOf(analysis, n[0]) === 4)).toBe(true);
     expect(withVoice.notes.length).toBeGreaterThan(bars);
   });
@@ -166,16 +169,22 @@ describe('composeChart with layers', () => {
     expect(seen).toEqual(['vocals', 'vocals', 'vocals', 'vocals']);
   });
 
-  it('gives drum phrases no long notes and melodic phrases no fills', () => {
-    const sustained = fakeAnalysis(bars, (b, s) => ({ ...drumMix(b, s), sustain: s % 4 === 0 ? 6 : 0, low: 0.2, mid: 0.7 }));
-    const drums = fakeLayers(bars, (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 1 : 0.2) : 0));
-    const drumChart = composeChart(sustained, { layers: drums });
-    const isLong = (n: NoteTuple) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'roll';
-    expect(drumChart.notes.filter(isLong)).toEqual([]);
-    const melodic = fakeLayers(bars, (l, _b, step) => (l === 'other' ? (step % 8 === 0 ? 1 : 0) : 0));
-    const melodyChart = composeChart(sustained, { layers: melodic });
-    expect(melodyChart.notes.filter((n) => n[3] === 'roll')).toEqual([]);
-    expect(melodyChart.notes.filter(isLong).length).toBeGreaterThan(0);
+  it('makes holds only from a ringing melodic instrument: drums alone never hold', () => {
+    // A hit on beats 1 and 3 only, so a ringing sound has room; the mix says "sustain" everywhere.
+    const roomy = fakeAnalysis(bars, (_b, s) => ({ strength: s % 8 === 0 ? 1 : 0, sustain: 6, low: 0.2, mid: 0.7 }));
+    const drums = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'drums' ? (step % 8 === 0 ? 1 : 0.2) : 0),
+      (l) => (l === 'drums' ? 1 : 0.005),
+    );
+    const isLong = (n: NoteTuple) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'roll' && n[3] !== 'spin';
+    expect(composeChart(roomy, { layers: drums }).notes.filter(isLong)).toEqual([]);
+    const melodic = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'other' ? (step % 8 === 0 ? 1 : 0) : 0.02),
+      (l) => (l === 'other' ? 1 : 0.005),
+    );
+    expect(composeChart(roomy, { layers: melodic }).notes.filter(isLong).length).toBeGreaterThan(0);
   });
 
   it('stays playable with two thumbs whatever instrument it follows', () => {
@@ -189,8 +198,8 @@ describe('composeChart with layers', () => {
     }
   });
 
-  it('reads every bar on its own: a note for each sound of the instrument, none where it is silent', () => {
-    // The singer sings a different figure in every bar — no 4-bar average could reproduce it.
+  it('reads every bar on its own: a tile for each audible hit of the song, none where it is silent', () => {
+    // The song hits a different figure in every bar — no 4-bar average could reproduce it.
     const figure = (bar: number): number[] =>
       [
         [0, 6, 10],
@@ -198,45 +207,59 @@ describe('composeChart with layers', () => {
         [0, 4, 8, 12],
         [3, 9, 14],
       ][bar % 4];
-    const sung = fakeLayers(bars, (l, bar, step) => (l === 'vocals' ? (figure(bar).includes(step) ? 1 : 0) : 0.05));
-    const c = composeChart(analysis, { layers: sung });
-    const byBar = stepsByBar(analysis, c.notes);
-    let checked = 0;
+    const song = fakeAnalysis(bars, (bar, step) => ({ strength: figure(bar).includes(step) ? 1 : 0.02 }));
+    const c = composeChart(song, { laneVariation: false });
+    const lane = (notes: readonly NoteTuple[]) => notes.filter((n) => !n[3] || n[3] === 'slide' || n[3] === 'circle');
+    const byBar = stepsByBar(song, lane(c.notes));
+    let matched = 0;
     for (let b = 0; b < bars; b++) {
       const got = byBar.get(b) ?? [];
       // Circle windows and the lane-change gap may drop a hit; nothing may be invented.
       for (const s of got) expect(figure(b), `bar ${b} step ${s}`).toContain(s);
-      if (got.length === figure(b).length) checked++;
+      if (got.length === figure(b).length) matched++;
     }
-    expect(checked).toBeGreaterThanOrEqual(bars * 0.5);
-  });
-
-  it('holds only where the sound rings for a beat or more; a drum layer never holds', () => {
-    // Step 0 rings for six slots in even bars (energy stays up, no new onset); everything else is a short hit.
-    const ringing = (bar: number, step: number) => bar % 2 === 0 && step >= 0 && step <= 6;
+    expect(matched).toBeGreaterThanOrEqual(bars * 0.5);
+    // With stems, every note is a tile too: a singer on 5 and 13 adds those hits, and nothing else moves.
     const sung = fakeLayers(
       bars,
-      (l, _b, step) => (l === 'vocals' ? (step === 0 || step === 8 ? 1 : 0) : 0.05),
-      (l, bar, step) => (l === 'vocals' ? (ringing(bar, step) ? 1 : step === 8 ? 1 : 0.1) : 0.02),
+      (l, _b, step) => (l === 'vocals' ? (step === 5 || step === 13 ? 1 : 0) : 0.05),
+      (l) => (l === 'vocals' ? 1 : 0.02),
     );
-    const c = composeChart(analysis, { layers: sung });
-    const holds = c.notes.filter((n) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin');
+    const withSinger = lane(composeChart(song, { laneVariation: false, layers: sung }).notes);
+    let sungTiles = 0;
+    for (const n of withSinger) {
+      const slot = song.slots.find((s) => Math.abs(s.time - n[0]) < 1e-6)!;
+      if (slot.step === 5 || slot.step === 13) sungTiles++;
+      else expect(figure(slot.bar), `bar ${slot.bar} step ${slot.step}`).toContain(slot.step);
+    }
+    expect(sungTiles).toBeGreaterThan(bars);
+  });
+
+  it('holds only where an instrument rings for a beat or more, and never across another audible hit', () => {
+    // Hits on beats 1 and 3; in even bars the lead rings from beat 1 for six slots, in odd bars it is a short stab.
+    const song = fakeAnalysis(bars, (_b, s) => ({ strength: s % 8 === 0 ? 1 : 0.02, sustain: 0 }));
+    const ringing = (bar: number, step: number) => bar % 2 === 0 && step <= 6;
+    const lead = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'other' ? (step === 0 || step === 8 ? 1 : 0) : 0.05),
+      (l, bar, step) => (l === 'other' ? (ringing(bar, step) || step === 8 ? 1 : 0.05) : 0.02),
+    );
+    const c = composeChart(song, { layers: lead, laneVariation: false });
+    const holds = c.notes.filter((n) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin' && n[3] !== 'roll');
     expect(holds.length).toBeGreaterThanOrEqual(bars / 4);
     for (const h of holds) {
-      const slot = analysis.slots.find((s) => Math.abs(s.time - h[0]) < 1e-6)!;
+      const slot = song.slots.find((s) => Math.abs(s.time - h[0]) < 1e-6)!;
       expect(slot.step).toBe(0);
       expect(slot.bar % 2).toBe(0);
-      expect(h[2]).toBeGreaterThanOrEqual(0.5); // ≥ a beat at 120 BPM
-      expect(h[2]).toBeLessThanOrEqual(0.75 + 1e-6); // six slots: the ring ends there
+      expect(h[2]).toBeGreaterThanOrEqual(0.5);
+      expect(h[2]).toBeLessThanOrEqual(0.75 + 1e-6);
     }
-    const drums = fakeLayers(
-      bars,
-      (l, _b, step) => (l === 'drums' ? (step % 4 === 0 ? 1 : 0) : 0.05),
-      (l) => (l === 'drums' ? 1 : 0.02),
-    );
-    expect(composeChart(analysis, { layers: drums }).notes.filter((n) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'roll' && n[3] !== 'spin')).toEqual(
-      [],
-    );
+    // The same ringing lead over a kick on every beat: "tu-DUN-dun-dun" — the kicks are taps, the hold stops at the next kick.
+    const kicks = fakeAnalysis(bars, (_b, s) => ({ strength: s % 4 === 0 ? 1 : 0.02, sustain: 0 }));
+    const c2 = composeChart(kicks, { layers: lead, laneVariation: false });
+    for (const n of c2.notes) if (n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin') expect(n[2]).toBeLessThanOrEqual(0.5 + 1e-6);
+    const beats = c2.notes.filter((n) => !n[3]).map((n) => stepOf(kicks, n[0]));
+    expect(beats.filter((s) => s === 4 || s === 12).length).toBeGreaterThan(bars);
   });
 
   it('makes a chord where two instruments hit together on the accent', () => {
@@ -250,6 +273,7 @@ describe('composeChart with layers', () => {
     const chords = times.filter((x, i) => times.indexOf(x) !== i);
     expect(chords.length).toBeGreaterThan(0);
     for (const x of chords) expect(analysis.slots.find((s) => Math.abs(s.time - x) < 1e-6)!.step).toBe(0);
+    expect(twoAtOnce(c.notes)).toBe(true);
     // The same singer alone (no second instrument) gets no chords.
     const alone = fakeLayers(bars, (l, _b, step) => (l === 'vocals' ? (step === 0 ? 1 : step % 4 === 0 ? 0.5 : 0) : 0.05));
     const t2 = composeChart(analysis, { layers: alone }).notes.map((n) => n[0]);

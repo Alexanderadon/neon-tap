@@ -9,7 +9,7 @@
  * Strategies
  *   navigation / index.html      network-first, offline → cached shell
  *   /assets/*  (hashed)          cache-first (precached; anything missing is fetched and kept)
- *   /music /stems /sfx /voice /icons    cache-first, runtime cache with a 200 MB cap, evicted oldest-first
+ *   /music /sfx /voice /icons    cache-first, runtime cache with a 200 MB cap, evicted oldest-first
  *   /charts                      cache-first + refresh in the background (charts are regenerated)
  *   Google Fonts                 cache-first
  *   /api/* and everything else   untouched (network)
@@ -27,7 +27,7 @@ const KEEP_CACHES = new Set([SHELL_CACHE, MEDIA_CACHE, FONT_CACHE]);
 /** Synthetic entry inside MEDIA_CACHE holding `{ entries: [{ url, size, at }] }` in insertion order. */
 const INDEX_KEY = '/__neon-media-index__';
 const MEDIA_CAP = 200 * 1024 * 1024;
-const MEDIA_PREFIXES = ['/music/', '/stems/', '/sfx/', '/voice/', '/icons/'];
+const MEDIA_PREFIXES = ['/music/', '/sfx/', '/voice/', '/icons/'];
 const REVALIDATE_PREFIXES = ['/charts/'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
