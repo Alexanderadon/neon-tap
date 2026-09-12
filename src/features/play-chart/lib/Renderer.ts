@@ -1124,7 +1124,7 @@ export class Renderer {
       ctx.stroke();
       ctx.globalAlpha = base;
     }
-    // The number is hollow while the circle is closed and turns solid the moment a tap would count.
+    // The number is dim while the circle is closed and turns solid the moment a tap would count.
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `900 ${Math.round(r * 1.1)}px ${FONT}`;
@@ -1136,9 +1136,9 @@ export class Renderer {
       ctx.fillStyle = this.discColor;
       ctx.fillText(String(n.seq || 1), cx, cy + 1);
     } else {
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-      ctx.strokeText(String(n.seq || 1), cx, cy + 1);
+      // Closed: the digit is there but dim (a stroked outline of a heavy glyph renders as a mess).
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillText(String(n.seq || 1), cx, cy + 1);
     }
     ctx.globalAlpha = 1;
   }
