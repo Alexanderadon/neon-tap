@@ -153,11 +153,16 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         s.debugSlow();
       }
     };
+    // Tab hidden / app switched away (installed PWA: home button, notification shade): pause.
+    // Only the song source is stopped — the AudioContext stays alive so resume is instant and
+    // needs no new user gesture. `freeze` / `pagehide` cover the Page Lifecycle paths where
+    // Android may drop the process without a visibilitychange first.
     const onVisibility = () => {
       if (document.hidden) sessionRef.current?.pause();
       // Coming back: iOS may have suspended the context; the audio gate re-appears if so.
       else void audioEngine.ensureContext().catch(() => undefined);
     };
+    const onHidden = () => sessionRef.current?.pause();
     // A phone rotated to landscape mid-song: the "rotate" overlay covers the field, so pause.
     const onResize = () => {
       if (needsRotateHint(isTouchDevice(), window.innerWidth, window.innerHeight)) sessionRef.current?.pause();
@@ -169,6 +174,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     };
     window.addEventListener('keydown', onKey);
     document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('freeze', onHidden);
+    window.addEventListener('pagehide', onHidden);
     window.addEventListener('resize', onResize);
     document.addEventListener('gesturestart', stopGesture, { passive: false });
     document.addEventListener('touchmove', stopMultiTouch, { passive: false });
@@ -177,6 +184,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       cancelled = true;
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('freeze', onHidden);
+      window.removeEventListener('pagehide', onHidden);
       window.removeEventListener('resize', onResize);
       document.removeEventListener('gesturestart', stopGesture);
       document.removeEventListener('touchmove', stopMultiTouch);

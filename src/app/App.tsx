@@ -12,6 +12,8 @@ import { TutorialPage } from '@/pages/tutorial';
 import { ShopPage } from '@/pages/shop';
 import { AudioGate } from '@/widgets/audio-gate';
 import { OrientationHint } from '@/widgets/orientation-hint';
+import { InstallBanner } from '@/widgets/install-banner';
+import { UpdateToast } from '@/widgets/update-toast';
 
 /** Screen router: the game has no URLs on purpose — restart must never trigger navigation. */
 export function App() {
@@ -55,11 +57,15 @@ export function App() {
   }
 
   // The audio gate sits above every screen: the first tap unlocks sound (mobile autoplay policy)
-  // and it comes back whenever the AudioContext gets suspended.
+  // and it comes back whenever the AudioContext gets suspended. PWA banners never cover the
+  // play field: the install banner lives on the menu, the update toast hides during a run.
+  const playing = screen === 'game' || screen === 'tutorial';
   return (
     <>
       {page}
       <OrientationHint />
+      <InstallBanner active={screen === 'menu'} />
+      <UpdateToast suppressed={playing} />
       <AudioGate />
     </>
   );

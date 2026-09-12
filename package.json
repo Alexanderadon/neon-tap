@@ -6,7 +6,7 @@
   "description": "NEON TAP — 4-lane browser rhythm game with automatic chart generation from any audio file",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsx --tsconfig tsconfig.node.json scripts/build-sw.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -18,7 +18,8 @@
     "assets:licenses": "tsx --tsconfig tsconfig.node.json scripts/write-licenses.ts",
     "assets:analyze": "tsx --tsconfig tsconfig.node.json scripts/analyze-tracks.ts",
     "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts",
-    "chart:tutorial": "node scripts/gen-tutorial.mjs"
+    "chart:tutorial": "node scripts/gen-tutorial.mjs",
+    "assets:icons": "tsx --tsconfig tsconfig.node.json scripts/make-icons.ts"
   },
   "dependencies": {
     "react": "^18.3.1",
