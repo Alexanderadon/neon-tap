@@ -8,7 +8,7 @@
  * songs (by their normal rating) are re-read with the EASY profile so chapter one is a real
  * on-ramp: beats only, no rolls / slides / chords, 3–4 lanes.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
@@ -31,6 +31,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
+const STEMS_DIR = join(ROOT, 'public', 'stems');
 const RATE = 22050;
 /** The calmest songs get the beginner reading (chapter one), the next ones the medium reading (chapter two). */
 const BEGINNER_TRACKS = 10;
@@ -77,7 +78,8 @@ for (const { t, duration, analysis, ms } of analysed) {
     sourceUrl: t.sourceUrl,
     genre: t.genre,
     ...(t.premium ? { premium: true } : {}),
-    audio: `music/${t.id}.mp3`,
+    // With stems the client plays backing + lead in sync (see prepare-stems.ts); analysis always uses the full mix.
+    ...(existsSync(join(STEMS_DIR, t.id, 'lead.mp3')) ? { audio: `stems/${t.id}/backing.mp3`, lead: `stems/${t.id}/lead.mp3` } : { audio: `music/${t.id}.mp3` }),
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
     duration: Math.round(duration * 100) / 100,
