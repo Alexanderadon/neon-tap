@@ -33,6 +33,20 @@ describe('Clock', () => {
     expect(clock.toAudioTime(0.95)).toBeCloseTo(1, 6);
   });
 
+  it('runs the heard song time behind the audio clock by the device output latency, on top of the user offset', () => {
+    const time = fakeTime(0);
+    const clock = new Clock(time.now, 0.02, 0.08);
+    clock.start(0);
+    time.advance(1);
+    // The player hears position 1.0 only 80 ms later (plus their own 20 ms): a tile due at 0.9 meets the line now.
+    expect(clock.songTime()).toBeCloseTo(0.9, 6);
+    expect(clock.toSongTime(1)).toBeCloseTo(0.9, 6);
+    expect(clock.toAudioTime(0.9)).toBeCloseTo(1, 6);
+    // A headset connects mid-song: the latency is updated live.
+    clock.deviceLatency = 0.2;
+    expect(clock.songTime()).toBeCloseTo(0.78, 6);
+  });
+
   it('integrates rate ramps exactly (slow-motion)', () => {
     const time = fakeTime(0);
     const clock = new Clock(time.now);

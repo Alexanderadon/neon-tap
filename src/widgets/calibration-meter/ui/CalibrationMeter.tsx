@@ -14,8 +14,9 @@ interface Props {
 type Phase = 'intro' | 'running' | 'done';
 
 /**
- * Metronome at 120 BPM scheduled on the audio clock; taps are stamped with audio time,
- * the median deviation becomes `audioOffsetMs`.
+ * Metronome at 120 BPM scheduled on the audio clock; taps are stamped with audio time minus the
+ * device's output latency (the game subtracts that on its own), so the median deviation that
+ * becomes `audioOffsetMs` is only the player's residual — their reaction and touch latency.
  */
 export function CalibrationMeter({ onDone }: Props) {
   const [phase, setPhase] = useState<Phase>('intro');
@@ -65,7 +66,7 @@ export function CalibrationMeter({ onDone }: Props) {
       if (e instanceof KeyboardEvent && (e.repeat || e.code === 'Escape')) return;
       if (e instanceof PointerEvent && (e.target as HTMLElement).closest('button')) return;
       const age = Math.max(0, Math.min(0.1, (performance.now() - e.timeStamp) / 1000));
-      const dev = calib.current.registerTap(audioEngine.now() - age, firstBeat.current);
+      const dev = calib.current.registerTap(audioEngine.now() - age - audioEngine.outputLatency(), firstBeat.current);
       setLastMs(Math.round(dev * 1000));
       setCount(calib.current.deviations.length);
       if (calib.current.done) {
