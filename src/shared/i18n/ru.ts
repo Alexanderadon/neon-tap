@@ -137,6 +137,15 @@ export const ru = {
     acoustic: 'акустика',
     world: 'этника',
     electronic: 'электроника',
+    // --- tracks2 --- (keys must live inside `genres`: the card indexes it by `Genre`)
+    trance: 'транс',
+    house: 'хаус',
+    hardstyle: 'хардстайл',
+    hardcore: 'хардкор',
+    breakbeat: 'брейкбит',
+    eurobeat: 'евробит',
+    synthpop: 'синти-поп',
+    metal: 'метал',
   },
   tempo: 'темп',
   // --- progression ---

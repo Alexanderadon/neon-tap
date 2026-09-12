@@ -18,11 +18,11 @@ interface RawTrack {
   title: string;
   artist: string;
   genre: Genre;
+  /** Premium track (shop item, paid with crystals) — copied into the chart file and the catalog. */
+  premium?: boolean;
   raw: string;
   sourceUrl: string;
   license: string;
-  /** Shop-only track: never opens by stars, bought with crystals. */
-  premium?: boolean;
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -63,7 +63,7 @@ for (const t of tracks) {
   const f = chartFeatures(chart);
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
-    `${t.id.padEnd(28)} ${t.genre.padEnd(10)} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
+    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
       `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} [${lanes}] ${Date.now() - t0} ms`,
   );
 }
