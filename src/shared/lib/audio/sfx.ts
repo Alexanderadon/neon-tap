@@ -97,9 +97,9 @@ export function sfxLanes(open: boolean): void {
   }
 }
 
-/** A card passing the centre of the deck: a soft pluck, pitched up a little with each card of a long flight. */
+/** A card passing the centre of the deck: a soft, low woody tap (Kenney "drop"), a touch higher with each card of a long flight. */
 export function sfxSwipe(pitch = 1): void {
-  if (!sfxBank.play('swipe', { gain: 0.55, rate: pitch })) fallbackTone(520 * pitch, 0.05, 0.08, 'sine');
+  if (!sfxBank.play('swipe', { gain: 0.5, rate: pitch })) fallbackTone(260 * pitch, 0.06, 0.08, 'sine');
 }
 
 /** Soft UI click for buttons. */

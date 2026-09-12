@@ -35,7 +35,7 @@
     "lanes-open": { "pack": "interface", "file": "maximize_006.ogg", "role": "lane count grows (lanes spread apart)" },
     "lanes-close": { "pack": "interface", "file": "minimize_006.ogg", "role": "lane count shrinks (lanes merge)" },
     "lanes-glitch": { "pack": "interface", "file": "glitch_002.ogg", "role": "lane change accent (layered)" },
-    "swipe-0": { "pack": "interface", "file": "pluck_001.ogg", "role": "deck card passes the centre (round-robin 1/2)" },
-    "swipe-1": { "pack": "interface", "file": "pluck_002.ogg", "role": "deck card passes the centre (round-robin 2/2)" }
+    "swipe-0": { "pack": "interface", "file": "drop_002.ogg", "role": "deck card passes the centre — soft woody tap (round-robin 1/2)" },
+    "swipe-1": { "pack": "interface", "file": "drop_003.ogg", "role": "deck card passes the centre — soft woody tap (round-robin 2/2)" }
   }
 }

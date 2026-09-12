@@ -76,7 +76,7 @@ export function TrackDeck({ onRecords }: Props) {
   const settleIndex = useCallback((i: number) => {
     if (i === indexRef.current) return;
     indexRef.current = i;
-    sfxSwipe(1 + 0.06 * Math.min(8, passes.current++));
+    sfxSwipe(1 + 0.03 * Math.min(8, passes.current++));
     setDetails(false);
     setIndex(i);
     writeDeckIndex(storage(), i);
