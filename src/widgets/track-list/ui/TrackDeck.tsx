@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { sfxUi } from '@/shared/lib/audio';
+import { sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { CrystalIcon, Stars } from '@/shared/ui';
 import { CATALOG, TrackCover, type TrackMeta } from '@/entities/track';
@@ -69,11 +69,14 @@ export function TrackDeck({ onRecords }: Props) {
     }
   }, []);
 
-  /** The centre card changed: slide the mounted window (a React render) and tick. */
+  /** Cards passed since the flight began — each pass plucks a little higher. */
+  const passes = useRef(0);
+
+  /** The centre card changed: slide the mounted window (a React render) and pluck. */
   const settleIndex = useCallback((i: number) => {
     if (i === indexRef.current) return;
     indexRef.current = i;
-    sfxUi();
+    sfxSwipe(1 + 0.06 * Math.min(8, passes.current++));
     setDetails(false);
     setIndex(i);
     writeDeckIndex(storage(), i);
@@ -93,6 +96,7 @@ export function TrackDeck({ onRecords }: Props) {
   const flyTo = useCallback(
     (to: number) => {
       cancelAnimationFrame(raf.current);
+      passes.current = 0;
       motion.current!.fly(to, performance.now());
       raf.current = requestAnimationFrame(tick);
     },

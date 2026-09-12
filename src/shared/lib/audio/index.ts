@@ -7,5 +7,5 @@ export { SPECTRUM_BANDS, spectrumBands, bandLayout, bassFromBins } from './spect
 export type { BandLayout } from './spectrum';
 export { SampleBank } from './SampleBank';
 export type { PlayOptions } from './SampleBank';
-export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxGem, sfxRank, sfxUi, sfxLanes } from './sfx';
+export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxGem, sfxRank, sfxUi, sfxLanes, sfxSwipe } from './sfx';
 export { unlockAudio, useAudioUnlocked, audioUnlockStore } from './unlock';
