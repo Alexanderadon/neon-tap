@@ -91,7 +91,7 @@ describe('pickLayer', () => {
     const equal = fakeLayers(4, (_l, _b, step) => (step % 4 === 0 ? 1 : 0));
     expect(pickLayer(equal, idx)).toBe('vocals');
     const drums = fakeLayers(4, (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 1 : 0) : step % 8 === 0 ? 0.6 : 0));
-    expect(pickLayer(drums, idx)).toBe('drums');
+    expect(pickLayer(drums, idx)).toBe('vocals'); // a melody, even a soft one, beats the drums
     const bass = fakeLayers(4, (l, _b, step) => (l === 'bass' ? (step % 4 === 0 ? 1 : 0) : step % 8 === 0 ? 0.2 : 0));
     expect(pickLayer(bass, idx)).toBe('bass');
   });
@@ -113,25 +113,21 @@ describe('pickLayer', () => {
     expect(pickLayer(softSinger, idx)).toBe('vocals');
   });
 
-  it('judges by the clearest hits, not by busyness, and takes turns between close instruments', () => {
+  it('follows the melody like Magic Tiles: a soft melody beats loud drums, drums lead only where nothing melodic plays', () => {
     const idx = Array.from({ length: 64 }, (_, i) => i);
-    // A hi-hat on every eighth at 0.7 against a melody with two clean hits per bar at 1.0: the melody leads.
+    // A hi-hat on every eighth at 1.0 against a melody with two soft hits per bar at 0.6: the melody leads.
     const busyHats = fakeLayers(
       4,
-      (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 0.7 : 0) : l === 'other' ? (step % 8 === 0 ? 1 : 0) : 0),
+      (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 1 : 0) : l === 'other' ? (step % 8 === 0 ? 0.6 : 0) : 0),
       (l) => (l === 'drums' || l === 'other' ? 1 : 0.01),
     );
     expect(pickLayer(busyHats, idx)).toBe('other');
-    // Voice and bass equally clear: the voice wins fresh and keeps the next phrase; after two phrases the bass gets its turn.
-    const duet = fakeLayers(
-      4,
-      (l, _b, step) => (l === 'vocals' || l === 'bass' ? (step % 4 === 0 ? 1 : 0) : 0),
-      (l) => (l === 'vocals' || l === 'bass' ? 1 : 0.01),
-    );
+    // Voice and bass equally clear: the voice leads, every phrase.
+    const duet = fakeLayers(4, (l, _b, step) => (l === 'vocals' || l === 'bass' ? (step % 4 === 0 ? 1 : 0) : 0), (l) => (l === 'vocals' || l === 'bass' ? 1 : 0.01));
     expect(pickLayer(duet, idx)).toBe('vocals');
-    expect(pickLayer(duet, idx, 'vocals', 1)).toBe('vocals');
-    expect(pickLayer(duet, idx, 'vocals', 2)).toBe('bass');
-    expect(pickLayer(duet, idx, 'bass', 2)).toBe('vocals');
+    // A drum break: nothing melodic sounds, the drums lead.
+    const breakdown = fakeLayers(4, (l, _b, step) => (l === 'drums' ? (step % 4 === 0 ? 1 : 0) : 0.02), (l) => (l === 'drums' ? 1 : 0.005));
+    expect(pickLayer(breakdown, idx)).toBe('drums');
   });
 
   it('returns null when nothing audible plays', () => {

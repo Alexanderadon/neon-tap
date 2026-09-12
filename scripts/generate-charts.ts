@@ -12,7 +12,21 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
-import { EASY, LAYERS, MEDIUM, analyzeSong, chartFeatures, composeChart, layerEnergy, layerStrengths, type LayerStrengths, type Profile, type StemLayers } from '../src/shared/lib/analysis';
+import {
+  EASY,
+  LAYERS,
+  MEDIUM,
+  analyzeSong,
+  chartFeatures,
+  composeChart,
+  layerEnergy,
+  layerStrengths,
+  tilePitches,
+  type Layer,
+  type LayerStrengths,
+  type Profile,
+  type StemLayers,
+} from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
 
 interface RawTrack {
@@ -47,20 +61,23 @@ interface Analysed {
   duration: number;
   analysis: ReturnType<typeof analyzeSong>;
   layers?: StemLayers;
+  /** Decoded stems (for the tiles' melody notes). */
+  pcm?: Record<Layer, Float32Array>;
   ms: number;
 }
 /** Onset strengths of every separated instrument on the mix's grid; undefined when the track has no stems yet. */
-function loadLayers(id: string, analysis: ReturnType<typeof analyzeSong>): StemLayers | undefined {
+function loadLayers(id: string, analysis: ReturnType<typeof analyzeSong>): { layers: StemLayers; pcm: Record<Layer, Float32Array> } | undefined {
   const files = LAYERS.map((l) => join(STEMS_SRC, id, `stem-${l}.mp3`));
   if (!files.every((p) => existsSync(p))) return undefined;
   const onset = {} as LayerStrengths;
   const energy = {} as LayerStrengths;
+  const pcm = {} as Record<Layer, Float32Array>;
   LAYERS.forEach((l, i) => {
-    const pcm = decodePcm(files[i], RATE);
-    onset[l] = layerStrengths(pcm, RATE, analysis);
-    energy[l] = layerEnergy(pcm, RATE, analysis);
+    pcm[l] = decodePcm(files[i], RATE);
+    onset[l] = layerStrengths(pcm[l], RATE, analysis);
+    energy[l] = layerEnergy(pcm[l], RATE, analysis);
   });
-  return { onset, energy };
+  return { layers: { onset, energy }, pcm };
 }
 const analysed: Analysed[] = [];
 for (const t of tracks) {
@@ -70,7 +87,8 @@ for (const t of tracks) {
   const samples = decodePcm(file, RATE);
   const duration = probeDuration(file);
   const analysis = analyzeSong(samples, RATE);
-  analysed.push({ t, duration, analysis, layers: loadLayers(t.id, analysis), ms: Date.now() - t0 });
+  const stems = loadLayers(t.id, analysis);
+  analysed.push({ t, duration, analysis, layers: stems?.layers, pcm: stems?.pcm, ms: Date.now() - t0 });
 }
 
 // The calmest songs by their normal rating become the beginner chapter.
@@ -84,15 +102,21 @@ calmest.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
 calmest.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
 
 const built: ChartFile[] = [];
-for (const { t, duration, analysis, layers, ms } of analysed) {
+for (const { t, duration, analysis, layers, pcm, ms } of analysed) {
   const profile = profiles.get(t.id);
   let followed = '';
+  let phraseLayers: (Layer | null)[] = [];
   const chart = composeChart(analysis, {
     seed: hash(t.id),
     profile,
     layers,
-    onLayers: (per) => (followed = per.map((l) => (l ? l[0] : '-')).join('')),
+    onLayers: (per) => {
+      phraseLayers = per;
+      followed = per.map((l) => (l ? l[0] : '-')).join('');
+    },
   });
+  // Magic Tiles: every tile carries the melody note it stands for, played by the game on a hit.
+  if (layers && pcm) chart.pitches = tilePitches(chart, analysis, layers, phraseLayers, pcm, RATE);
   const file2: ChartFile = {
     id: t.id,
     title: t.title,
@@ -117,7 +141,7 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
     `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : profile === EASY ? ' E' : profile === MEDIUM ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
-      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} spins ${f.spins} [${lanes}] ${ms} ms${followed ? ' ' + followed : ''}`,
+      `notes ${String(chart.notes.length).padStart(4)} pitched ${chart.pitches ? Math.round((100 * chart.pitches.filter((p) => p > 0).length) / Math.max(1, chart.pitches.length)) : 0}% holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} spins ${f.spins} [${lanes}] ${ms} ms${followed ? ' ' + followed : ''}`,
   );
 }
 

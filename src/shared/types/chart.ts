@@ -32,6 +32,11 @@ export interface ChartLevel {
   notes: NoteTuple[];
   /** Lane-count sections, ascending; the first starts at 0. Absent → 4 lanes throughout. */
   sections?: SectionTuple[];
+  /**
+   * The melody note every tile stands for (MIDI number, 0 = none), aligned with `notes` — the
+   * Magic Tiles rule: a hit plays that note. Absent for charts read from the mix alone.
+   */
+  pitches?: number[];
 }
 
 /** Music genres of the built-in catalog — drive the cover art and (optionally) visual themes. */

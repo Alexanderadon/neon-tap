@@ -35,6 +35,8 @@ export interface PooledNote {
   taps: number;
   /** Spin: revolutions so far (fractional). */
   spin: number;
+  /** Melody note the tile plays when hit (MIDI), 0 = none. */
+  pitch: number;
   /** Lane count of the section this note belongs to (for rendering geometry). */
   lanes: number;
   state: NoteState;
@@ -117,6 +119,7 @@ export class NoteManager {
         extra: 0,
         taps: 0,
         spin: 0,
+        pitch: 0,
         lanes: 4,
         state: NoteState.Pending,
         judgement: null,
@@ -148,6 +151,7 @@ export class NoteManager {
       n.extra = src.kind === 'spin' ? Math.max(1, Math.round(src.duration * SPIN_REV_PER_SEC)) : src.extra;
       n.taps = 0;
       n.spin = 0;
+      n.pitch = src.pitch;
       n.lanes = src.lanes;
       n.state = NoteState.Pending;
       n.judgement = null;
