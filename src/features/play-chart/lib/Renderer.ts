@@ -1100,8 +1100,20 @@ export class Renderer {
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
+    // The disc fills from the centre while the circle is open: empty when it opens, full at its
+    // moment — the player taps it as it fills (any tap in that window counts).
+    const open = t <= CIRCLE_OPEN_SHARE;
+    if (open && !missed) {
+      const fillR = r * (1 - t / CIRCLE_OPEN_SHARE);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy, fillR, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.lineWidth = Math.max(3, r * 0.14);
     ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.stroke();
     if (!missed) {
       ctx.lineWidth = 2;
@@ -1112,13 +1124,16 @@ export class Renderer {
       ctx.stroke();
       ctx.globalAlpha = base;
     }
-    // The number is hollow while the circle is still closed and fills in the moment a tap would count.
-    const open = t <= CIRCLE_OPEN_SHARE;
+    // The number is hollow while the circle is closed and turns solid the moment a tap would count.
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `900 ${Math.round(r * 1.1)}px ${FONT}`;
     if (open) {
-      ctx.fillStyle = '#ffffff';
+      // Dark digit on the coloured fill, with a thin light edge so it also reads on the dark rim.
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.strokeText(String(n.seq || 1), cx, cy + 1);
+      ctx.fillStyle = this.discColor;
       ctx.fillText(String(n.seq || 1), cx, cy + 1);
     } else {
       ctx.lineWidth = 1.5;
