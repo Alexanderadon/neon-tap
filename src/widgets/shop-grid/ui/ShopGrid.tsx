@@ -114,7 +114,14 @@ function ShopCard({ item, index, balance, onBuy }: CardProps) {
       <div className="shopcard-body">
         <div className="shopcard-title">{track.title}</div>
         <div className="shopcard-genre">
-          {premium && <span className="shopcard-tag">{dict.shopPremium}</span>}★ {track.stars}
+          {premium && <span className="shopcard-tag">{dict.shopPremium}</span>}
+          <span className="shopcard-price">★ {track.stars}</span>
+          {!owned && (
+            <span className={`shopcard-price${short > 0 ? ' is-short' : ''}`}>
+              {' · '}
+              <CrystalIcon size={11} /> {price}
+            </span>
+          )}
         </div>
       </div>
       <div className="shopcard-side">
@@ -128,7 +135,7 @@ function ShopCard({ item, index, balance, onBuy }: CardProps) {
             onClick={onBuy}
             aria-label={`${dict.shopBuy} · ${price} ${plural(price, dict.crystalsNoun)}${short > 0 ? ` · ${fmt(dict.shopNotEnough, { n: short })}` : ''}`}
           >
-            {dict.shopBuy} · <CrystalIcon size={13} /> <span className="shopcard-buy-price">{price}</span>
+            {dict.shopBuy}
           </Button>
         )}
       </div>

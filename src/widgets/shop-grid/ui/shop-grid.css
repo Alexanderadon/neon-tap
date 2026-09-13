@@ -15,11 +15,13 @@
 }
 .shopcard {
   display: grid;
-  grid-template-columns: 64px 1fr auto;
+  /* minmax(0, 1fr): a long title never pushes the buy button out of the card — it wraps instead. */
+  grid-template-columns: 64px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
   border-radius: 12px;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-left: 3px solid var(--tone);
@@ -56,10 +58,33 @@
   display: block;
   box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 25%, transparent);
 }
+.shopcard-body {
+  min-width: 0;
+}
 .shopcard-title {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
+  line-height: 1.2;
+  /* At most two lines; the rest is cut with an ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+/* The price sits with the stars under the title; the button keeps one word, so long titles still get their room. */
+.shopcard-price {
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.shopcard-price .crystal-icon {
+  vertical-align: -1px;
+}
+.shopcard-price.is-short {
+  color: #ff4d6d;
 }
 .shopcard-genre {
   font-size: 11px;
@@ -87,6 +112,7 @@
 /* The price sits inside the button; short of crystals → grey button, red price. */
 .shopcard-buy {
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 .shopcard-buy .crystal-icon {
   vertical-align: -2px;
@@ -94,10 +120,6 @@
 .shopcard-buy.is-short {
   filter: grayscale(1);
   opacity: 0.7;
-}
-.shopcard-buy.is-short .shopcard-buy-price {
-  color: #ff4d6d;
-  filter: none;
 }
 .shopcard-bought {
   font-family: var(--font-display);
@@ -147,12 +169,22 @@
 }
 @media (max-width: 480px) {
   .shopcard {
-    grid-template-columns: 52px 1fr auto;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
     gap: 10px;
+    padding: 10px 12px;
   }
   .shopcard-cover {
     width: 52px;
     height: 52px;
+  }
+  .shopcard-title {
+    font-size: 14px;
+  }
+  /* A compact button on phones: the word and the price still fit next to a two-line title. */
+  .shopcard-buy {
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
