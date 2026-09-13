@@ -8,23 +8,15 @@
   font-size: 14px;
   padding: 12px 0;
 }
+/* My best: one big number. */
 .history-best {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 14px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255, 215, 0, 0.06);
   border: 1px solid rgba(255, 215, 0, 0.3);
-}
-.history-best-rank {
-  grid-row: span 2;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 40px;
-  line-height: 1;
-  text-shadow: 0 0 18px currentColor;
 }
 .history-best-label {
   font-size: 11px;
@@ -34,55 +26,12 @@
 }
 .history-best-score {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
+  font-weight: 900;
+  font-size: 28px;
+  color: #ffd700;
+  font-variant-numeric: tabular-nums;
 }
-.history-best-score small {
-  font-size: 13px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.6);
-  margin-left: 8px;
-}
-.history-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-}
-.history-trend {
-  font-family: var(--font-display);
-  font-weight: 700;
-}
-.history-trend-up {
-  color: var(--c-lime);
-}
-.history-trend-down {
-  color: var(--c-magenta);
-}
-.history-trend-flat {
-  color: rgba(255, 255, 255, 0.55);
-}
-.history-spark {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.history-spark svg {
-  width: 100%;
-  height: 72px;
-  display: block;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.history-spark-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.45);
-}
+/* Other players: place, name, score — and my own row lit up. */
 .history-list {
   list-style: none;
   margin: 0;
@@ -92,46 +41,44 @@
 }
 .history-row {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
-  padding: 7px 4px;
-  font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 9px 8px;
+  font-size: 15px;
+  border-radius: 10px;
 }
-.history-row:last-child {
-  border-bottom: none;
+.history-row-me {
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.45);
 }
-.history-date {
+.history-pos {
+  font-family: var(--font-display);
+  font-weight: 700;
   color: rgba(255, 255, 255, 0.55);
-  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.history-row:nth-child(1) .history-pos {
+  color: #ffd700;
+}
+.history-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-row-me .history-name {
+  color: #7df9ff;
+  font-weight: 700;
 }
 .history-score {
   font-family: var(--font-display);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.history-acc {
-  font-variant-numeric: tabular-nums;
-  min-width: 56px;
-  text-align: right;
-}
-.history-rank {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 12px;
-  padding: 1px 8px;
-  border-radius: 6px;
-  border: 1px solid currentColor;
-  min-width: 34px;
+.history-place {
   text-align: center;
-}
-.history-row-failed .history-rank {
-  color: var(--c-magenta);
-  font-size: 10px;
-  text-transform: uppercase;
-}
-.history-row-best .history-score {
-  color: #ffd700;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* compact line under the result grid */

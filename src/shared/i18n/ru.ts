@@ -184,6 +184,7 @@ export const ru = {
   tutorialDone: 'Готово!',
   // --- records ---
   records: 'Рекорды',
+  you: 'Ты',
   recordsClose: 'Закрыть',
   personalBest: 'Личный рекорд',
   noAttempts: 'Ты ещё не играл этот трек',
@@ -249,6 +250,8 @@ export const ru = {
   crystalsNoun: ['кристалл', 'кристалла', 'кристаллов'],
   shop: 'Магазин',
   toShop: 'В магазин',
+  shopPreview: 'Послушать',
+  shopPreviewStop: 'Стоп',
   shopBuy: 'Купить',
   shopBought: 'Куплено',
   shopPremium: 'Премиум',
