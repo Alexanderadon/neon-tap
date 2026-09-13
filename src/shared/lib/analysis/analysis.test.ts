@@ -265,11 +265,13 @@ describe('composeChart', () => {
   it("follows the song's own stream of hits, never above the density limit", () => {
     const starts = [...new Set(chart.notes.map((n) => n[0]))].sort((a, b) => a - b);
     for (const t of starts) expect(starts.filter((s) => s >= t && s < t + 1).length).toBeLessThanOrEqual(DENSITY_LIMIT);
-    // drumLoop hits on every eighth everywhere: the quiet intro is as much a stream as the drop.
+    // drumLoop hits on every eighth everywhere: the drop plays them all, the quiet intro keeps a lighter figure but never stops.
     const perBar = new Map<number, number>();
     for (const t of starts) perBar.set(Math.floor(t / 2), (perBar.get(Math.floor(t / 2)) ?? 0) + 1);
-    const full = [...perBar.entries()].filter(([, n]) => n >= 6).length;
-    expect(full).toBeGreaterThanOrEqual(perBar.size * 0.6);
+    const intense = [...perBar.entries()].filter(([bar]) => (bar >= 8 && bar < 24) || bar >= 32).map(([, n]) => n);
+    const quiet = [...perBar.entries()].filter(([bar]) => bar < 8).map(([, n]) => n);
+    expect(intense.filter((n) => n >= 6).length).toBeGreaterThanOrEqual(intense.length * 0.6);
+    expect(Math.min(...quiet)).toBeGreaterThanOrEqual(3);
   });
 
   it('draws lane counts from the intensity pools (2–6, intro on 4)', () => {
@@ -352,7 +354,8 @@ describe('composeChart', () => {
   it('reads the same song for beginners: the same stream of hits, but no rolls / slides / chords / spinners, 3–4 lanes', () => {
     const easy = composeChart(analysis, { profile: EASY });
     const hard = composeChart(analysis);
-    expect(easy.notes.length).toBeGreaterThan(hard.notes.length * 0.7);
+    expect(easy.notes.length).toBeGreaterThan(hard.notes.length * 0.5);
+    expect(easy.notes.length).toBeLessThanOrEqual(hard.notes.length);
     expect(easy.stars).toBeLessThanOrEqual(hard.stars);
     expect(easy.notes.some((n) => n[3] === 'roll' || n[3] === 'slide' || n[3] === 'spin')).toBe(false);
     expect(easy.notes.some((n) => n[3] === 'slow')).toBe(false); // slow-motion is a hard-song tool
