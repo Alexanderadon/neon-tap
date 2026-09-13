@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
-import { sfxGem } from '@/shared/lib/audio';
+import { audioEngine, sfxGem } from '@/shared/lib/audio';
+import { themeFor } from '@/shared/lib/render';
 import { Button, CrystalIcon, Modal } from '@/shared/ui';
 import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, type TrackMeta } from '@/entities/track';
 import { buyTrack, grandTotalStars, isForSale, trackPrice, unlockStates, useProgress, type UnlockInfo } from '@/entities/progress';
@@ -13,6 +14,9 @@ interface Item {
 }
 
 const TOAST_MS = 2600;
+/** A preview: this many seconds, starting a third of the way in (past the intro). */
+const PREVIEW_SEC = 5;
+const PREVIEW_AT = 1 / 3;
 
 /** Star-locked tracks on sale at a time: the next few on the road, not the whole catalog. */
 const LOCKED_ON_SALE = 6;
@@ -57,11 +61,49 @@ export function ShopGrid() {
     setConfirm(null);
   };
 
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const previewToken = useRef(0);
+  const stopPreview = useCallback(() => {
+    previewToken.current++;
+    audioEngine.stop();
+    setPreviewing(null);
+  }, []);
+  useEffect(() => stopPreview, [stopPreview]);
+  /** Tap the cover: five seconds of the song from a third in; tap again (or another cover) to stop. */
+  const togglePreview = useCallback(
+    async (track: TrackMeta) => {
+      if (previewing === track.id) {
+        stopPreview();
+        return;
+      }
+      const token = ++previewToken.current;
+      setPreviewing(track.id);
+      try {
+        await audioEngine.ensureContext();
+        const buffer = await audioEngine.loadUrl(`${import.meta.env.BASE_URL}music/${track.id}.mp3`);
+        if (token !== previewToken.current) return;
+        audioEngine.preview(buffer, buffer.duration * PREVIEW_AT, PREVIEW_SEC, () => {
+          if (token === previewToken.current) setPreviewing(null);
+        });
+      } catch {
+        if (token === previewToken.current) setPreviewing(null);
+      }
+    },
+    [previewing, stopPreview],
+  );
   return (
     <div className="shopgrid">
       {items.length === 0 && <div className="shopgrid-empty">{dict.shopEmpty}</div>}
       {items.map((it, i) => (
-        <ShopCard key={it.track.id} item={it} index={i} balance={save.crystals} onBuy={() => setConfirm(it)} />
+        <ShopCard
+          key={it.track.id}
+          item={it}
+          index={i}
+          balance={save.crystals}
+          onBuy={() => setConfirm(it)}
+          previewing={previewing === it.track.id}
+          onPreview={() => togglePreview(it.track)}
+        />
       ))}
       <Modal open={confirm !== null} title={dict.shopConfirmTitle} onClose={closeConfirm} closeLabel={dict.shopConfirmNo} variant="dialog">
         {confirm && (
@@ -99,18 +141,41 @@ interface CardProps {
   index: number;
   balance: number;
   onBuy: () => void;
+  /** This card's five-second listen is playing. */
+  previewing: boolean;
+  onPreview: () => void;
 }
 
-function ShopCard({ item, index, balance, onBuy }: CardProps) {
+function ShopCard({ item, index, balance, onBuy, previewing, onPreview }: CardProps) {
   const { track, info, price } = item;
   const owned = info.purchased;
+  const tone = track.premium ? '#ff2bd6' : themeFor(track.genre, track.id).accent;
   const premium = info.premium;
   const short = Math.max(0, price - balance);
   const canBuy = !owned && short === 0;
   const cls = ['shopcard', owned && 'shopcard-owned', premium && 'shopcard-premium'].filter(Boolean).join(' ');
   return (
-    <article className={cls} style={{ ['--tone' as string]: premium ? '#ff2bd6' : '#7df9ff', ['--i' as string]: index }}>
-      <TrackCover id={track.id} genre={track.genre} title={track.title} className="shopcard-cover" />
+    <article className={cls} style={{ ['--tone' as string]: tone, ['--i' as string]: index }}>
+      <button
+        type="button"
+        className={`shopcard-listen${previewing ? ' is-playing' : ''}`}
+        onClick={onPreview}
+        aria-label={`${previewing ? dict.shopPreviewStop : dict.shopPreview} · ${track.title}`}
+        aria-pressed={previewing}
+      >
+        <TrackCover id={track.id} genre={track.genre} title={track.title} className="shopcard-cover" />
+        <span className="shopcard-listen-icon" aria-hidden="true">
+          {previewing ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="3" y="3" width="10" height="10" rx="2" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4 2.5v11l9-5.5z" />
+            </svg>
+          )}
+        </span>
+      </button>
       <div className="shopcard-body">
         <div className="shopcard-title">{track.title}</div>
         <div className="shopcard-genre">

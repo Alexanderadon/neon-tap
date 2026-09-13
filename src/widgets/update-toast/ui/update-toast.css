@@ -11,7 +11,8 @@
 .update-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(14px + var(--safe-bottom));
+  /* Above the menu dock (the play button row), never on top of it. */
+  bottom: calc(112px + var(--safe-bottom));
   transform: translate(-50%, 0);
   z-index: 8000;
   display: flex;

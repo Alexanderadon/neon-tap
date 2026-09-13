@@ -16,6 +16,8 @@ export interface Volumes {
   voice: number;
 }
 
+/** Fade in / out of a shop preview clip, seconds. */
+const PREVIEW_FADE = 0.25;
 const LOWPASS_OPEN_HZ = 20000;
 const LOWPASS_MISS_HZ = 800;
 const MISS_DURATION = 0.25;
@@ -171,6 +173,37 @@ export class AudioEngine {
     this.startTime = when - position;
     this.pausePosition = null;
     return this.startTime;
+  }
+
+  /**
+   * A short listen (the shop): `seconds` of `buffer` from `from`, fading out at the end. Stops
+   * whatever was playing; `stop()` cuts it early. `onDone` fires when the clip ends or is stopped.
+   */
+  preview(buffer: AudioBuffer, from: number, seconds: number, onDone?: () => void): void {
+    const ctx = this.ctx;
+    if (!ctx) throw new Error('AudioContext not initialised');
+    this.stop();
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const fade = ctx.createGain();
+    const t = ctx.currentTime;
+    fade.gain.setValueAtTime(0.0001, t);
+    fade.gain.exponentialRampToValueAtTime(1, t + PREVIEW_FADE);
+    fade.gain.setValueAtTime(1, t + seconds - PREVIEW_FADE);
+    fade.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+    src.connect(fade);
+    fade.connect(this.lowpass);
+    src.start(t, Math.max(0, Math.min(from, Math.max(0, buffer.duration - seconds))), seconds);
+    src.onended = () => {
+      if (this.source === src) {
+        this.source = null;
+        this.onEnded?.();
+      }
+    };
+    this.onEnded = onDone ?? null;
+    this.source = src;
+    this.startTime = t - from;
+    this.pausePosition = null;
   }
 
   /** Current song position according to the audio clock. */
