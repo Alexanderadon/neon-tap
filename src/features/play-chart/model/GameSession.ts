@@ -1,4 +1,4 @@
-import { CIRCLE_BUCKET, CIRCLE_KEY, KEY_LAYOUTS, MAX_LANES, SPIN_BONUS_PER_REV, SPIN_BUCKET } from '@/shared/config/constants';
+import { CIRCLE_BUCKET, CIRCLE_KEY, HIT_WINDOWS, KEY_LAYOUTS, MAX_LANES, SPIN_BONUS_PER_REV, SPIN_BUCKET } from '@/shared/config/constants';
 import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxGem, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
@@ -76,10 +76,14 @@ const SLOW_RATE = 0.72;
 const SLOW_DURATION = 6;
 const SLOW_RAMP_IN = 0.35;
 const SLOW_RAMP_OUT = 0.5;
-/** Per-song note speed: notes take this many beats to reach the line (clamped in seconds), so every song reads at its own tempo. */
+/** Per-song note speed: notes take this many beats to reach the line (clamped in seconds), so a fast song scrolls fast — the lane runs at the music's tempo. */
 const APPROACH_BEATS = 3.5;
-const APPROACH_MIN = 1.3;
+const APPROACH_MIN = 0.9;
 const APPROACH_MAX = 2.4;
+/** The saved offset (calibration + everything learned) never leaves this range: a tap bias, not a drift. */
+const AUTO_TOTAL_MAX = 0.15;
+/** The learned offset glides towards its target at this many seconds per second (80 ms in ~1.3 s). */
+const OFFSET_SLEW = 0.06;
 /** Auto-offset: window of recent timing errors and the max correction it may apply, seconds. */
 const AUTO_WINDOW = 40;
 const AUTO_MAX = 0.08;
@@ -123,6 +127,11 @@ export class GameSession {
   /** Crystals collected this run. */
   private crystals = 0;
   private gemAt = -1;
+  /** Where the auto-learned offset is heading; the live clock offset glides towards it. */
+  private offsetTarget = 0;
+  private failTimer = 0;
+  /** The audio buffer reached its end; the run finishes once the last window has closed. */
+  private audioEnded = false;
   /** The spinner on screen (approaching or running) and the wheel that reads the player's circling. */
   private spinNote: PooledNote | null = null;
   private readonly spin = new SpinTracker();
@@ -144,6 +153,7 @@ export class GameSession {
 
   constructor(private readonly opts: SessionOptions) {
     this.clock = new Clock(() => audioEngine.now(), opts.userOffset, audioEngine.outputLatency());
+    this.offsetTarget = opts.userOffset;
     this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0, approachTime: this.approachTime });
     const level = opts.chart.chart;
     const parsed = parseChartLevel(level);
@@ -178,7 +188,7 @@ export class GameSession {
         const r = opts.canvas.getBoundingClientRect();
         const px = x - r.left;
         const py = y - r.top;
-        if (this.spinNote) return SPIN_BUCKET; // the field is empty: every finger belongs to the wheel
+        if (this.spinStarted) return SPIN_BUCKET; // the wheel is running: every finger belongs to it (before that, lane tiles are still landing)
         if (this.circleAt(px, py)) return CIRCLE_BUCKET;
         return laneAtPoint(this.renderer.layout, px, py, opts.touch);
       },
@@ -222,6 +232,7 @@ export class GameSession {
       const n = pool[i];
       if (n.time - songTime > this.approachTime) break;
       if (n.kind !== 'circle' || n.state !== NoteState.Pending) continue;
+      if (n.time - songTime > this.notes.circleEarly) continue; // closed circle: a tap there is still a lane tap
       const L = this.renderer.layoutFor(n.lanes);
       const { x: cx, y: cy } = circlePos(L, n.seq);
       const r = circleRadius(L) * 1.8;
@@ -246,6 +257,8 @@ export class GameSession {
   restart(): void {
     if (this.destroyed) return;
     audioEngine.stop();
+    window.clearTimeout(this.failTimer);
+    this.audioEnded = false;
     this.notes.reset();
     this.scoring.reset();
     this.timeline.reset();
@@ -274,7 +287,7 @@ export class GameSession {
     this.rollGems();
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
-    const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => this.finish(), LEAD_IN);
+    const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => (this.audioEnded = true), LEAD_IN);
     this.clock.start(startTime);
     this.opts.onEvent({ type: 'start' });
     cancelAnimationFrame(this.raf);
@@ -292,7 +305,7 @@ export class GameSession {
 
   resume(): void {
     if (!this.paused) return;
-    this.resumeAt(Math.max(0, this.clock.position() - 1));
+    this.resumeAt(this.clock.position() - 1);
   }
 
   /** Dev (no-fail sessions, `window.__neon.seek(sec)`): jump the song; notes before the point are auto-missed. */
@@ -305,7 +318,8 @@ export class GameSession {
   private resumeAt(pos: number): void {
     // play() returns the audio-clock instant of song position 0 (whatever position it starts at), which is
     // exactly what the clock anchors on — passing pos again would count it twice and jump the notes ahead.
-    const startTime = audioEngine.play(this.opts.audioBuffer, pos, () => this.finish(), 0.3);
+    // A negative position (paused in the count-in) keeps its lead so the first tiles still fall the whole way.
+    const startTime = audioEngine.play(this.opts.audioBuffer, Math.max(0, pos), () => (this.audioEnded = true), 0.3 + Math.max(0, -pos));
     this.clock.start(startTime);
     this.slowUntil = -1;
     this.slowReleasing = false;
@@ -326,6 +340,7 @@ export class GameSession {
 
   destroy(): void {
     this.destroyed = true;
+    window.clearTimeout(this.failTimer);
     cancelAnimationFrame(this.raf);
     this.input.detach();
     this.resizeObserver?.disconnect();
@@ -418,19 +433,25 @@ export class GameSession {
   }
 
   private onRelease = ({ lane, audioTime }: { lane: number; audioTime: number }): void => {
-    if (!this.started || this.paused || this.finished) return;
-    this.notes.release(lane, this.clock.toSongTime(audioTime));
+    if (!this.started || this.finished) return;
+    // A release is never dropped, paused or not: a finger that lifted must not be credited as still holding.
+    this.notes.release(lane, this.clock.toSongTime(this.paused ? this.clock.toAudioTime(this.clock.judgeTime()) : audioTime));
   };
 
   private handleJudge = ({ note, judgement, tail }: JudgeEvent): void => {
     if (this.finished) return;
     const prevCombo = this.scoring.combo;
     const before = this.scoring.score;
-    this.scoring.register(judgement);
+    this.scoring.register(judgement, note.kind !== 'spin'); // a failed spinner counts for accuracy but leaves the combo alone
     this.lastGain = this.scoring.score - before;
     this.lastJudgement = judgement;
     this.lastJudgementAt = this.clock.songTime();
     this.timeline.record(this.lastJudgementAt, judgement, this.scoring.combo);
+    // An untouched long note misses twice (head, tail) for accuracy, but costs one heart and one effect.
+    if (judgement === 'miss' && tail && note.judgement === 'miss') {
+      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
+      return;
+    }
     if (note.kind === 'spin') {
       // A spinner is its own thing: its verdict counts for score and accuracy, but a failed one
       // costs no heart and touches no other mechanic.
@@ -471,7 +492,8 @@ export class GameSession {
 
     if (!tail) {
       sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
-      if (!note.assisted) this.learnOffset(note.hitDelta);
+      // Only a plain lane tap says something about the player's timing (circles open half a second early, assists are synthetic).
+      if (!note.assisted && !note.kind && Math.abs(note.hitDelta) <= HIT_WINDOWS.good) this.learnOffset(note.hitDelta);
     }
     this.comboGrewAt = this.lastJudgementAt;
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
@@ -510,7 +532,8 @@ export class GameSession {
     const next = clamp(this.autoAdjust + m * 0.5, -AUTO_MAX, AUTO_MAX);
     const applied = next - this.autoAdjust;
     this.autoAdjust = next;
-    this.clock.userOffset += applied;
+    // The correction glides in over a few hundred ms (see frame()) so the judgement never jumps mid-stream.
+    this.offsetTarget += applied;
     for (let i = 0; i < this.deltas.length; i++) this.deltas[i] -= applied;
   }
 
@@ -544,6 +567,11 @@ export class GameSession {
 
     // The device's output latency can change mid-song (a headset connects): keep the heard time honest.
     this.clock.deviceLatency = audioEngine.outputLatency();
+    if (!this.paused) {
+      const d = this.offsetTarget - this.clock.userOffset;
+      const step = OFFSET_SLEW * dt;
+      this.clock.userOffset += Math.abs(d) <= step ? d : Math.sign(d) * step;
+    }
     const songTime = this.clock.songTime();
     if (!this.paused && !this.finished) {
       const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
@@ -561,7 +589,7 @@ export class GameSession {
         audioEngine.tapeEffect(false, SLOW_RAMP_OUT);
       }
       if (this.slowUntil > 0 && songTime >= this.slowUntil) this.slowUntil = -1;
-      this.notes.update(songTime, this.isHeld);
+      this.notes.update(this.clock.judgeTime(), this.isHeld);
       this.trackSpin(songTime);
       this.renderer.update(dt);
       // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
@@ -569,7 +597,9 @@ export class GameSession {
         this.renderer.setFxLevel('low', true);
         if (this.opts.debug) console.info('[neon-tap] fps < 45 for 3 s → fx level "low" (economy mode: auto)');
       }
-      if (songTime >= this.endTime) this.finish();
+      // The run ends when the last window has closed — not when the buffer stops, which on a laggy
+      // output happens before the last tiles have even been heard.
+      if (songTime >= this.endTime || (this.audioEnded && this.clock.judgeTime() > this.notes.lastTime + HIT_WINDOWS.good)) this.finish();
     }
     // Host overlay (tutorial captions): song time at ~10 Hz, no per-frame work otherwise.
     if (this.opts.onTime && now - this.lastTimeReport >= TIME_REPORT_MS) {
@@ -652,7 +682,7 @@ export class GameSession {
     this.failed = true;
     audioEngine.missEffect();
     this.opts.onEvent({ type: 'fail' });
-    window.setTimeout(() => this.finish(), 900);
+    this.failTimer = window.setTimeout(() => this.finish(), 900);
     this.finished = true;
     audioEngine.stop();
   }
@@ -679,7 +709,11 @@ export class GameSession {
       duration: this.opts.audioBuffer.duration,
       crystals: this.crystals,
     };
-    const autoOffsetMs = this.opts.autoOffset && this.hitsSeen >= 60 && Math.abs(this.autoAdjust) >= 0.01 ? Math.round(this.clock.userOffset * 1000) : null;
+    // The learned offset is saved only when it moved, and never beyond what a tap bias can be — so it cannot drift run after run.
+    const autoOffsetMs =
+      this.opts.autoOffset && this.hitsSeen >= 60 && Math.abs(this.autoAdjust) >= 0.01
+        ? Math.round(clamp(this.offsetTarget, -AUTO_TOTAL_MAX, AUTO_TOTAL_MAX) * 1000)
+        : null;
     this.failed = false;
     this.opts.onEvent({ type: 'finish', result, autoOffsetMs });
   }

@@ -195,7 +195,7 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       lanes = [lane];
     }
 
-    const time = round3(slot.time);
+    const time = round3(slot.hit ?? slot.time);
     for (const lane of lanes) {
       if (ev.hold > 0) {
         const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);

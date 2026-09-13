@@ -23,12 +23,13 @@ describe('Clock', () => {
     expect(clock.songTime()).toBeCloseTo(180, 6);
   });
 
-  it('applies user offset', () => {
+  it('applies the user offset to the judgement only: the picture stays on the sound', () => {
     const time = fakeTime(0);
     const clock = new Clock(time.now, 0.05);
     clock.start(0);
     time.advance(1);
-    expect(clock.songTime()).toBeCloseTo(0.95, 6);
+    expect(clock.songTime()).toBeCloseTo(1, 6);
+    expect(clock.judgeTime()).toBeCloseTo(0.95, 6);
     expect(clock.toSongTime(1)).toBeCloseTo(0.95, 6);
     expect(clock.toAudioTime(0.95)).toBeCloseTo(1, 6);
   });
@@ -38,13 +39,14 @@ describe('Clock', () => {
     const clock = new Clock(time.now, 0.02, 0.08);
     clock.start(0);
     time.advance(1);
-    // The player hears position 1.0 only 80 ms later (plus their own 20 ms): a tile due at 0.9 meets the line now.
-    expect(clock.songTime()).toBeCloseTo(0.9, 6);
+    // The player hears position 1.0 only 80 ms later: a tile due at 0.92 meets the line now; their own 20 ms bias shifts the judgement only.
+    expect(clock.songTime()).toBeCloseTo(0.92, 6);
+    expect(clock.judgeTime()).toBeCloseTo(0.9, 6);
     expect(clock.toSongTime(1)).toBeCloseTo(0.9, 6);
     expect(clock.toAudioTime(0.9)).toBeCloseTo(1, 6);
     // A headset connects mid-song: the latency is updated live.
     clock.deviceLatency = 0.2;
-    expect(clock.songTime()).toBeCloseTo(0.78, 6);
+    expect(clock.songTime()).toBeCloseTo(0.8, 6);
   });
 
   it('integrates rate ramps exactly (slow-motion)', () => {

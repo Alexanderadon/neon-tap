@@ -172,6 +172,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     document.addEventListener('visibilitychange', onVisibility);
     document.addEventListener('freeze', onHidden);
     window.addEventListener('pagehide', onHidden);
+    window.addEventListener('blur', onHidden); // a dialog / alt-tab mid-song: pause instead of breaking the held notes
     window.addEventListener('resize', onResize);
     document.addEventListener('gesturestart', stopGesture, { passive: false });
     document.addEventListener('touchmove', stopMultiTouch, { passive: false });
@@ -182,6 +183,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('freeze', onHidden);
       window.removeEventListener('pagehide', onHidden);
+      window.removeEventListener('blur', onHidden);
       window.removeEventListener('resize', onResize);
       document.removeEventListener('gesturestart', stopGesture);
       document.removeEventListener('touchmove', stopMultiTouch);

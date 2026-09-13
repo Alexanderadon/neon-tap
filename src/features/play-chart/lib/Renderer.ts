@@ -84,7 +84,7 @@ const FONT = "'Unbounded', 'Segoe UI', system-ui, sans-serif";
 const HEART_COLOR = '#ff2bd6';
 /** A gilded heart: an extra life drawn over one of the five slots. */
 const GOLD_HEART_COLOR = '#ffd700';
-const TRANSITION_SEC = 0.75;
+const TRANSITION_SEC = 0.35; // a beat of empty field is all the generator leaves: the morph must be done before the next tile lands
 const RING_POOL = 16;
 const PRESS_BOUNCE_SEC = 0.12;
 const POP_POOL = 8;
@@ -130,14 +130,14 @@ interface LaneSet {
  * always sit in four different cells, and any two cells are further apart than a circle's diameter.
  */
 const CIRCLE_CELLS: readonly [number, number][] = [
-  [0.2, 0.3],
-  [0.8, 0.3],
-  [0.5, 0.46],
+  [0.2, 0.34],
+  [0.8, 0.34],
+  [0.5, 0.48],
   [0.2, 0.62],
   [0.8, 0.62],
-  [0.5, 0.3],
-  [0.2, 0.46],
-  [0.8, 0.46],
+  [0.5, 0.34],
+  [0.2, 0.48],
+  [0.8, 0.48],
   [0.5, 0.62],
 ];
 export function circlePos(L: Layout, seq: number): { x: number; y: number } {
@@ -548,7 +548,8 @@ export class Renderer {
     const cx = L.laneX + (lane + 0.5) * L.laneWidth;
     this.flash.trigger(lane);
     this.particles.emit(cx, L.hitY, 5, lane % this.laneColors.length, 220, 4, 0.35);
-    this.pop(cx, L.hitY - L.noteHeight * 2.2, `${Math.min(taps, needed)}/${needed}`);
+    // The counter on the roll itself shows every tap; one floating copy marks the moment the roll is complete.
+    if (taps === needed) this.pop(cx, L.hitY - L.noteHeight * 2.2, `${needed}/${needed}`);
   }
 
   private ring(x: number, y: number, color: number): void {
@@ -748,6 +749,8 @@ export class Renderer {
     let prevCircle: PooledNote | null = null;
     let prevCircleSet: LaneSet | null = null;
     let circlesAhead = 0;
+    /** y of the last tile drawn per lane (tiles come in time order, so the previous one is the lower one). */
+    const ghostY: number[] = [];
     for (let i = notes.firstActive; i < notes.count; i++) {
       const n = notes.pool[i];
       if (n.time > horizon) break;
@@ -806,11 +809,14 @@ export class Renderer {
         }
       } else {
         const sp = set.noteSprites[n.lane];
-        if (n.state === NoteState.Pending) {
+        // The faint "ghost" above a pending tile is skipped when the previous tile of the lane is right there — in a
+        // fast stream the ghost would fuse two tiles into one blob.
+        if (n.state === NoteState.Pending && (ghostY[n.lane] === undefined || ghostY[n.lane] - y > set.layout.noteHeight * 2.2)) {
           ctx.globalAlpha = 0.18;
           ctx.drawImage(sp.canvas, cx - sp.width / 2, y - sp.height / 2 - set.layout.noteHeight * 0.9, sp.width, sp.height);
           ctx.globalAlpha = 1;
         }
+        ghostY[n.lane] = y;
         ctx.drawImage(sp.canvas, cx - sp.width / 2, y - sp.height / 2, sp.width, sp.height);
         if (n.kind === 'roll') {
           ctx.font = `900 ${Math.round(set.layout.noteHeight * 0.9)}px ${FONT}`;
@@ -1440,7 +1446,8 @@ export class Renderer {
       ctx.font = `700 ${Math.round(22 * scale)}px ${FONT}`;
       ctx.fillStyle = this.judgementColor[s.lastJudgement];
       ctx.globalAlpha = a;
-      const jy = hitY - this.layout.noteHeight * 3.4;
+      // On touch the popup sits under the line (over the touch zones), never in the corridor the next tiles fall through.
+      const jy = this.touch ? hitY + this.layout.noteHeight * 2.6 : hitY - this.layout.noteHeight * 3.4;
       ctx.fillText(s.lastJudgement.toUpperCase(), centerX, jy);
       if (s.lastGain > 0) {
         ctx.font = `700 14px ${FONT}`;
@@ -1533,7 +1540,7 @@ export class Renderer {
     const ctx = this.ctx;
     const { width, height } = this.layout;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    ctx.fillStyle = 'rgba(5,6,10,0.55)';
+    ctx.fillStyle = 'rgba(5,6,10,0.28)'; // light enough that the first tiles already falling stay readable
     ctx.fillRect(0, 0, width, height);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
