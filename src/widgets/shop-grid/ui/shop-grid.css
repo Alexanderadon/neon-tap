@@ -20,7 +20,7 @@
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   /* The card wears its track's colour (genre; magenta for premium) as a tint, no side stripe. */
   background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 16%, rgba(255, 255, 255, 0.03)), color-mix(in srgb, var(--tone) 5%, rgba(255, 255, 255, 0.03)));
@@ -45,37 +45,95 @@
   border-color: color-mix(in srgb, var(--tone) 55%, transparent);
   box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 30%, transparent);
 }
-/* Tap the cover to hear five seconds: a play / stop badge in its corner. */
+/* Tap the cover to hear five seconds: a glass play button in the middle of the art; while it
+   plays the art glows and the button turns into a dancing equaliser. */
 .shopcard-listen {
   position: relative;
   padding: 0;
   border: 0;
   background: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   display: block;
   line-height: 0;
+  transition: transform 0.15s ease;
+}
+.shopcard-listen:active {
+  transform: scale(0.94);
+}
+.shopcard-listen .shopcard-cover {
+  border-radius: 12px;
+  transition: box-shadow 0.25s ease, filter 0.25s ease;
 }
 .shopcard-listen-icon {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 24px;
-  height: 24px;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(5, 6, 10, 0.9);
-  border: 1px solid color-mix(in srgb, var(--tone) 70%, white);
+  background: rgba(5, 6, 10, 0.55);
+  backdrop-filter: blur(3px);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
   color: #fff;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tone) 60%, transparent);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
-.shopcard-listen.is-playing .shopcard-listen-icon {
-  background: var(--tone);
-  color: #05060a;
-  box-shadow: 0 0 12px var(--tone);
+.shopcard-listen-icon svg {
+  margin-left: 2px;
 }
 .shopcard-listen.is-playing .shopcard-cover {
+  box-shadow: 0 0 22px var(--tone);
+  filter: brightness(1.15);
+  animation: shopcard-pulse 1s ease-in-out infinite;
+}
+.shopcard-listen.is-playing .shopcard-listen-icon {
+  background: color-mix(in srgb, var(--tone) 85%, black);
+  border-color: color-mix(in srgb, var(--tone) 60%, white);
   box-shadow: 0 0 18px var(--tone);
+}
+@keyframes shopcard-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 14px var(--tone);
+  }
+  50% {
+    box-shadow: 0 0 26px var(--tone);
+  }
+}
+/* Three bars bouncing to the music. */
+.shopcard-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.shopcard-eq i {
+  display: block;
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: #fff;
+  transform-origin: bottom;
+  animation: shopcard-eq 0.7s ease-in-out infinite;
+}
+.shopcard-eq i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.shopcard-eq i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes shopcard-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 .shopcard-owned {
   opacity: 0.6;
@@ -83,7 +141,7 @@
 .shopcard-cover {
   width: 64px;
   height: 64px;
-  border-radius: 8px;
+  border-radius: 12px;
   display: block;
   box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 25%, transparent);
 }
@@ -218,7 +276,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .shopcard,
-  .shopgrid-toast {
+  .shopgrid-toast,
+  .shopcard-listen.is-playing .shopcard-cover,
+  .shopcard-eq i {
     animation: none;
   }
 }
