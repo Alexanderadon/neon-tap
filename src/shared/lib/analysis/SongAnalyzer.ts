@@ -21,6 +21,8 @@ export interface Slot {
   high: number;
   /** How many following slots keep ≥ 50 % of this slot's mid-band energy — a sustained sound. */
   sustain: number;
+  /** When the hit itself sounds: the onset peak nearest the slot (within ±1.5 frames), or the grid time. Tiles are timed to this. */
+  hit?: number;
 }
 
 export interface SongAnalysis {
@@ -112,7 +114,16 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
     for (let k = 0; k < STEPS_PER_BEAT; k++) {
       const frame = a + ((b - a) * k) / STEPS_PER_BEAT;
       slotFrames.push(frame);
-      slots.push({ time: det.frameTime(frame), bar: Math.floor(i / BEATS_PER_BAR), step: (i % BEATS_PER_BAR) * STEPS_PER_BEAT + k, strength: 0, low: 0, mid: 0, high: 0, sustain: 0 });
+      slots.push({
+        time: det.frameTime(frame),
+        bar: Math.floor(i / BEATS_PER_BAR),
+        step: (i % BEATS_PER_BAR) * STEPS_PER_BEAT + k,
+        strength: 0,
+        low: 0,
+        mid: 0,
+        high: 0,
+        sustain: 0,
+      });
     }
   }
   const n = det.frameCount;
@@ -130,6 +141,11 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
       }
     }
     raw.push(best);
+    // The tile goes on the sound, not on the grid line: the peak frame, at most 40 % of a slot away.
+    if (bestF >= 0) {
+      const maxShift = 0.4 * (s + 1 < slots.length ? slots[s + 1].time - slots[s].time : 0.1);
+      slots[s].hit = slots[s].time + Math.max(-maxShift, Math.min(maxShift, det.frameTime(bestF) - slots[s].time));
+    }
     if (bestF >= 0) {
       const l = det.bandFlux[0][bestF];
       const m = det.bandFlux[1][bestF];
@@ -140,7 +156,11 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
       slots[s].high = h / sum;
     }
   }
-  const norm = percentile(raw.filter((v) => v > 0), 0.95) || 1;
+  const norm =
+    percentile(
+      raw.filter((v) => v > 0),
+      0.95,
+    ) || 1;
   for (let s = 0; s < slots.length; s++) slots[s].strength = Math.min(1, raw[s] / norm);
 
   // Sustain: mean mid-band energy per slot, then count following slots that keep ≥ 50 % of it.

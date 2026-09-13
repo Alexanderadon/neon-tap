@@ -111,23 +111,33 @@ export class Clock {
     return this.positionAt(this.pausedAt ?? this.now());
   }
 
-  /** Everything the player hears late: device output latency plus their calibrated residual. */
+  /** Everything that separates the audio clock from the player's tap: device output latency plus their own bias. */
   get heardOffset(): number {
     return this.deviceLatency + this.userOffset;
   }
 
-  /** Song time as the player hears it, in seconds: position minus device latency and the calibrated offset. */
+  /**
+   * Song time as the player hears it, in seconds: position minus device latency. This is what the
+   * tiles are drawn against, so a tile meets the line exactly when its sound is heard — the
+   * player's own tap bias (`userOffset`) never moves the picture, only the judgement.
+   */
   songTime(): number {
+    if (!this.running) return 0;
+    return this.position() - this.deviceLatency;
+  }
+
+  /** The judgement's idea of song time: heard time shifted by the player's calibrated tap bias. */
+  judgeTime(): number {
     if (!this.running) return 0;
     return this.position() - this.heardOffset;
   }
 
-  /** Convert an absolute audio-clock timestamp (e.g. an input event) to heard song time. */
+  /** Convert an absolute audio-clock timestamp (an input event) to judgement song time. */
   toSongTime(audioTime: number): number {
     return this.positionAt(audioTime) - this.heardOffset;
   }
 
-  /** Convert heard song time to the absolute audio-clock instant (constant-rate approximation). */
+  /** Convert judgement song time to the absolute audio-clock instant (constant-rate approximation). */
   toAudioTime(songTime: number): number {
     return this.anchorA + (songTime + this.heardOffset - this.anchorP) / this.rateAt();
   }

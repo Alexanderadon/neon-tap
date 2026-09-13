@@ -127,8 +127,8 @@ export const EASY: Profile = {
   keepLanesChance: 0.8,
   spells: ['heart'],
 };
-/** Slots of silence before a lane-count change so the player can move their hands (2 beats). */
-const SECTION_GAP_SLOTS = 8;
+/** Empty field before a lane-count change: at least a beat, and at least this long in seconds — the field morph (0.35 s) plus a hit window must fit. */
+const SECTION_GAP_SEC = 0.6;
 /** Notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
 /** Quiet phrases are scaled so their own peaks reach this salience. */
 const BOOST_TARGET = 0.65;
@@ -151,7 +151,7 @@ const ROLL_ON_BASS_CHANCE = 0.5;
 /** A spell note every this many bars, starting at bar 4 (after the intro). */
 const SPELL_EVERY_BARS = 8;
 /** Slow-motion is a tool for the hard songs: only charts rated at least this many stars carry it. */
-const SLOW_FROM_STARS = 7;
+const SLOW_FROM_STARS = 9; // with the stream most tracks are ★6–10: slow-motion stays a tool for the very hardest
 
 /** Circle windows: an intense phrase start switches to circles ONLY, on every pattern hit, for 2–4 bars while the pattern stays strong. */
 const CIRCLE_WINDOW_MIN_BARS = 2;
@@ -226,6 +226,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
   const bars = groupBars(slots);
   rateIntensity(bars);
+  const SECTION_GAP_SLOTS = Math.max(4, Math.ceil(SECTION_GAP_SEC / (15 / Math.max(60, analysis.bpm))));
   const energetic = isEnergetic(bars);
   // Quiet phrases (intros, breakdowns) are boosted so their own peaks still get sparse notes;
   // true silence stays empty thanks to the absolute floor below.

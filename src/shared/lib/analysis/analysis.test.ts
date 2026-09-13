@@ -182,11 +182,11 @@ describe('composeChart', () => {
     expect(composeChart(analysis, { laneVariation: false }).sections).toEqual([[0, 4]]);
   });
 
-  it('leaves two beats of silence before every lane-count change', () => {
+  it('leaves a beat of silence before every lane-count change', () => {
     const sections = chart.sections!;
     for (let i = 1; i < sections.length; i++) {
       const t = sections[i][0];
-      const before = chart.notes.filter((n) => n[0] < t && n[0] + (n.length >= 3 ? (n[2] as number) : 0) > t - 1 + 1e-6);
+      const before = chart.notes.filter((n) => n[0] < t && n[0] + (n.length >= 3 ? (n[2] as number) : 0) > t - 0.5 + 1e-6);
       expect(before).toEqual([]);
     }
   });
@@ -334,15 +334,17 @@ describe('composeChart', () => {
   });
 
   it('places alternating slow / heart spell notes as plain taps; slow-motion only on hard charts', () => {
-    const spells = chart.notes.filter((n) => n[3] === 'slow' || n[3] === 'heart');
+    // A sixteenth stream rates at the top: slow-motion is allowed there and alternates with hearts.
+    const hard = composeChart(fakeAnalysis(48, (_bar, step) => ({ strength: step % 4 === 0 ? 1 : 0.8, low: 0.5, mid: 0.3, high: 0.4 })));
+    expect(hard.stars).toBeGreaterThanOrEqual(9);
+    const spells = hard.notes.filter((n) => n[3] === 'slow' || n[3] === 'heart');
     expect(spells.length).toBeGreaterThanOrEqual(2);
-    expect(chart.stars).toBeGreaterThanOrEqual(7);
     expect(spells[0][3]).toBe('slow');
     expect(spells[1][3]).toBe('heart');
     for (const s of spells) expect(s[2]).toBe(0);
     // a calm song rates low and never carries slow-motion, its spell slots all become hearts
     const calm = composeChart(fakeAnalysis(48, (_bar, step) => (step % 8 === 0 ? { strength: 0.6, low: 0.6 } : { strength: 0.02 })));
-    expect(calm.stars).toBeLessThan(7);
+    expect(calm.stars).toBeLessThan(9);
     expect(calm.notes.some((n) => n[3] === 'slow')).toBe(false);
     expect(calm.notes.some((n) => n[3] === 'heart')).toBe(true);
   });

@@ -80,11 +80,12 @@ export class Scoring {
     this.totalNotes = Math.max(this.judged, this.totalNotes - 1);
   }
 
-  register(j: Judgement): void {
+  /** Count a judgement. `breakCombo` = false keeps the combo through a miss (a failed spinner is its own thing). */
+  register(j: Judgement, breakCombo = true): void {
     this.counts[j]++;
     this.judged++;
     if (j === 'miss') {
-      this.combo = 0;
+      if (breakCombo) this.combo = 0;
       return;
     }
     this.combo++;

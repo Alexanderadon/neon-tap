@@ -217,9 +217,10 @@ export class NoteManager {
         }
         if (note.state === NoteState.Pending) {
           const w = windowsFor(note);
-          if (note.armed && songTime >= note.time - w.great) {
+          if (note.armed && songTime >= note.time) {
+            // Touch assist fires on the note's own moment, never before the sound.
             note.assisted = true;
-            this.hit(note, 'great', -w.great);
+            this.hit(note, 'great', 0);
             continue;
           }
           if (songTime - note.time > w.good) {
@@ -265,7 +266,9 @@ export class NoteManager {
     if (note.kind === 'roll') return note.taps >= note.extra ? 'perfect' : note.taps >= Math.ceil(note.extra / 2) ? 'good' : 'miss';
     if (note.kind === 'spin') return spinJudgement(note.spin, note.extra);
     if (note.kind === 'slide') return isHeld(note.extra) ? (note.judgement ?? 'perfect') : 'miss';
-    return note.judgement ?? 'perfect';
+    // A plain hold reaching its end is credited only while the finger is still there (a release
+    // inside the window was judged by release(); a lost release — pause, blur — is a broken hold).
+    return isHeld(note.lane) ? (note.judgement ?? 'perfect') : 'miss';
   }
 
   /**
@@ -303,11 +306,21 @@ export class NoteManager {
       const w = windowsFor(note);
       const early = note.kind === 'circle' ? this.circleEarly : w.good;
       if (delta < -early) {
-        if (this.assistWindow > 0 && -delta <= this.assistWindow && !note.armed) note.armed = true;
+        // Touch assist: an early press arms a plain tap (never a long note — a hold needs a finger). A second press clears the arm.
+        if (this.assistWindow > 0 && -delta <= this.assistWindow && note.duration === 0) note.armed = !note.armed;
         return null;
       }
       const j = judgeDelta(delta, w, early);
       if (!j) continue; // overdue note — update() will miss it
+      // In a dense stream two notes of one lane can both be inside the window: judge the nearer one.
+      const nxt = i + 1 < len ? this.pool[list[i + 1]] : null;
+      if (nxt && nxt.state === NoteState.Pending && nxt.kind !== 'circle' && Math.abs(songTime - nxt.time) < Math.abs(delta)) {
+        const jn = judgeDelta(songTime - nxt.time, windowsFor(nxt), windowsFor(nxt).good);
+        if (jn) {
+          this.hit(nxt, jn, songTime - nxt.time);
+          return jn;
+        }
+      }
       this.hit(note, j, delta);
       return j;
     }

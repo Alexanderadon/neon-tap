@@ -82,12 +82,30 @@ describe('NoteManager', () => {
   });
 
   describe('touch assist', () => {
-    it('arms an early press and judges Great when the note arrives', () => {
+    it('arms an early press and judges Great at the note moment, never before the sound', () => {
       const { nm, events } = make([[1, 0]], 0.4);
       expect(nm.press(0, 0.7)).toBeNull();
-      nm.update(0.92, notHeld);
+      nm.update(0.95, notHeld);
+      expect(nm.pool[0].state).toBe(NoteState.Pending);
+      nm.update(1.0, notHeld);
       expect(nm.pool[0].state).toBe(NoteState.Hit);
       expect(events).toEqual([expect.objectContaining({ judgement: 'great', tail: false })]);
+    });
+
+    it('never arms a long note (a hold needs a finger) and a second early press disarms', () => {
+      const { nm } = make(
+        [
+          [1, 0, 0.5],
+          [3, 1],
+        ],
+        0.4,
+      );
+      expect(nm.press(0, 0.7)).toBeNull();
+      expect(nm.pool[0].armed).toBe(false);
+      expect(nm.press(1, 2.7)).toBeNull();
+      expect(nm.pool[1].armed).toBe(true);
+      expect(nm.press(1, 2.75)).toBeNull();
+      expect(nm.pool[1].armed).toBe(false);
     });
 
     it('is off by default (desktop keeps strict timing)', () => {
@@ -250,6 +268,34 @@ describe('NoteManager', () => {
       const { nm: nm2, events: ev2 } = make([[1, 0, 0, 'heart']]);
       expect(nm2.press(0, 1.01)).toBe('perfect');
       expect(ev2).toHaveLength(1);
+    });
+  });
+
+  describe('dense streams', () => {
+    it('judges the nearer of two notes in one lane when both are inside the window', () => {
+      const { nm, events } = make([
+        [1, 0],
+        [1.1, 0],
+      ]);
+      expect(nm.press(0, 1.09)).toBe('perfect'); // 10 ms early for the second note, not 90 ms late for the first
+      expect(nm.pool[1].state).toBe(NoteState.Hit);
+      expect(nm.pool[0].state).toBe(NoteState.Pending);
+      nm.update(1.2, notHeld);
+      expect(events.map((e) => [e.note.time, e.judgement])).toEqual([
+        [1.1, 'perfect'],
+        [1, 'miss'],
+      ]);
+    });
+
+    it('credits a hold at its end only while the finger is still down (a lost release breaks it)', () => {
+      const { nm, events } = make([[1, 0, 1]]);
+      expect(nm.press(0, 1)).toBe('perfect');
+      nm.update(2.1, notHeld); // the finger is gone and no release ever arrived
+      expect(events[1]).toMatchObject({ judgement: 'miss', tail: true });
+      const { nm: nm2, events: ev2 } = make([[1, 0, 1]]);
+      nm2.press(0, 1);
+      nm2.update(2.1, held);
+      expect(ev2[1]).toMatchObject({ judgement: 'perfect', tail: true });
     });
   });
 });
