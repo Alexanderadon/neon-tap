@@ -8,6 +8,8 @@ import { CalibrationPage } from '@/pages/calibration';
 import { SettingsPage } from '@/pages/settings';
 import { CustomSongPage } from '@/pages/custom';
 import { TutorialPage } from '@/pages/tutorial';
+import { DuelPage } from '@/pages/duel';
+import { duelIdFromUrl } from '@/shared/api/duels';
 import { ShopPage } from '@/pages/shop';
 import { WelcomePage } from '@/pages/welcome';
 import { AudioGate } from '@/widgets/audio-gate';
@@ -26,6 +28,8 @@ export function App() {
     if (screen !== 'menu') return;
     const step = firstLaunchStep(getSettings(), isWelcomeSkipped());
     if (step) navigate(step);
+    // A duel link (?duel=<id>): the challenge screen comes right after the first-launch steps.
+    else if (duelIdFromUrl()) navigate('duel');
   }, [screen]);
 
   let page;
@@ -53,6 +57,9 @@ export function App() {
       break;
     case 'shop':
       page = <ShopPage key={key} />;
+      break;
+    case 'duel':
+      page = <DuelPage key={key} />;
       break;
     default:
       page = <MenuPage key={key} />;

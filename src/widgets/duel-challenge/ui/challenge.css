@@ -1,0 +1,4 @@
+.duel-challenge.is-done {
+  color: var(--c-lime);
+  border-color: color-mix(in srgb, var(--c-lime) 60%, transparent);
+}

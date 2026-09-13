@@ -5,6 +5,9 @@ import { Screen } from '@/shared/ui';
 import { startSession, useSession } from '@/entities/play-session';
 import { CATALOG, loadChart } from '@/entities/track';
 import { ResultBreakdown } from '@/widgets/result-breakdown';
+import { ChallengeButton } from '@/widgets/duel-challenge';
+import { DuelVerdict } from '@/features/duel';
+import { clearActiveDuel, useActiveDuel } from '@/entities/duel';
 import { useCatalogState } from '@/widgets/track-list';
 import { AttemptLine } from '@/widgets/history-panel';
 import { OnlineLeaderboard } from '@/widgets/online-leaderboard';
@@ -18,6 +21,9 @@ export function ResultPage() {
   }, [chart, result]);
 
   const retry = useCallback(() => navigate('game'), []);
+  // The run answers a duel when it was started from a challenge link.
+  const duel = useActiveDuel();
+  const answering = duel && result && duel.track === result.trackId ? duel : null;
 
   // "Next": the following playable catalog track (hidden for custom songs and after the last one).
   const catalog = useCatalogState();
@@ -29,6 +35,7 @@ export function ResultPage() {
   }, [source, result, catalog]);
   const next = useCallback(async () => {
     if (!nextId) return;
+    clearActiveDuel();
     startSession(await loadChart(nextId), 'catalog');
     navigate('game');
   }, [nextId]);
@@ -51,6 +58,8 @@ export function ResultPage() {
         chart={chart}
         notes={notes}
         goals={resultMeta?.goalsCompleted}
+        extraTop={answering ? <DuelVerdict duel={answering} result={result} /> : undefined}
+        extraActions={source === 'catalog' ? <ChallengeButton result={result} title={chart.title} /> : undefined}
         belowGrid={
           <>
             {resultMeta?.crystals ? <CrystalsEarned n={resultMeta.crystals} /> : null}
