@@ -166,12 +166,14 @@ function ShopCard({ item, index, balance, onBuy, previewing, onPreview }: CardPr
         <TrackCover id={track.id} genre={track.genre} title={track.title} className="shopcard-cover" />
         <span className="shopcard-listen-icon" aria-hidden="true">
           {previewing ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <rect x="3" y="3" width="10" height="10" rx="2" />
-            </svg>
+            <span className="shopcard-eq">
+              <i />
+              <i />
+              <i />
+            </span>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M4 2.5v11l9-5.5z" />
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.5 2.5v11l9-5.5z" />
             </svg>
           )}
         </span>
