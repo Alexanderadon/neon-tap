@@ -21,8 +21,12 @@ export interface Slot {
   high: number;
   /** How many following slots keep ≥ 50 % of this slot's mid-band energy — a sustained sound. */
   sustain: number;
-  /** When the hit itself sounds: the onset peak nearest the slot (within ±1.5 frames), or the grid time. Tiles are timed to this. */
-  hit?: number;
+  /**
+   * How abruptly the hit starts, 0..1: the flux at its peak against the flux ~50–90 ms earlier.
+   * A kick, a pluck, a syllable ≈ 1; a swell (a reverse bass, a rising pad) that only *peaks* here ≈ 0 —
+   * nobody taps the end of a swell. Absent = unknown (treated as an attack).
+   */
+  attack?: number;
 }
 
 export interface SongAnalysis {
@@ -141,10 +145,17 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
       }
     }
     raw.push(best);
-    // The tile goes on the sound, not on the grid line: the peak frame, at most 40 % of a slot away.
     if (bestF >= 0) {
-      const maxShift = 0.4 * (s + 1 < slots.length ? slots[s + 1].time - slots[s].time : 0.1);
-      slots[s].hit = slots[s].time + Math.max(-maxShift, Math.min(maxShift, det.frameTime(bestF) - slots[s].time));
+      // Attack sharpness: a real hit rises out of the frames just before it; a swell was already rising there.
+      let before = 0;
+      let cnt = 0;
+      for (let j = bestF - 4; j <= bestF - 2; j++)
+        if (j >= 0) {
+          before += det.flux[j];
+          cnt++;
+        }
+      before = cnt ? before / cnt : 0;
+      slots[s].attack = best > 0 ? Math.max(0, Math.min(1, (best - before) / best)) : 0;
     }
     if (bestF >= 0) {
       const l = det.bandFlux[0][bestF];

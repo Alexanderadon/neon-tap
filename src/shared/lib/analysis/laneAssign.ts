@@ -1,6 +1,6 @@
 import type { NoteTuple } from '@/shared/types/chart';
 import type { Slot } from './SongAnalyzer';
-import { round3, type Event } from './bars';
+import { round3, type Event, PHRASE_BARS } from './bars';
 
 /** Circles cycle through this many screen positions across the whole field. */
 const CIRCLE_SPREAD = 8;
@@ -113,6 +113,11 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
   let accentSide = 0;
   /** The thumb holding a hold / roll / slide, and the slot it is busy until (inclusive). */
   let busy: { hand: 0 | 1; until: number } | null = null;
+  /**
+   * The figure's lanes, remembered per phrase and step: the same "tu-DUN-dun" lands in the same
+   * lanes bar after bar, so the hands learn the pattern instead of chasing a new layout every bar.
+   */
+  const figureLane = new Map<string, number>();
 
   for (const ev of events) {
     const slot = slots[ev.si];
@@ -173,7 +178,10 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       } else lanes = [candidates[Math.floor(random() * candidates.length)]];
     } else {
       let lane: number;
-      if (gap <= 1 && motion) {
+      const memory = figureLane.get(`${Math.floor(ev.bar.index / PHRASE_BARS)}:${ev.step}`);
+      if (memory !== undefined && candidates.includes(memory) && gap > 1) {
+        lane = memory;
+      } else if (gap <= 1 && motion) {
         lane = motion.next(candidates);
       } else if (gap === 2) {
         const side = 1 - lastSide;
@@ -193,9 +201,10 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
         lane = choose[Math.floor(random() * choose.length)];
       }
       lanes = [lane];
+      if (ev.hold === 0 && !ev.kind) figureLane.set(`${Math.floor(ev.bar.index / PHRASE_BARS)}:${ev.step}`, lane);
     }
 
-    const time = round3(slot.hit ?? slot.time);
+    const time = round3(slot.time);
     for (const lane of lanes) {
       if (ev.hold > 0) {
         const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);

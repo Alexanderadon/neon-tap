@@ -8,10 +8,12 @@ import { EASY_LANE_POOLS, LANE_POOLS, planSections } from './lanePlan';
 import {
   ACCENT_REL,
   MIN_GAP_INTENSE,
+  MIN_GAP_SLOTS,
   MIN_NOTE_STRENGTH,
   MIN_RAW_STRENGTH,
   ROLL_MAX_TAPS,
   ROLL_MIN_TAPS,
+  SOUND_REL,
   detectFill,
   gridBonus,
   patternSteps,
@@ -67,10 +69,10 @@ export interface Profile {
 }
 
 export const NORMAL: Profile = {
-  // The song decides how many tiles a bar has; these are physical ceilings for two thumbs.
-  maxNotes: [12, 12, 12],
+  // The figure of the phrase decides the tiles; these ceilings only keep a verse lighter than a drop.
+  maxNotes: [6, 9, 12],
   maxNotesByLanes: { 2: 8, 3: 10 },
-  density: [DENSITY_LIMIT, DENSITY_LIMIT, DENSITY_LIMIT],
+  density: [4, 5.5, 6.5],
   densityPeak: DENSITY_LIMIT,
   gap: null,
   rolls: true,
@@ -88,11 +90,10 @@ export const NORMAL: Profile = {
 
 /** Chapter two: eighths allowed, a few holds and slides, still no rolls or chords, up to five lanes. */
 export const MEDIUM: Profile = {
-  // Every chapter gets the song's whole stream of hits (Magic Tiles has no "easy version" of a
-  // song); what the second chapter spares the player is rolls, chords and wide fields.
-  maxNotes: [12, 12, 12],
+  // The second chapter plays the same figures; what it spares the player is rolls, chords and wide fields.
+  maxNotes: [6, 9, 12],
   maxNotesByLanes: { 2: 8, 3: 10 },
-  density: [DENSITY_LIMIT, DENSITY_LIMIT, DENSITY_LIMIT],
+  density: [4, 5.5, 6.5],
   densityPeak: DENSITY_LIMIT,
   gap: null,
   rolls: false,
@@ -109,12 +110,12 @@ export const MEDIUM: Profile = {
 };
 
 export const EASY: Profile = {
-  // The first chapter: the same stream of hits, but no slides / rolls / chords / spinners, few circles, 3–4 lanes.
-  maxNotes: [12, 12, 12],
-  maxNotesByLanes: { 2: 8, 3: 10 },
-  density: [DENSITY_LIMIT, DENSITY_LIMIT, DENSITY_LIMIT],
-  densityPeak: DENSITY_LIMIT,
-  gap: null,
+  // The first chapter: the figures on beats and eighths (no sixteenths), no slides / rolls / chords / spinners, few circles, 3–4 lanes.
+  maxNotes: [4, 6, 8],
+  maxNotesByLanes: { 2: 6, 3: 8 },
+  density: [3, 4, 5],
+  densityPeak: 5,
+  gap: 2,
   rolls: false,
   slides: false,
   chords: false,
@@ -162,12 +163,10 @@ const CIRCLE_KEEP_REL = 0.75;
 const CIRCLE_EVERY_PHRASE_STARS = 6;
 /** Lane bars between two windows — at most a third of the song is circles. */
 const CIRCLE_COOLDOWN_BARS = 16;
-/** Sound-driven bars (stems): a hit counts when it is at least this share of the bar's loudest hit of the layer. */
-const BAR_REL = 0.25;
-/** A slot next to a louder one still counts as its own hit when it reaches this share of it. */
-const PEAK_TOLERANCE = 0.8;
 /** A sound must ring at least a beat to become a hold; shorter sounds are taps. */
 const HOLD_MIN_SLOTS_SOUND = 4;
+/** A hit must start this abruptly (Slot.attack) to count; below it the sound is a swell, not a tap. */
+const ATTACK_MIN = 0.35;
 /** An instrument "starts a note" at a slot when its onset strength there is at least this. */
 const SOUND_AT = 0.3;
 /** A stem's own onset (on its own scale) counts as a hit of this strength next to the mix's. */
@@ -244,6 +243,21 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   const sal = slots.map((s) => Math.min(1, salience(s) * (boost.get(s.bar) ?? 1)));
   /** Unscaled hit evidence per slot (the mix, or the followed instrument): silence gate for notes. */
   const raw = slots.map((s) => s.strength);
+  /**
+   * What the ear hears at a slot: the mix's hit, or — with stems — a bass note, a sung syllable, a
+   * lead note or a hi-hat whose soft attack the mix under-reports. Profiles and per-bar checks read this.
+   */
+  const heard = (gi: number): number => {
+    if (gi < 0 || gi >= sal.length) return 0;
+    // Only an attack is a hit: the end of a swell (a reverse bass peaking before the kick, a rising pad) is not something to tap.
+    if ((slots[gi].attack ?? 1) < ATTACK_MIN) return 0;
+    let v = sal[gi];
+    if (opts.layers) {
+      for (const l of MELODIC_LAYERS) v = Math.max(v, STEM_HIT_WEIGHT * opts.layers.onset[l][gi]);
+      v = Math.max(v, DRUM_HIT_WEIGHT * opts.layers.onset.drums[gi]);
+    }
+    return v;
+  };
   // Tiles sit on what the ear hears: the audible hits of the song itself (the mix), bar by bar.
   // Separated stems do not move a tile; they say which instrument leads a phrase (lane changes
   // follow the music), whether a sound rings on (holds) and whether two instruments hit together (chords).
@@ -317,11 +331,11 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     P.keepLanesChance,
     layered ? musicChanges : undefined,
   );
-  // The song decides how many hits a bar has (a quiet verse keeps every sung note); only the profile's ceiling applies.
-  const densityLimit = (_bar: Bar): number => P.densityPeak;
+  // The phrase's figure decides the tiles; the profile's ceilings only keep a verse lighter than a drop.
+  const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? P.densityPeak : P.density[bar.intensity]);
   const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
   const barCap = (bar: Bar): number =>
-    Math.max(1, Math.min(P.maxNotes[2], P.maxNotesByLanes[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
+    Math.max(1, Math.min(P.maxNotes[bar.intensity], P.maxNotesByLanes[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
 
   // 1. The rhythm profile of every 4-bar phrase → pattern steps (the figure) and accents.
   const phrases: PhrasePattern[] = phrasesRaw.map((phraseBars, index) => {
@@ -330,7 +344,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     let salMax = 0;
     for (const b of phraseBars) {
       for (let k = 0; k < b.slots.length && k < STEPS_PER_BAR; k++) {
-        const v = sal[b.start + k];
+        const v = heard(b.start + k);
         profile[k] += v;
         counts[k]++;
         if (v > salMax) salMax = v;
@@ -354,45 +368,12 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   });
   const phraseOf = (bar: Bar): PhrasePattern => phrases[Math.floor(bar.index / PHRASE_BARS)] ?? phrases[phrases.length - 1];
   /** Does this bar sound the phrase's pattern step? (Its own hit must be there, not just the phrase average.) */
-  const sounds = (_phrase: PhrasePattern, bar: Bar, step: number): boolean => step < bar.slots.length && soundSteps(bar).includes(step);
-  /**
-   * Every bar is read on its own: a tile for every audible hit of the song (a local peak of the
-   * mix's onset strength, at least BAR_REL of the bar's loudest), loudest first. No averaged
-   * figure — the taps land where the ear hears a hit, "tu-DUN-dun-dun".
-   */
-  const soundStepsCache = new Map<number, number[]>();
-  /**
-   * What the ear hears at a slot: the mix's hit, or — with stems — a bass note, a sung syllable or
-   * a lead note whose soft attack the mix under-reports. "Every note, every bass" is a tile.
-   */
-  const heard = (gi: number): number => {
-    if (gi < 0 || gi >= sal.length) return 0;
-    let v = sal[gi];
-    if (opts.layers) {
-      for (const l of MELODIC_LAYERS) v = Math.max(v, STEM_HIT_WEIGHT * opts.layers.onset[l][gi]);
-      v = Math.max(v, DRUM_HIT_WEIGHT * opts.layers.onset.drums[gi]);
-    }
-    return v;
-  };
-  const soundSteps = (bar: Bar): number[] => {
-    const hit = soundStepsCache.get(bar.index);
-    if (hit) return hit;
-    let barMax = 0;
-    for (let k = 0; k < bar.slots.length; k++) barMax = Math.max(barMax, heard(bar.start + k));
-    const floor = Math.max(MIN_NOTE_STRENGTH, BAR_REL * barMax);
-    const found: { step: number; score: number }[] = [];
-    for (let k = 0; k < bar.slots.length; k++) {
-      const gi = bar.start + k;
-      const v = heard(gi);
-      if (v < floor || (raw[gi] < MIN_RAW_STRENGTH && v < STEM_HIT_WEIGHT * SOUND_AT)) continue;
-      // A hit is a local peak — or nearly one: "ta-ka" sixteenths are two hits even when the second is louder.
-      if (v < PEAK_TOLERANCE * heard(gi - 1) || v < PEAK_TOLERANCE * heard(gi + 1)) continue;
-      found.push({ step: k, score: v + gridBonus(k) });
-    }
-    found.sort((a, b) => b.score - a.score || a.step - b.step);
-    const steps = found.map((f) => f.step);
-    soundStepsCache.set(bar.index, steps);
-    return steps;
+  const sounds = (phrase: PhrasePattern, bar: Bar, step: number): boolean => {
+    if (step >= bar.slots.length) return false;
+    const gi = bar.start + step;
+    return (
+      heard(gi) >= Math.max(MIN_NOTE_STRENGTH, SOUND_REL * phrase.profile[step]) && (raw[gi] >= MIN_RAW_STRENGTH || heard(gi) >= STEM_HIT_WEIGHT * SOUND_AT)
+    );
   };
   /** Two instruments hitting at once (both clearly): a chord. */
   const twoSounds = (bar: Bar, step: number): boolean => {
@@ -410,7 +391,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     const cap = barCap(bar);
     const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
     const phraseEnd = bar.index % PHRASE_BARS === PHRASE_BARS - 1;
-    const gap = P.gap ?? MIN_GAP_INTENSE;
+    const gap = P.gap ?? (bar.intensity === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS);
     let rollFrom = -1;
     let rollTaps = 0;
     const fill = P.rolls ? fills.get(bar.index) : undefined;
@@ -444,7 +425,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
     const placed: number[] = [];
     const fits = (step: number) => !placed.some((st) => Math.abs(st - step) < gap);
-    for (const step of soundSteps(bar)) {
+    for (const step of phrase.steps) {
       if (placed.length >= cap) break;
       if (rollFrom >= 0 && step >= rollFrom) continue;
       if (!sounds(phrase, bar, step) || !fits(step)) continue;
@@ -460,7 +441,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
         hold: 0,
         kind: null,
         taps: 0,
-        accent: layered ? sal[bar.start + step] >= ACCENT_REL * phrase.salMax && twoSounds(bar, step) : phrase.accents.has(step),
+        accent: phrase.accents.has(step) && (!layered || twoSounds(bar, step)),
       });
     if (rollFrom >= 0 && rollFrom < bar.slots.length) {
       const len = bar.slots.length - rollFrom;
