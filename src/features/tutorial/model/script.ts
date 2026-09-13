@@ -1,27 +1,14 @@
 import { KEY_LABELS, MAX_LANES, MIN_LANES } from '@/shared/config/constants';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { clamp } from '@/shared/lib/math';
+import { beatTime, beatIndex } from '@/entities/chart';
+export { beatTime, beatIndex };
 
 /** Mechanic a tutorial step teaches (drives the overlay icon + hint animation). */
 export type TutorialKind = 'intro' | 'tap' | 'hold' | 'slide' | 'roll' | 'circle' | 'spell' | 'spin' | 'lanes' | 'free';
 
 export type TutorialStepId =
-  | 'intro'
-  | 'tap'
-  | 'hold'
-  | 'lanes2'
-  | 'alt'
-  | 'slide'
-  | 'lanes3'
-  | 'roll'
-  | 'lanes4'
-  | 'circle'
-  | 'spell'
-  | 'lanes5'
-  | 'mixed'
-  | 'lanes6'
-  | 'spin'
-  | 'finale';
+  'intro' | 'tap' | 'hold' | 'lanes2' | 'alt' | 'slide' | 'lanes3' | 'roll' | 'lanes4' | 'circle' | 'spell' | 'lanes5' | 'mixed' | 'lanes6' | 'spin' | 'finale';
 
 export interface TutorialStep {
   id: TutorialStepId;
@@ -76,27 +63,6 @@ export const TUTORIAL_PLAN: readonly TutorialPlanEntry[] = [
   { id: 'spin', kind: 'spin', lanes: 6, fromBeat: 118, toBeat: 126 },
   { id: 'finale', kind: 'free', lanes: 6, fromBeat: 126, toBeat: Infinity },
 ];
-
-/** Beat index (fractional allowed) → song seconds on a tracked beat grid; extrapolates past the ends. */
-export function beatTime(beats: readonly number[], beat: number): number {
-  if (!Number.isFinite(beat)) return beat;
-  if (beats.length === 0) return beat;
-  if (beats.length === 1) return beats[0] + beat * 0.5;
-  const i = clamp(Math.floor(beat), 0, beats.length - 2);
-  const step = beats[i + 1] - beats[i];
-  return beats[i] + (beat - i) * step;
-}
-
-/** Song seconds → fractional beat index on the grid (inverse of `beatTime`, same extrapolation). */
-export function beatIndex(beats: readonly number[], time: number): number {
-  if (!Number.isFinite(time)) return time;
-  if (beats.length === 0) return time;
-  if (beats.length === 1) return (time - beats[0]) / 0.5;
-  let i = 0;
-  while (i < beats.length - 2 && beats[i + 1] <= time) i++;
-  const step = beats[i + 1] - beats[i];
-  return i + (time - beats[i]) / step;
-}
 
 /** Lane the tutorial's slow-motion spell falls into (the chart puts it on the 4-lane section). */
 export const SPELL_LANE = 1;
