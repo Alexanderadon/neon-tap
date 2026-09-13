@@ -1,0 +1,61 @@
+.duel-page {
+  gap: 14px;
+  text-align: center;
+}
+.duel-page-status {
+  color: rgba(255, 255, 255, 0.6);
+}
+.duel-page-kicker {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-magenta);
+}
+.duel-page-cover {
+  width: 132px;
+  height: 132px;
+  border-radius: 20px;
+  box-shadow: 0 0 30px rgba(255, 43, 214, 0.35);
+}
+.duel-page-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 22px;
+  margin: 0;
+}
+.duel-page-host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 22px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.duel-page-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.duel-page-score {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 34px;
+  color: #ffd700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
+}
+.duel-page-question {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+.duel-page-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}

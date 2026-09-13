@@ -1,0 +1,83 @@
+.duels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.duels-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-magenta);
+  margin: 0;
+}
+.duels-empty,
+.duels-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.duels-list,
+.duels-replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.duels-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.duels-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.duels-track {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duels-my {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #ffd700;
+  font-variant-numeric: tabular-nums;
+}
+.duels-reply {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 14px;
+}
+.duels-reply-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duels-reply-score {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.duels-reply-mark {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+}
+.duels-reply.is-beat .duels-reply-mark {
+  color: var(--c-magenta);
+}

@@ -35,6 +35,8 @@ interface Props {
   extraTop?: ReactNode;
   /** Slot above the actions (e.g. history line, online leaderboard). */
   extraBottom?: ReactNode;
+  /** An extra button in the secondary actions row (e.g. "challenge a friend"). */
+  extraActions?: ReactNode;
 }
 
 /** Replay length, seconds. */
@@ -46,7 +48,21 @@ const NO_NOTES: readonly ParsedNote[] = [];
  * Result screen body: rank, breakdown, near-miss hint and a dominant RETRY (GDD §1.3), followed by
  * "where did I miss" — song strip, accuracy/combo chart, highlights, best-moment replay and sharing.
  */
-export function ResultBreakdown({ result, meta, title, subtitle, onRetry, onNext, notes: noteLines, goals, belowGrid, chart, extraTop, extraBottom }: Props) {
+export function ResultBreakdown({
+  result,
+  meta,
+  title,
+  subtitle,
+  onRetry,
+  onNext,
+  notes: noteLines,
+  goals,
+  belowGrid,
+  chart,
+  extraTop,
+  extraBottom,
+  extraActions,
+}: Props) {
   const starsGained = meta ? Math.max(0, meta.starsAfter - meta.starsBefore) : 0;
   const [details, setDetails] = useState(false);
   // The numbers run up after the rank lands; the score last and longest, then it pops.
@@ -207,6 +223,7 @@ export function ResultBreakdown({ result, meta, title, subtitle, onRetry, onNext
           <Button variant="ghost" onClick={() => setDetails((d) => !d)} aria-expanded={details}>
             {details ? dict.resultLess : dict.resultMore}
           </Button>
+          {extraActions}
         </div>
       </div>
 

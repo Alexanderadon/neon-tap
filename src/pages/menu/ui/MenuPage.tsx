@@ -6,6 +6,7 @@ import { Button, CrystalIcon, Modal, Screen } from '@/shared/ui';
 import { useProgress } from '@/entities/progress';
 import { TrackDeck, type TrackRef } from '@/widgets/track-list';
 import { GoalsPanel } from '@/widgets/goals-panel';
+import { DuelList } from '@/widgets/duel-list';
 import { HistoryModal } from '@/widgets/history-panel';
 import { ProfileIcon, SettingsIcon } from './MenuIcons';
 import './menu.css';
@@ -68,6 +69,7 @@ export function MenuPage() {
             <SettingsIcon size={16} /> {dict.settings}
           </Button>
         </div>
+        <DuelList />
         <GoalsPanel />
         <footer className="menu-foot">
           <span className="micro">{dict.madeWith}</span>

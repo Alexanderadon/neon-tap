@@ -98,6 +98,8 @@ Asset pipeline (only needed to rebuild content): `npm run assets:music`, `assets
 
 ### Records and online leaderboard
 
+Duels (): "Challenge a friend" on the result screen hosts a duel — the run behind a short id — and shares the link ; the friend lands on the challenge screen, plays the same track and the result screen says who is ahead; replies are kept per duel (best per name) for 30 days and listed under "My duels" in the profile. Same Upstash Redis variables as the records; without them the button reports a failure.
+
 The attempt history (score, accuracy, rank, trend) is stored locally in `localStorage` and opens via the "Records" link on a track card. The online leaderboard is optional: `api/scores.ts` keeps a top-100 per track in Upstash Redis via its REST API. To enable it, set the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` variables in the Vercel project (Upstash → database → REST API). Without them the function responds with `{ enabled: false }` and the "Online records" section is simply not shown. The nickname is asked once on the result screen and can be changed in settings.
 
 ## Music licenses
