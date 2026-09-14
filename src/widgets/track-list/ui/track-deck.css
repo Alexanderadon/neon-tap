@@ -220,12 +220,8 @@
   align-items: center;
   gap: 12px;
 }
-.deck-diff {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--c-cyan);
+.deck-total .stars {
+  --star: 13px;
 }
 .deck-rank {
   font-family: var(--font-display);

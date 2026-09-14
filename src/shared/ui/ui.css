@@ -210,6 +210,36 @@
 .star-shine {
   fill: rgba(255, 255, 255, 0.4);
 }
+/* Song difficulty (see Difficulty.tsx): a flame and the number, coloured by tier. */
+.difficulty {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+.difficulty-md {
+  font-size: 16px;
+  gap: 4px;
+  padding: 3px 9px 3px 6px;
+}
+.difficulty-icon {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
 /* The result screen: stars pop in one after another (delays set inline), earned ones with a flare. */
 @keyframes star-in {
   0% {

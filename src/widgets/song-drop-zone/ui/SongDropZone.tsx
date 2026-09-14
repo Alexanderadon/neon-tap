@@ -2,7 +2,7 @@ import { useCallback, useRef, useState, type DragEvent } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine } from '@/shared/lib/audio';
-import { Button, ProgressBar } from '@/shared/ui';
+import { Button, Difficulty, ProgressBar } from '@/shared/ui';
 import { startSession } from '@/entities/play-session';
 import { generateFromFile, type GenerateProgress, type GeneratedSong } from '@/features/generate-chart';
 import './drop-zone.css';
@@ -69,7 +69,7 @@ export function SongDropZone() {
         <div className="dropzone-meta">{fmt(dict.customReady, { bpm: song.chart.bpm, onsets: song.onsets })}</div>
         <div className="dropzone-diffs">
           <Button size="xl" onClick={play}>
-            {dict.play} · ★ {song.chart.chart.stars}
+            {dict.play} · <Difficulty stars={song.chart.chart.stars} size="md" />
             <small>
               {song.chart.chart.notes.length} · {(song.chart.chart.notes.length / song.chart.duration).toFixed(1)} {dict.notesPerSec}
             </small>
