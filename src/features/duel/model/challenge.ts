@@ -27,29 +27,6 @@ export function challengeText(duel: Duel, title: string): string {
   return `${duel.host.name}: ${duel.host.score.toLocaleString('ru-RU')} на «${title}». Побьёшь? ${duelLink(duel.id)}`;
 }
 
-/**
- * Hand the link to the share sheet, or copy it. Returns how it went so the button can say
- * "sent" / "copied". Never throws.
- */
-export async function shareChallenge(duel: Duel, title: string): Promise<'shared' | 'copied' | 'failed'> {
-  const text = challengeText(duel, title);
-  const link = duelLink(duel.id);
-  try {
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      await navigator.share({ text, url: link });
-      return 'shared';
-    }
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') return 'failed';
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    return 'copied';
-  } catch {
-    return 'failed';
-  }
-}
-
 const replied = new WeakMap<PlayResult, Promise<{ duel: Duel; beaten: boolean } | null>>();
 
 /** Answer the duel with this run, once per run. */

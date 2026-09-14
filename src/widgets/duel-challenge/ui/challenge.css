@@ -1,4 +1,15 @@
-.duel-challenge.is-done {
+/* After the duel is hosted: two buttons (share sheet / copy) and a short confirmation. */
+.duel-share {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.duel-share-note {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
   color: var(--c-lime);
-  border-color: color-mix(in srgb, var(--c-lime) 60%, transparent);
 }

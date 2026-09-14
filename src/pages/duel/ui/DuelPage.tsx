@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { dict, fmt } from '@/shared/i18n';
+import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { Button, Screen } from '@/shared/ui';
 import { duels, duelIdFromUrl, type Duel } from '@/shared/api/duels';
@@ -7,6 +7,13 @@ import { CATALOG, TrackCover, loadChart } from '@/entities/track';
 import { startSession } from '@/entities/play-session';
 import { acceptDuel, setPendingDuel, usePendingDuel } from '@/entities/duel';
 import './duel-page.css';
+
+/** Take the duel id out of the address bar (other flags stay), so a reload does not reopen the challenge. */
+function dropDuelParam(): void {
+  const url = new URL(location.href);
+  url.searchParams.delete('duel');
+  history.replaceState(null, '', url.pathname + (url.search || ''));
+}
 
 type State = { kind: 'loading' } | { kind: 'missing' } | { kind: 'ready'; duel: Duel };
 
@@ -38,7 +45,7 @@ export function DuelPage() {
 
   const toMenu = useCallback(() => {
     setPendingDuel(null);
-    history.replaceState(null, '', location.pathname);
+    dropDuelParam();
     navigate('menu');
   }, []);
 
@@ -46,7 +53,7 @@ export function DuelPage() {
     if (state.kind !== 'ready') return;
     const chart = await loadChart(state.duel.track);
     acceptDuel(state.duel);
-    history.replaceState(null, '', location.pathname);
+    dropDuelParam();
     startSession(chart, 'catalog');
     navigate('game');
   }, [state]);
@@ -72,7 +79,7 @@ export function DuelPage() {
             <span className="duel-page-name">{state.duel.host.name}</span>
             <span className="duel-page-score">{state.duel.host.score.toLocaleString('ru-RU')}</span>
           </div>
-          <div className="duel-page-question">{fmt(dict.duelQuestion, { name: state.duel.host.name })}</div>
+          <div className="duel-page-question">{dict.duelQuestion}</div>
           <div className="duel-page-actions">
             <Button size="xl" onClick={() => void play()} autoFocus>
               {dict.duelPlay}

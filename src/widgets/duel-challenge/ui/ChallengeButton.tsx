@@ -1,54 +1,87 @@
 import { useEffect, useRef, useState } from 'react';
 import { dict } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
+import type { Duel } from '@/shared/api/duels';
 import { useSettings } from '@/entities/settings';
 import type { PlayResult } from '@/entities/score';
 import { NicknameDialog } from '@/features/submit-score';
-import { canChallenge, createChallenge, shareChallenge } from '@/features/duel';
+import { canChallenge, challengeText, createChallenge } from '@/features/duel';
 import './challenge.css';
 
-type Status = 'idle' | 'busy' | 'shared' | 'copied' | 'failed';
+type Phase = 'idle' | 'creating' | 'ready' | 'failed';
 
-/** "Challenge a friend": hosts a duel from this run and hands the link to the share sheet (or the clipboard). */
+/**
+ * "Challenge a friend": the first tap hosts a duel from this run; then the link is handed over
+ * with a second tap — the share sheet on phones (called straight from the tap, as browsers
+ * require) or the clipboard. The nickname is asked once if it is still missing.
+ */
 export function ChallengeButton({ result, title }: { result: PlayResult; title: string }) {
   const nickname = useSettings((s) => s.nickname);
-  const [status, setStatus] = useState<Status>('idle');
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [duel, setDuel] = useState<Duel | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [askName, setAskName] = useState(false);
   const timer = useRef(0);
   useEffect(() => () => window.clearTimeout(timer.current), []);
   if (!canChallenge(result)) return null;
 
-  const flash = (s: Status) => {
-    setStatus(s);
+  const flash = (text: string) => {
+    setNote(text);
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setStatus('idle'), 2600);
+    timer.current = window.setTimeout(() => setNote(null), 2600);
   };
 
-  const challenge = async () => {
-    if (status === 'busy') return;
+  const create = async () => {
     if (!nickname) {
       setAskName(true);
       return;
     }
-    setStatus('busy');
-    const duel = await createChallenge(result, nickname);
-    if (!duel) {
-      flash('failed');
-      return;
-    }
-    flash(await shareChallenge(duel, title));
+    setPhase('creating');
+    const d = await createChallenge(result, nickname);
+    setDuel(d);
+    setPhase(d ? 'ready' : 'failed');
   };
 
-  const label = status === 'shared' ? dict.duelSent : status === 'copied' ? dict.duelCopied : status === 'failed' ? dict.duelFailed : dict.duelChallenge;
+  const share = () => {
+    if (!duel) return;
+    const text = challengeText(duel, title);
+    if (typeof navigator.share === 'function') {
+      navigator
+        .share({ text })
+        .then(() => flash(dict.duelSent))
+        .catch(() => undefined);
+      return;
+    }
+    void copy();
+  };
+
+  const copy = async () => {
+    if (!duel) return;
+    try {
+      await navigator.clipboard.writeText(challengeText(duel, title));
+      flash(dict.duelCopied);
+    } catch {
+      flash(dict.duelFailed);
+    }
+  };
+
+  if (phase === 'ready' && duel) {
+    return (
+      <div className="duel-share">
+        <Button variant="ghost" onClick={share}>
+          {dict.duelShare}
+        </Button>
+        <Button variant="ghost" onClick={() => void copy()}>
+          {dict.duelCopy}
+        </Button>
+        {note && <span className="duel-share-note">{note}</span>}
+      </div>
+    );
+  }
   return (
     <>
-      <Button
-        variant="ghost"
-        className={`duel-challenge${status === 'shared' || status === 'copied' ? ' is-done' : ''}`}
-        onClick={() => void challenge()}
-        disabled={status === 'busy'}
-      >
-        {label}
+      <Button variant="ghost" className="duel-challenge" onClick={() => void create()} disabled={phase === 'creating'}>
+        {phase === 'failed' ? dict.duelFailed : phase === 'creating' ? dict.duelCreating : dict.duelChallenge}
       </Button>
       <NicknameDialog open={askName} onSkip={() => setAskName(false)} />
     </>
