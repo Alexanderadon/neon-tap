@@ -29,13 +29,13 @@ export function DuelVerdict({ duel, result }: { duel: Duel; result: PlayResult }
   const theirs = duel.host.score.toLocaleString('ru-RU');
   return (
     <div className={`duel-verdict ${beaten ? 'is-won' : 'is-lost'}`} role="status">
-      <div className="duel-verdict-title">{beaten ? fmt(dict.duelWon, { name: duel.host.name }) : fmt(dict.duelLost, { name: duel.host.name })}</div>
+      <div className="duel-verdict-title">{beaten ? dict.duelWon : fmt(dict.duelLost, { name: duel.host.name })}</div>
       <div className="duel-verdict-scores">
         <span className="duel-verdict-mine">{mine}</span>
         <span className="duel-verdict-vs">{dict.duelVs}</span>
         <span className="duel-verdict-theirs">{theirs}</span>
       </div>
-      {sent && <div className="duel-verdict-sent">{dict.duelReplySent}</div>}
+      {sent && <div className="duel-verdict-sent">{fmt(dict.duelReplySent, { name: duel.host.name })}</div>}
     </div>
   );
 }

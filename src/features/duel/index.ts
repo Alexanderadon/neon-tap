@@ -1,2 +1,2 @@
 export { DuelVerdict } from './ui/DuelVerdict';
-export { canChallenge, createChallenge, shareChallenge, replyToDuel, challengeText } from './model/challenge';
+export { canChallenge, createChallenge, replyToDuel, challengeText } from './model/challenge';

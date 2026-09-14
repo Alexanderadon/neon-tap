@@ -232,6 +232,8 @@
 }
 .result-secondary {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 /* Everything analytical lives here, closed by default. */
