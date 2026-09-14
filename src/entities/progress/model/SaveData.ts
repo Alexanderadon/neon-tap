@@ -8,6 +8,8 @@ export interface BestResult {
   maxCombo: number;
   fullCombo: boolean;
   playedAt: string;
+  /** Most levels finished in one run (0–3), a star each; absent on saves from before levels (then the rank decides). */
+  stars?: number;
 }
 
 export interface SaveDataV2 {
@@ -212,9 +214,10 @@ export function migrate(raw: unknown): SaveData {
   };
 }
 
-/** Stars earned on a track: 1 for a pass (rank ≥ C), +1 for A, +1 for S. */
+/** Stars earned on a track: the levels finished in the best run; saves from before levels are read by rank (C = 1, A = 2, S = 3). */
 export function starsForTrack(best: BestResult | undefined): number {
   if (!best) return 0;
+  if (best.stars !== undefined) return Math.max(0, Math.min(3, best.stars));
   const r = rankIndex(best.rank);
   if (r < rankIndex('C')) return 0;
   if (r < rankIndex('A')) return 1;
@@ -230,13 +233,14 @@ export function totalStars(save: SaveData, trackIds?: readonly string[]): number
   return sum;
 }
 
-/** Merge a new result; returns whether it beat the stored best score. */
+/** Merge a new result; returns whether it beat the stored best score. Stars, rank and full combo never go down. */
 export function mergeResult(save: SaveData, trackId: string, result: BestResult): { save: SaveData; newRecord: boolean } {
   const prev = save.tracks[trackId];
   const newRecord = !prev || result.score > prev.score;
+  const stars = Math.max(starsForTrack(prev), starsForTrack(result));
   const merged: BestResult = newRecord
-    ? { ...result, fullCombo: result.fullCombo || (prev?.fullCombo ?? false) }
-    : { ...prev, fullCombo: prev.fullCombo || result.fullCombo, rank: RANK_ORDER[Math.max(rankIndex(prev.rank), rankIndex(result.rank))] };
+    ? { ...result, stars, fullCombo: result.fullCombo || (prev?.fullCombo ?? false) }
+    : { ...prev, stars, fullCombo: prev.fullCombo || result.fullCombo, rank: RANK_ORDER[Math.max(rankIndex(prev.rank), rankIndex(result.rank))] };
   return { save: { ...save, plays: save.plays + 1, tracks: { ...save.tracks, [trackId]: merged } }, newRecord };
 }
 

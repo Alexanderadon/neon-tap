@@ -18,6 +18,8 @@ export interface Volumes {
 
 /** Fade in / out of a shop preview clip, seconds. */
 const PREVIEW_FADE = 0.25;
+/** Where a fade starts or ends: -40 dB, quiet enough to read as silence, high enough for an exponential ramp. */
+const FADE_FLOOR = 0.01;
 const LOWPASS_OPEN_HZ = 20000;
 const LOWPASS_MISS_HZ = 800;
 const MISS_DURATION = 0.25;
@@ -265,6 +267,34 @@ export class AudioEngine {
     g.cancelScheduledValues(t);
     g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(this.volumes.music * (on ? 0.7 : 1), t + duration);
+  }
+
+  /**
+   * Fade the music out to silence over `seconds` (the end of a level): an equal-loudness curve down
+   * to -40 dB, then off. The source keeps playing; `play()` resets the bus.
+   */
+  fadeOut(seconds: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const g = this.musicGain.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(Math.max(FADE_FLOOR, g.value), t);
+    g.exponentialRampToValueAtTime(FADE_FLOOR, t + Math.max(0.05, seconds));
+    g.setValueAtTime(0, t + Math.max(0.05, seconds) + 0.001);
+  }
+
+  /** Bring the music in from silence over `seconds`, starting at audio time `from` (default now) — call after `play()`. */
+  fadeIn(seconds: number, from?: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const start = Math.max(t, from ?? t);
+    const g = this.musicGain.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(FADE_FLOOR, t);
+    g.setValueAtTime(FADE_FLOOR, start);
+    g.exponentialRampToValueAtTime(this.volumes.music, start + Math.max(0.05, seconds));
   }
 
   /** "Miss breaks the music": muffle + duck the master for 250 ms (GDD §1.2). */

@@ -49,6 +49,19 @@ describe('Clock', () => {
     expect(clock.songTime()).toBeCloseTo(0.8, 6);
   });
 
+  it('scales the heard offset with the playback rate (a faster level plays more song per second of lag)', () => {
+    const time = fakeTime(0);
+    const clock = new Clock(time.now, 0, 0.1);
+    clock.start(0, 0, 1.2);
+    time.advance(1);
+    expect(clock.position()).toBeCloseTo(1.2, 6);
+    expect(clock.songTime()).toBeCloseTo(1.2 - 0.12, 6);
+    expect(clock.toSongTime(1)).toBeCloseTo(1.08, 6);
+    expect(clock.toAudioTime(1.08)).toBeCloseTo(1, 6);
+    // The rate holds before the start instant too: the count-in runs at the level's pace.
+    expect(clock.positionAt(-1)).toBeCloseTo(-1.2, 6);
+  });
+
   it('integrates rate ramps exactly (slow-motion)', () => {
     const time = fakeTime(0);
     const clock = new Clock(time.now);

@@ -4,7 +4,6 @@ import {
   dailyTrackId,
   localDateString,
   progressStore,
-  rankIndex,
   recordCrystals,
   recordResult,
   recordRun,
@@ -70,10 +69,11 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
       maxCombo: result.maxCombo,
       fullCombo: result.fullCombo,
       playedAt: now.toISOString(),
+      stars: result.stars,
     });
     const starsAfter = starsForTrack(progressStore.get().tracks[result.trackId]);
     const date = localDateString(now);
-    const passed = rankIndex(result.rank) >= rankIndex('C');
+    const passed = result.stars > 0;
     const dailyBonus = passed && dailyTrackId(date, TRACK_IDS) === result.trackId ? completeDailyToday(date) : false;
     meta = { newRecord, starsBefore, starsAfter, dailyBonus };
   }

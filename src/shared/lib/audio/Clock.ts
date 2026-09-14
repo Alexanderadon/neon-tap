@@ -33,14 +33,17 @@ export class Clock {
     public deviceLatency = 0,
   ) {}
 
-  /** `startTime` is the audio-clock instant that corresponds to song position `position` (default 0). */
-  start(startTime: number, position = 0): void {
+  /**
+   * `startTime` is the audio-clock instant that corresponds to song position `position` (default 0);
+   * `rate` is the playback rate from then on — and before, so a faster level counts in faster too.
+   */
+  start(startTime: number, position = 0, rate = 1): void {
     this.startTime = startTime;
     this.pausedAt = null;
     this.running = true;
     this.anchorA = startTime;
     this.anchorP = position;
-    this.rateFrom = this.rateTo = 1;
+    this.rateFrom = this.rateTo = rate;
     this.rampStart = this.rampEnd = startTime;
   }
 
@@ -111,7 +114,11 @@ export class Clock {
     return this.positionAt(this.pausedAt ?? this.now());
   }
 
-  /** Everything that separates the audio clock from the player's tap: device output latency plus their own bias. */
+  /**
+   * Everything that separates the audio clock from the player's tap: device output latency plus
+   * their own bias — real seconds; in song seconds they scale with the playback rate (a faster level
+   * plays more song per second of lag).
+   */
   get heardOffset(): number {
     return this.deviceLatency + this.userOffset;
   }
@@ -123,22 +130,23 @@ export class Clock {
    */
   songTime(): number {
     if (!this.running) return 0;
-    return this.position() - this.deviceLatency;
+    return this.position() - this.deviceLatency * this.rateAt(this.pausedAt ?? this.now());
   }
 
   /** The judgement's idea of song time: heard time shifted by the player's calibrated tap bias. */
   judgeTime(): number {
     if (!this.running) return 0;
-    return this.position() - this.heardOffset;
+    return this.position() - this.heardOffset * this.rateAt(this.pausedAt ?? this.now());
   }
 
   /** Convert an absolute audio-clock timestamp (an input event) to judgement song time. */
   toSongTime(audioTime: number): number {
-    return this.positionAt(audioTime) - this.heardOffset;
+    return this.positionAt(audioTime) - this.heardOffset * this.rateAt(audioTime);
   }
 
   /** Convert judgement song time to the absolute audio-clock instant (constant-rate approximation). */
   toAudioTime(songTime: number): number {
-    return this.anchorA + (songTime + this.heardOffset - this.anchorP) / this.rateAt();
+    const rate = this.rateAt();
+    return this.anchorA + (songTime + this.heardOffset * rate - this.anchorP) / rate;
   }
 }

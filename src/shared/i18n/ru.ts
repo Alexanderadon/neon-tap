@@ -54,7 +54,12 @@ export const ru = {
   noteNoun1: 'ноты',
   newRecord: 'Новый рекорд!',
   fullCombo: 'FULL COMBO',
-  starsEarned: '+{n} ★',
+  starsEarned: '+{n} {noun} к треку!',
+  starNoun: ['звезда', 'звезды', 'звёзд'],
+  /** What the run meant, by stars earned (the third comes at the top speed). */
+  resultStars1: 'Звезда есть! Быстрее — сложнее',
+  resultStars2: 'Две звезды! Третья — на скорости +20%',
+  resultStars3: 'Все три звезды!',
   pressRToRetry: 'R — ещё раз · Esc — в меню',
   hotkeys: 'D F J K или стрелки · пробел — круги',
   touchHint: 'Тапай по четырём зонам внизу экрана',
@@ -297,6 +302,12 @@ export const ru = {
   tutorialNotPassed: 'Обучение ещё не пройдено',
   /** Spinner caption while it approaches. */
   spinHint: 'Крути',
+  /** Between levels: the star just earned and how much faster the song comes back. */
+  levelStar: 'Звезда!',
+  levelFaster: 'Быстрее на {n}%',
+  /** Out of hearts past the first level: the run stops, the stars stay. */
+  levelStop: 'СТОП',
+  levelKept: 'звёзд заработано: {n}',
   tutorialLaneSteps: {
     intro: { title: 'Поехали', desktop: 'Клавиши {keys}', touch: 'Тапай в нижней половине' },
     tap: { title: 'Тапни', desktop: 'Когда нота на линии — {keys}', touch: 'Когда нота на линии' },

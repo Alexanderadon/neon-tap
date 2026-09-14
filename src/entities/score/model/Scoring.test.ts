@@ -17,7 +17,8 @@ describe('accuracy and rank', () => {
   it('computes weighted accuracy', () => {
     expect(accuracyOf({ perfect: 10, great: 0, good: 0, miss: 0 })).toBe(1);
     expect(accuracyOf({ perfect: 5, great: 0, good: 0, miss: 5 })).toBe(0.5);
-    expect(accuracyOf({ perfect: 0, great: 3, good: 0, miss: 0 })).toBeCloseTo(2 / 3);
+    expect(accuracyOf({ perfect: 0, great: 3, good: 0, miss: 0 })).toBe(1); // a hit is a hit, however tidy
+    expect(accuracyOf({ perfect: 0, great: 0, good: 4, miss: 1 })).toBeCloseTo(0.8);
   });
 
   it('maps accuracy to ranks', () => {
@@ -37,7 +38,8 @@ describe('notesToReach', () => {
     // 100 notes, 8 misses → 92% → need 2 misses fixed → 94%... need 3 → 95%.
     expect(notesToReach({ perfect: 92, great: 0, good: 0, miss: 8 }, 0.95)).toBe(3);
     // 10 greats only → 66.7%; fix 9 greats → (9*300+200)/3000 = 96.7%
-    expect(notesToReach({ perfect: 0, great: 10, good: 0, miss: 0 }, 0.95)).toBe(9);
+    expect(notesToReach({ perfect: 0, great: 10, good: 0, miss: 0 }, 0.95)).toBe(0);
+    expect(notesToReach({ perfect: 0, great: 0, good: 90, miss: 10 }, 0.95)).toBe(5);
   });
 });
 

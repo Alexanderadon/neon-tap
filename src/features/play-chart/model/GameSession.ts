@@ -1,5 +1,6 @@
 import { CIRCLE_BUCKET, CIRCLE_KEY, HIT_WINDOWS, KEY_LAYOUTS, MAX_LANES, SPIN_BONUS_PER_REV, SPIN_BUCKET } from '@/shared/config/constants';
 import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxGem, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
+import { dict, fmt } from '@/shared/i18n';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
 import { FpsMeter, LowFpsDetector, themeFor } from '@/shared/lib/render';
@@ -13,6 +14,7 @@ import { SpinTracker } from './SpinTracker';
 import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems } from './gems';
+import { LEVELS, levelOutcome, levelRate } from './levels';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -28,6 +30,10 @@ export type SessionEvent =
   /** A crystal was collected: its value and the run total so far. */
   | { type: 'gem'; value: number; total: number }
   | { type: 'lanes'; lanes: number }
+  /** A level was finished: the star earned and the level that follows (null when the run is over). */
+  | { type: 'star'; stars: number; next: number | null }
+  /** The next level's count-in has begun (level 2 and up; the first level is `start`). */
+  | { type: 'level'; level: number }
   | { type: 'fail' }
   | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
   | { type: 'pause' }
@@ -50,6 +56,8 @@ export interface SessionOptions {
   hideHearts?: boolean;
   /** Crystals: a few plain taps per run become gems (default on; off in the tutorial). */
   gems?: boolean;
+  /** Levels: the song is played up to three times in a row, faster each time, a star per level (default on; the tutorial plays once). */
+  levels?: boolean;
   /** Fixed seed for the gem picks (tests / demos); by default every run rolls its own. */
   gemSeed?: number;
   /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
@@ -64,6 +72,10 @@ export interface SessionOptions {
 const TIME_REPORT_MS = 100;
 
 const LEAD_IN = 2.0;
+/** Between levels: the star show, with the song's tail fading out under it; the next pass fades back in over its count-in. */
+const STAR_SHOW_SEC = 2.4;
+const FADE_OUT_SEC = 1.8;
+const FADE_IN_SEC = 2.0;
 /** The spinner's wheel fades out this long after its verdict. */
 const SPIN_FADE_SEC = 0.35;
 const MILESTONES = [50, 100, 250, 500, 1000];
@@ -130,8 +142,16 @@ export class GameSession {
   /** Where the auto-learned offset is heading; the live clock offset glides towards it. */
   private offsetTarget = 0;
   private failTimer = 0;
+  private levelTimer = 0;
   /** The audio buffer reached its end; the run finishes once the last window has closed. */
   private audioEnded = false;
+  /** Level being played (1-based), the stars earned so far and the level's playback rate (the slow spell scales it). */
+  private level = 1;
+  private starsEarned = 0;
+  private baseRate = 1;
+  /** The star show is on (the next level's count-in is scheduled); a pause asked for now takes effect when it starts. */
+  private betweenLevels = false;
+  private pauseWanted = false;
   /** The spinner on screen (approaching or running) and the wheel that reads the player's circling. */
   private spinNote: PooledNote | null = null;
   private readonly spin = new SpinTracker();
@@ -166,7 +186,8 @@ export class GameSession {
       for (const n of parsed) if (n.time < sec.time) lastEnd = Math.max(lastEnd, n.time + n.duration);
       return Math.max(sec.time - this.approachTime, lastEnd + 0.15);
     });
-    const judgements = countJudgements(parsed);
+    // A run is the chart played once per level: the totals (full combo, timeline capacity) span them all.
+    const judgements = countJudgements(parsed) * this.levelCount;
     this.scoring = new Scoring(judgements);
     this.timeline = new JudgementTimeline(judgements);
     this.endTime = Math.min(opts.audioBuffer.duration, this.notes.lastTime + 1.5);
@@ -215,6 +236,11 @@ export class GameSession {
     this.notes.setGems(pickGems(this.parsed, seed, this.opts.audioBuffer.duration));
   }
 
+  /** Levels in a run: three, or one when levels are off (the tutorial). */
+  private get levelCount(): number {
+    return this.opts.levels === false ? 1 : LEVELS;
+  }
+
   get approachTime(): number {
     return clamp((APPROACH_BEATS * 60) / Math.max(60, this.opts.chart.bpm), APPROACH_MIN, APPROACH_MAX);
   }
@@ -253,17 +279,33 @@ export class GameSession {
     this.restart();
   }
 
-  /** Zero-friction restart: reset state and re-trigger the buffer source. */
+  /** Zero-friction restart: the whole run from level 1 — score, stars and crystals start over; the track stays decoded. */
   restart(): void {
     if (this.destroyed) return;
-    audioEngine.stop();
     window.clearTimeout(this.failTimer);
-    this.audioEnded = false;
-    this.notes.reset();
+    this.pauseWanted = false;
     this.scoring.reset();
     this.timeline.reset();
     this.lives.reset();
     this.renderer.particles.clear();
+    this.renderer.cancelStarShow();
+    this.perfectStreak = 0;
+    this.crystals = 0;
+    this.starsEarned = 0;
+    this.startLevel(1);
+  }
+
+  /** One pass of the song at its level's speed: notes, hearts and spells start afresh; the run's score, stars and crystals carry on. */
+  private startLevel(level: number): void {
+    if (this.destroyed) return;
+    window.clearTimeout(this.levelTimer);
+    audioEngine.stop();
+    this.level = level;
+    this.baseRate = levelRate(level);
+    this.betweenLevels = false;
+    this.audioEnded = false;
+    this.notes.reset();
+    this.lives.refill();
     this.finished = false;
     this.failed = false;
     this.paused = false;
@@ -276,8 +318,6 @@ export class GameSession {
     this.heartLostAt = -1;
     this.slowUntil = -1;
     this.slowReleasing = false;
-    this.perfectStreak = 0;
-    this.crystals = 0;
     this.gemAt = -1;
     this.spinNote = null;
     this.spin.reset();
@@ -288,14 +328,25 @@ export class GameSession {
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
     const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => (this.audioEnded = true), LEAD_IN);
-    this.clock.start(startTime);
-    this.opts.onEvent({ type: 'start' });
+    this.clock.start(startTime, 0, this.baseRate);
+    audioEngine.setPlaybackRate(this.baseRate);
+    if (level > 1) audioEngine.fadeIn(FADE_IN_SEC, startTime);
+    this.opts.onEvent(level === 1 ? { type: 'start' } : { type: 'level', level });
     cancelAnimationFrame(this.raf);
     this.lastFrame = performance.now();
     this.raf = requestAnimationFrame(this.frame);
+    if (this.pauseWanted) {
+      // The tab was hidden during the star show: the new level waits in its count-in.
+      this.pauseWanted = false;
+      this.pause();
+    }
   }
 
   pause(): void {
+    if (this.betweenLevels) {
+      this.pauseWanted = true;
+      return;
+    }
     if (!this.started || this.paused || this.finished) return;
     this.paused = true;
     this.clock.pause();
@@ -316,11 +367,13 @@ export class GameSession {
   }
 
   private resumeAt(pos: number): void {
-    // play() returns the audio-clock instant of song position 0 (whatever position it starts at), which is
-    // exactly what the clock anchors on — passing pos again would count it twice and jump the notes ahead.
-    // A negative position (paused in the count-in) keeps its lead so the first tiles still fall the whole way.
-    const startTime = audioEngine.play(this.opts.audioBuffer, Math.max(0, pos), () => (this.audioEnded = true), 0.3 + Math.max(0, -pos));
-    this.clock.start(startTime);
+    // play() returns the audio-clock instant of song position 0 at rate 1; the clock is anchored on the
+    // instant the source actually starts (`startTime + from`) at that position, so a faster level resumes in
+    // step. A negative position (paused in the count-in) keeps its lead so the first tiles still fall the whole way.
+    const from = Math.max(0, pos);
+    const startTime = audioEngine.play(this.opts.audioBuffer, from, () => (this.audioEnded = true), 0.3 + Math.max(0, -pos) / this.baseRate);
+    this.clock.start(startTime + from, from, this.baseRate);
+    audioEngine.setPlaybackRate(this.baseRate);
     this.slowUntil = -1;
     this.slowReleasing = false;
     audioEngine.tapeEffect(false, 0.01);
@@ -341,6 +394,7 @@ export class GameSession {
   destroy(): void {
     this.destroyed = true;
     window.clearTimeout(this.failTimer);
+    window.clearTimeout(this.levelTimer);
     cancelAnimationFrame(this.raf);
     this.input.detach();
     this.resizeObserver?.disconnect();
@@ -446,7 +500,7 @@ export class GameSession {
     this.lastGain = this.scoring.score - before;
     this.lastJudgement = judgement;
     this.lastJudgementAt = this.clock.songTime();
-    this.timeline.record(this.lastJudgementAt, judgement, this.scoring.combo);
+    this.timeline.record(this.lastJudgementAt + (this.level - 1) * this.opts.audioBuffer.duration, judgement, this.scoring.combo);
     // An untouched long note misses twice (head, tail) for accuracy, but costs one heart and one effect.
     if (judgement === 'miss' && tail && note.judgement === 'miss') {
       this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
@@ -493,7 +547,7 @@ export class GameSession {
     if (!tail) {
       sfxHit(judgement === 'perfect' ? 0 : judgement === 'great' ? 1 : 2);
       // Only a plain lane tap says something about the player's timing (circles open half a second early, assists are synthetic).
-      if (!note.assisted && !note.kind && Math.abs(note.hitDelta) <= HIT_WINDOWS.good) this.learnOffset(note.hitDelta);
+      if (!note.assisted && !note.kind && Math.abs(note.hitDelta) <= HIT_WINDOWS.good) this.learnOffset(note.hitDelta / this.clock.rateAt()); // a tap bias is real seconds
     }
     this.comboGrewAt = this.lastJudgementAt;
     this.perfectStreak = judgement === 'perfect' ? this.perfectStreak + 1 : 0;
@@ -544,8 +598,8 @@ export class GameSession {
       const now = audioEngine.now();
       this.slowUntil = this.clock.songTime() + SLOW_DURATION;
       this.slowReleasing = false;
-      this.clock.setRate(SLOW_RATE, SLOW_RAMP_IN, now);
-      audioEngine.setPlaybackRate(SLOW_RATE, SLOW_RAMP_IN);
+      this.clock.setRate(SLOW_RATE * this.baseRate, SLOW_RAMP_IN, now);
+      audioEngine.setPlaybackRate(SLOW_RATE * this.baseRate, SLOW_RAMP_IN);
       audioEngine.tapeEffect(true, SLOW_RAMP_IN);
     } else if (this.lives.catchHeart()) this.opts.onEvent({ type: 'life-gained', hearts: this.lives.hearts });
     else {
@@ -581,17 +635,16 @@ export class GameSession {
         this.renderer.setLanes(lanes, songTime <= 0);
         this.opts.onEvent({ type: 'lanes', lanes });
       }
-      if (this.slowUntil > 0 && !this.slowReleasing && songTime >= this.slowUntil - SLOW_RAMP_OUT * SLOW_RATE) {
+      if (this.slowUntil > 0 && !this.slowReleasing && songTime >= this.slowUntil - SLOW_RAMP_OUT * SLOW_RATE * this.baseRate) {
         this.slowReleasing = true;
         const t = audioEngine.now();
-        this.clock.setRate(1, SLOW_RAMP_OUT, t);
-        audioEngine.setPlaybackRate(1, SLOW_RAMP_OUT);
+        this.clock.setRate(this.baseRate, SLOW_RAMP_OUT, t);
+        audioEngine.setPlaybackRate(this.baseRate, SLOW_RAMP_OUT);
         audioEngine.tapeEffect(false, SLOW_RAMP_OUT);
       }
       if (this.slowUntil > 0 && songTime >= this.slowUntil) this.slowUntil = -1;
       this.notes.update(this.clock.judgeTime(), this.isHeld);
       this.trackSpin(songTime);
-      this.renderer.update(dt);
       // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
       if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > 0 && this.lowFps.tick(this.fps.fps, dt)) {
         this.renderer.setFxLevel('low', true);
@@ -599,8 +652,10 @@ export class GameSession {
       }
       // The run ends when the last window has closed — not when the buffer stops, which on a laggy
       // output happens before the last tiles have even been heard.
-      if (songTime >= this.endTime || (this.audioEnded && this.clock.judgeTime() > this.notes.lastTime + HIT_WINDOWS.good)) this.finish();
+      if (songTime >= this.endTime || (this.audioEnded && this.clock.judgeTime() > this.notes.lastTime + HIT_WINDOWS.good)) this.levelDone();
     }
+    // Effects keep moving through the star show between levels and the fail freeze.
+    if (!this.paused) this.renderer.update(dt);
     // Host overlay (tutorial captions): song time at ~10 Hz, no per-frame work otherwise.
     if (this.opts.onTime && now - this.lastTimeReport >= TIME_REPORT_MS) {
       this.lastTimeReport = now;
@@ -653,6 +708,9 @@ export class GameSession {
       lastGain: this.lastGain,
       comboBreakAge: this.comboBreakAt < 0 ? -1 : songTime - this.comboBreakAt,
       spin: this.spinFrame(songTime),
+      levels: this.levelCount > 1 ? this.levelCount : 0,
+      level: this.level,
+      stars: this.starsEarned,
       debug: this.opts.debug
         ? {
             fps: this.fps.fps,
@@ -666,7 +724,10 @@ export class GameSession {
     });
 
     if (this.failed) {
-      this.renderer.drawOverlayText('ПРОВАЛ', 'R — ещё раз', '#ff2bd6');
+      // Out of hearts past the first level: the run stops, but the stars stay.
+      const kept = levelOutcome(this.level, true).stars;
+      if (kept > 0) this.renderer.drawOverlayText(dict.levelStop, fmt(dict.levelKept, { n: kept }), '#ffd700');
+      else this.renderer.drawOverlayText('ПРОВАЛ', 'R — ещё раз', '#ff2bd6');
     } else if (songTime < 0) {
       this.renderer.drawOverlayText(String(Math.ceil(-songTime)));
     } else if (this.paused) {
@@ -687,26 +748,53 @@ export class GameSession {
     audioEngine.stop();
   }
 
+  /**
+   * The level's last window has closed: its star is won. With a level still to play, the song fades
+   * out under the star show and comes back faster; after the last one the run is over.
+   */
+  private levelDone(): void {
+    const { stars, next } = levelOutcome(this.level, false);
+    this.starsEarned = stars;
+    if (next === null || next > this.levelCount) {
+      this.finish();
+      return;
+    }
+    this.finished = true; // no taps, no judging until the next count-in
+    this.betweenLevels = true;
+    this.pauseWanted = false;
+    audioEngine.fadeOut(FADE_OUT_SEC);
+    sfxRank();
+    this.renderer.starEarned(stars, levelRate(next), STAR_SHOW_SEC);
+    this.opts.onEvent({ type: 'star', stars, next });
+    this.levelTimer = window.setTimeout(() => this.startLevel(next), STAR_SHOW_SEC * 1000);
+  }
+
   private finish(): void {
     if (this.destroyed) return;
     if (this.finished && !this.failed) return;
     this.finished = true;
     if (!this.failed) this.notes.update(Number.POSITIVE_INFINITY, () => false);
     const s = this.scoring;
+    // Stars are levels finished; a fail past the first level keeps them, and the run counts.
+    const { stars } = levelOutcome(this.level, this.failed);
+    this.starsEarned = stars;
+    const failed = this.failed && stars === 0;
     const result: PlayResult = {
       trackId: this.opts.chart.id,
       score: s.score,
       accuracy: s.accuracy,
-      rank: this.failed ? 'D' : s.rank,
+      rank: failed ? 'D' : s.rank,
       maxCombo: s.maxCombo,
       totalNotes: s.totalNotes,
       counts: { ...s.counts },
       fullCombo: !this.failed && s.isFullCombo,
       notesToS: notesToReach(s.counts, 0.95),
-      failed: this.failed,
+      failed,
+      stars,
+      level: this.level,
       hearts: this.lives.hearts,
       timeline: this.timeline.toResult(),
-      duration: this.opts.audioBuffer.duration,
+      duration: this.opts.audioBuffer.duration * this.level,
       crystals: this.crystals,
     };
     // The learned offset is saved only when it moved, and never beyond what a tap bias can be — so it cannot drift run after run.

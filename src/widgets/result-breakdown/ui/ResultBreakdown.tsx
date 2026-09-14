@@ -78,11 +78,13 @@ export function ResultBreakdown({
       voice.say('ne-sdavaysya', true);
       return;
     }
-    if (result.rank !== 'D') sfxRank();
-    if (result.rank === 'SS' || result.rank === 'S') voice.say('rank-s', true);
+    // A chime per star as it pops in (see Stars: 0.3 s, then every 0.38 s).
+    const timers = Array.from({ length: result.stars }, (_, i) => window.setTimeout(sfxRank, 300 + i * 380));
+    if (result.stars >= 3) voice.say('rank-s', true);
     else if (result.fullCombo) voice.say('full-combo', true);
-    else if (meta?.newRecord && result.rank !== 'D') voice.say('new-record', true);
+    else if (meta?.newRecord) voice.say('new-record', true);
     else voice.say('eshche-razok', true);
+    return () => timers.forEach((t) => window.clearTimeout(t));
   }, [result, meta]);
 
   useEffect(() => {
@@ -154,15 +156,17 @@ export function ResultBreakdown({
     ? failedAt !== null && duration > 0
       ? fmt(dict.resultReachedAt, { at: formatClock(failedAt), total: formatClock(duration) })
       : dict.failedHint
-    : result.fullCombo
-      ? dict.fullCombo
-      : meta?.newRecord && result.rank !== 'D'
-        ? dict.newRecord
-        : result.notesToS > 0 && result.accuracy > 0.9
-          ? fmt(dict.toRankS, { n: result.notesToS, noun: plural(result.notesToS, ['ноты', 'нот', 'нот']) })
-          : starsGained > 0
-            ? fmt(dict.starsEarned, { n: starsGained })
-            : null;
+    : starsGained > 0
+      ? fmt(dict.starsEarned, { n: starsGained, noun: plural(starsGained, dict.starNoun) })
+      : result.fullCombo
+        ? dict.fullCombo
+        : meta?.newRecord
+          ? dict.newRecord
+          : result.stars >= 3
+            ? dict.resultStars3
+            : result.stars === 2
+              ? dict.resultStars2
+              : dict.resultStars1;
 
   return (
     <div className="result">
@@ -172,7 +176,13 @@ export function ResultBreakdown({
       </div>
       {extraTop}
 
-      {result.failed ? <div className="result-rank result-failed">{dict.failed}</div> : <div className={`result-rank rank-${result.rank}`}>{result.rank}</div>}
+      {result.failed ? (
+        <div className="result-rank result-failed">{dict.failed}</div>
+      ) : (
+        <div className="result-stars">
+          <Stars value={result.stars} size="xl" animate />
+        </div>
+      )}
       {meaning && <div className={`result-meaning${result.failed ? ' is-failed' : ''}`}>{meaning}</div>}
 
       <div className="result-numbers">
@@ -188,18 +198,17 @@ export function ResultBreakdown({
           <b>{combo.value}</b>
           <span className="micro">{dict.maxCombo}</span>
         </div>
+        <div className="result-number">
+          <b className={`rank-${result.rank}`}>{result.rank}</b>
+          <span className="micro">{dict.rank}</span>
+        </div>
       </div>
 
       {goals && goals.length > 0 && <EarnedBadges ids={goals} />}
 
-      {(noteLines?.length || meta?.crystals || (starsGained > 0 && meaning !== fmt(dict.starsEarned, { n: starsGained }))) && (
+      {noteLines && noteLines.length > 0 && (
         <div className="result-pills">
-          {starsGained > 0 && meaning !== fmt(dict.starsEarned, { n: starsGained }) && (
-            <span className="result-pill result-pill-star">
-              <Stars value={meta!.starsAfter} /> +{starsGained}
-            </span>
-          )}
-          {noteLines?.map((n) => (
+          {noteLines.map((n) => (
             <span key={n} className="result-pill">
               {n}
             </span>

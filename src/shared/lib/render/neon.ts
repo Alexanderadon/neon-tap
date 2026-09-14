@@ -157,6 +157,64 @@ function hourglassPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, s:
   ctx.closePath();
 }
 
+/** Five-point star, tip up. `r` = outer radius. */
+export function starPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number): void {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rr = i % 2 === 0 ? r : r * 0.46;
+    const x = cx + Math.cos(a) * rr;
+    const y = cy + Math.sin(a) * rr;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/**
+ * Level star: a gold neon star — filled with a glow, a lit top-left facet and a white rim when
+ * earned; a faint outline while it is still to be won. `size` = the star's diameter.
+ */
+export function renderStar(color: string, size: number, dpr: number, filled: boolean): NoteSprite {
+  const pad = Math.round(size * 0.6);
+  const total = size + pad * 2;
+  const canvas = makeCanvas(Math.ceil(total * dpr), Math.ceil(total * dpr));
+  const ctx = ctx2d(canvas);
+  ctx.scale(dpr, dpr);
+  const c = total / 2;
+  const cy = c + size * 0.04; // a star's visual centre sits a touch below its geometric one
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(1.5, size * 0.08);
+  if (filled) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = size * 0.6;
+    ctx.fillStyle = color;
+    starPath(ctx, c, cy, size / 2);
+    ctx.fill();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // Facets: light from the top-left, shade at the bottom-right.
+    ctx.save();
+    starPath(ctx, c, cy, size / 2);
+    ctx.clip();
+    const grad = ctx.createLinearGradient(c - size / 2, cy - size / 2, c + size / 2, cy + size / 2);
+    grad.addColorStop(0, 'rgba(255,255,255,0.6)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(120,60,0,0.35)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, total, total);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    starPath(ctx, c, cy, size / 2);
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    starPath(ctx, c, cy, size / 2);
+    ctx.stroke();
+  }
+  return { canvas, pad, width: total, height: total };
+}
+
 /** Neon heart for the HUD (filled = life, hollow = lost). */
 export function renderHeart(color: string, size: number, dpr: number, filled: boolean): NoteSprite {
   const pad = Math.round(size * 0.6);
