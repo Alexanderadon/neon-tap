@@ -29,8 +29,12 @@ export interface PlayResult {
   fullCombo: boolean;
   /** Notes that would need to be Perfect to reach rank S (0 when already S or SS). */
   notesToS: number;
-  /** True when the player ran out of hearts — the run does not count. */
+  /** True when the player ran out of hearts before the first star — the run does not count. */
   failed: boolean;
+  /** Levels finished (0–3): a star each. */
+  stars: number;
+  /** The level the run ended on (1-based). */
+  level: number;
   /** Hearts left at the end. */
   hearts: number;
   /** Judgement-by-judgement record of the run (empty when nothing was judged). */

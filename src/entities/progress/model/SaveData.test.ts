@@ -86,12 +86,15 @@ describe('SaveData', () => {
     expect(EMPTY_SAVE.counters.spells.slow).toBe(0);
   });
 
-  it('awards stars by rank', () => {
+  it('stars are levels finished; saves from before levels are read by rank', () => {
     expect(starsForTrack(undefined)).toBe(0);
     expect(starsForTrack(res('D'))).toBe(0);
     expect(starsForTrack(res('C'))).toBe(1);
     expect(starsForTrack(res('A'))).toBe(2);
     expect(starsForTrack(res('SS'))).toBe(3);
+    expect(starsForTrack({ ...res('D'), stars: 2 })).toBe(2);
+    expect(starsForTrack({ ...res('SS'), stars: 1 })).toBe(1);
+    expect(starsForTrack({ ...res('SS'), stars: 7 })).toBe(3);
   });
 
   it('merges results keeping the best score and rank', () => {
@@ -105,6 +108,17 @@ describe('SaveData', () => {
     expect(r.save.tracks.t.rank).toBe('A');
     expect(r.save.plays).toBe(2);
     expect(totalStars(r.save)).toBe(2);
+  });
+
+  it('merges stars: the most levels finished in any run, whichever run holds the score', () => {
+    let save = emptySave();
+    save = mergeResult(save, 't', { ...res('B', 900), stars: 1 }).save;
+    save = mergeResult(save, 't', { ...res('B', 500), stars: 3 }).save; // fewer points, but all three levels
+    expect(save.tracks.t.score).toBe(900);
+    expect(starsForTrack(save.tracks.t)).toBe(3);
+    save = mergeResult(save, 't', { ...res('D', 2000), stars: 0 }).save; // a new record never loses stars
+    expect(save.tracks.t.score).toBe(2000);
+    expect(starsForTrack(save.tracks.t)).toBe(3);
   });
 
   it('accumulates spell and run counters without mutating the previous save', () => {

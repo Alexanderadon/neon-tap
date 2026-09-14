@@ -12,11 +12,11 @@ export function judgeDelta(delta: number, windows: HitWindows = HIT_WINDOWS, ear
   return null;
 }
 
+/** Accuracy = share of tiles hit. A hit is a hit, however tidy: only misses count against you. */
 export function accuracyOf(counts: JudgementCounts): number {
   const total = counts.perfect + counts.great + counts.good + counts.miss;
   if (total === 0) return 1;
-  const earned = counts.perfect * JUDGEMENT_SCORE.perfect + counts.great * JUDGEMENT_SCORE.great + counts.good * JUDGEMENT_SCORE.good;
-  return earned / (total * JUDGEMENT_SCORE.perfect);
+  return (total - counts.miss) / total;
 }
 
 export function rankOf(accuracy: number): Rank {
@@ -24,30 +24,13 @@ export function rankOf(accuracy: number): Rank {
   return 'D';
 }
 
-/**
- * Near-miss motivator: how many notes, upgraded to Perfect, would lift accuracy to `target`?
- * Greedy — upgrades the worst judgements first (miss → good → great).
- */
+/** Near-miss motivator: how many of the missed tiles, hit, would lift accuracy to `target`? */
 export function notesToReach(counts: JudgementCounts, target: number): number {
   const total = counts.perfect + counts.great + counts.good + counts.miss;
   if (total === 0) return 0;
-  const needed = target * total * JUDGEMENT_SCORE.perfect;
-  let earned = accuracyOf(counts) * total * JUDGEMENT_SCORE.perfect;
-  if (earned >= needed - 1e-9) return 0;
-  let n = 0;
-  const tiers: Array<[number, number]> = [
-    [counts.miss, JUDGEMENT_SCORE.perfect - JUDGEMENT_SCORE.miss],
-    [counts.good, JUDGEMENT_SCORE.perfect - JUDGEMENT_SCORE.good],
-    [counts.great, JUDGEMENT_SCORE.perfect - JUDGEMENT_SCORE.great],
-  ];
-  for (const [count, gain] of tiers) {
-    for (let i = 0; i < count; i++) {
-      earned += gain;
-      n++;
-      if (earned >= needed - 1e-9) return n;
-    }
-  }
-  return n;
+  const hits = total - counts.miss;
+  const needed = Math.ceil(target * total - 1e-9);
+  return Math.max(0, Math.min(counts.miss, needed - hits));
 }
 
 /** Combo multiplier: +25% per 50 combo, capped at ×3. */

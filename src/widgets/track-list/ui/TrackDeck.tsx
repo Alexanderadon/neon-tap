@@ -305,10 +305,10 @@ function DeckCard({ track, mount, current, lock, daily, best, rank, onTap }: Car
       <div className="deck-text">
         <h1 className="deck-title">{track.title}</h1>
         <div className="deck-meta">
+          <Stars value={best} size="md" />
           <span className="deck-diff mono">
             <StarIcon size={11} /> {track.stars}
           </span>
-          <Stars value={best} />
           {rank && <span className={`deck-rank rank-${rank}`}>{rank}</span>}
         </div>
       </div>

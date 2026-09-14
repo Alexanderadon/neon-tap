@@ -32,6 +32,12 @@ export class Lives {
     this.streak = 0;
   }
 
+  /** A new level: the five shown hearts are topped up; gilded ones stay. The streak starts over. */
+  refill(): void {
+    this.hearts = Math.max(this.hearts, this.max);
+    this.streak = 0;
+  }
+
   get dead(): boolean {
     return this.hearts <= 0;
   }

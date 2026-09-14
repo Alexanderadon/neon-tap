@@ -79,6 +79,12 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         case 'lanes':
           if (e.lanes >= 5) voice.say('tak-derzhat');
           break;
+        case 'star':
+          voice.say(praise(), true);
+          break;
+        case 'level':
+          voice.say('poehali', true);
+          break;
         case 'fail':
           setPaused(false);
           break;
@@ -117,6 +123,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           noFail: noFailFlag || tutorial,
           hideHearts: tutorial,
           gems: !tutorial,
+          levels: !tutorial,
           fxMode: settings.fxMode,
           debug: settings.debugOverlay,
           onEvent: handleEvent,

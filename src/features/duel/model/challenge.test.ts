@@ -11,6 +11,8 @@ const result = {
   maxCombo: 100,
   totalNotes: 300,
   failed: false,
+  stars: 3,
+  level: 3,
 } as unknown as PlayResult;
 const duel: Duel = {
   id: 'abcd1234',

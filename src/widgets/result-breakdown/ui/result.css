@@ -58,10 +58,14 @@
 .result-meaning.is-failed {
   color: rgba(255, 255, 255, 0.6);
 }
-/* Three numbers, one row: score · accuracy · max combo. */
+/* The verdict: three big stars popping in one by one (see Stars), the earned ones lit. */
+.result-stars {
+  padding: 10px 0 4px;
+}
+/* Four numbers, one row: score · accuracy · max combo · rank. */
 .result-numbers {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   width: 100%;
   gap: 8px;
   padding: 12px 8px;

@@ -26,6 +26,8 @@ const run = (trackId: string, over: Partial<PlayResult> = {}): PlayResult => ({
   fullCombo: false,
   notesToS: 3,
   failed: false,
+  stars: 3,
+  level: 3,
   hearts: 3,
   timeline: { t: [], j: [], combo: [] },
   duration: 0,
@@ -73,7 +75,7 @@ describe('saveResult', () => {
     const meta = saveResult(run(OTHER_ID, { maxCombo: 70 }), 'catalog', DATE);
     expect(meta.newRecord).toBe(true);
     expect(meta.starsBefore).toBe(0);
-    expect(meta.starsAfter).toBe(2);
+    expect(meta.starsAfter).toBe(3);
     expect(meta.dailyBonus).toBe(false);
     const save = progressStore.get();
     expect(save.tracks[OTHER_ID].rank).toBe('A');
@@ -84,7 +86,7 @@ describe('saveResult', () => {
 
   it('grants the daily bonus star once per day, only on a pass', () => {
     startSession(chartFor(DAILY_ID, 4), 'catalog');
-    expect(saveResult(run(DAILY_ID, { rank: 'D', accuracy: 0.5 }), 'catalog', DATE).dailyBonus).toBe(false);
+    expect(saveResult(run(DAILY_ID, { rank: 'D', accuracy: 0.5, stars: 0, level: 1 }), 'catalog', DATE).dailyBonus).toBe(false);
     expect(progressStore.get().daily.total).toBe(0);
 
     expect(saveResult(run(DAILY_ID), 'catalog', DATE).dailyBonus).toBe(true);

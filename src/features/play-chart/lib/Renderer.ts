@@ -12,13 +12,14 @@ import {
   renderHeart,
   renderNoteSprite,
   renderSpell,
+  renderStar,
   type NoteSprite,
   type Theme,
 } from '@/shared/lib/render';
 import { ParticlePool, ScreenShake, LaneFlash } from '@/shared/lib/render';
 import type { Judgement } from '@/entities/score';
 import type { SpellKind } from '@/entities/chart';
-import { dict } from '@/shared/i18n';
+import { dict, fmt } from '@/shared/i18n';
 import { NoteState, type NoteManager, type PooledNote } from '../model/NoteManager';
 import { computeLayout, touchZoneRect, type Layout } from './layout';
 
@@ -71,6 +72,10 @@ export interface FrameState {
   comboBreakAge: number;
   /** The spinner on screen (approaching or running), or null. */
   spin: SpinFrame | null;
+  /** Level stars: how many the run can earn (0 hides the row), the level being played (1-based) and the stars earned so far. */
+  levels: number;
+  level: number;
+  stars: number;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
@@ -102,6 +107,13 @@ const AMBIENT_RINGS = 3;
 const GEM_COLOR = '#8be9ff';
 /** Palette slot of the crystal glow dot (after the lane colours). */
 const GEM_DOT = MAX_LANES;
+/** Level stars: gold, with its own glow dot for the star show's sparks. */
+const STAR_COLOR = '#ffd700';
+const STAR_DOT = MAX_LANES + 1;
+/** Star show phases as fractions of its length: zoom in, hold, fly to the HUD slot, land. */
+const STAR_IN = 0.14;
+const STAR_HOLD_END = 0.7;
+const STAR_LAND = 0.9;
 /** Flying crystals (note → HUD counter) in flight at once. */
 const FLY_POOL = 4;
 const FLY_SEC = 0.55;
@@ -185,6 +197,14 @@ export class Renderer {
   private heartOff!: NoteSprite;
   private heartGold!: NoteSprite;
   private heartSize = 18;
+  private starOn!: NoteSprite;
+  private starOff!: NoteSprite;
+  private starBig!: NoteSprite;
+  private starSize = 20;
+  /** The star show between levels: which star, the next level's speed, its length in seconds; `starAge` runs 0..seconds. */
+  private starShow: { stars: number; rate: number; seconds: number; landed: boolean } | null = null;
+  private starAge = 0;
+  private starLandedAge = 1;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
   private baseLayer!: HTMLCanvasElement | OffscreenCanvas;
   // Expanding rings on perfect hits / circle hits (SoA pool).
@@ -329,7 +349,12 @@ export class Renderer {
     this.baseLayer = this.buildStaticLayer(base, true);
     this.glowDots = this.laneColors.map((c) => renderGlowDot(c, 16, this.dpr));
     this.glowDots.push(renderGlowDot(GEM_COLOR, 16, this.dpr)); // GEM_DOT
+    this.glowDots.push(renderGlowDot(STAR_COLOR, 16, this.dpr)); // STAR_DOT
     this.heartSize = this.height > this.width ? 16 : 20;
+    this.starSize = Math.round(this.heartSize * 1.2);
+    this.starOn = renderStar(STAR_COLOR, this.starSize, this.dpr, true);
+    this.starOff = renderStar(STAR_COLOR, this.starSize, this.dpr, false);
+    this.starBig = renderStar(STAR_COLOR, Math.round(Math.min(this.width, this.height) * 0.3), this.dpr, true);
     this.hudGem = renderCrystal(GEM_COLOR, this.heartSize * 1.15, this.dpr);
     this.heartOn = renderHeart(HEART_COLOR, this.heartSize, this.dpr, true);
     this.heartOff = renderHeart(HEART_COLOR, this.heartSize, this.dpr, false);
@@ -613,6 +638,31 @@ export class Renderer {
     for (let i = 0; i < 4; i++) this.particles.emit(x, y, Math.round(count / 4), i, 380, 5, 0.7);
   }
 
+  /** Where level star `index` of `count` sits: the middle of the hearts row, under the pause button, between the hearts and the crystals. */
+  private starPos(index: number, count: number): { x: number; y: number } {
+    const step = this.starSize * 1.45;
+    return { x: this.layout.width / 2 + (index - (count - 1) / 2) * step, y: 61 + this.safeTop };
+  }
+
+  /**
+   * A level was finished: its star bursts in mid-screen, holds with the next speed under it, then
+   * flies to its HUD slot — all within `seconds`, which is how long the session waits before the
+   * next count-in.
+   */
+  starEarned(stars: number, nextRate: number, seconds: number): void {
+    this.starShow = { stars, rate: nextRate, seconds, landed: false };
+    this.starAge = 0;
+    this.shake.trigger(3);
+    if (this.fxLevel === 'full') this.shockAge = 0;
+    const { width, height } = this.layout;
+    this.particles.emit(width / 2, height * 0.4, 40, STAR_DOT, 520, 6, 0.9);
+  }
+
+  /** Drop the star show (restart mid-show). */
+  cancelStarShow(): void {
+    this.starShow = null;
+  }
+
   heartLost(index: number): void {
     const { x, y } = this.heartPos(index);
     this.particles.emit(x, y, 14, 1, 220, 4, 0.6);
@@ -640,13 +690,26 @@ export class Renderer {
       }
     }
     if (this.beatAge < 1) this.beatAge += dt / BEAT_SEC;
+    const show = this.starShow;
+    if (show) {
+      this.starAge += dt;
+      if (!show.landed && this.starAge >= show.seconds * STAR_LAND) {
+        // The star lands in its slot: the slot pops and sparks off.
+        show.landed = true;
+        this.starLandedAge = 0;
+        const { x, y } = this.starPos(show.stars - 1, Math.max(show.stars, 3));
+        this.particles.emit(x, y, 14, STAR_DOT, 180, 3, 0.45);
+      }
+      if (this.starAge >= show.seconds) this.starShow = null;
+    }
+    if (this.starLandedAge < 1) this.starLandedAge += dt / 0.35;
     this.sparkTimer += dt;
     this.ambientTime += dt;
   }
 
-  /** Combo counter baseline: under the score / hearts row, above the circle band. */
+  /** Combo counter baseline: under the score / hearts / stars rows and the slow bar, above the circle band. */
   private comboY(): number {
-    return 96 + this.safeTop;
+    return 104 + this.safeTop;
   }
 
   get comboAnchorY(): number {
@@ -901,6 +964,95 @@ export class Renderer {
 
     if (tr && trAge < 1) this.drawTransitionFx(tr.from, tr.to, trAge);
     this.drawHud(s);
+    if (this.starShow) this.drawStarShow(s);
+  }
+
+  /** The star show between levels (see `starEarned`); drawn over everything, the HUD included. */
+  private drawStarShow(s: FrameState): void {
+    const show = this.starShow;
+    if (!show) return;
+    const ctx = this.ctx;
+    const { width, height, portrait } = this.layout;
+    const u = Math.min(1, this.starAge / show.seconds);
+    if (u >= STAR_LAND) return; // landed: the HUD row draws it
+    const cx = width / 2;
+    const cy = height * 0.4;
+    const sp = this.starBig;
+    const bigSize = sp.width - sp.pad * 2;
+    const hudK = this.starSize / bigSize;
+    let x = cx;
+    let y = cy;
+    let k = 1;
+    let alpha = 1;
+    let veil: number;
+    if (u < STAR_IN) {
+      const t = u / STAR_IN;
+      const c = 1.7; // back-out overshoot
+      const q = t - 1;
+      k = 1 + q * q * ((c + 1) * q + c);
+      alpha = Math.min(1, t * 3);
+      veil = t;
+    } else if (u < STAR_HOLD_END) {
+      k = 1 + 0.05 * Math.sin(this.starAge * 7);
+      veil = 1;
+    } else {
+      const t = (u - STAR_HOLD_END) / (STAR_LAND - STAR_HOLD_END);
+      const e = t * t * (3 - 2 * t);
+      const target = this.starPos(show.stars - 1, Math.max(show.stars, s.levels));
+      x = cx + (target.x - cx) * e;
+      y = cy + (target.y - cy) * e - Math.sin(Math.PI * e) * height * 0.06;
+      k = 1 + (hudK - 1) * e;
+      veil = 1 - t;
+    }
+    ctx.fillStyle = `rgba(5,6,10,${0.4 * veil})`;
+    ctx.fillRect(0, 0, width, height);
+
+    // Slowly turning rays behind the star.
+    if (veil > 0) {
+      const rays = 10;
+      const r = Math.min(width, height) * 0.55;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(this.starAge * 0.45);
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+      grad.addColorStop(0, 'rgba(255,215,0,0.55)');
+      grad.addColorStop(1, 'rgba(255,215,0,0)');
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = 0.6 * veil;
+      for (let i = 0; i < rays; i++) {
+        const a = (i * Math.PI * 2) / rays;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, r, a, a + 0.14);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
+    ctx.globalAlpha = 1;
+
+    // The words, only while the star holds: what was won and how much faster the song comes back.
+    if (u < STAR_HOLD_END) {
+      const t = u < STAR_IN ? Math.min(1, (u / STAR_IN) * 1.5) : 1;
+      ctx.globalAlpha = t;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `900 ${portrait ? 34 : 44}px ${FONT}`;
+      ctx.fillStyle = STAR_COLOR;
+      ctx.shadowColor = STAR_COLOR;
+      ctx.shadowBlur = 24;
+      const ty = cy + bigSize * 0.78;
+      ctx.fillText(dict.levelStar.toUpperCase(), cx, ty);
+      ctx.shadowBlur = 0;
+      ctx.font = `700 ${portrait ? 16 : 20}px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(fmt(dict.levelFaster, { n: Math.round((show.rate - 1) * 100) }).toUpperCase(), cx, ty + (portrait ? 34 : 42));
+      ctx.globalAlpha = 1;
+    }
   }
 
   // --- music-synchronised background -------------------------------------------------------
@@ -1479,6 +1631,22 @@ export class Renderer {
     ctx.fillStyle = s.accuracy >= 0.95 ? '#ffd700' : 'rgba(255,255,255,0.85)';
     ctx.fillText(`${(s.accuracy * 100).toFixed(2)}%`, width - 14, hudY);
 
+    // Level stars, mid top row: earned ones lit, the one being played for breathing, the rest outlined.
+    if (s.levels > 0) {
+      const show = this.starShow;
+      const flying = show && !show.landed ? show.stars - 1 : -1; // its slot stays dark until the show's star lands
+      for (let i = 0; i < s.levels; i++) {
+        const { x, y } = this.starPos(i, s.levels);
+        const lit = i < s.stars && i !== flying;
+        const sp = lit ? this.starOn : this.starOff;
+        let k = 1;
+        if (lit && i === s.stars - 1 && this.starLandedAge < 1) k = 1 + 0.5 * (1 - this.starLandedAge) ** 2;
+        if (!lit && i === s.level - 1) ctx.globalAlpha = 0.55 + 0.35 * Math.sin(performance.now() / 260);
+        ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
+        ctx.globalAlpha = 1;
+      }
+    }
+
     const lostShake = s.heartLostAge < 0.35 ? (1 - s.heartLostAge / 0.35) * 4 : 0;
     for (let i = 0; i < s.maxHearts; i++) {
       const { x, y } = this.heartPos(i);
@@ -1504,18 +1672,24 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
 
+    // Slow-spell bar under the stars row, its label inside.
     if (s.slowRemaining >= 0) {
       const barW = Math.min(220, laneAreaWidth * 0.6);
+      const barH = 14;
       const x = centerX - barW / 2;
-      const y = 52 + this.safeTop;
+      const y = 74 + this.safeTop;
       ctx.fillStyle = accent;
       ctx.globalAlpha = 0.15;
-      ctx.fillRect(x, y, barW, 6);
+      roundRect(ctx, x, y, barW, barH, 4);
+      ctx.fill();
       ctx.globalAlpha = 1;
-      ctx.fillRect(x, y, barW * s.slowRemaining, 6);
+      roundRect(ctx, x, y, barW * s.slowRemaining, barH, 4);
+      ctx.fill();
       ctx.textAlign = 'center';
-      ctx.font = `700 11px ${FONT}`;
-      ctx.fillText('ЗАМЕДЛЕНИЕ', centerX, y + 16);
+      ctx.textBaseline = 'middle';
+      ctx.font = `700 10px ${FONT}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('ЗАМЕДЛЕНИЕ', centerX, y + barH / 2 + 0.5);
     }
 
     ctx.fillStyle = 'rgba(255,255,255,0.12)';
