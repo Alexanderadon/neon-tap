@@ -3,14 +3,14 @@ import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
-import { CrystalIcon, Stars } from '@/shared/ui';
+import { CrystalIcon, Difficulty, Stars } from '@/shared/ui';
 import { CATALOG, TrackCover, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type CatalogState, type LockState } from '../model/useCatalogState';
 import { usePlayTrack } from '../model/usePlayTrack';
 import { readDeckIndex, writeDeckIndex } from '../model/deckPosition';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
-import { LockIcon, PlayIcon, StarIcon, SunIcon } from './icons';
+import { LockIcon, PlayIcon, SunIcon } from './icons';
 import './track-deck.css';
 
 export interface TrackRef {
@@ -184,7 +184,7 @@ export function TrackDeck({ onRecords }: Props) {
           })}
         </ol>
         <div className="deck-total mono" aria-label={`${dict.deckStars}: ${state.stars}`}>
-          <StarIcon size={11} /> {state.stars}
+          <Stars value={1} max={1} /> {state.stars}
         </div>
       </header>
 
@@ -306,9 +306,7 @@ function DeckCard({ track, mount, current, lock, daily, best, rank, onTap }: Car
         <h1 className="deck-title">{track.title}</h1>
         <div className="deck-meta">
           <Stars value={best} size="md" />
-          <span className="deck-diff mono">
-            <StarIcon size={11} /> {track.stars}
-          </span>
+          <Difficulty stars={track.stars} size="md" />
           {rank && <span className={`deck-rank rank-${rank}`}>{rank}</span>}
         </div>
       </div>

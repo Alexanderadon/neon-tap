@@ -19,7 +19,7 @@ interface Props {
   result: PlayResult;
   meta: PlaySession['resultMeta'];
   title: string;
-  subtitle: string;
+  subtitle: ReactNode;
   onRetry: () => void;
   /** "Next" — the following playable track; hidden when there is none or the run failed. */
   onNext?: () => void;

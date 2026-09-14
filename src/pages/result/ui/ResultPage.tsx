@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { Screen } from '@/shared/ui';
+import { Difficulty, Screen } from '@/shared/ui';
 import { startSession, useSession } from '@/entities/play-session';
 import { CATALOG, loadChart } from '@/entities/track';
 import { ResultBreakdown } from '@/widgets/result-breakdown';
@@ -52,7 +52,7 @@ export function ResultPage() {
         result={result}
         meta={resultMeta}
         title={chart.title}
-        subtitle={`★ ${chart.chart.stars}`}
+        subtitle={<Difficulty stars={chart.chart.stars} />}
         onRetry={retry}
         onNext={nextId ? () => void next() : undefined}
         chart={chart}

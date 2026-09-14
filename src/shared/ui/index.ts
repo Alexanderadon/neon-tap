@@ -1,6 +1,8 @@
 export { Button } from './Button';
 export { Slider } from './Slider';
 export { Stars } from './Stars';
+export { Difficulty } from './Difficulty';
+export { difficultyColor } from './difficultyColor';
 export { ProgressBar } from './ProgressBar';
 export { Screen } from './Screen';
 export { Modal } from './Modal';

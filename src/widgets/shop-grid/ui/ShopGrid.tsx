@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { audioEngine, sfxGem } from '@/shared/lib/audio';
 import { themeFor } from '@/shared/lib/render';
-import { Button, CrystalIcon, Modal } from '@/shared/ui';
+import { Button, CrystalIcon, Difficulty, Modal } from '@/shared/ui';
 import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, type TrackMeta } from '@/entities/track';
 import { buyTrack, grandTotalStars, isForSale, trackPrice, unlockStates, useProgress, type UnlockInfo } from '@/entities/progress';
 import './shop-grid.css';
@@ -182,7 +182,7 @@ function ShopCard({ item, index, balance, onBuy, previewing, onPreview }: CardPr
         <div className="shopcard-title">{track.title}</div>
         <div className="shopcard-genre">
           {premium && <span className="shopcard-tag">{dict.shopPremium}</span>}
-          <span className="shopcard-price">★ {track.stars}</span>
+          <Difficulty stars={track.stars} className="shopcard-diff" />
           {!owned && (
             <span className={`shopcard-price${short > 0 ? ' is-short' : ''}`}>
               {' · '}
