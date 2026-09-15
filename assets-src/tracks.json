@@ -373,7 +373,8 @@
     "raw": "fever-stadium.mp3",
     "sourceUrl": "https://opengameart.org/content/fever-stadium",
     "license": "CC0 1.0",
-    "premium": true
+    "premium": true,
+    "rawUrl": "https://opengameart.org/sites/default/files/fever_stadium_bpm165.mp3"
   },
   {
     "id": "lucid-trigger",
@@ -446,7 +447,8 @@
     "genre": "metal",
     "raw": "boss-battle-9-metal.wav",
     "sourceUrl": "https://opengameart.org/content/boss-battle-9-metal",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "rawUrl": "https://opengameart.org/sites/default/files/boss_battle_9_metal_loop.wav"
   },
   {
     "id": "fight-for-better-future",

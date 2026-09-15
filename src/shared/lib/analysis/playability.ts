@@ -82,3 +82,36 @@ export function thumbViolations(notes: readonly NoteTuple[], sections: readonly 
   }
   return out;
 }
+
+/**
+ * Hand hops: a note that follows the previous one within a sixteenth (or a long note within an
+ * eighth) on the SAME thumb's half in a different lane — one thumb cannot hop lanes that fast.
+ * The middle lane of an odd field belongs to either hand and never counts.
+ */
+export function handHops(notes: readonly NoteTuple[], sections: readonly [number, number][], stepSec: number): string[] {
+  const lanesAt = (t: number): number => {
+    let n = sections[0][1];
+    for (const [time, lanes] of sections) if (time <= t + 1e-6) n = lanes;
+    return n;
+  };
+  const hand = (lane: number, n: number): -1 | 0 | 1 => {
+    const c = (lane + 0.5) / n;
+    return c < 0.5 ? 0 : c > 0.5 ? 1 : -1;
+  };
+  const out: string[] = [];
+  const sorted = [...notes].sort((a, b) => a[0] - b[0]);
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const cur = sorted[i];
+    if (cur[3] === 'circle' || prev[3] === 'circle') continue;
+    const gap = cur[0] - prev[0];
+    const limit = (cur[2] ?? 0) > 0 ? stepSec * 2 : stepSec;
+    if (gap <= 0 || gap > limit + 1e-6) continue;
+    const n = lanesAt(cur[0]);
+    if (cur[1] === prev[1]) continue;
+    const a = hand(prev[1], n);
+    const b = hand(cur[1], n);
+    if (a !== -1 && a === b) out.push(`hop at ${cur[0]}: lane ${prev[1]} → ${cur[1]} on one thumb (${n} lanes, gap ${gap.toFixed(3)})`);
+  }
+  return out;
+}

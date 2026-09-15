@@ -151,6 +151,15 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
 
     let candidates = free.filter((l) => laneRun[l] < 2);
     if (!candidates.length) candidates = free;
+    // Two thumbs, not one: a sixteenth after the last note (or a long note starting within an eighth of
+    // it) is played by the OTHER hand — one thumb cannot hop lanes in 100 ms. The middle lane of an odd
+    // field belongs to either hand, so it never forces a hop.
+    const lastHand = lastLane >= 0 ? handOf(lastLane, n) : -1;
+    if (lastHand !== -1 && (gap <= 1 || (ev.hold > 0 && gap <= 2))) {
+      const other = candidates.filter((l) => handOf(l, n) !== lastHand);
+      if (other.length) candidates = other;
+      else if (busy && candidates.includes(lastLane)) candidates = [lastLane]; // the free thumb repeats its lane rather than hopping
+    }
 
     let lanes: number[];
     if (ev.size >= 2 && !busy) {

@@ -84,15 +84,23 @@ for (const t of tracks) {
   analysed.push({ t, duration, analysis, layers: loadLayers(t.id, analysis), ms: Date.now() - t0 });
 }
 
-// The calmest songs by their normal rating become the beginner chapter.
+// The published order is the players' order (chapters and unlocks go by position), so it is kept:
+// a track already in catalog.json keeps its place and its chapter profile; only new tracks are
+// rated in and sorted after the known ones. Delete catalog.json to re-rank everything from scratch.
+const published: string[] = existsSync(CATALOG) ? (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map((t) => t.id) : [];
 const normalStars = new Map(analysed.map((a) => [a.t.id, composeChart(a.analysis, { seed: hash(a.t.id) }).stars]));
 const calmest = [...analysed]
   .filter((a) => !a.t.premium)
   .sort((a, b) => normalStars.get(a.t.id)! - normalStars.get(b.t.id)! || a.t.id.localeCompare(b.t.id))
   .map((a) => a.t.id);
 const profiles = new Map<string, Profile>();
-calmest.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
-calmest.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
+if (published.length) {
+  published.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
+  published.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
+} else {
+  calmest.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
+  calmest.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
+}
 
 const built: ChartFile[] = [];
 for (const { t, duration, analysis, layers, ms } of analysed) {
@@ -129,7 +137,11 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
   );
 }
 
-built.sort((a, b) => a.chart.stars - b.chart.stars || a.chart.notes.length - b.chart.notes.length || a.bpm - b.bpm);
+const rank = (c: ChartFile): number => {
+  const i = published.indexOf(c.id);
+  return i < 0 ? published.length : i;
+};
+built.sort((a, b) => rank(a) - rank(b) || a.chart.stars - b.chart.stars || a.chart.notes.length - b.chart.notes.length || a.bpm - b.bpm);
 const catalog = built.map((c) => ({
   id: c.id,
   title: c.title,

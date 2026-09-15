@@ -12,6 +12,8 @@ interface RawTrack {
   id: string;
   raw: string;
   sourceUrl: string;
+  /** Exact attachment to fetch when the page has several (loop vs opening, tempo variants). */
+  rawUrl?: string;
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -37,8 +39,7 @@ for (const t of tracks) {
   const out = join(RAW_DIR, t.raw);
   if (existsSync(out)) continue;
   try {
-    const page = await (await fetch(t.sourceUrl, { headers: { 'user-agent': 'neon-tap asset fetch' } })).text();
-    const url = pickFile(page, t.raw);
+    const url = t.rawUrl ?? pickFile(await (await fetch(t.sourceUrl, { headers: { 'user-agent': 'neon-tap asset fetch' } })).text(), t.raw);
     if (!url) throw new Error('no attachment link on the page');
     const res = await fetch(url, { headers: { 'user-agent': 'neon-tap asset fetch' } });
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
