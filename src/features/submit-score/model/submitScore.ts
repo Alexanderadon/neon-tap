@@ -7,10 +7,6 @@ export function isEligible(result: PlayResult | null | undefined, source: ChartS
   return !!result && source === 'catalog' && !result.failed && result.totalNotes > 0;
 }
 
-export function isValidNickname(name: string): boolean {
-  return name.trim().length >= 1;
-}
-
 const inflight = new WeakMap<PlayResult, Promise<LeaderboardSubmitResult>>();
 
 /**

@@ -1,4 +1,6 @@
 import { dict, fmt } from '@/shared/i18n';
+import { formatScore } from '@/shared/lib/format';
+import { Icon, ListRow, ObjButton, PlaceChip, SegmentsPulse, StatePanel, Tag } from '@/shared/ui';
 import { useSettings } from '@/entities/settings';
 import type { ChartSource } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
@@ -13,11 +15,13 @@ interface Props {
 }
 
 /**
- * «Онлайн-рекорды» on the result screen: top 10 + the player's position. Hidden entirely when
- * the backend is not configured (a muted hint appears only with the debug overlay on).
+ * «Онлайн-рекорды» on the result screen («Подробнее»): the people above and below me as list
+ * rows (place chip · name · score, my row with the cyan rim) and «ТВОЁ МЕСТО: N». Accuracy and
+ * rank are not repeated here — they live in the score panel. Loading / nobody / a failed post are
+ * one state panel; the failed post adds «Повторить». Hidden entirely when the backend is off.
  */
 export function OnlineLeaderboard({ result, source }: Props) {
-  const { status, top, position, improved, skipNickname } = useSubmitScore(result, source);
+  const { status, top, position, improved, skipNickname, retry } = useSubmitScore(result, source);
   const nickname = useSettings((s) => s.nickname);
   const debug = useSettings((s) => s.debugOverlay);
 
@@ -26,33 +30,44 @@ export function OnlineLeaderboard({ result, source }: Props) {
 
   const me = nickname.toLocaleLowerCase();
   const rows = top.slice(0, SHOW);
+  const meInTop = rows.some((e) => e.name.toLocaleLowerCase() === me);
+  const waiting = status === 'need-name' || status === 'submitting';
 
   return (
     <>
-      <section className="online" aria-live="polite">
-        <div className="online-head">
-          <span className="online-title">{dict.onlineRecords}</span>
-          {position !== null && <span className="online-place">{fmt(dict.onlineYourPlace, { n: position })}</span>}
-        </div>
-        {status === 'need-name' || status === 'submitting' ? (
-          <div className="online-status">{dict.onlineLoading}</div>
-        ) : rows.length === 0 ? (
-          <div className="online-status">{dict.onlineEmpty}</div>
-        ) : (
+      <section className="online" aria-live="polite" aria-label={dict.onlineRecords}>
+        {waiting && <StatePanel icon={<SegmentsPulse />}>{dict.onlineLoading}</StatePanel>}
+        {!waiting && rows.length === 0 && <StatePanel icon={<Icon name="trophy" size={32} />}>{dict.onlineEmpty}</StatePanel>}
+        {!waiting && rows.length > 0 && (
           <ol className="online-list">
             {rows.map((e, i) => (
-              <li key={`${e.name}-${i}`} className={`online-row ${e.name.toLocaleLowerCase() === me && me ? 'online-row-me' : ''}`}>
-                <span className="online-pos">{i + 1}</span>
-                <span className="online-name">{e.name}</span>
-                <span className="online-score">{e.score.toLocaleString('ru-RU')}</span>
-                <span className="online-acc">{(e.accuracy * 100).toFixed(1)}%</span>
-                <span className={`online-rank rank-${e.rank}`}>{e.rank}</span>
-              </li>
+              <ListRow
+                key={`${e.name}-${i}`}
+                lead={<PlaceChip place={i + 1} />}
+                name={e.name}
+                score={formatScore(e.score)}
+                me={!!me && e.name.toLocaleLowerCase() === me}
+              />
             ))}
+            {!meInTop && position !== null && me && <ListRow lead={<PlaceChip place={position} />} name={nickname} score={formatScore(result.score)} me />}
           </ol>
         )}
-        {status === 'done' && improved && <div className="online-status">{dict.onlineSubmitted}</div>}
-        {status === 'error' && <div className="online-status online-status-error">{dict.onlineSubmitFailed}</div>}
+        {!waiting && position !== null && (
+          <div className="online-place">
+            <Tag variant="dark" shine={status === 'done' && improved}>
+              {fmt(dict.onlineYourPlace, { n: position })}
+            </Tag>
+          </div>
+        )}
+        {status === 'error' && (
+          <StatePanel
+            role="alert"
+            icon={<Icon name="cloud-off" size={32} />}
+            action={<ObjButton wide icon={<Icon name="retry" />} label={dict.onlineRetry} onClick={retry} />}
+          >
+            {dict.onlineSubmitFailed}
+          </StatePanel>
+        )}
       </section>
       <NicknameDialog open={status === 'need-name'} onSkip={skipNickname} />
     </>

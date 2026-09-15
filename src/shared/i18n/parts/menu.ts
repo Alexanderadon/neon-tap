@@ -1,2 +1,39 @@
 /** Main screen, profile, records, achievements, duels (package A). Keys must not repeat those of other parts (see ru.test.ts). */
-export const menu = {} as const;
+export const menu = {
+  // --- main screen ---
+  /** The primary button when the focused track is still closed: «ОТКРЫТЬ / ★ 22 из 25» or «ОТКРЫТЬ / за 120 ◆». */
+  openTrack: 'Открыть',
+  starsOfNeed: '★ {have} из {need}',
+  forCrystals: 'за {n}',
+  shopAffordable: 'можно купить: {n}',
+  deckSegmentAria: '{title}: к треку',
+  // --- profile ---
+  nicknameFor: 'ник для онлайн-рекордов',
+  nicknameShort: 'для онлайн-рекордов · 1–16 символов',
+  passedShort: 'Пройдено',
+  notPassedShort: 'Не пройдено',
+  rankSShort: 'Ранг S',
+  comboShort: 'Комбо',
+  profileCardAria: 'Сменить ник',
+
+  // --- achievements ---
+  goalsGot: 'получено {done} из {total}',
+  goalLevelsAria: 'уровень {n} из {total}',
+  // --- duels ---
+  duelAhead: 'Впереди',
+  duelWaiting: 'Ждём',
+  duelClosed: 'Закрыта',
+  duelClosedHint: 'уже закончилась',
+  duelBeat: 'Побил',
+  duelBehind: 'Позади',
+  duelMine: 'ты',
+  duelsNone: 'пока ни одной',
+  duelCallNoun: ['вызов', 'вызова', 'вызовов'],
+  duelAnswerNoun: ['ответ', 'ответа', 'ответов'],
+  duelRowAria: 'Ответить: {title}',
+  // --- records ---
+  offline: 'Нет связи',
+  offlineHint: 'таблица появится позже',
+  attemptsCount: '{n} {noun}',
+  onlineRetry: 'Повторить',
+} as const;

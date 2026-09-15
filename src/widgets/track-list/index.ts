@@ -1,3 +1,7 @@
-export { TrackDeck } from './ui/TrackDeck';
+export { TrackDeck, CHAPTER } from './ui/TrackDeck';
 export type { TrackRef } from './ui/TrackDeck';
-export { useCatalogState } from './model/useCatalogState';
+export { useCatalogState, lockFor } from './model/useCatalogState';
+export type { CatalogState, LockState } from './model/useCatalogState';
+export { usePlayTrack } from './model/usePlayTrack';
+export { initialDeckIndex, startIndex, focusedTrack } from './model/deckStart';
+export { affordableCount, forSaleNow } from './model/shopBadge';

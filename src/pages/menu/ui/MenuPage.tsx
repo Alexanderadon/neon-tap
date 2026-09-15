@@ -1,85 +1,230 @@
-import { useCallback, useState } from 'react';
-import { dict } from '@/shared/i18n';
-import { navigate } from '@/shared/lib/router';
+import { useCallback, useEffect, useState } from 'react';
+import { dict, fmt, plural } from '@/shared/i18n';
+import { navigate, useRouteParams } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { Button, CrystalIcon, Modal, Screen } from '@/shared/ui';
-import { useProgress } from '@/entities/progress';
-import { TrackDeck, type TrackRef } from '@/widgets/track-list';
-import { GoalsPanel } from '@/widgets/goals-panel';
-import { DuelList } from '@/widgets/duel-list';
-import { HistoryModal } from '@/widgets/history-panel';
-import { ProfileIcon, SettingsIcon } from './MenuIcons';
+import { Avatar, Chip, FrameBody, Icon, ObjButton, Panel, Screen, Stars, SubHeader, Tag, useSwipeBack } from '@/shared/ui';
+import { CATALOG, CoverScene } from '@/entities/track';
+import { GOALS, rankIndex, starsForTrack } from '@/entities/progress';
+import { useSettings } from '@/entities/settings';
+import { myDuels } from '@/entities/duel';
+import { TopBar } from '@/widgets/top-bar';
+import { CHAPTER, TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, usePlayTrack } from '@/widgets/track-list';
+import { GoalsPanel, goalsGotLine } from '@/widgets/goals-panel';
+import { DuelList, useMyDuels } from '@/widgets/duel-list';
+import { HistoryPanel } from '@/widgets/history-panel';
+import { NicknameDialog } from '@/features/submit-score';
+import { MenuDock, type Door } from './MenuDock';
 import './menu.css';
 
+/** The places of the menu: the deck, and the four full screens that share its top bar, scene and action zone. */
+type View = 'deck' | 'profile' | 'records' | 'goals' | 'duels';
+
+const storage = (): Storage | null => (typeof localStorage === 'undefined' ? null : localStorage);
+
+const VIEWS: readonly View[] = ['deck', 'profile', 'records', 'goals', 'duels'];
+const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS as readonly string[]).includes(v);
+
 /**
- * Menu = the deck. One card per track with PLAY under the thumb; two small round buttons flank it:
- * the shop (with the crystal balance) and the profile (goals, tutorial, custom song, settings).
- * Everything that is not "pick a track and play" lives behind the profile button.
+ * The main screen: top bar · chapter row · the deck · three doors (shop, records, profile) · «ИГРАТЬ».
+ * Profile, records, achievements and duels are the same screen with the middle swapped: the
+ * focused track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
+ * nickname question is the one overlay (a dialog over the dimmed screen). Other screens open a
+ * view or focus a track through the route params (`navigate('menu', { view: 'records', track })`).
  */
 export function MenuPage() {
-  const [records, setRecords] = useState<TrackRef | null>(null);
-  const [profile, setProfile] = useState(false);
-  const closeRecords = useCallback(() => setRecords(null), []);
-  const crystals = useProgress((s) => s.crystals);
+  const state = useCatalogState();
+  const params = useRouteParams();
+  const [index, setIndex] = useState(() => {
+    const wanted = params.track ? CATALOG.findIndex((t) => t.id === params.track) : -1;
+    return wanted >= 0 ? wanted : initialDeckIndex(state, storage());
+  });
+  const [view, setView] = useState<View>(() => (isView(params.view) ? params.view : 'deck'));
+  const [askName, setAskName] = useState(false);
+  const { busy, play } = usePlayTrack();
+  const { track, lock } = focusedTrack(state, index);
+  const badge = affordableCount(state);
 
-  const open = (screen: 'settings' | 'tutorial' | 'custom') => {
+  const goTo = useCallback((v: View) => {
     sfxUi();
-    setProfile(false);
+    setView(v);
+  }, []);
+  const back = useCallback(() => setView((v) => (v === 'goals' || v === 'duels' ? 'profile' : 'deck')), []);
+  useSwipeBack(back, view !== 'deck');
+  useEffect(() => {
+    if (view === 'deck') return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && back();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, back]);
+
+  const open = (screen: 'shop' | 'settings' | 'tutorial' | 'custom') => {
+    sfxUi();
     navigate(screen);
   };
+  const onPlay = (id: string = track.id) => {
+    if (busy) return;
+    sfxUi();
+    const l = id === track.id ? lock : null;
+    if (l?.locked) {
+      if (l.premium) navigate('shop');
+      return;
+    }
+    void play(id);
+  };
+
+  const shopDoor: Door = { key: 'shop', badge, onTap: () => open('shop') };
+  const doors: Record<View, readonly [Door, Door, Door]> = {
+    deck: [shopDoor, { key: 'records', onTap: () => goTo('records') }, { key: 'profile', onTap: () => goTo('profile') }],
+    profile: [shopDoor, { key: 'records', onTap: () => goTo('records') }, { key: 'menu', onTap: () => goTo('deck') }],
+    records: [shopDoor, { key: 'menu', onTap: () => goTo('deck') }, { key: 'profile', onTap: () => goTo('profile') }],
+    goals: [shopDoor, { key: 'menu', onTap: () => goTo('deck') }, { key: 'profile', onTap: () => goTo('profile') }],
+    duels: [shopDoor, { key: 'menu', onTap: () => goTo('deck') }, { key: 'profile', onTap: () => goTo('profile') }],
+  };
+
+  const chapter = Math.floor(index / CHAPTER);
+  const chapterTracks = CATALOG.slice(chapter * CHAPTER, chapter * CHAPTER + CHAPTER);
+  const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
+  const chapterLine = `${fmt(dict.deckChapter, { n: chapter + 1 })} · ${fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}`;
 
   return (
-    <Screen className="menu">
-      <div className="menu-bg" aria-hidden="true" />
-      <TrackDeck onRecords={setRecords} />
+    <Screen frame className="menu">
+      <CoverScene id={track.id} genre={track.genre} />
+      <TopBar onCrystalsTap={() => open('shop')} />
 
-      <button
-        type="button"
-        className="menu-round menu-round-shop"
-        onClick={() => {
-          sfxUi();
-          navigate('shop');
-        }}
-        aria-label={`${dict.shop} · ${dict.crystalsTitle}: ${crystals}`}
-      >
-        <CrystalIcon size={20} />
-        <span className="menu-round-n mono">{crystals}</span>
-      </button>
-      <button
-        type="button"
-        className="menu-round menu-round-profile"
-        onClick={() => {
-          sfxUi();
-          setProfile(true);
-        }}
-        aria-label={dict.profile}
-      >
-        <ProfileIcon size={24} />
-      </button>
+      {view === 'deck' && <TrackDeck index={index} onIndexChange={setIndex} onPlay={() => onPlay()} />}
 
-      <Modal open={profile} title={dict.profile} onClose={() => setProfile(false)}>
-        <div className="profile-actions">
-          <Button variant="ghost" onClick={() => open('tutorial')}>
-            {dict.tutorial}
-          </Button>
-          <Button variant="ghost" onClick={() => open('custom')}>
-            {dict.customSong}
-          </Button>
-          <Button variant="ghost" onClick={() => open('settings')}>
-            <SettingsIcon size={16} /> {dict.settings}
-          </Button>
-        </div>
-        <DuelList />
-        <GoalsPanel />
-        <footer className="menu-foot">
-          <span className="micro">{dict.madeWith}</span>
-          <a className="micro" href={`${import.meta.env.BASE_URL}music/LICENSES.md`} target="_blank" rel="noreferrer">
-            {dict.licenses}
-          </a>
-        </footer>
-      </Modal>
+      {view === 'profile' && (
+        <>
+          <SubHeader tag={<Tag>{dict.profile}</Tag>} text={chapterLine} />
+          <FrameBody scroll>
+            <ProfileView onNickname={() => setAskName(true)} onGoals={() => goTo('goals')} onDuels={() => goTo('duels')} onOpen={open} />
+          </FrameBody>
+        </>
+      )}
 
-      <HistoryModal track={records} onClose={closeRecords} />
+      {view === 'records' && (
+        <>
+          <SubHeader center>
+            <b>{track.title}</b>
+            <span>·</span>
+            {fmt(dict.deckChapter, { n: chapter + 1 })}
+          </SubHeader>
+          <FrameBody scroll>
+            <HistoryPanel trackId={track.id} />
+          </FrameBody>
+        </>
+      )}
+
+      {view === 'goals' && (
+        <>
+          <SubHeader tag={<Tag>{dict.goalsTitle}</Tag>} text={goalsGotLine(state.save.goalsClaimed)} />
+          <FrameBody scroll>
+            <GoalsPanel />
+          </FrameBody>
+        </>
+      )}
+
+      {view === 'duels' && <DuelsView onPlay={onPlay} />}
+
+      <MenuDock doors={doors[view]} track={track} lock={lock} stars={state.stars} busy={busy !== null} onPlay={() => onPlay()} />
+
+      <NicknameDialog open={askName} onSkip={() => setAskName(false)} />
     </Screen>
+  );
+}
+
+interface ProfileProps {
+  onNickname: () => void;
+  onGoals: () => void;
+  onDuels: () => void;
+  onOpen: (screen: 'settings' | 'tutorial' | 'custom') => void;
+}
+
+/** Profile: the player card (tap → nickname), five wide doors, the licenses line. */
+function ProfileView({ onNickname, onGoals, onDuels, onOpen }: ProfileProps) {
+  const state = useCatalogState();
+  const nickname = useSettings((s) => s.nickname);
+  const tutorialDone = useSettings((s) => s.tutorialDone);
+  const bests = Object.values(state.save.tracks);
+  const passed = bests.filter((b) => starsForTrack(b) > 0).length;
+  const rankS = bests.filter((b) => rankIndex(b.rank) >= rankIndex('S')).length;
+  const combo = state.save.counters.maxCombo;
+  const claimed = state.save.goalsClaimed.length;
+  const duelsCount = myDuels().length;
+  return (
+    <div className="profile">
+      <Panel className="profile-card" onPress={onNickname} aria-label={dict.profileCardAria}>
+        <span className="profile-who">
+          <Avatar name={nickname} size={48} />
+          <span className="profile-two">
+            <b className="profile-name">{nickname || dict.you}</b>
+            <small className="profile-hint">{dict.nicknameFor}</small>
+          </span>
+          <Icon name="chevron" size={20} className="profile-chev" />
+        </span>
+        <span className="profile-stats">
+          <span>
+            {dict.passedShort}{' '}
+            <b>
+              {passed} / {CATALOG.length}
+            </b>
+          </span>
+          <span>
+            {dict.rankSShort} <b>{rankS}</b>
+          </span>
+          <span>
+            {dict.comboShort} <b>{combo}</b>
+          </span>
+        </span>
+      </Panel>
+      <div className="profile-doors">
+        <ObjButton
+          wide
+          icon={<Icon name="trophy" />}
+          label={dict.goalsTitle}
+          onClick={onGoals}
+          end={
+            <Chip variant="gd" icon={<Stars value={1} max={1} />}>
+              {claimed} / {GOALS.length}
+            </Chip>
+          }
+        />
+        <ObjButton wide icon={<Icon name="duel" />} label={dict.duelsTitle} onClick={onDuels} end={<Chip>{duelsCount}</Chip>} />
+        <ObjButton wide icon={<Icon name="note" />} label={dict.customSong} onClick={() => onOpen('custom')} end={<Icon name="chevron" />} />
+        <ObjButton
+          wide
+          icon={<Icon name="book" />}
+          label={dict.tutorial}
+          onClick={() => onOpen('tutorial')}
+          end={tutorialDone ? <Tag>{dict.passedShort}</Tag> : <Tag variant="dark">{dict.notPassedShort}</Tag>}
+        />
+        <ObjButton wide icon={<Icon name="sliders" />} label={dict.settings} onClick={() => onOpen('settings')} end={<Icon name="chevron" />} />
+      </div>
+      <a className="profile-foot" href={`${import.meta.env.BASE_URL}music/LICENSES.md`} target="_blank" rel="noreferrer">
+        {dict.licenses}
+      </a>
+    </div>
+  );
+}
+
+/** My duels: the sub-header counts calls and answers; the list is the widget's. */
+function DuelsView({ onPlay }: { onPlay: (trackId: string) => void }) {
+  const duels = useMyDuels();
+  const { calls, answers } = duels.summary;
+  const line =
+    calls === 0 ? (
+      dict.duelsNone
+    ) : (
+      <>
+        <b>{calls}</b> {plural(calls, dict.duelCallNoun)} · <b>{answers}</b> {plural(answers, dict.duelAnswerNoun)}
+      </>
+    );
+  return (
+    <>
+      <SubHeader tag={<Tag>{dict.duelsTitle}</Tag>} text={line} />
+      <FrameBody scroll>
+        <DuelList state={duels} onPlay={onPlay} />
+      </FrameBody>
+    </>
   );
 }

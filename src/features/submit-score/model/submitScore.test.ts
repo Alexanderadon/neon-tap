@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { isEligible, isValidNickname, submitScore } from './submitScore';
+import { isEligible, submitScore } from './submitScore';
 import type { LeaderboardClient, LeaderboardSubmission } from '@/shared/api/leaderboard';
 import type { PlayResult } from '@/entities/score';
 
@@ -29,8 +29,6 @@ describe('submit-score', () => {
     expect(isEligible(result({ failed: true }), 'catalog')).toBe(false);
     expect(isEligible(result(), 'custom')).toBe(false);
     expect(isEligible(null, 'catalog')).toBe(false);
-    expect(isValidNickname('  ')).toBe(false);
-    expect(isValidNickname('Neo')).toBe(true);
   });
 
   it('posts once per run and shares the promise', async () => {

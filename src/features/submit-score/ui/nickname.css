@@ -1,15 +1,67 @@
+/* NicknameForm / NicknameDialog: avatar 48 → title 20 → TextField 48 → hint 13 → primary 64 → «Не сейчас» 48. */
 .nickname {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
 }
-.nickname-hint {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+.nick-title {
+  margin: 16px 0 0;
+  height: 24px;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  text-align: center;
 }
-.nickname-actions {
+/* The field 16 under the title. */
+.nick-field {
+  margin-top: 16px;
+}
+.nick-hint {
+  margin-top: 8px;
+}
+.nick-actions {
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 24px;
+}
+/* The dialog: veil .8 without blur, the panel in the upper half (a 300 px keyboard never covers it). */
+.nick-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-top) + 8px + 44px + 16px) var(--gutter) var(--safe-bottom);
+  background: rgba(5, 6, 10, 0.8);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.nick-dialog {
+  width: var(--col);
+  padding: 24px 16px;
+  border-radius: var(--r-24);
+  background: var(--panel);
+  box-shadow: var(--sh-panel);
+  animation: nick-rise 0.4s ease-out both;
+}
+@keyframes nick-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nick-dialog {
+    animation: none;
+  }
 }

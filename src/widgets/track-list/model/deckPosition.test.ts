@@ -30,8 +30,21 @@ describe('deck position', () => {
 
   it('survives a missing or throwing storage', () => {
     expect(readDeckIndex(null, 59)).toBeNull();
-    const broken = { getItem: () => { throw new Error('quota'); } } as unknown as Storage;
+    const broken = {
+      getItem: () => {
+        throw new Error('quota');
+      },
+    } as unknown as Storage;
     expect(readDeckIndex(broken, 59)).toBeNull();
-    expect(() => writeDeckIndex({ setItem: () => { throw new Error('quota'); } } as unknown as Storage, 1)).not.toThrow();
+    expect(() =>
+      writeDeckIndex(
+        {
+          setItem: () => {
+            throw new Error('quota');
+          },
+        } as unknown as Storage,
+        1,
+      ),
+    ).not.toThrow();
   });
 });
