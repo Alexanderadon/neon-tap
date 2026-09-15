@@ -10,6 +10,7 @@ import { CATALOG, CoverScene, TrackCover, coverSpec, loadChart, type TrackMeta }
 import { startSession } from '@/entities/play-session';
 import { starsForTrack, useProgress } from '@/entities/progress';
 import { acceptDuel, setPendingDuel, usePendingDuel } from '@/entities/duel';
+import { avatarArtOf } from '@/entities/avatar';
 import { TopBar } from '@/widgets/top-bar';
 import './duel-page.css';
 
@@ -174,7 +175,7 @@ function DuelCard({ track, duel }: { track?: TrackMeta; duel: Duel | null }) {
       <div className="duelp-plate">
         {duel ? (
           <>
-            <Avatar name={duel.host.name} size={48} tone="other" />
+            <Avatar name={duel.host.name} size={48} tone="other" art={avatarArtOf(duel.host.avatar)} />
             <span className="duelp-score">{formatScore(duel.host.score)}</span>
             <Tag variant="dark">{best ? fmt(dict.yourBest, { score: formatScore(best.score) }) : dict.notPlayedYet}</Tag>
           </>

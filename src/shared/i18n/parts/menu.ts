@@ -15,6 +15,27 @@ export const menu = {
   rankSShort: 'Ранг S',
   comboShort: 'Комбо',
   profileCardAria: 'Сменить ник',
+  // --- avatar ---
+  avatarRow: 'Аватар',
+  avatarPickTitle: 'Выбери аватар',
+  avatarPickAria: 'Выбрать аватар',
+  /** The way back to the letter avatar («Буква» = the first letter of the nickname). */
+  avatarLetter: 'Буква',
+  /** Names under the picker's 56 px cells (4 columns, 11 px caps ≈ 7 letters a line): the soft hyphens (­) mark where a long word may break. */
+  avatarNames: {
+    cat: 'Кошка',
+    fox: 'Лис',
+    robot: 'Робот',
+    astronaut: 'Космо­навт',
+    panda: 'Панда',
+    alien: 'Инопла­нетянин',
+    dragon: 'Дракон­чик',
+    owl: 'Сова',
+    shark: 'Акула',
+    bunny: 'Зайка',
+    ghost: 'Призрак',
+    dino: 'Дино',
+  },
 
   // --- achievements ---
   goalsGot: 'получено {done} из {total}',

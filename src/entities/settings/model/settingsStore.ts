@@ -1,4 +1,5 @@
 import { OFFSET_RANGE_MS } from '@/shared/config/constants';
+import { sanitizeAvatar } from '@/shared/config/avatars';
 import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
@@ -22,6 +23,8 @@ export interface Settings {
   tutorialDone: boolean;
   /** Name shown on the online leaderboard; '' = not asked yet. */
   nickname: string;
+  /** The chosen avatar — an id from `shared/config/avatars`; '' = the first letter of the nickname. */
+  avatar: string;
   fxMode: FxMode;
 }
 
@@ -55,19 +58,28 @@ const DEFAULTS: Settings = {
   debugOverlay: false,
   tutorialDone: false,
   nickname: '',
+  avatar: '',
   fxMode: 'auto',
 };
 
 const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
 export const FX_MODES: FxMode[] = ['auto', 'on', 'off'];
 
-function load(): Settings {
+/** Saved settings from their JSON: missing fields (older builds) take the defaults, bad values are sanitised, garbage is the defaults. */
+export function settingsFromJson(raw: string | null): Settings {
   try {
-    const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
     const merged = { ...DEFAULTS, ...parsed, version: 1 as const };
     return sanitize(merged);
+  } catch {
+    return DEFAULTS;
+  }
+}
+
+function load(): Settings {
+  try {
+    return settingsFromJson(localStorage.getItem(KEY));
   } catch {
     return DEFAULTS;
   }
@@ -83,6 +95,7 @@ function sanitize(s: Settings): Settings {
     voice: VOICES.includes(s.voice) ? s.voice : DEFAULTS.voice,
     tutorialDone: s.tutorialDone === true,
     nickname: typeof s.nickname === 'string' ? sanitizeNickname(s.nickname) : '',
+    avatar: sanitizeAvatar(s.avatar),
     fxMode: FX_MODES.includes(s.fxMode) ? s.fxMode : DEFAULTS.fxMode,
   };
 }

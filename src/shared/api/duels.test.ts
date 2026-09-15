@@ -53,4 +53,11 @@ describe('duels client', () => {
     expect(toDuel({ id: 'x' })).toBeNull();
     expect(toDuel(null)).toBeNull();
   });
+
+  it('keeps a run avatar id of the right shape and drops the rest', () => {
+    const withAvatar = toDuel({ ...duel, host: { ...duel.host, avatar: 'owl' } });
+    expect(withAvatar?.host.avatar).toBe('owl');
+    const bad = toDuel({ ...duel, host: { ...duel.host, avatar: 'Owl!' } });
+    expect(bad?.host).not.toHaveProperty('avatar');
+  });
 });

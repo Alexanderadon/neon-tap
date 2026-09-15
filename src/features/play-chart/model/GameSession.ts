@@ -95,7 +95,7 @@ const MILESTONES = [50, 100, 250, 500, 1000];
 const ASSIST_WINDOW = 0.4;
 export const MAX_HEARTS = 5;
 /** A heart caught with all ten lives already there pays this many crystals. */
-const HEART_OVERFLOW_CRYSTALS = 50;
+const HEART_OVERFLOW_CRYSTALS = 5;
 /** Slow-motion spell: the whole song (music + notes + judgement) runs at this rate for SLOW_DURATION song-seconds. */
 const SLOW_RATE = 0.72;
 const SLOW_DURATION = 6;

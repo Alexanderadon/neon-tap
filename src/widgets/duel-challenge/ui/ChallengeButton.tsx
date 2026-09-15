@@ -19,6 +19,7 @@ type Phase = 'idle' | 'creating' | 'ready' | 'sent' | 'failed';
  */
 export function ChallengeButton({ result, title }: { result: PlayResult; title: string }) {
   const nickname = useSettings((s) => s.nickname);
+  const avatar = useSettings((s) => s.avatar);
   const [phase, setPhase] = useState<Phase>('idle');
   const [duel, setDuel] = useState<Duel | null>(null);
   const [askName, setAskName] = useState(false);
@@ -38,7 +39,7 @@ export function ChallengeButton({ result, title }: { result: PlayResult; title: 
       return;
     }
     setPhase('creating');
-    const d = await createChallenge(result, nickname);
+    const d = await createChallenge(result, { name: nickname, avatar });
     setDuel(d);
     setPhase(d ? 'ready' : 'failed');
   };

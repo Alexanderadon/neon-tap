@@ -1,0 +1,254 @@
+/*
+ * Offer popups (OfferPopups.tsx) — GDD «Донат». One sheet style over the shared Sheet shell:
+ * hero 335 × 180 (r 24) · tag row 24 · benefit line 16 · coins 56 · [note] · the sheet's actions.
+ * Every colour is a token; no `filter` anywhere (iOS).
+ */
+/* The dialog's name for readers only — the gold tag carries it visually. */
+.offer-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* The hero slot: the placeholder SVG fills it, the image (when present) lies over it with a fade-in. */
+.offer-hero {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  flex: none;
+  border-radius: var(--r-24);
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow:
+    inset 0 0 0 1px var(--w10),
+    0 4px 0 #000,
+    0 16px 32px rgba(0, 0, 0, 0.5);
+  animation: sheet-rise 0.4s ease-out 0.05s both;
+}
+.offer-hero > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.offer-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.offer-hero-img-on {
+  opacity: 1;
+}
+/* The gold headline tag(s), 16 under the hero; a pair («ТОЛЬКО 48 ЧАСОВ | 47:59:59») touches. */
+.offer-tags {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 24px;
+  margin-top: 16px;
+  animation: sheet-rise 0.4s ease-out 0.15s both;
+}
+.offer-tags > .tag-left + .tag-right {
+  margin-left: 1px;
+}
+/* One line of benefit, 8 under the tag. */
+.offer-benefit {
+  width: 100%;
+  height: 16px;
+  margin-top: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font: var(--t-13);
+  color: var(--w80);
+  animation: sheet-rise 0.4s ease-out 0.2s both;
+}
+/* The coins on the row-of-three grid (two coins take two thirds, centred by the auto columns). */
+.offer-coins {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+  height: 56px;
+  margin-top: 16px;
+}
+.offer-coins > .coin {
+  width: 100%;
+}
+.offer-cy {
+  display: inline-flex;
+  color: var(--cyan);
+}
+.offer-cy > svg {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+/* The pack picker: three pressable coins, the chosen one has the cyan rim (a radio, not a button). */
+.offer-picks {
+  display: contents;
+}
+.offer-pick {
+  display: block;
+  width: 100%;
+  height: 56px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-16);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform 0.08s ease;
+}
+.offer-pick:active {
+  transform: translateY(2px);
+}
+.offer-pick:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.offer-pick > .coin {
+  opacity: 0.6;
+  transition:
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.offer-pick-on > .coin {
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 2px var(--cyan),
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    0 4px 0 var(--cyan-under);
+}
+/* The line under the coins: the deal's «осталось 47:59:59», or the music pack's eight covers. */
+.offer-note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 16px;
+  margin-top: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font: var(--t-13);
+  color: var(--w55);
+  animation: sheet-rise 0.4s ease-out 0.5s both;
+}
+.offer-covers {
+  display: flex;
+  gap: 8px;
+  height: 32px;
+}
+.offer-cover {
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 0 #000;
+}
+.offer-cover > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Toast 335 × 48, r 16 — the gold tag in a button's size, fixed over the row of three for 2.6 s; magenta text for a failure. */
+.offer-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 24px + 64px + 16px);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: var(--col);
+  height: 48px;
+  transform: translateX(-50%);
+  border-radius: var(--r-16);
+  background: var(--gold-face);
+  color: var(--gold-under);
+  font: var(--t-15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 4px 0 var(--gold-rim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: offer-toast-rise 0.4s ease-out both;
+}
+.offer-toast > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  overflow: visible;
+}
+.offer-toast-bad {
+  background: var(--dark-face);
+  color: var(--mag);
+  box-shadow: var(--sh-obj);
+}
+@keyframes offer-toast-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+/* The header's «48 Ч» tag as a button (the Tag is a span). */
+.offer-tagbtn {
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-999);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  flex: none;
+}
+.offer-tagbtn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.offer-tagbtn:active > .tag {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 0 var(--gold-rim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offer-hero,
+  .offer-tags,
+  .offer-benefit,
+  .offer-note,
+  .offer-toast {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+  .offer-hero-img,
+  .offer-pick,
+  .offer-pick > .coin {
+    transition: none;
+  }
+}

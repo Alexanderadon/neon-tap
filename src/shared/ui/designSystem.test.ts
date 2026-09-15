@@ -211,6 +211,14 @@ describe('ListRow / StatePanel / Avatar / Trio', () => {
     expect(html(createElement(Avatar, { name: 'Zed', size: 96, tone: 'other' }))).toContain('class="ava ava-96 ava-other"');
   });
 
+  it('Avatar frames a chosen picture instead of the letter, whatever the tone, and rings the chosen cell', () => {
+    const art = createElement('img', { src: '/avatars/fox.webp', alt: '' });
+    const framed = html(createElement(Avatar, { name: 'neo', art }));
+    expect(framed).toBe('<span class="ava ava-art" aria-hidden="true"><img src="/avatars/fox.webp" alt=""/></span>');
+    expect(html(createElement(Avatar, { name: '', size: 48, tone: 'other', art }))).toContain('class="ava ava-48 ava-art"');
+    expect(html(createElement(Avatar, { name: 'neo', size: 56, art, selected: true }))).toContain('class="ava ava-56 ava-art ava-selected"');
+  });
+
   it('Trio is the row of three, or one full-width cell', () => {
     expect(html(createElement(Trio, { children: 'x' }))).toBe('<div class="trio">x</div>');
     expect(html(createElement(Trio, { one: true, children: 'x' }))).toBe('<div class="trio trio-one">x</div>');

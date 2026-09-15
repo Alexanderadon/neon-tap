@@ -3,6 +3,7 @@ import { dict } from '@/shared/i18n';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
 import { Avatar, Icon, Line, ObjButton, Panel, SliderRow, Tag, TextField, Toggle, Trio, type IconName } from '@/shared/ui';
 import { FX_MODES, NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type FxMode, type VoiceSetting } from '@/entities/settings';
+import { avatarArtOf } from '@/entities/avatar';
 import { voice } from '@/features/voice-feedback';
 import './settings.css';
 
@@ -113,9 +114,10 @@ export function SettingsPanel() {
   );
 }
 
-/** Nickname for the online table: avatar letter + field; edited as a draft, sanitised and stored on blur / Enter. */
+/** Nickname for the online table: the avatar (chosen picture or the letter) + field; edited as a draft, sanitised and stored on blur / Enter. */
 function NicknameRow({ value }: { value: string }) {
   const [draft, setDraft] = useState(value);
+  const avatar = useSettings((s) => s.avatar);
   const commit = () => {
     const clean = sanitizeNickname(draft);
     setDraft(clean);
@@ -123,7 +125,7 @@ function NicknameRow({ value }: { value: string }) {
   };
   return (
     <div className="settings-who">
-      <Avatar name={draft} />
+      <Avatar name={draft} art={avatarArtOf(avatar)} />
       <TextField
         value={draft}
         maxLength={NICKNAME_MAX}

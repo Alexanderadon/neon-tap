@@ -1,18 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate, useRouteParams } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
+import { store } from '@/shared/lib/iap';
 import { Avatar, Chip, FrameBody, Icon, ObjButton, Panel, Screen, Stars, SubHeader, Tag, useSwipeBack } from '@/shared/ui';
 import { CATALOG, CoverScene } from '@/entities/track';
 import { GOALS, rankIndex, starsForTrack } from '@/entities/progress';
 import { useSettings } from '@/entities/settings';
+import { avatarArtOf } from '@/entities/avatar';
 import { myDuels } from '@/entities/duel';
-import { TopBar } from '@/widgets/top-bar';
+import type { OfferKind } from '@/entities/offers';
+import { TopBar, type CounterTick } from '@/widgets/top-bar';
+import { OfferPopups, type OfferWalletTick } from '@/widgets/offer-popups';
 import { CHAPTER, TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, usePlayTrack } from '@/widgets/track-list';
 import { GoalsPanel, goalsGotLine } from '@/widgets/goals-panel';
 import { DuelList, useMyDuels } from '@/widgets/duel-list';
 import { HistoryPanel } from '@/widgets/history-panel';
 import { NicknameDialog } from '@/features/submit-score';
+import { AvatarPicker } from '@/features/choose-avatar';
 import { MenuDock, type Door } from './MenuDock';
 import './menu.css';
 
@@ -22,14 +27,18 @@ type View = 'deck' | 'profile' | 'records' | 'goals' | 'duels';
 const storage = (): Storage | null => (typeof localStorage === 'undefined' ? null : localStorage);
 
 const VIEWS: readonly View[] = ['deck', 'profile', 'records', 'goals', 'duels'];
+/** How long a wallet tick stays on the top bar before it reads the live wallet again (flight + tick + bump). */
+const TICK_HOLD_MS = 1400;
 const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS as readonly string[]).includes(v);
 
 /**
  * The main screen: top bar · chapter row · the deck · three doors (shop, records, profile) · «ИГРАТЬ».
  * Profile, records, achievements and duels are the same screen with the middle swapped: the
  * focused track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
- * nickname question is the one overlay (a dialog over the dimmed screen). Other screens open a
+ * nickname question and the avatar picker are the overlays (a dialog over the dimmed screen). Other screens open a
  * view or focus a track through the route params (`navigate('menu', { view: 'records', track })`).
+ * The offer popups (GDD «Донат») rise here by schedule — the 48-hour deal, the music pack — and
+ * the crystal packs open from the wallet's «+».
  */
 export function MenuPage() {
   const state = useCatalogState();
@@ -40,9 +49,26 @@ export function MenuPage() {
   });
   const [view, setView] = useState<View>(() => (isView(params.view) ? params.view : 'deck'));
   const [askName, setAskName] = useState(false);
+  const [askAvatar, setAskAvatar] = useState(false);
   const { busy, play } = usePlayTrack();
   const { track, lock } = focusedTrack(state, index);
   const badge = affordableCount(state);
+
+  // Offers: an explicit ask from the wallet's «+», and the wallet tick after a purchase (the crystals fly into the chip).
+  const [offer, setOffer] = useState<OfferKind | null>(null);
+  const [tick, setTick] = useState<CounterTick | null>(null);
+  const crystalsRef = useRef<HTMLElement>(null);
+  const offerHandled = useCallback(() => setOffer(null), []);
+  const onWalletTick = useCallback((t: OfferWalletTick) => setTick(t), []);
+  const topUp = useCallback(() => {
+    sfxUi();
+    setOffer('crystals');
+  }, []);
+  useEffect(() => {
+    if (!tick) return;
+    const id = window.setTimeout(() => setTick(null), (tick.delay ?? 0) * 1000 + TICK_HOLD_MS);
+    return () => window.clearTimeout(id);
+  }, [tick]);
 
   const goTo = useCallback((v: View) => {
     sfxUi();
@@ -89,7 +115,7 @@ export function MenuPage() {
   return (
     <Screen frame className="menu">
       <CoverScene id={track.id} genre={track.genre} />
-      <TopBar onCrystalsTap={() => open('shop')} />
+      <TopBar onCrystalsTap={() => open('shop')} onTopUp={store.available() ? topUp : undefined} crystalsRef={crystalsRef} crystals={tick ?? undefined} />
 
       {view === 'deck' && <TrackDeck index={index} onIndexChange={setIndex} onPlay={() => onPlay()} />}
 
@@ -97,7 +123,13 @@ export function MenuPage() {
         <>
           <SubHeader tag={<Tag>{dict.profile}</Tag>} text={chapterLine} />
           <FrameBody scroll>
-            <ProfileView onNickname={() => setAskName(true)} onGoals={() => goTo('goals')} onDuels={() => goTo('duels')} onOpen={open} />
+            <ProfileView
+              onNickname={() => setAskName(true)}
+              onAvatar={() => setAskAvatar(true)}
+              onGoals={() => goTo('goals')}
+              onDuels={() => goTo('duels')}
+              onOpen={open}
+            />
           </FrameBody>
         </>
       )}
@@ -129,21 +161,26 @@ export function MenuPage() {
       <MenuDock doors={doors[view]} track={track} lock={lock} stars={state.stars} busy={busy !== null} onPlay={() => onPlay()} />
 
       <NicknameDialog open={askName} onSkip={() => setAskName(false)} />
+      <AvatarPicker open={askAvatar} onClose={() => setAskAvatar(false)} />
+      <OfferPopups auto request={offer} onRequestHandled={offerHandled} crystalsRef={crystalsRef} onWalletTick={onWalletTick} />
     </Screen>
   );
 }
 
 interface ProfileProps {
   onNickname: () => void;
+  onAvatar: () => void;
   onGoals: () => void;
   onDuels: () => void;
   onOpen: (screen: 'settings' | 'tutorial' | 'custom') => void;
 }
 
-/** Profile: the player card (tap → nickname), five wide doors, the licenses line. */
-function ProfileView({ onNickname, onGoals, onDuels, onOpen }: ProfileProps) {
+/** Profile: the player card (tap → nickname), the avatar row (tap → the picker), five wide doors, the licenses line. */
+function ProfileView({ onNickname, onAvatar, onGoals, onDuels, onOpen }: ProfileProps) {
   const state = useCatalogState();
   const nickname = useSettings((s) => s.nickname);
+  const avatar = useSettings((s) => s.avatar);
+  const art = avatarArtOf(avatar);
   const tutorialDone = useSettings((s) => s.tutorialDone);
   const bests = Object.values(state.save.tracks);
   const passed = bests.filter((b) => starsForTrack(b) > 0).length;
@@ -155,7 +192,7 @@ function ProfileView({ onNickname, onGoals, onDuels, onOpen }: ProfileProps) {
     <div className="profile">
       <Panel className="profile-card" onPress={onNickname} aria-label={dict.profileCardAria}>
         <span className="profile-who">
-          <Avatar name={nickname} size={48} />
+          <Avatar name={nickname} size={48} art={art} />
           <span className="profile-two">
             <b className="profile-name">{nickname || dict.you}</b>
             <small className="profile-hint">{dict.nicknameFor}</small>
@@ -178,6 +215,19 @@ function ProfileView({ onNickname, onGoals, onDuels, onOpen }: ProfileProps) {
         </span>
       </Panel>
       <div className="profile-doors">
+        <ObjButton
+          wide
+          icon={<Icon name="user" />}
+          label={dict.avatarRow}
+          onClick={onAvatar}
+          aria-label={dict.avatarPickAria}
+          end={
+            <span className="profile-ava-end">
+              <Avatar name={nickname} art={art} />
+              <Icon name="chevron" />
+            </span>
+          }
+        />
         <ObjButton
           wide
           icon={<Icon name="trophy" />}

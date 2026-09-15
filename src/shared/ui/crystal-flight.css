@@ -1,0 +1,47 @@
+/* CrystalFlight (CrystalFlight.tsx): three crystals from a button into the wallet chip, transform only, on top of everything. */
+.crystal-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+.crystal-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  color: var(--cyan);
+  opacity: 0;
+  animation: crystal-fly 0.7s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.crystal-fly > svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+@keyframes crystal-fly {
+  0% {
+    opacity: 0;
+    transform: translate(var(--x0), var(--y0));
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+    transform: translate(var(--xm), var(--ym)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x1), var(--y1)) scale(0.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crystal-fly {
+    animation: none;
+    display: none;
+  }
+}

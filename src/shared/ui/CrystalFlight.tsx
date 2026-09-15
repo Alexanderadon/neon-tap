@@ -1,5 +1,6 @@
 import { useEffect, type CSSProperties } from 'react';
-import { CrystalIcon } from '@/shared/ui';
+import { CrystalIcon } from './CrystalIcon';
+import './crystal-flight.css';
 
 export interface FlightPath {
   /** Viewport coordinates of the start and the end (centres). */
@@ -21,7 +22,7 @@ interface Props {
 /**
  * Three crystals flying along an arc into the wallet chip — the topmost layer, transform only
  * (spec §3: like the loot on the result screen). Rendered from the viewport, so it lands on the
- * chip whatever scrolls underneath.
+ * chip whatever scrolls underneath. The shop and the offer popups launch it.
  */
 export function CrystalFlight({ path, onDone }: Props) {
   useEffect(() => {
@@ -30,11 +31,11 @@ export function CrystalFlight({ path, onDone }: Props) {
   }, [onDone]);
   const mid = { x: (path.from.x + path.to.x) / 2, y: (path.from.y + path.to.y) / 2 - 24 };
   return (
-    <div className="shop-flight" aria-hidden="true">
+    <div className="crystal-flight" aria-hidden="true">
       {Array.from({ length: COUNT }, (_, i) => (
         <span
           key={i}
-          className="shop-fly"
+          className="crystal-fly"
           style={
             {
               '--x0': `${path.from.x}px`,

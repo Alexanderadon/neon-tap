@@ -1,7 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { dict } from '@/shared/i18n';
 import { Avatar, Disc, Icon, Line, PrimaryAction, TextField } from '@/shared/ui';
-import { NICKNAME_MAX, isValidNickname, sanitizeNickname, updateSettings } from '@/entities/settings';
+import { NICKNAME_MAX, isValidNickname, sanitizeNickname, updateSettings, useSettings } from '@/entities/settings';
+import { avatarArtOf } from '@/entities/avatar';
 import './nickname.css';
 
 interface Props {
@@ -13,7 +14,7 @@ interface Props {
   autoFocus?: boolean;
   /** The grey line under the field. */
   hint?: string;
-  /** The 48 px avatar above the field: the first letter typed, «?» while empty. */
+  /** The 48 px avatar above the field: the chosen picture, or the first letter typed («?» while empty). */
   avatar?: boolean;
   /** Heading between the avatar and the field («Как тебя записать?»). */
   title?: ReactNode;
@@ -26,8 +27,9 @@ interface Props {
  * text field in the dark object material (cyan rim when focused), the hint, the 64 px primary
  * «СОХРАНИТЬ» (dark and still while the field is empty, cyan and breathing once a name is in).
  */
-export function NicknameForm({ onSaved, secondary, autoFocus = true, hint = dict.nicknameHint, avatar = false, title, titleId }: Props) {
+export function NicknameForm({ onSaved, secondary, autoFocus = true, hint = dict.nicknameHint, avatar: showAvatar = false, title, titleId }: Props) {
   const [value, setValue] = useState('');
+  const avatar = useSettings((s) => s.avatar);
   const clean = sanitizeNickname(value);
   const valid = isValidNickname(clean);
 
@@ -40,7 +42,7 @@ export function NicknameForm({ onSaved, secondary, autoFocus = true, hint = dict
 
   return (
     <form className="nickname" onSubmit={submit}>
-      {avatar && <Avatar name={clean} size={48} />}
+      {showAvatar && <Avatar name={clean} size={48} art={avatarArtOf(avatar)} />}
       {title !== undefined && (
         <h2 className="nick-title" id={titleId}>
           {title}

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { leaderboard, type LeaderboardEntry } from '@/shared/api/leaderboard';
-import { Icon, ListRow, Panel, PlaceChip, SegmentsPulse, StatePanel, Tag } from '@/shared/ui';
+import { Avatar, Icon, ListRow, Panel, PlaceChip, SegmentsPulse, StatePanel, Tag } from '@/shared/ui';
 import { useSettings } from '@/entities/settings';
+import { avatarArtOf } from '@/entities/avatar';
 import { bestOf, playsOf, useHistory } from '@/entities/history';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
 import './history.css';
@@ -21,6 +22,7 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
   const best = useHistory((h) => bestOf(h, trackId));
   const plays = useHistory((h) => playsOf(h, trackId));
   const nickname = useSettings((s) => s.nickname);
+  const avatar = useSettings((s) => s.avatar);
   const [online, setOnline] = useState<Online>({ status: 'loading' });
 
   useEffect(() => {
@@ -55,6 +57,14 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
   const me = nickname.toLocaleLowerCase();
   const rows = online.status === 'ready' ? online.top.slice(0, SHOW) : [];
   const meInTop = rows.some((e) => e.name.toLocaleLowerCase() === me);
+  const isMe = (name: string) => !!me && name.toLocaleLowerCase() === me;
+  /** My row leads with the place and my avatar (the chosen picture or the letter); others with the place only. */
+  const lead = (place: number, mine: boolean) => (
+    <>
+      <PlaceChip place={place} />
+      {mine && <Avatar name={nickname} art={avatarArtOf(avatar)} />}
+    </>
+  );
 
   return (
     <div className="history">
@@ -106,16 +116,10 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
       {online.status === 'ready' && rows.length > 0 && (
         <ol className="history-list">
           {rows.map((e, i) => (
-            <ListRow
-              key={`${e.name}-${i}`}
-              lead={<PlaceChip place={i + 1} />}
-              name={e.name}
-              score={formatScore(e.score)}
-              me={!!me && e.name.toLocaleLowerCase() === me}
-            />
+            <ListRow key={`${e.name}-${i}`} lead={lead(i + 1, isMe(e.name))} name={e.name} score={formatScore(e.score)} me={isMe(e.name)} />
           ))}
           {!meInTop && best && online.position !== null && (
-            <ListRow lead={<PlaceChip place={online.position} />} name={nickname || dict.you} score={formatScore(best.score)} me />
+            <ListRow lead={lead(online.position, true)} name={nickname || dict.you} score={formatScore(best.score)} me />
           )}
         </ol>
       )}

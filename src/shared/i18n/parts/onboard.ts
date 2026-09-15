@@ -10,6 +10,8 @@ export const onboard = {
   welcomeHintShort: '1–16 символов · потом можно поменять',
   /** Second line of «ДАЛЬШЕ» on the welcome screen: what comes next. */
   welcomeNext: 'калибровка',
+  /** Caption under the 96 px avatar on the welcome screen — a tap opens the picker. */
+  welcomeAvatarHint: 'выбери аватар',
   // --- calibration ---
   calibLine1: 'Звук в наушниках запаздывает',
   calibLine2: 'Тапни {n} раз под метроном',

@@ -2,6 +2,8 @@ import type { Rank } from '@/shared/types/result';
 
 export interface DuelRun {
   name: string;
+  /** The runner's chosen avatar id (see `shared/config/avatars`), when they have one; unknown ids show the letter. */
+  avatar?: string;
   score: number;
   accuracy: number;
   rank: Rank;
@@ -17,6 +19,7 @@ export interface Duel {
 
 export interface DuelRunInput {
   name: string;
+  avatar?: string;
   score: number;
   accuracy: number;
   rank: Rank;
@@ -32,6 +35,12 @@ export interface DuelsClient {
 }
 
 const RANKS: readonly string[] = ['SS', 'S', 'A', 'B', 'C', 'D'];
+/** The shape of an avatar id on the wire (the catalogue itself decides whether it is known). */
+const AVATAR_SLUG = /^[a-z]{1,16}$/;
+
+function isAvatarSlug(x: unknown): x is string {
+  return typeof x === 'string' && AVATAR_SLUG.test(x);
+}
 
 function toRun(x: unknown): DuelRun | null {
   if (!x || typeof x !== 'object') return null;
@@ -39,6 +48,7 @@ function toRun(x: unknown): DuelRun | null {
   if (typeof r.name !== 'string' || typeof r.score !== 'number') return null;
   return {
     name: r.name,
+    ...(isAvatarSlug(r.avatar) ? { avatar: r.avatar } : {}),
     score: r.score,
     accuracy: typeof r.accuracy === 'number' ? r.accuracy : 0,
     rank: typeof r.rank === 'string' && RANKS.includes(r.rank) ? (r.rank as Rank) : 'D',
