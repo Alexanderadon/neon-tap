@@ -2,16 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { dict } from '@/shared/i18n';
 import { audioEngine, preloadSfx, sfxUi, unlockAudio, useAudioUnlocked } from '@/shared/lib/audio';
 import { isIos } from '@/shared/lib/pwa';
+import { BigDisc, Headline, Icon, Line, Tag } from '@/shared/ui';
 import { getSettings } from '@/entities/settings';
+import { CoverScene, TRACK_IDS, findTrack } from '@/entities/track';
+import { dailyTrackId, localDateString } from '@/entities/progress';
 import { voice } from '@/features/voice-feedback';
 import './audio-gate.css';
 
 /**
- * Full-screen "tap to enable sound" gate. Mobile browsers only start audio from a user gesture,
- * so the very first tap goes here: it unlocks the AudioContext, applies volumes and pre-decodes
- * SFX + voice. Reappears automatically if the context gets suspended (phone call, tab in
- * background on iOS) so sound never silently stays off. One button, two words; a single line
- * of help appears only after a failed attempt (and names the iPhone mute switch on iOS).
+ * Full-screen "tap to enable sound" gate (screens-onboard C1). Mobile browsers only start audio
+ * from a user gesture, so the very first tap goes here: it unlocks the AudioContext, applies
+ * volumes and pre-decodes SFX + voice. Reappears automatically if the context gets suspended
+ * (phone call, tab in background on iOS) so sound never silently stays off. The whole screen is
+ * the button: a breathing 96 px disc, two words, and — only after a failed attempt — a short
+ * dark tag naming the volume (or the iPhone mute switch).
  */
 export function AudioGate() {
   const unlocked = useAudioUnlocked();
@@ -46,24 +50,25 @@ export function AudioGate() {
 
   if (unlocked) return null;
   const ios = typeof navigator !== 'undefined' && isIos(navigator.userAgent, typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  const daily = dailyTrackId(localDateString(), TRACK_IDS) ?? undefined;
   return (
-    <div className="audio-gate" role="dialog" aria-modal="true" aria-label={dict.audioGateTitle} onClick={() => void unlock()}>
-      <button type="button" className={`audio-gate-btn${busy ? ' is-busy' : ''}`} aria-label={dict.audioGateTitle}>
-        <span className="audio-gate-ring" aria-hidden="true" />
-        <SpeakerIcon />
-      </button>
-      <div className="audio-gate-title">{dict.audioGateTitle}</div>
-      {failed && <div className="audio-gate-help">{ios ? dict.audioGateMuteSwitch : dict.audioGateVolume}</div>}
+    <div className="gate" role="dialog" aria-modal="true" aria-label={dict.audioGateTitle} onClick={() => void unlock()}>
+      <CoverScene id={daily} genre={daily ? findTrack(daily)?.genre : undefined} />
+      <header className="gate-top">{dict.appTitle}</header>
+      <div className="gate-body">
+        <BigDisc className={busy ? 'gate-disc is-busy' : 'gate-disc'} beat={!busy} onClick={() => void unlock()} aria-label={dict.audioGateTitle}>
+          <Icon name="sound" />
+        </BigDisc>
+        <Headline className="gate-head">{dict.audioGateTitle}</Headline>
+        <Line className="gate-line">{failed ? dict.tapAgain : dict.tapAnywhere}</Line>
+        {failed && (
+          <div className="gate-tag">
+            <Tag variant="dark" className="gate-tag-white">
+              {ios ? dict.audioGateMuteShort : dict.audioGateVolumeShort}
+            </Tag>
+          </div>
+        )}
+      </div>
     </div>
-  );
-}
-
-function SpeakerIcon() {
-  return (
-    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" />
-      <path d="M15.5 9a4 4 0 0 1 0 6" />
-      <path d="M18 6.5a7.5 7.5 0 0 1 0 11" />
-    </svg>
   );
 }

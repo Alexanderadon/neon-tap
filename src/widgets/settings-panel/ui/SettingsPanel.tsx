@@ -1,21 +1,31 @@
 import { useState } from 'react';
 import { dict } from '@/shared/i18n';
-import { navigate } from '@/shared/lib/router';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
-import { Button, Slider } from '@/shared/ui';
-import { FX_MODES, NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type VoiceSetting } from '@/entities/settings';
-import { resetProgress } from '@/entities/progress';
+import { Avatar, Icon, Line, ObjButton, Panel, SliderRow, Tag, TextField, Toggle, Trio, type IconName } from '@/shared/ui';
+import { FX_MODES, NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type FxMode, type VoiceSetting } from '@/entities/settings';
 import { voice } from '@/features/voice-feedback';
 import './settings.css';
 
 const VOICE_OPTIONS: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
+const VOICE_ICON: Record<VoiceSetting, IconName> = { dmitry: 'bubble', svetlana: 'bubble', off: 'sound-off' };
+const FX_ICON: Record<FxMode, IconName> = { auto: 'gauge', on: 'battery', off: 'bolt' };
 
+/**
+ * The scrolling column of settings panels (screens-onboard C6), gap 8: volumes (three SliderRows —
+ * releasing «Эффекты» plays the preview), the narrator voice and the economy mode as rows of three
+ * object buttons, the nickname with its avatar letter, the tutorial state, the FPS toggle.
+ * Every change applies at once through `updateSettings`; the store keys are untouched.
+ */
 export function SettingsPanel() {
   const s = useSettings((x) => x);
 
   const setVolume = (key: 'musicVolume' | 'sfxVolume' | 'voiceVolume', v: number) => {
     updateSettings({ [key]: v });
-    audioEngine.setVolumes({ music: key === 'musicVolume' ? v : s.musicVolume, sfx: key === 'sfxVolume' ? v : s.sfxVolume, voice: key === 'voiceVolume' ? v : s.voiceVolume });
+    audioEngine.setVolumes({
+      music: key === 'musicVolume' ? v : s.musicVolume,
+      sfx: key === 'sfxVolume' ? v : s.sfxVolume,
+      voice: key === 'voiceVolume' ? v : s.voiceVolume,
+    });
   };
 
   const chooseVoice = async (id: VoiceSetting) => {
@@ -39,87 +49,72 @@ export function SettingsPanel() {
 
   return (
     <div className="settings">
-      <Slider label={dict.settingsVolumeMusic} value={s.musicVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('musicVolume', v)} />
-      <div className="settings-row">
-        <Slider label={dict.settingsVolumeSfx} value={s.sfxVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('sfxVolume', v)} />
-        <Button variant="ghost" onClick={previewSfx}>
-          {dict.settingsPreview}
-        </Button>
-      </div>
-      <Slider label={dict.settingsVolumeVoice} value={s.voiceVolume} min={0} max={1} step={0.05} format={pct} onChange={(v) => setVolume('voiceVolume', v)} />
+      <Panel aria-label={dict.settingsVolumeMusic}>
+        <SliderRow label={dict.settingsVolumeMusic} value={s.musicVolume} onChange={(v) => setVolume('musicVolume', v)} />
+        <SliderRow label={dict.settingsVolumeSfx} value={s.sfxVolume} onChange={(v) => setVolume('sfxVolume', v)} onRelease={() => void previewSfx()} />
+        <SliderRow label={dict.settingsVolumeVoice} value={s.voiceVolume} onChange={(v) => setVolume('voiceVolume', v)} />
+      </Panel>
 
-      <div className="settings-group">
-        <div className="settings-group-label">{dict.settingsVoice}</div>
-        <div className="settings-segmented" role="radiogroup">
+      <Panel label={dict.settingsVoice}>
+        <Trio role="radiogroup" aria-label={dict.settingsVoice}>
           {VOICE_OPTIONS.map((id) => (
-            <button key={id} role="radio" aria-checked={s.voice === id} className={`seg ${s.voice === id ? 'seg-on' : ''}`} onClick={() => chooseVoice(id)}>
-              {dict.voices[id]}
-            </button>
+            <ObjButton
+              key={id}
+              role="radio"
+              aria-checked={s.voice === id}
+              active={s.voice === id}
+              icon={<Icon name={VOICE_ICON[id]} />}
+              label={dict.voices[id]}
+              onClick={() => void chooseVoice(id)}
+            />
           ))}
-        </div>
-        <div className="settings-hint">{dict.settingsVoiceHint}</div>
-      </div>
+        </Trio>
+        <Line>{dict.settingsVoiceHint}</Line>
+      </Panel>
 
-      <div className="settings-group">
-        <div className="settings-group-label">{dict.settingsFxMode}</div>
-        <div className="settings-segmented" role="radiogroup">
+      <Panel label={dict.settingsFxMode}>
+        <Trio role="radiogroup" aria-label={dict.settingsFxMode}>
           {FX_MODES.map((id) => (
-            <button key={id} role="radio" aria-checked={s.fxMode === id} className={`seg ${s.fxMode === id ? 'seg-on' : ''}`} onClick={() => updateSettings({ fxMode: id })}>
-              {dict.fxModes[id]}
-            </button>
+            <ObjButton
+              key={id}
+              role="radio"
+              aria-checked={s.fxMode === id}
+              active={s.fxMode === id}
+              icon={<Icon name={FX_ICON[id]} />}
+              label={dict.fxModes[id]}
+              onClick={() => updateSettings({ fxMode: id })}
+            />
           ))}
+        </Trio>
+        <Line>{dict.fxModeHintShort}</Line>
+      </Panel>
+
+      <Panel label={dict.settingsNickname}>
+        <NicknameRow value={s.nickname} />
+      </Panel>
+
+      <Panel>
+        <div className="settings-rowl">
+          <span className="settings-rowl-title">{dict.tutorial}</span>
+          {s.tutorialDone ? <Tag>{dict.passed}</Tag> : <Tag variant="dark">{dict.notPassed}</Tag>}
         </div>
-        <div className="settings-hint">{dict.settingsFxModeHint}</div>
-      </div>
+      </Panel>
 
-      <label className="settings-check">
-        <input type="checkbox" checked={s.debugOverlay} onChange={(e) => updateSettings({ debugOverlay: e.target.checked })} />
-        <span>{dict.fps} / debug overlay</span>
-      </label>
-
-      <NicknameField value={s.nickname} />
-
-      <TutorialRow done={s.tutorialDone} />
-
-      <div className="settings-actions">
-        <Button variant="ghost" onClick={() => navigate('calibration')}>
-          {dict.settingsRecalibrate}
-        </Button>
-        <Button
-          variant="danger"
-          onClick={() => {
-            if (confirm(dict.settingsResetConfirm)) resetProgress();
-          }}
-        >
-          {dict.settingsReset}
-        </Button>
-      </div>
+      <Panel>
+        <div className="settings-rowl">
+          <span className="settings-rowl-text">
+            <span className="settings-rowl-title">{dict.showFps}</span>
+            <Line className="settings-line-left">{dict.forDev}</Line>
+          </span>
+          <Toggle checked={s.debugOverlay} onChange={(on) => updateSettings({ debugOverlay: on })} aria-label={dict.showFps} />
+        </div>
+      </Panel>
     </div>
   );
 }
 
-/** Tutorial state ("passed" badge with a check mark, or "not yet") and a button to replay it. */
-function TutorialRow({ done }: { done: boolean }) {
-  return (
-    <div className="settings-group">
-      <span className="settings-group-label">{dict.tutorial}</span>
-      <div className="settings-row settings-tutorial">
-        <span className={`settings-badge ${done ? 'settings-badge-on' : ''}`}>
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" className="settings-badge-icon">
-            {done ? <path d="M3 8.5 L6.5 12 L13 4.5" /> : <circle cx="8" cy="8" r="5" />}
-          </svg>
-          {done ? dict.tutorialPassed : dict.tutorialNotPassed}
-        </span>
-        <Button variant="ghost" onClick={() => navigate('tutorial')}>
-          {dict.tutorialReplay}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/** Nickname for the online table: edited as a draft, sanitised and stored on blur / Enter. */
-function NicknameField({ value }: { value: string }) {
+/** Nickname for the online table: avatar letter + field; edited as a draft, sanitised and stored on blur / Enter. */
+function NicknameRow({ value }: { value: string }) {
   const [draft, setDraft] = useState(value);
   const commit = () => {
     const clean = sanitizeNickname(draft);
@@ -127,25 +122,23 @@ function NicknameField({ value }: { value: string }) {
     if (clean !== value) updateSettings({ nickname: clean });
   };
   return (
-    <label className="settings-group">
-      <span className="settings-group-label">{dict.settingsNickname}</span>
-      <input
-        className="text-input"
-        type="text"
+    <div className="settings-who">
+      <Avatar name={draft} />
+      <TextField
         value={draft}
         maxLength={NICKNAME_MAX}
         placeholder={dict.nicknamePlaceholder}
         autoComplete="nickname"
         autoCapitalize="off"
         spellCheck={false}
+        enterKeyHint="done"
+        aria-label={dict.settingsNickname}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
         }}
       />
-    </label>
+    </div>
   );
 }
-
-const pct = (v: number) => `${Math.round(v * 100)}%`;

@@ -1,30 +1,104 @@
-import { dict } from '@/shared/i18n';
+import { useState, type FormEvent } from 'react';
+import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { Button, Screen } from '@/shared/ui';
-import { markWelcomeSkipped } from '@/entities/settings';
-import { NicknameForm } from '@/features/submit-score';
-import '../../page.css';
+import { sfxUi } from '@/shared/lib/audio';
+import {
+  ActionZone,
+  Avatar,
+  Disc,
+  Frame,
+  FrameBody,
+  Headline,
+  Icon,
+  Line,
+  ObjButton,
+  PrimaryAction,
+  Segments,
+  SubHeader,
+  Tag,
+  TextField,
+  Trio,
+  segmentStates,
+} from '@/shared/ui';
+import { NICKNAME_MAX, isValidNickname, markWelcomeSkipped, sanitizeNickname, updateSettings } from '@/entities/settings';
+import { CoverScene, TRACK_IDS, findTrack } from '@/entities/track';
+import { dailyTrackId, localDateString } from '@/entities/progress';
+import { TopBar } from '@/widgets/top-bar';
+import './welcome.css';
 
-/** First launch: the player's name, before calibration. The menu re-checks and routes onward. */
+/** First-launch steps: name · calibration · tutorial. */
+const STEP = 1;
+const STEPS = 3;
+
+/**
+ * First launch, step 1 of 3 (screens-onboard C2): «NEON TAP» in the top row, the step tag with three
+ * segments, a 96 px avatar showing the first letter as it is typed, «КАК ТЕБЯ ЗОВУТ?», one field
+ * above the middle of the screen (the keyboard covers only the action zone), «Не сейчас» and
+ * «ДАЛЬШЕ / калибровка» — locked until there is a name. Enter / «Готово» on the keyboard saves.
+ */
 export function WelcomePage() {
+  const [value, setValue] = useState('');
+  const clean = sanitizeNickname(value);
+  const valid = isValidNickname(clean);
+  const daily = dailyTrackId(localDateString(), TRACK_IDS) ?? undefined;
+
   const next = () => navigate('menu');
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!valid) return;
+    sfxUi();
+    updateSettings({ nickname: clean });
+    next();
+  };
   const skip = () => {
+    sfxUi();
     markWelcomeSkipped();
     next();
   };
+
   return (
-    <Screen center>
-      <h1 className="page-title">{dict.welcomeTitle}</h1>
-      <p className="page-lead">{dict.welcomeLead}</p>
-      <NicknameForm
-        onSaved={next}
-        hint={dict.welcomeHint}
-        secondary={
-          <Button type="button" variant="ghost" onClick={skip}>
-            {dict.nicknameSkip}
-          </Button>
-        }
-      />
-    </Screen>
+    <Frame as="form" className="welcome" onSubmit={submit}>
+      <CoverScene id={daily} genre={daily ? findTrack(daily)?.genre : undefined} />
+      <TopBar variant="title" />
+      <SubHeader tag={<Tag>{fmt(dict.stepOf, { n: STEP, m: STEPS })}</Tag>}>
+        <Segments states={segmentStates(STEPS, STEP - 1)} />
+      </SubHeader>
+      <FrameBody>
+        <Avatar name={clean} size={96} />
+        <Headline className="welcome-head">{dict.welcomeTitle}</Headline>
+        <TextField
+          className="welcome-field"
+          value={value}
+          maxLength={NICKNAME_MAX}
+          placeholder={dict.nicknamePlaceholder}
+          autoComplete="nickname"
+          autoCapitalize="off"
+          spellCheck={false}
+          autoFocus
+          enterKeyHint="done"
+          aria-label={dict.welcomeTitle}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <Line className="welcome-hint">{dict.welcomeHintShort}</Line>
+      </FrameBody>
+      <ActionZone className="welcome-actions">
+        <Trio one>
+          <ObjButton type="button" icon={<Icon name="skip" />} label={dict.nicknameSkip} onClick={skip} />
+        </Trio>
+        <PrimaryAction
+          type="submit"
+          tone={valid ? 'cyan' : 'locked'}
+          beat={valid}
+          disabled={!valid}
+          lead={
+            <Disc>
+              <Icon name="arrow" />
+            </Disc>
+          }
+          label={dict.next}
+          sub={dict.welcomeNext}
+        />
+      </ActionZone>
+    </Frame>
   );
 }

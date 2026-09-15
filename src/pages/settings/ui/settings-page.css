@@ -1,0 +1,53 @@
+/* SettingsPage (SettingsPage.tsx): the scrolling column between the sub-header and the action zone, fades 32 px. */
+.settings-page {
+  overflow-y: hidden;
+}
+.settings-scroll {
+  position: relative;
+  width: var(--col);
+  flex: 1 1 0;
+  min-height: 0;
+  margin-top: 16px;
+}
+.settings-scroll-in {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0 8px;
+  /* The fades say "more below"; a scrollbar next to the 3D panels would be a second, foreign signal. */
+  scrollbar-width: none;
+}
+.settings-scroll-in::-webkit-scrollbar {
+  display: none;
+}
+/* The fades appear only where there is more to scroll (mockup: bottom fade at the top, top fade at the end). */
+.settings-scroll::before,
+.settings-scroll::after {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--gutter));
+  right: calc(-1 * var(--gutter));
+  height: 32px;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.settings-scroll::before {
+  top: 0;
+  background: linear-gradient(0deg, rgba(5, 6, 10, 0), rgba(5, 6, 10, 0.92));
+}
+.settings-scroll::after {
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(5, 6, 10, 0), rgba(5, 6, 10, 0.92));
+}
+.settings-scroll.is-more-up::before,
+.settings-scroll.is-more-down::after {
+  opacity: 1;
+}
+.settings-actions {
+  padding-top: 24px;
+}
