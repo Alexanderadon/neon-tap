@@ -1,0 +1,64 @@
+/* ResetDialog (ResetDialog.tsx): veil .8 (no backdrop-filter) + Dialog 335, padding 24 16 16, rising in. */
+.rdlg-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 8px) var(--gutter) calc(var(--safe-bottom) + 24px);
+  background: rgba(5, 6, 10, 0.8);
+}
+.rdlg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--col);
+  padding: 24px 16px 16px;
+  border-radius: var(--r-24);
+  background: var(--panel);
+  box-shadow: var(--sh-panel);
+  color: #fff;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  animation: rdlg-rise 0.4s ease-out both;
+}
+@keyframes rdlg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rdlg-title {
+  margin: 0;
+  height: 24px;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  text-align: center;
+}
+.rdlg-line {
+  margin-top: 8px;
+}
+.rdlg-loot {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+}
+.rdlg-primary {
+  margin-top: 24px;
+}
+.rdlg-cancel {
+  margin-top: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rdlg {
+    animation: none;
+  }
+}

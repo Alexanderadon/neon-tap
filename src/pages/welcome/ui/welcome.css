@@ -1,0 +1,13 @@
+/* WelcomePage (WelcomePage.tsx): the shared frame; only the spacing of the hero column lives here. */
+.welcome-head {
+  margin-top: 24px;
+}
+.welcome-field {
+  margin-top: 24px;
+}
+.welcome-hint {
+  margin-top: 8px;
+}
+.welcome-actions {
+  padding-top: 24px;
+}

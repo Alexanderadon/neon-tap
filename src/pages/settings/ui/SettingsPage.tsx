@@ -1,21 +1,83 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { dict } from '@/shared/i18n';
-import { navigate } from '@/shared/lib/router';
-import { Button, Screen, useSwipeBack } from '@/shared/ui';
-import { SettingsPanel } from '@/widgets/settings-panel';
-import '../../page.css';
+import { navigate, type Screen } from '@/shared/lib/router';
+import { sfxUi } from '@/shared/lib/audio';
+import { ActionZone, Disc, Frame, Icon, Line, ObjButton, PrimaryAction, SubHeader, Tag, Trio, useSwipeBack } from '@/shared/ui';
+import { CoverScene, TRACK_IDS, findTrack } from '@/entities/track';
+import { dailyTrackId, localDateString } from '@/entities/progress';
+import { TopBar } from '@/widgets/top-bar';
+import { ResetDialog, SettingsPanel } from '@/widgets/settings-panel';
+import './settings-page.css';
 
 const toMenu = () => navigate('menu');
 
+/**
+ * Settings (screens-onboard C6): the top bar, «НАСТРОЙКИ · применяется сразу», the scrolling column
+ * of panels with a 32 px fade at both ends, and the action zone — Задержка · Обучение · Сброс
+ * over «ГОТОВО / в меню». The reset opens the dialog instead of a system confirm.
+ */
 export function SettingsPage() {
   useSwipeBack(toMenu);
+  const [reset, setReset] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState({ up: false, down: false });
+  // Fades only where there is more to scroll: measured on scroll, resize and after the first layout.
+  const measure = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const up = el.scrollTop > 1;
+    const down = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+    setMore((m) => (m.up === up && m.down === down ? m : { up, down }));
+  }, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+  const daily = dailyTrackId(localDateString(), TRACK_IDS) ?? undefined;
+  const go = (screen: Screen) => () => {
+    sfxUi();
+    navigate(screen);
+  };
   return (
-    <Screen center>
-      <h1 className="page-title">{dict.settings}</h1>
-      <SettingsPanel />
-      <div className="page-hotkeys">{dict.hotkeys}</div>
-      <Button variant="ghost" onClick={() => navigate('menu')}>
-        {dict.back}
-      </Button>
-    </Screen>
+    <Frame className="settings-page">
+      <CoverScene id={daily} genre={daily ? findTrack(daily)?.genre : undefined} />
+      <TopBar />
+      <SubHeader tag={<Tag>{dict.settings}</Tag>}>
+        <Line className="sub-right">{dict.appliesNow}</Line>
+      </SubHeader>
+      <div className={['settings-scroll', more.up && 'is-more-up', more.down && 'is-more-down'].filter(Boolean).join(' ')}>
+        <div ref={scrollRef} className="settings-scroll-in" onScroll={measure}>
+          <SettingsPanel />
+        </div>
+      </div>
+      <ActionZone className="settings-actions">
+        <Trio>
+          <ObjButton icon={<Icon name="metro" />} label={dict.calibShort} onClick={go('calibration')} />
+          <ObjButton icon={<Icon name="cap" />} label={dict.tutorial} onClick={go('tutorial')} />
+          <ObjButton
+            danger
+            icon={<Icon name="trash" />}
+            label={dict.resetShort}
+            onClick={() => {
+              sfxUi();
+              setReset(true);
+            }}
+          />
+        </Trio>
+        <PrimaryAction
+          lead={
+            <Disc>
+              <Icon name="check" />
+            </Disc>
+          }
+          label={dict.done}
+          sub={dict.toMenuShort}
+          beat={!reset}
+          onClick={go('menu')}
+        />
+      </ActionZone>
+      <ResetDialog open={reset} onClose={() => setReset(false)} />
+    </Frame>
   );
 }

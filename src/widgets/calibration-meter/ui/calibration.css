@@ -1,68 +1,200 @@
+/*
+ * CalibrationMeter (CalibrationMeter.tsx) — screens-onboard C3–C5. Fills the page frame below the
+ * sub-header: hero disc 96 → headline → content, and the action zone pinned to the bottom.
+ */
 .calib {
-  width: 100%;
-  max-width: 460px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  text-align: center;
+  width: var(--col);
+  flex: 1 0 auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.calib-intro {
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.5;
-  font-size: 15px;
+/* 120 BPM = one tick every .5 s: a sharp 1.1 → 1 on each beat, transform only (delay set inline to the first click). */
+@keyframes calib-tick {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1);
+  }
 }
-@keyframes calib-pulse {
+.calib-disc-tick {
+  animation: calib-tick 0.5s ease-out infinite;
+}
+@keyframes calib-pop {
   0% {
-    transform: scale(1.4);
+    transform: scale(0) rotate(-30deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.calib-disc-pop {
+  animation: calib-pop 0.5s var(--ease-pop) both;
+}
+/* Twelve sparks from the disc's centre when the measurement lands (gold / white in turn). */
+.calib-sparks {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.calib-spark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 12px;
+  margin-left: -1.5px;
+  border-radius: var(--r-999);
+  background: #fff;
+  transform-origin: 50% 0;
+  opacity: 0;
+  transform: rotate(var(--a)) translateY(20px) scaleY(0);
+  animation: calib-burst 0.7s cubic-bezier(0.1, 0.8, 0.3, 1) 0.3s both;
+}
+.calib-spark-gold {
+  background: var(--gold);
+}
+@keyframes calib-burst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(20px) scaleY(0);
+  }
+  55% {
     opacity: 1;
   }
   100% {
-    transform: scale(1);
-    opacity: 0.4;
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(var(--l)) scaleY(1.4);
   }
 }
-.calib-beat {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: var(--c-cyan);
-  box-shadow: 0 0 40px var(--c-cyan);
-  animation: calib-pulse 0.5s ease-out both;
+
+/* Headline 24 under the hero. */
+.calib-head {
+  margin-top: 24px;
 }
-.calib-tap {
-  font-family: var(--font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-.calib-count {
-  font-size: 22px;
-  font-family: var(--font-display);
-}
-.calib-last {
-  color: rgba(255, 255, 255, 0.5);
-  font-variant-numeric: tabular-nums;
-}
-.calib-dots {
+/* Intro: three grey lines 13 w80 at 8 px. */
+.calib-lines {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 0;
+}
+.calib-lines > span {
+  display: block;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w80);
+}
+/* Measurement / result: the 112 panel with the big number and one stat line, then the meter. */
+.calib-panel {
+  margin-top: 16px;
+}
+.calib-num {
+  height: 48px;
+  font: var(--t-44);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  text-shadow: var(--emboss);
+  text-align: center;
+}
+.calib-stats {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
 }
-.calib-dots span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-}
-.calib-dots span.on {
-  background: var(--c-lime);
-  box-shadow: 0 0 8px var(--c-lime);
-}
-.calib-result {
-  font-family: var(--font-display);
-  font-size: 26px;
+.calib-stats b {
+  color: #fff;
   font-weight: 700;
-  color: var(--c-cyan);
+}
+.calib-meter {
+  margin-top: 16px;
+}
+@keyframes calib-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.calib-rise {
+  animation: calib-rise 0.4s ease-out both;
+}
+/* Action zone: trio 48 · 16 · primary 64 at the bottom; the single «Отмена» keeps the primary's bottom edge. */
+.calib-actions {
+  justify-content: flex-end;
+  min-height: 152px;
+  padding-top: 24px;
+}
+
+/* TapMeter (TapMeter.tsx): 16 px labels + 4 + 8 px track, cyan centre tick, gold 16 px marker. */
+.tapmeter {
+  width: 100%;
+  height: 28px;
+}
+.tapmeter-row {
+  display: flex;
+  justify-content: space-between;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
+}
+.tapmeter-track {
+  position: relative;
+  margin-top: 4px;
+  height: 8px;
+  border-radius: var(--r-999);
+  background: var(--w10);
+}
+.tapmeter-mid {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  border-radius: var(--r-999);
+  background: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+.tapmeter-mark {
+  position: absolute;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: var(--gold-face);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 0 var(--gold-rim);
+  transition: left 0.15s var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .calib-disc-tick,
+  .calib-disc-pop,
+  .calib-spark,
+  .calib-head.headline-pop,
+  .calib-rise {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+  .calib-disc-tick {
+    animation: none;
+  }
+  .tapmeter-mark {
+    transition: none;
+  }
 }
