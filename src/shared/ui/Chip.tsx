@@ -10,6 +10,8 @@ interface Props {
   icon?: ReactNode;
   /** Fixed width (the wallet chips are 88 / 80 so the top bar never shifts with the digits). */
   width?: number;
+  /** Icon only, no text (the pause chip). */
+  iconOnly?: boolean;
   /** Renders a button when set. */
   onClick?: () => void;
   /** One scale bump (a counter just ticked). */
@@ -22,19 +24,35 @@ interface Props {
   'aria-label'?: string;
   /** Position anchor for reward flights (TopBar passes it through). */
   chipRef?: Ref<HTMLElement>;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 /** 32 px pill with a dark 3D face: currency counters, difficulty, list places (spec §2.2). */
-export function Chip({ variant = 'white', icon, width, onClick, bump = false, bumpDelay, className, style, title, chipRef, children, ...rest }: Props) {
-  const cls = ['chip', variant !== 'white' && `chip-${variant}`, bump && 'chip-bump', onClick && 'chip-btn', className].filter(Boolean).join(' ');
+export function Chip({
+  variant = 'white',
+  icon,
+  width,
+  iconOnly = false,
+  onClick,
+  bump = false,
+  bumpDelay,
+  className,
+  style,
+  title,
+  chipRef,
+  children,
+  ...rest
+}: Props) {
+  const cls = ['chip', variant !== 'white' && `chip-${variant}`, bump && 'chip-bump', onClick && 'chip-btn', iconOnly && 'chip-icon-only', className]
+    .filter(Boolean)
+    .join(' ');
   const merged: CSSProperties = { ...style };
   if (width !== undefined) merged.width = width;
   if (bumpDelay !== undefined) merged.animationDelay = `${bumpDelay}s`;
   const body = (
     <>
       {icon && <span className="chip-icon">{icon}</span>}
-      <span className="chip-text">{children}</span>
+      {!iconOnly && <span className="chip-text">{children}</span>}
     </>
   );
   if (onClick) {

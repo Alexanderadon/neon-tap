@@ -1,10 +1,10 @@
 import type { ReactNode, Ref } from 'react';
 import { dict } from '@/shared/i18n';
-import { Chip, CounterSwap, CrystalIcon, Stars } from '@/shared/ui';
+import { Avatar, Chip, CounterSwap, CrystalIcon, Stars } from '@/shared/ui';
 import { useSettings } from '@/entities/settings';
 import { grandTotalStars, useProgress } from '@/entities/progress';
 import { TRACK_IDS } from '@/entities/track';
-import { formatCount, formatDelta } from '../lib/formatCount';
+import { formatCount, formatDelta } from '@/shared/lib/format';
 import './top-bar.css';
 
 /** A counter that ticks from one value to another (the result screen after the loot has flown in). */
@@ -57,15 +57,12 @@ export function TopBar({ crystals, stars, crystalsDelta, starsDelta, onCrystalsT
     );
   }
   const name = nickname || dict.appTitle;
-  const letter = nickname ? nickname.trim().charAt(0).toUpperCase() : '?';
   return (
     <header className={cls}>
       <span className="topbar-who">
         {left ?? (
           <>
-            <span className={nickname ? 'ava' : 'ava ava-q'} aria-hidden="true">
-              {letter}
-            </span>
+            <Avatar name={nickname} />
             <span className="topbar-name">{name}</span>
           </>
         )}

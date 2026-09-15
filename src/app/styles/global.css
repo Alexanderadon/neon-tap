@@ -25,16 +25,17 @@
   --cyan-under: #005c66;
   --mag-under: #5a0a48;
   /* Verdict / score material: 1.5 px outline + 3 px underside + soft gold glow, text-shadow only (no -webkit-text-stroke, no filter). */
-  --emboss: -1.5px 0 0 #7a3a00, 1.5px 0 0 #7a3a00, 0 -1.5px 0 #7a3a00, 0 1.5px 0 #7a3a00, -1.1px -1.1px 0 #7a3a00, 1.1px -1.1px 0 #7a3a00,
-    -1.1px 1.1px 0 #7a3a00, 1.1px 1.1px 0 #7a3a00, -1.5px 3px 0 #7a3a00, 1.5px 3px 0 #7a3a00, 0 3px 0 #7a3a00, 0 4.5px 0 #7a3a00,
-    0 0 18px rgba(255, 200, 0, 0.6);
+  --emboss:
+    -1.5px 0 0 #7a3a00, 1.5px 0 0 #7a3a00, 0 -1.5px 0 #7a3a00, 0 1.5px 0 #7a3a00, -1.1px -1.1px 0 #7a3a00, 1.1px -1.1px 0 #7a3a00, -1.1px 1.1px 0 #7a3a00,
+    1.1px 1.1px 0 #7a3a00, -1.5px 3px 0 #7a3a00, 1.5px 3px 0 #7a3a00, 0 3px 0 #7a3a00, 0 4.5px 0 #7a3a00, 0 0 18px rgba(255, 200, 0, 0.6);
   /* The same material at double scale for the 96 px countdown digits. */
-  --emboss2: -3px 0 0 #7a3a00, 3px 0 0 #7a3a00, 0 -3px 0 #7a3a00, 0 3px 0 #7a3a00, -2.2px -2.2px 0 #7a3a00, 2.2px -2.2px 0 #7a3a00, -2.2px 2.2px 0 #7a3a00,
+  --emboss2:
+    -3px 0 0 #7a3a00, 3px 0 0 #7a3a00, 0 -3px 0 #7a3a00, 0 3px 0 #7a3a00, -2.2px -2.2px 0 #7a3a00, 2.2px -2.2px 0 #7a3a00, -2.2px 2.2px 0 #7a3a00,
     2.2px 2.2px 0 #7a3a00, -3px 6px 0 #7a3a00, 3px 6px 0 #7a3a00, 0 6px 0 #7a3a00, 0 9px 0 #7a3a00, 0 0 36px rgba(255, 200, 0, 0.6);
   /* Magenta verdict («ПРОВАЛ»): same construction, magenta underside. */
-  --emboss-mag: -1.5px 0 0 #5a0a48, 1.5px 0 0 #5a0a48, 0 -1.5px 0 #5a0a48, 0 1.5px 0 #5a0a48, -1.1px -1.1px 0 #5a0a48, 1.1px -1.1px 0 #5a0a48,
-    -1.1px 1.1px 0 #5a0a48, 1.1px 1.1px 0 #5a0a48, -1.5px 3px 0 #5a0a48, 1.5px 3px 0 #5a0a48, 0 3px 0 #5a0a48, 0 4.5px 0 #5a0a48,
-    0 0 18px rgba(255, 43, 214, 0.5);
+  --emboss-mag:
+    -1.5px 0 0 #5a0a48, 1.5px 0 0 #5a0a48, 0 -1.5px 0 #5a0a48, 0 1.5px 0 #5a0a48, -1.1px -1.1px 0 #5a0a48, 1.1px -1.1px 0 #5a0a48, -1.1px 1.1px 0 #5a0a48,
+    1.1px 1.1px 0 #5a0a48, -1.5px 3px 0 #5a0a48, 1.5px 3px 0 #5a0a48, 0 3px 0 #5a0a48, 0 4.5px 0 #5a0a48, 0 0 18px rgba(255, 43, 214, 0.5);
   /* Object shadows (light from above, underside below) — spec §1.5. */
   --sh-chip: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 0 #000;
   --sh-tag-gold: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 0 #8a4500;
@@ -120,7 +121,11 @@ body {
   overflow: hidden;
   background: var(--c-bg);
   color: #fff;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 15px;
   overscroll-behavior: none;
   /* No double-tap zoom anywhere; scrolling/panning stays allowed inside menus. */
@@ -140,20 +145,7 @@ input[type='checkbox'] {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-body::before {
-  /* CRT scanlines */
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
-  z-index: 9999;
-  mix-blend-mode: overlay;
-}
-/* The menu paints its own scanlines inside the hero only; the page-wide overlay would double them. */
-body:has(.menu)::before {
-  display: none;
-}
+/* No page-wide CRT scanlines: the design system has none (audit §C.13) — screens paint their own scene. */
 a {
   color: var(--c-cyan);
 }

@@ -1,0 +1,45 @@
+/* Avatar (Avatar.tsx): the cyan sphere with the first letter — 32 (letter 13/900, underside 2), 48 (20, 4), 96 (44, 4). */
+.ava {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.95), var(--cyan) 45%, var(--cyan-under) 100%);
+  box-shadow: var(--sh-avatar);
+  color: var(--bg);
+  font: 900 13px/1 var(--font);
+  text-transform: uppercase;
+  user-select: none;
+}
+.ava-48 {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  box-shadow: 0 4px 0 var(--cyan-under);
+}
+.ava-96 {
+  width: 96px;
+  height: 96px;
+  font-size: 44px;
+  box-shadow: 0 4px 0 var(--cyan-under);
+}
+/* No name yet: the dark chip face with «?». */
+.ava-empty {
+  background: var(--dark-face);
+  box-shadow: var(--sh-chip);
+  color: var(--w55);
+}
+.ava-48.ava-empty,
+.ava-96.ava-empty {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    0 4px 0 #000;
+}
+/* Someone else (duel rows): the dark face with a light letter — cyan is the player's only. */
+.ava-other {
+  background: var(--dark-face);
+  box-shadow: var(--sh-chip);
+  color: var(--w80);
+}

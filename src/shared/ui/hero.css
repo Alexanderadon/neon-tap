@@ -1,0 +1,90 @@
+/* Headline 28/900 in the verdict material and the BigDisc 96 hero (Hero.tsx). */
+.headline {
+  margin: 0;
+  height: 32px;
+  font: var(--t-28);
+  letter-spacing: var(--track-verdict);
+  text-transform: uppercase;
+  text-align: center;
+  color: #fff;
+  text-shadow: var(--emboss);
+  white-space: nowrap;
+}
+.headline-mag {
+  color: var(--mag);
+  text-shadow: var(--emboss-mag);
+}
+@keyframes headline-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.headline-pop {
+  animation: headline-pop 0.5s var(--ease-pop) both;
+}
+
+/* BigDisc 96: the primary's face and 4 px underside, a black 56 px disc with a 32 px icon; `-dark` = illustration (48 px icon). */
+.bigdisc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  flex: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cyan-face);
+  box-shadow: var(--sh-primary);
+  color: var(--cyan);
+}
+button.bigdisc {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+button.bigdisc:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+.bigdisc-in {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+.bigdisc-in > svg {
+  width: 32px;
+  height: 32px;
+}
+.bigdisc-dark {
+  background: var(--dark-face);
+  box-shadow: var(--sh-obj);
+  color: var(--w80);
+}
+.bigdisc-dark > svg {
+  width: 48px;
+  height: 48px;
+}
+@keyframes bigdisc-beat {
+  to {
+    transform: translateY(-2px);
+  }
+}
+.bigdisc-beat {
+  animation: bigdisc-beat 0.5s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bigdisc-beat,
+  .headline-pop {
+    animation: none;
+  }
+}

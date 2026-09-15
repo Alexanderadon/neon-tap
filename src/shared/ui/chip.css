@@ -48,7 +48,9 @@
 }
 .chip-btn:active {
   transform: translateY(1px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 0 #000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 0 #000;
 }
 .chip-btn:focus-visible {
   outline: 2px solid var(--cyan);
@@ -106,4 +108,21 @@
     animation-duration: 0.01s;
     animation-delay: 0s;
   }
+}
+
+/* The difficulty chip (Difficulty.tsx): flame 16 + number, padding 0 12 0 8, gap 4 (spec §2.2). */
+.chip-flame {
+  padding: 0 12px 0 8px;
+  gap: 4px;
+}
+/* Icon only (the pause chip): a 32 px round face around the 20 px icon, no text. */
+.chip-icon-only {
+  width: 32px;
+  padding: 0;
+  gap: 0;
+}
+.chip-icon-only .chip-icon,
+.chip-icon-only .chip-icon > svg {
+  width: 20px;
+  height: 20px;
 }

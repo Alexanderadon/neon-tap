@@ -1,0 +1,68 @@
+/* Segments (Segments.tsx): 8 px bars, r 999, gap 4, each `flex: 1`; done gold, current cyan + glow, rest w10. */
+.segs {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  height: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.seg {
+  position: relative;
+  display: block;
+  flex: 1;
+  height: 8px;
+  border-radius: var(--r-999);
+  background: var(--w10);
+}
+.seg-done {
+  background: var(--gold);
+}
+.seg-cur {
+  background: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+/* Each segment is a 24 px tap target. */
+.seg-hit {
+  position: absolute;
+  inset: -8px 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.seg-hit:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: var(--r-999);
+}
+/* Loading: cyan runs along the segments (delay = index × 0.15 s, set inline). */
+.segs-pulse .seg {
+  animation: seg-pulse 1.5s linear infinite;
+}
+@keyframes seg-pulse {
+  0%,
+  100% {
+    background: var(--w10);
+    box-shadow: none;
+  }
+  10% {
+    background: var(--cyan);
+    box-shadow: var(--glow-cyan);
+  }
+  30% {
+    background: var(--w10);
+    box-shadow: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .segs-pulse .seg {
+    animation: none;
+    background: var(--w30);
+  }
+}

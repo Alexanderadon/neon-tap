@@ -29,6 +29,11 @@ const KEY = 'neon-tap:settings';
 
 export const NICKNAME_MAX = 16;
 
+/** A name the online table accepts: anything non-empty once trimmed (the one rule, shared by the welcome screen, the dialog and the settings). */
+export function isValidNickname(name: string): boolean {
+  return name.trim().length >= 1;
+}
+
 /** Trim, collapse whitespace, drop control characters and angle brackets, cap the length. */
 export function sanitizeNickname(raw: string): string {
   return raw

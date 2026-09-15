@@ -15,6 +15,8 @@ export interface ResultMeta {
   goalsCompleted?: string[];
   /** Crystals credited to the wallet by this run (absent when nothing was collected or the run failed). */
   crystals?: number;
+  /** The standing record score before this run (catalog tracks); `null` when the track had none — the exact «БЫЛО N». */
+  bestBefore?: number | null;
 }
 
 export interface PlaySession {

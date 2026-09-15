@@ -71,6 +71,12 @@ export function sfxGem(big = false): void {
   if (!sfxBank.play('milestone', { gain: big ? 1 : 0.8, rate })) fallbackTone(880 * rate, 0.2, 0.15, 'sine');
 }
 
+/** Wallet tick (a counter in the top bar lands on its new value): the metronome click, short and dry — crystals a step higher than stars. */
+export function sfxTick(currency: 'crystals' | 'stars' = 'crystals'): void {
+  const rate = currency === 'crystals' ? 1.5 : 1.25;
+  if (!sfxBank.play('metronome-accent', { gain: 0.7, rate })) fallbackTone(1200 * (rate / 1.5), 0.08, 0.1, 'square');
+}
+
 /** Rank reveal on the result screen. */
 export function sfxRank(): void {
   if (!sfxBank.play('rank', { gain: 0.9 })) fallbackTone(660, 0.3, 0.15, 'sine');
