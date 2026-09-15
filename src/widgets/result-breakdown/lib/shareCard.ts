@@ -1,4 +1,5 @@
 import { dict, fmt } from '@/shared/i18n';
+import { formatScore } from '@/shared/lib/format';
 import { hexToRgba } from '@/shared/lib/render';
 import type { Section } from '@/entities/chart';
 import { formatClock, type PlayResult } from '@/entities/score';
@@ -25,7 +26,7 @@ function songLine(d: ShareCardData): string {
 /** Plain-text summary for the clipboard / share sheet. */
 export function shareSummary(d: ShareCardData): string {
   const r = d.result;
-  const score = r.score.toLocaleString('ru-RU');
+  const score = formatScore(r.score);
   if (r.failed) {
     const last = r.timeline.t.length ? r.timeline.t[r.timeline.t.length - 1] : 0;
     return fmt(dict.shareTextFailed, { song: songLine(d), t: formatClock(last), score, combo: r.maxCombo, url: SHARE_URL });
@@ -130,14 +131,14 @@ export function renderShareCard(d: ShareCardData): HTMLCanvasElement {
     if (r.fullCombo) {
       ctx.font = `900 28px ${FONT_DISPLAY}`;
       ctx.fillStyle = '#ffd700';
-      ctx.fillText(dict.fullCombo, CARD_W / 2, 905);
+      ctx.fillText(dict.verdictNoMiss.toUpperCase(), CARD_W / 2, 905);
     }
   }
 
   const boxes: Array<[string, string]> = [
-    [dict.score, r.score.toLocaleString('ru-RU')],
+    [dict.score, formatScore(r.score)],
     [dict.maxCombo, String(r.maxCombo)],
-    [dict.perfect, String(r.counts.perfect)],
+    [dict.judgeWord.perfect, String(r.counts.perfect)],
   ];
   const gap = 20;
   const bw = (innerW - gap * 2) / 3;

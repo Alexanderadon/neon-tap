@@ -1,0 +1,19 @@
+/*
+ * Result page shell (ResultPage.tsx): the scene under everything, one 335 column anchored to
+ * safe-top + 8 above and safe-bottom + 24 below; the remainder goes to the gap over the action zone.
+ */
+.result-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: var(--col);
+  min-height: 100%;
+  margin: 0 auto;
+}
+/* Skip: the wallet chips tick at once with the rest of the screen. */
+.result-page.is-settled .topbar,
+.result-page.is-settled .topbar * {
+  animation-delay: 0s !important;
+  animation-duration: 0.01s !important;
+}

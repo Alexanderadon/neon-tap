@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { dict } from '@/shared/i18n';
-import { Button } from '@/shared/ui';
+import { Icon, ObjButton } from '@/shared/ui';
 import { copySummary, shareResultCard, type ShareCardData } from '../lib/shareCard';
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 
 type Status = 'idle' | 'busy' | 'copied' | 'failed';
 
-/** "Share" (PNG card via the share sheet or a download) and "Copy" (text summary to the clipboard). */
+/** "Share" (PNG card via the share sheet or a download) and "Copy" (text summary to the clipboard) — two object buttons. */
 export function ShareRow({ data, fileName }: Props) {
   const [status, setStatus] = useState<Status>('idle');
   const timer = useRef(0);
@@ -40,24 +40,10 @@ export function ShareRow({ data, fileName }: Props) {
 
   return (
     <div className="result-share">
-      <Button
-        onClick={() => {
-          void share();
-        }}
-        disabled={status === 'busy'}
-      >
-        {dict.share}
-      </Button>
-      <Button
-        variant="ghost"
-        onClick={() => {
-          void copy();
-        }}
-      >
-        {dict.copy}
-      </Button>
+      <ObjButton icon={<Icon name="tray" />} label={dict.share} onClick={() => void share()} disabled={status === 'busy'} />
+      <ObjButton icon={<Icon name="file" />} label={status === 'copied' ? dict.copied : dict.copy} onClick={() => void copy()} />
       <span className={`result-share-status${status === 'failed' ? ' is-error' : ''}`} aria-live="polite">
-        {status === 'copied' ? dict.copied : status === 'failed' ? dict.shareFailed : ''}
+        {status === 'failed' ? dict.shareFailed : ''}
       </span>
     </div>
   );

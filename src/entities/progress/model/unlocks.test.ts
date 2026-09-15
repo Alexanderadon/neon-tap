@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALWAYS_OPEN, isTrackUnlocked, newlyUnlocked, unlockStates, unlockThreshold } from './unlocks';
+import { ALWAYS_OPEN, isTrackUnlocked, newlyUnlocked, nextUnlock, unlockStates, unlockThreshold } from './unlocks';
 
 const IDS = Array.from({ length: 21 }, (_, i) => `t${i}`);
 
@@ -72,5 +72,29 @@ describe('unlocks — purchased and premium', () => {
   it('newlyUnlocked skips premium tracks', () => {
     expect(newlyUnlocked(IDS, 3, 7)).toEqual(['t6', 't7']);
     expect(newlyUnlocked(IDS, 3, 7, ['t6'])).toEqual(['t7']);
+  });
+});
+
+describe('nextUnlock', () => {
+  it('returns the first star-gated track that is still closed, with the stars missing', () => {
+    const states = unlockStates(IDS, { stars: 5 });
+    expect(nextUnlock(states, 5)).toEqual({ id: 't7', need: 7, have: 5, missing: 2 });
+  });
+
+  it('skips premium and bought tracks — they never open by stars', () => {
+    const states = unlockStates(IDS, { stars: 5, premium: ['t7'], purchased: ['t8'] });
+    expect(nextUnlock(states, 5)).toEqual({ id: 't9', need: 11, have: 5, missing: 6 });
+  });
+
+  it('is null when every star-gated track is open', () => {
+    expect(nextUnlock(unlockStates(IDS, { stars: 0, unlockAll: true }), 0)).toBeNull();
+    expect(nextUnlock(unlockStates(IDS, { stars: 999 }), 999)).toBeNull();
+    expect(nextUnlock([], 3)).toBeNull();
+  });
+
+  it('never reports zero missing stars for a closed track', () => {
+    // A daily track is open today without the stars; the one after it is the next unlock.
+    const states = unlockStates(IDS, { stars: 4, dailyId: 't7' });
+    expect(nextUnlock(states, 4)).toEqual({ id: 't8', need: 9, have: 4, missing: 5 });
   });
 });
