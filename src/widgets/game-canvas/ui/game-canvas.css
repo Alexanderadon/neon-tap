@@ -232,6 +232,10 @@
   margin-top: 0;
   animation-delay: 0.2s;
 }
+/* Inside the 112 panel the line follows the hearts by the panel gap (48 + 8 + 16 = 72), not by the skeleton's 16. */
+.game-panel-revive .game-line {
+  margin-top: 0;
+}
 .game-hearts40 {
   display: flex;
   justify-content: center;

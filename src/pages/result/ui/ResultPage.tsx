@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { navigate } from '@/shared/lib/router';
 import { Icon, ObjButton, Screen } from '@/shared/ui';
 import { dict } from '@/shared/i18n';
@@ -88,21 +88,6 @@ export function ResultPage() {
 
   const failed = result?.failed ?? false;
   const { settled, settle } = useSettled(failed ? SETTLE_SECONDS.failed : SETTLE_SECONDS.normal);
-  // The "+35" / "+2" badges appear when the counters tick.
-  const [landed, setLanded] = useState({ crystals: false, stars: false });
-  useEffect(() => {
-    if (settled) {
-      setLanded({ crystals: true, stars: true });
-      return;
-    }
-    const a = window.setTimeout(() => setLanded((l) => ({ ...l, crystals: true })), T.TICK_CRYSTALS * 1000);
-    const b = window.setTimeout(() => setLanded((l) => ({ ...l, stars: true })), T.TICK_STARS * 1000);
-    return () => {
-      window.clearTimeout(a);
-      window.clearTimeout(b);
-    };
-  }, [settled]);
-
   const crystalsRef = useRef<HTMLElement | null>(null);
   const starsRef = useRef<HTMLElement | null>(null);
   const targets = useMemo<FlightTargets>(() => ({ crystal: crystalsRef, star: starsRef }), []);
@@ -139,8 +124,6 @@ export function ResultPage() {
         <TopBar
           crystals={crystalsTick}
           stars={starsTick}
-          crystalsDelta={!failed && landed.crystals ? loot.crystalsDelta : undefined}
-          starsDelta={!failed && landed.stars ? loot.starsDelta : undefined}
           crystalsRef={crystalsRef}
           starsRef={starsRef}
         />

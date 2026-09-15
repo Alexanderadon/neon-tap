@@ -1,6 +1,7 @@
 /*
  * TutorialOverlay (TutorialOverlay.tsx): the caption Panel 335 × 112 under the HUD chip line
- * (safe top + 70), the step tag on its top edge (safe top + 58). Pointer events pass through.
+ * (safe top + 70), the step tag on its top edge (safe top + 58). Pointer events pass through;
+ * it is HUD-level chrome inside `.game-root` (z 2), so the pause / fail frames (z 3) cover it.
  */
 .tut {
   position: fixed;
@@ -10,7 +11,7 @@
   display: flex;
   justify-content: center;
   pointer-events: none;
-  z-index: 5;
+  z-index: 2;
   font-family: var(--font);
   white-space: nowrap;
 }

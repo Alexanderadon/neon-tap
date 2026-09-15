@@ -4,7 +4,7 @@ import { Avatar, Chip, CounterSwap, CrystalIcon, Stars } from '@/shared/ui';
 import { useSettings } from '@/entities/settings';
 import { grandTotalStars, useProgress } from '@/entities/progress';
 import { TRACK_IDS } from '@/entities/track';
-import { formatCount, formatDelta } from '@/shared/lib/format';
+import { formatCount } from '@/shared/lib/format';
 import './top-bar.css';
 
 /** A counter that ticks from one value to another (the result screen after the loot has flown in). */
@@ -20,9 +20,6 @@ interface Props {
   crystals?: number | CounterTick;
   /** Override the star counter likewise. Defaults to the player's grand total. */
   stars?: number | CounterTick;
-  /** Small "+35" / "+2" badges next to the chips (a reward just earned). */
-  crystalsDelta?: number;
-  starsDelta?: number;
   /** Tap on the crystal chip (the menu and profile open the shop). */
   onCrystalsTap?: () => void;
   /** Anchors for reward flights — the chips' DOM nodes (`getBoundingClientRect`). */
@@ -42,9 +39,9 @@ const STAR_CHIP_W = 80;
 /**
  * The top bar, identical on every non-game screen: avatar letter + name on the left, the crystal
  * and star chips on the right. Reads the nickname and the wallet itself; the result screen passes
- * `from → to` ticks and delta badges so the counters visibly grow after the loot flies in.
+ * `from → to` ticks so the counters visibly grow after the loot flies in.
  */
-export function TopBar({ crystals, stars, crystalsDelta, starsDelta, onCrystalsTap, crystalsRef, starsRef, variant = 'player', left, className }: Props) {
+export function TopBar({ crystals, stars, onCrystalsTap, crystalsRef, starsRef, variant = 'player', left, className }: Props) {
   const nickname = useSettings((s) => s.nickname);
   const walletCrystals = useProgress((s) => s.crystals);
   const walletStars = useProgress((s) => grandTotalStars(s, TRACK_IDS));
@@ -72,7 +69,6 @@ export function TopBar({ crystals, stars, crystalsDelta, starsDelta, onCrystalsT
           variant="cy"
           width={CRYSTAL_CHIP_W}
           value={crystals ?? walletCrystals}
-          delta={crystalsDelta}
           icon={<CrystalIcon size={16} halo />}
           label={dict.crystalsTitle}
           onClick={onCrystalsTap}
@@ -82,7 +78,6 @@ export function TopBar({ crystals, stars, crystalsDelta, starsDelta, onCrystalsT
           variant="gd"
           width={STAR_CHIP_W}
           value={stars ?? walletStars}
-          delta={starsDelta}
           icon={<Stars value={1} max={1} />}
           label={dict.totalStars}
           chipRef={starsRef}
@@ -96,14 +91,13 @@ interface WalletChipProps {
   variant: 'cy' | 'gd';
   width: number;
   value: number | CounterTick;
-  delta?: number;
   icon: ReactNode;
   label: string;
   onClick?: () => void;
   chipRef?: Ref<HTMLElement>;
 }
 
-function WalletChip({ variant, width, value, delta, icon, label, onClick, chipRef }: WalletChipProps) {
+function WalletChip({ variant, width, value, icon, label, onClick, chipRef }: WalletChipProps) {
   const tick = typeof value === 'number' ? null : value;
   const shown = tick ? tick.to : value;
   const ticking = tick !== null && tick.from !== tick.to;
@@ -122,11 +116,6 @@ function WalletChip({ variant, width, value, delta, icon, label, onClick, chipRe
       >
         {tick ? <CounterSwap from={formatCount(tick.from)} to={formatCount(tick.to)} active={ticking} delay={tick.delay} /> : formatCount(shown as number)}
       </Chip>
-      {delta !== undefined && delta !== 0 && (
-        <i className="topbar-delta" aria-hidden="true">
-          {formatDelta(delta)}
-        </i>
-      )}
     </span>
   );
 }

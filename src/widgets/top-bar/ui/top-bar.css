@@ -42,23 +42,3 @@
   position: relative;
   display: inline-flex;
 }
-/* "+35" next to a chip: 11/700 in the currency's colour, glued to the top-right corner. */
-.topbar-delta {
-  position: absolute;
-  top: -8px;
-  right: -4px;
-  font: var(--t-11);
-  font-style: normal;
-  letter-spacing: 0;
-  color: inherit;
-  text-shadow:
-    0 1px 0 #000,
-    0 0 8px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
-}
-.topbar-slot .chip-cy ~ .topbar-delta {
-  color: var(--cyan);
-}
-.topbar-slot .chip-gd ~ .topbar-delta {
-  color: var(--gold);
-}

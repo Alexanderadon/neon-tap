@@ -29,6 +29,9 @@ export interface LootInput {
   goals: readonly { title: string; reward: number }[];
 }
 
+/** Caption budget of a coin (13/400 in 105 px, spec §2.9): a title longer than this becomes the generic «достижение». */
+export const COIN_CAPTION_MAX = 10;
+
 /** «+35» / «+0» — the loot is never negative. */
 export function formatLoot(amount: number): string {
   return `+${Math.max(0, Math.round(amount))}`;
@@ -36,7 +39,7 @@ export function formatLoot(amount: number): string {
 
 /**
  * Three coins, always three (one height per row): crystals · stars · the third is the achievement
- * («+50 · Комбо 100», several → «+80 · 2 достижения»), else the daily bonus star, else an empty «+0».
+ * («+50 · Комбо 100», a long title → «достижение», several → «+80 · 2 достижения»), else the daily bonus star, else an empty «+0».
  */
 export function lootOf(input: LootInput): Loot {
   const crystals = Math.max(0, input.crystals);
@@ -45,7 +48,11 @@ export function lootOf(input: LootInput): Loot {
   let third: LootCoin;
   if (input.goals.length > 0) {
     const caption =
-      input.goals.length === 1 ? input.goals[0].title : fmt(dict.coinGoals, { n: input.goals.length, noun: plural(input.goals.length, dict.goalsNoun) });
+      input.goals.length === 1
+        ? input.goals[0].title.length <= COIN_CAPTION_MAX
+          ? input.goals[0].title
+          : dict.coinGoal
+        : fmt(dict.coinGoals, { n: input.goals.length, noun: plural(input.goals.length, dict.goalsNoun) });
     third = { key: 'goals', tone: 'cy', amount: goalCrystals, caption };
   } else if (input.dailyBonus) {
     third = { key: 'daily', tone: 'gd', amount: 1, caption: dict.coinDaily };
