@@ -54,6 +54,8 @@ interface Props {
   header?: ReactNode;
   /** Chapter of a catalog track for the «Metal Song · Глава 1» line; custom songs show «Своя музыка». */
   chapter?: number;
+  /** HUD-level chrome of the host page (the tutorial caption card): lives over the field, hidden with the HUD under the pause / fail frames. */
+  overlay?: ReactNode;
 }
 
 interface Snapshot {
@@ -69,7 +71,7 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
  * Everything that is not the field is DOM chrome here: the pause chip on the HUD line, the pause
  * menu, loading / error, the fail frame, and the revive offer for a rewarded ad (spec: screens-game.html).
  */
-export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter }: Props) {
+export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -287,11 +289,17 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     return () => window.clearTimeout(t);
   }, [revive.phase, declineRevive]);
 
+  // «Metal Song · Глава 1» / «my-song · Своя музыка»; the tutorial has neither a chapter nor a file — its title stands alone.
+  const subTail = chapter !== undefined ? fmt(dict.deckChapter, { n: chapter }) : mode === 'tutorial' ? null : dict.customSong;
   const subLine = (
     <div className="game-sub">
       <b>{chart.title}</b>
-      <span>·</span>
-      {chapter !== undefined ? fmt(dict.deckChapter, { n: chapter }) : dict.customSong}
+      {subTail !== null && (
+        <>
+          <span>·</span>
+          {subTail}
+        </>
+      )}
     </div>
   );
   const cover = (
@@ -329,6 +337,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           onClick={() => sessionRef.current?.pause()}
         />
       )}
+      {hudVisible && overlay}
 
       {status === 'loading' &&
         skeleton(

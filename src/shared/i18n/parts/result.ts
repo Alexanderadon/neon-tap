@@ -24,6 +24,7 @@ export const result = {
   coinStars: 'звёзды',
   coinDaily: 'трек дня',
   coinBonus: 'бонус',
+  coinGoal: 'достижение',
   coinGoals: '{n} {noun}',
   goalsNoun: ['достижение', 'достижения', 'достижений'],
   /** Unlock bar: «до открытия Bouncer ★ 22 / 25». */

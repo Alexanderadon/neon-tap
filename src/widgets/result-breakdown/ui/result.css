@@ -371,12 +371,16 @@
 .result-strip-axis {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font: var(--t-11);
   letter-spacing: 0;
   color: var(--w30);
   margin-top: 4px;
 }
 .result-strip-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--w30);
 }
 .result-chart {

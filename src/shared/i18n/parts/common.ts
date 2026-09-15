@@ -150,7 +150,7 @@ export const common = {
   settingsNickname: 'Ник для онлайн-рекордов',
   // --- result ---
   resultWhereMissed: 'Где промахи',
-  resultStripHint: 'наведи или коснись — покажет время',
+  resultStripHint: 'коснись — покажет время',
   resultChartTitle: 'Точность и комбо',
   resultAccuracyLine: 'точность',
   resultComboArea: 'комбо',

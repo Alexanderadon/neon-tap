@@ -68,7 +68,7 @@ export function drawStrip(ctx: CanvasRenderingContext2D, x: number, y: number, w
     if (end <= start) continue;
     const bx = x + start * w;
     const bw = (end - start) * w;
-    const c = laneBandColor(s.lanes);
+    const c = laneBandColor(i);
     ctx.fillStyle = hexToRgba(c, 0.22);
     ctx.fillRect(bx, by, bw, bandH);
     ctx.fillStyle = c;
@@ -78,7 +78,7 @@ export function drawStrip(ctx: CanvasRenderingContext2D, x: number, y: number, w
       ctx.fillRect(bx - 0.5, by, 1, bandH);
     }
     if (bw >= labelFont * 2.2 && bandH >= labelFont) {
-      ctx.fillStyle = c;
+      ctx.fillStyle = '#ffffff';
       ctx.fillText(String(s.lanes), bx + bw / 2, by + bandH / 2 + bandH * 0.08);
     }
   }

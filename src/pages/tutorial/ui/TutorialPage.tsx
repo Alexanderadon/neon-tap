@@ -65,7 +65,7 @@ export function TutorialPage() {
       else if (e.type === 'judge' && e.judgement !== 'miss') {
         const i = captionAt(script, timeRef.current);
         if (i >= 0) setSucceeded((mask) => mask | (1 << i));
-      }
+    }
     },
     [script, finish],
   );
@@ -113,16 +113,25 @@ export function TutorialPage() {
   const index = captionAt(script, songTime);
   const step = index >= 0 ? script[index] : null;
   return (
-    <>
-      <GameCanvas chart={chart} source="catalog" audioBuffer={null} mode="tutorial" onEvent={onEvent} onTime={onTime} onExit={finish} header={<TopBar />} />
-      <TutorialOverlay
-        step={step}
-        index={index}
-        total={script.length}
-        progress={step ? stepProgress(step, songTime) : 0}
-        succeeded={index >= 0 && (succeeded & (1 << index)) !== 0}
-        touch={isTouchDevice()}
-      />
-    </>
+    <GameCanvas
+        chart={chart}
+        source="catalog"
+        audioBuffer={null}
+        mode="tutorial"
+        onEvent={onEvent}
+        onTime={onTime}
+        onExit={finish}
+        header={<TopBar />}
+        overlay={
+          <TutorialOverlay
+            step={step}
+            index={index}
+            total={script.length}
+            progress={step ? stepProgress(step, songTime) : 0}
+            succeeded={index >= 0 && (succeeded & (1 << index)) !== 0}
+            touch={isTouchDevice()}
+          />
+        }
+    />
   );
 }

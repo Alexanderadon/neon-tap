@@ -1,10 +1,10 @@
 import type { Judgement, Rank } from '@/entities/score';
 
-/** Judgement tick colours: miss magenta, good lime, great cyan, perfect white (same as the breakdown rows). */
+/** Judgement tick colours (audit §C13): one grey ramp — white / w80 / w55 — with magenta only for misses. */
 export const JUDGEMENT_COLORS: Record<Judgement, string> = {
   perfect: '#ffffff',
-  great: '#00f0ff',
-  good: '#b6ff00',
+  great: '#cccccc',
+  good: '#8c8c8c',
   miss: '#ff2bd6',
 };
 
@@ -18,11 +18,9 @@ export const RANK_COLORS: Record<Rank, string> = {
   D: '#ff2bd6',
 };
 
-const LANE_BAND: Record<number, string> = { 2: '#b56bff', 3: '#00f0ff', 4: '#b6ff00', 5: '#ff8a00', 6: '#ff2bd6' };
-
-/** Colour of a lane-count section band under the song strip. */
-export function laneBandColor(lanes: number): string {
-  return LANE_BAND[lanes] ?? '#ffffff';
+/** Colour of a lane-count section band under the song strip: the sections alternate two greys (w55 / w30), the number tells the width. */
+export function laneBandColor(index: number): string {
+  return index % 2 === 0 ? '#8c8c8c' : '#4d4d4d';
 }
 
 export const FONT_DISPLAY = "'Unbounded', 'Segoe UI', system-ui, sans-serif";

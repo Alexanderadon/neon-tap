@@ -22,6 +22,11 @@ describe('lootOf', () => {
     expect(loot.starsDelta).toBe(3);
   });
 
+  it('replaces an achievement title wider than the coin with the generic caption', () => {
+    const loot = lootOf({ crystals: 0, starsGained: 0, dailyBonus: false, goals: [{ title: 'Пройди 1 трек', reward: 25 }] });
+    expect(loot.coins[2]).toEqual({ key: 'goals', tone: 'cy', amount: 25, caption: 'достижение' });
+  });
+
   it('counts several achievements in one coin', () => {
     const loot = lootOf({
       crystals: 0,
