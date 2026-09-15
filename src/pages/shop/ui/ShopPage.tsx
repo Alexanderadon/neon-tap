@@ -1,43 +1,62 @@
-import { useEffect } from 'react';
-import { dict } from '@/shared/i18n';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { navigate } from '@/shared/lib/router';
-import { Screen, useSwipeBack } from '@/shared/ui';
-import { ShopGrid } from '@/widgets/shop-grid';
-import { WalletBadge } from '@/widgets/wallet-badge';
-import '../../page.css';
+import { sfxUi } from '@/shared/lib/audio';
+import { Screen } from '@/shared/ui';
+import { CoverScene } from '@/entities/track';
+import { TopBar, type CounterTick } from '@/widgets/top-bar';
+import { ShopGrid, type SceneTrack, type WalletTick } from '@/widgets/shop-grid';
 import './shop.css';
 
-/** Crystal shop: balance + how to earn on top, one card per track on sale, back to the menu. */
-const toMenu = () => navigate('menu');
+const toMenu = () => {
+  sfxUi();
+  navigate('menu');
+};
+const toRecords = () => {
+  sfxUi();
+  navigate('menu', { view: 'records' });
+};
+const toProfile = () => {
+  sfxUi();
+  navigate('menu', { view: 'profile' });
+};
+/** A tap on an owned card opens the deck on that track. */
+const toTrack = (id: string) => {
+  sfxUi();
+  navigate('menu', { track: id });
+};
 
+/** How long a wallet tick stays on the top bar before it reads the live wallet again (flight + tick + bump). */
+const TICK_HOLD_MS = 1400;
+
+/**
+ * The shop screen: the scene tinted by the focused card's cover, the top bar identical to every
+ * other screen, and the shop widget (sub-header, cards, purchase sheet, ad, bottom action zone).
+ * The wallet chip ticks when the widget says so; the crystals fly into it from the widget's layer.
+ */
 export function ShopPage() {
-  useSwipeBack(toMenu);
+  const [scene, setScene] = useState<SceneTrack | null>(null);
+  const [tick, setTick] = useState<CounterTick | null>(null);
+  const crystalsRef = useRef<HTMLElement>(null);
+  const onWalletTick = useCallback((t: WalletTick) => setTick(t), []);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') navigate('menu');
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+    if (!tick) return;
+    const id = window.setTimeout(() => setTick(null), (tick.delay ?? 0) * 1000 + TICK_HOLD_MS);
+    return () => window.clearTimeout(id);
+  }, [tick]);
 
   return (
-    <Screen className="shop">
-      <header className="shop-head">
-        <button type="button" className="shop-back" onClick={toMenu} aria-label={dict.back}>
-          <BackIcon />
-        </button>
-        <h1 className="page-title shop-title">{dict.shop}</h1>
-        <WalletBadge link={false} />
-      </header>
-      <ShopGrid />
+    <Screen frame className="shop">
+      <CoverScene id={scene?.id} genre={scene?.genre} />
+      <TopBar crystals={tick ?? undefined} crystalsRef={crystalsRef} />
+      <ShopGrid
+        crystalsRef={crystalsRef}
+        onSceneTrack={setScene}
+        onWalletTick={onWalletTick}
+        onBack={toMenu}
+        onRecords={toRecords}
+        onProfile={toProfile}
+        onTrack={toTrack}
+      />
     </Screen>
-  );
-}
-
-function BackIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M15 5l-7 7 7 7" />
-    </svg>
   );
 }
