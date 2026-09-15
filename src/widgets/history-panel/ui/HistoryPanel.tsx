@@ -26,17 +26,31 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
   useEffect(() => {
     let alive = true;
     setOnline({ status: 'loading' });
-    leaderboard
-      .fetchTop(trackId, nickname || undefined)
-      .then((r) => {
+    (async () => {
+      try {
+        let r = await leaderboard.fetchTop(trackId, nickname || undefined);
+        // A best kept only on this device (played while the table was off) is posted once, then the table is re-read.
+        if (r.enabled && nickname && best && !best.failed && r.position === null) {
+          const posted = await leaderboard.submit({
+            track: trackId,
+            name: nickname,
+            score: best.score,
+            accuracy: best.accuracy,
+            rank: best.rank,
+            maxCombo: best.maxCombo,
+          });
+          if (posted.ok) r = await leaderboard.fetchTop(trackId, nickname);
+        }
         if (!alive) return;
         setOnline(r.enabled ? { status: 'ready', top: r.top, position: r.position } : { status: 'off' });
-      })
-      .catch(() => alive && setOnline({ status: 'off' }));
+      } catch {
+        if (alive) setOnline({ status: 'off' });
+      }
+    })();
     return () => {
       alive = false;
     };
-  }, [trackId, nickname]);
+  }, [trackId, nickname, best]);
 
   const me = nickname.toLocaleLowerCase();
   const rows = online.status === 'ready' ? online.top.slice(0, SHOW) : [];
