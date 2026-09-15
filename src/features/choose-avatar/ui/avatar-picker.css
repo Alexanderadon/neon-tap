@@ -34,7 +34,7 @@
 .avp-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: 12px 4px;
   width: 100%;
   margin-top: 16px;
 }
@@ -69,13 +69,13 @@
 .avp-on .ava {
   transform: scale(1.06);
 }
-/* The name: 11 px caps, three lines at most; long words break at the soft hyphens in the dictionary («КОСМО-НАВТ», «НАУШ-НИКАХ»). */
+/* The name: 11 px caps, one line (the names are one word each). */
 .avp-name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 1;
   width: 100%;
-  height: 42px;
+  height: 14px;
   overflow: hidden;
   font: 700 11px/14px var(--font);
   letter-spacing: 0;
