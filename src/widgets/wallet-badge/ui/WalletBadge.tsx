@@ -1,56 +1,50 @@
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { CrystalIcon } from '@/shared/ui';
+import { Chip, Coin, CrystalIcon } from '@/shared/ui';
 import { useProgress } from '@/entities/progress';
 import './wallet-badge.css';
 
 interface BadgeProps {
-  /** Tapping the badge opens the shop (default) — pass `false` for a plain read-only pill. */
+  /** Tapping the badge opens the shop (default) — pass `false` for a plain read-only chip. */
   link?: boolean;
+  /** Fixed width (the top bar uses 88 so the digits never move the bar). */
+  width?: number;
   className?: string;
 }
 
-/** Crystal balance pill for the menu header; a button that leads to the shop. */
-export function WalletBadge({ link = true, className = '' }: BadgeProps) {
+/** Crystal balance: the 32 px cyan chip (crystal with its halo + the number); a button that leads to the shop. */
+export function WalletBadge({ link = true, width, className }: BadgeProps) {
   const crystals = useProgress((s) => s.crystals);
   const label = `${dict.crystalsTitle}: ${crystals}`;
-  const body = (
-    <>
-      <CrystalIcon size={15} />
-      <span className="wallet-n">{crystals}</span>
-    </>
-  );
-  if (!link) {
-    return (
-      <span className={`wallet ${className}`} aria-label={label} title={label}>
-        {body}
-      </span>
-    );
-  }
   return (
-    <button
-      type="button"
-      className={`wallet wallet-link ${className}`}
-      aria-label={`${label} · ${dict.shop}`}
-      title={dict.shop}
-      onClick={() => {
-        sfxUi();
-        navigate('shop');
-      }}
+    <Chip
+      variant="cy"
+      width={width}
+      icon={<CrystalIcon size={16} halo />}
+      className={className}
+      aria-label={link ? `${label} · ${dict.shop}` : label}
+      title={link ? dict.shop : label}
+      onClick={
+        link
+          ? () => {
+              sfxUi();
+              navigate('shop');
+            }
+          : undefined
+      }
     >
-      {body}
-    </button>
+      {crystals}
+    </Chip>
   );
 }
 
-/** «Кристаллы: +N» — one line for the result screen (pops in with the icon). */
+/** «+N кристаллы» — the reward coin (105 × 56) for the result screen; nothing when there is no reward. */
 export function CrystalsEarned({ n }: { n: number }) {
   if (n <= 0) return null;
   return (
-    <div className="crystals-earned" role="status">
-      <CrystalIcon size={16} />
-      <span>{fmt(dict.crystalsEarned, { n })}</span>
-    </div>
+    <span className="crystals-earned" role="status" aria-label={fmt(dict.crystalsEarned, { n })}>
+      <Coin tone="cy" icon={<CrystalIcon size={20} halo />} value={`+${n}`} caption={dict.crystalsTitle.toLocaleLowerCase()} animate />
+    </span>
   );
 }

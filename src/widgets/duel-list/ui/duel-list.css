@@ -1,83 +1,96 @@
+/* DuelList (DuelList.tsx): DuelRow 335 × 64 (object button with a round cover); answers are shared ListRows. */
 .duels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.duels-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.duels-title {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 13px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-magenta);
+/* The duel row: the same object button as the trio, 64 tall — cover 40 · title + «ты 102 400» · verdict tag. */
+.duel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 64px;
+  padding: 0 16px 0 12px;
   margin: 0;
+  border: 0;
+  border-radius: var(--r-16);
+  background: var(--dark-face);
+  box-shadow: var(--sh-obj);
+  color: #fff;
+  font: var(--t-15);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
 }
-.duels-empty,
-.duels-sub {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+.duel-row:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    0 2px 0 #000;
 }
-.duels-list,
-.duels-replies {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.duel-row:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.duel-thumb {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(5, 6, 10, 0.35);
+}
+.duel-thumb > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.duel-two {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
-.duels-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.duels-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-}
-.duels-track {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
+.duel-title {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  font: var(--t-15);
 }
-.duels-my {
-  font-family: var(--font-display);
-  font-weight: 900;
-  color: #ffd700;
-  font-variant-numeric: tabular-nums;
-}
-.duels-reply {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 10px;
-  align-items: baseline;
-  font-size: 14px;
-}
-.duels-reply-name {
+.duel-sub {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  font: var(--t-13);
+  color: var(--w55);
 }
-.duels-reply-score {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.duel-sub b {
+  font: var(--t-13b);
+  color: #fff;
 }
-.duels-reply-mark {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
+.duel-row > .tag {
+  flex: none;
 }
-.duels-reply.is-beat .duels-reply-mark {
-  color: var(--c-magenta);
+
+@media (prefers-reduced-motion: reduce) {
+  .duel-row {
+    transition: none;
+  }
 }

@@ -1,69 +1,9 @@
-.wallet {
-  --gem: #7df9ff;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--gem) 45%, transparent);
-  background: color-mix(in srgb, var(--gem) 8%, transparent);
-  color: var(--gem);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  line-height: 1;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--gem) 70%, transparent);
-  white-space: nowrap;
-}
-.wallet .crystal-icon {
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--gem) 80%, transparent));
-}
-.wallet-link {
-  cursor: pointer;
-  touch-action: manipulation;
-  font: inherit;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  transition: background 0.15s, box-shadow 0.2s;
-}
-.wallet-link:hover,
-.wallet-link:focus-visible {
-  background: color-mix(in srgb, var(--gem) 18%, transparent);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--gem) 45%, transparent);
-  outline: none;
-}
+/* WalletBadge (WalletBadge.tsx): the crystal chip is a plain `Chip` — only the reward coin wrapper lives here. */
 .crystals-earned {
-  --gem: #7df9ff;
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 4px 0;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--gem) 40%, transparent);
-  color: var(--gem);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--gem) 70%, transparent);
-  animation: crystals-pop 0.5s cubic-bezier(0.2, 0.9, 0.2, 1.3) 0.4s both;
+  width: 105px;
+  flex: none;
 }
-.crystals-earned .crystal-icon {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--gem) 90%, transparent));
-}
-@keyframes crystals-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .crystals-earned {
-    animation: none;
-  }
+.crystals-earned > .coin {
+  width: 100%;
 }

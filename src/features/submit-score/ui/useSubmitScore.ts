@@ -37,10 +37,12 @@ const EMPTY: SubmitState = { status: 'idle', top: [], position: null, improved: 
  * Drives the online submission for the result screen: probes the backend once, asks for a
  * nickname when missing, posts the score and hands back the top list + the player's position.
  */
-export function useSubmitScore(result: PlayResult | null, source: ChartSource): SubmitState & { skipNickname: () => void } {
+export function useSubmitScore(result: PlayResult | null, source: ChartSource): SubmitState & { skipNickname: () => void; retry: () => void } {
   const nickname = useSettings((s) => s.nickname);
   const [declined, setDeclined] = useState(declinedThisSession);
   const [state, setState] = useState<SubmitState>(EMPTY);
+  /** Bumped by `retry` after an error: the submission runs again (the request itself is not cached on failure). */
+  const [attempt, setAttempt] = useState(0);
   const eligible = isEligible(result, source);
 
   useEffect(() => {
@@ -67,7 +69,18 @@ export function useSubmitScore(result: PlayResult | null, source: ChartSource): 
         return;
       }
       setState((s) => ({ ...s, status: 'submitting' }));
-      const r = await submitScore(result, nickname);
+      // A retry after a failure must post again: `submitScore` shares one promise per run, so go to the client directly.
+      const r =
+        attempt > 0
+          ? await leaderboard.submit({
+              track: result.trackId,
+              name: nickname,
+              score: result.score,
+              accuracy: result.accuracy,
+              rank: result.rank,
+              maxCombo: result.maxCombo,
+            })
+          : await submitScore(result, nickname);
       if (cancelled) return;
       if (r.ok) setState({ status: 'done', top: r.top, position: r.position, improved: r.improved });
       else if (!r.enabled) setState({ ...EMPTY, status: 'disabled' });
@@ -79,12 +92,17 @@ export function useSubmitScore(result: PlayResult | null, source: ChartSource): 
     return () => {
       cancelled = true;
     };
-  }, [eligible, result, nickname, declined]);
+  }, [eligible, result, nickname, declined, attempt]);
 
   const skipNickname = useCallback(() => {
     declinedThisSession = true;
     setDeclined(true);
   }, []);
 
-  return { ...state, skipNickname };
+  const retry = useCallback(() => {
+    setState((s) => (s.status === 'error' ? { ...s, status: 'submitting' } : s));
+    setAttempt((n) => n + 1);
+  }, []);
+
+  return { ...state, skipNickname, retry };
 }

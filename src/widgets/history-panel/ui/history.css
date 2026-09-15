@@ -1,95 +1,88 @@
+/* HistoryPanel (HistoryPanel.tsx): the record panel with its tag pair, then ListRows 335 × 48 or one state panel. */
 .history {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-.history-empty {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  padding: 12px 0;
-}
-/* My best: one big number. */
-.history-best {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255, 215, 0, 0.06);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-}
-.history-best-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.5);
-}
-.history-best-score {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 28px;
-  color: #ffd700;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-/* Other players: place, name, score — and my own row lit up. */
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* The tag pair sits on the panel's top edge: 24 tall, overlapping the panel by 12. */
+.history-tab {
+  position: relative;
+  z-index: 2;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  height: 24px;
+  margin-bottom: -28px;
 }
-.history-row {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 9px 8px;
-  font-size: 15px;
-  border-radius: 10px;
-}
-.history-row-me {
-  background: rgba(0, 240, 255, 0.1);
-  border: 1px solid rgba(0, 240, 255, 0.45);
-}
-.history-pos {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.55);
-  text-align: right;
-}
-.history-row:nth-child(1) .history-pos {
-  color: #ffd700;
-}
-.history-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.history-row-me .history-name {
-  color: #7df9ff;
-  font-weight: 700;
+.history-best {
+  height: 112px;
+  justify-content: center;
 }
 .history-score {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  height: 48px;
+  font: var(--t-44);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  text-shadow: var(--emboss);
 }
-.history-place {
-  text-align: center;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+.history-score-none {
+  font: var(--t-20);
+  line-height: 48px;
+  letter-spacing: var(--track-title);
+  color: var(--w30);
+  text-shadow: none;
+}
+.history-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
+}
+.history-stats b {
+  font-weight: 700;
+  color: #fff;
+}
+.history-rank {
+  color: var(--gold);
 }
 
-/* compact line under the result grid */
-.attempt-line {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+/* Other players: shared ListRows at 8 px. */
+.history-list {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 6px;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.attempt-line .history-trend {
-  font-size: 14px;
+.history-place {
+  display: flex;
+  justify-content: center;
+  height: 24px;
+}
+
+/* Compact line for the result screen: «Попытка №N · лучший результат … · тренд ↑». */
+.attempt-line {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
+  white-space: nowrap;
+}
+.history-trend-up {
+  color: var(--cyan);
+}
+.history-trend-down {
+  color: var(--mag);
+}
+.history-trend-flat {
+  color: var(--w55);
 }

@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { dict, fmt, plural } from '@/shared/i18n';
-import { navigate } from '@/shared/lib/router';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
+import { dict, fmt } from '@/shared/i18n';
 import { sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
-import { CrystalIcon, Difficulty, Stars } from '@/shared/ui';
-import { CATALOG, TrackCover, type TrackMeta } from '@/entities/track';
+import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
+import { CATALOG, TrackCover, coverSpec, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
-import { lockFor, useCatalogState, type CatalogState, type LockState } from '../model/useCatalogState';
-import { usePlayTrack } from '../model/usePlayTrack';
-import { readDeckIndex, writeDeckIndex } from '../model/deckPosition';
+import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
+import { writeDeckIndex } from '../model/deckPosition';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
-import { LockIcon, PlayIcon, SunIcon } from './icons';
+import { cardGlow } from '../lib/coverGlow';
 import './track-deck.css';
 
 export interface TrackRef {
@@ -18,43 +16,38 @@ export interface TrackRef {
   title: string;
 }
 
-interface Props {
-  /** "Records" for the current track (history modal lives in the page). */
-  onRecords?: (track: TrackRef) => void;
-}
+/** Tracks per chapter — the progress segments above the deck. */
+export const CHAPTER = 10;
 
-/** Tracks per chapter — the progress dots above the deck. */
-const CHAPTER = 10;
+interface Props {
+  /** The centre card (controlled: the page keeps it so the primary button and the records screen follow it). */
+  index: number;
+  onIndexChange: (index: number) => void;
+  /** Enter / Space on the stage = the primary action. */
+  onPlay?: () => void;
+}
 
 const storage = (): Storage | null => (typeof localStorage === 'undefined' ? null : localStorage);
 
-/** The card to open with: the first playable track without a result, else the daily one, else the first. */
-function startIndex(state: CatalogState): number {
-  const next = CATALOG.findIndex((t) => !state.save.tracks[t.id] && lockFor(state, t.id, t.stars).locked === false);
-  if (next >= 0) return next;
-  const daily = CATALOG.findIndex((t) => t.id === state.dailyId);
-  return daily >= 0 ? daily : 0;
-}
-
 /**
- * The menu as a deck of cards, one track per card: cover, title, stars, rank — and one big PLAY
- * under the thumb. Swipe (or tap the edge, or use the arrow keys) to flip to the neighbours; a
- * locked card shows what opens it. No lists, no filters, no text walls: a phone game, not a catalog.
+ * The deck: one card per track — cover art edge to edge, title, three stars, the flame and the
+ * rank — with the neighbours peeking at the sides. Above it the chapter row: a gold «ГЛАВА N»
+ * tag and one segment per track. Swipe (or tap the edge, or use the arrow keys) to flip; tapping
+ * the centre card shows what the track is made of. Playing lives in the page's primary button.
  */
-export function TrackDeck({ onRecords }: Props) {
+export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   const state = useCatalogState();
-  const { busy, play } = usePlayTrack();
   const n = CATALOG.length;
-  const [index, setIndex] = useState(() => readDeckIndex(storage(), n) ?? startIndex(state));
   const [details, setDetails] = useState(false);
   /** Motion lives outside React; `index` follows the centre card and is the only render trigger. */
   const motion = useRef<DeckMotion | null>(null);
   if (!motion.current) motion.current = new DeckMotion(index);
   const cards = useRef(new Map<number, HTMLElement>());
-  const stageRef = useRef<HTMLDivElement>(null);
   const raf = useRef(0);
   const indexRef = useRef(index);
   indexRef.current = index;
+  const changeRef = useRef(onIndexChange);
+  changeRef.current = onIndexChange;
   /** Active drag: pointer id, start x, and the last two samples for the release velocity. */
   const pointer = useRef<{ id: number; x: number; prev: { x: number; t: number }; last: { x: number; t: number } } | null>(null);
 
@@ -63,7 +56,8 @@ export function TrackDeck({ onRecords }: Props) {
     const pos = motion.current!.pos();
     for (const [i, el] of cards.current) {
       const st = cardStyle(i - pos);
-      el.style.transform = `translate3d(${st.x}%, 0, 0) scale(${st.scale})`;
+      // −50 % centres the card on its own width; the rest is the deck offset in card widths.
+      el.style.transform = `translate3d(${st.x - 50}%, 0, 0) scale(${st.scale})`;
       el.style.opacity = String(st.opacity);
       el.style.zIndex = String(st.z);
     }
@@ -78,7 +72,7 @@ export function TrackDeck({ onRecords }: Props) {
     indexRef.current = i;
     sfxSwipe(1 + 0.03 * Math.min(8, passes.current++));
     setDetails(false);
-    setIndex(i);
+    changeRef.current(i);
     writeDeckIndex(storage(), i);
   }, []);
 
@@ -105,6 +99,11 @@ export function TrackDeck({ onRecords }: Props) {
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
   // New cards mount (the window slid): place them before the browser paints.
   useLayoutEffect(paint, [index, paint]);
+  // The page moved the index itself (not via a swipe): fly there.
+  useEffect(() => {
+    const m = motion.current!;
+    if (!m.isFlying() && Math.round(m.pos()) !== index) flyTo(index);
+  }, [index, flyTo]);
 
   const track = CATALOG[index];
   const lock = useMemo(() => lockFor(state, track.id, track.stars), [state, track]);
@@ -112,7 +111,10 @@ export function TrackDeck({ onRecords }: Props) {
   const go = useCallback((to: number) => flyTo(Math.max(0, Math.min(n - 1, to))), [flyTo, n]);
 
   /** Card width in px — converts a finger drag into a fraction of a card. */
-  const cardPx = () => (stageRef.current ? Math.min(stageRef.current.clientWidth * 0.78, 360) : 300);
+  const cardPx = () => {
+    const el = cards.current.get(indexRef.current);
+    return el ? el.getBoundingClientRect().width || 292 : 292;
+  };
 
   // Swipe: the finger owns the position; release → flight (see deckMotion.ts).
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -140,124 +142,66 @@ export function TrackDeck({ onRecords }: Props) {
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight') go(index + 1);
     else if (e.key === 'ArrowLeft') go(index - 1);
-    else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onPlay();
-    } else return;
+    else if (e.key === 'Enter' || e.key === ' ') onPlay?.();
+    else return;
     e.preventDefault();
   };
 
-  const onPlay = () => {
-    if (busy) return;
-    sfxUi();
-    if (lock.locked) {
-      if (lock.premium) navigate('shop');
-      return;
-    }
-    void play(track.id);
-  };
-
-  // Keep the current card in a valid chapter when the catalog changes size (dev only).
-  useEffect(() => {
-    if (index >= n) setIndex(n - 1);
-  }, [index, n]);
-
   const chapter = Math.floor(index / CHAPTER);
   const chapterTracks = CATALOG.slice(chapter * CHAPTER, chapter * CHAPTER + CHAPTER);
+  const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
 
   return (
     <section className="deck" aria-label={dict.deckAria}>
       <header className="deck-head">
-        <button type="button" className="deck-chapter micro" onClick={() => go(((chapter + 1) * CHAPTER) % n)} aria-label={dict.deckNextChapter}>
-          {fmt(dict.deckChapter, { n: chapter + 1 })}
+        <button
+          type="button"
+          className="deck-chapter"
+          onClick={() => {
+            sfxUi();
+            go(((chapter + 1) * CHAPTER) % n);
+          }}
+          aria-label={dict.deckNextChapter}
+        >
+          <Tag>{fmt(dict.deckChapter, { n: chapter + 1 })}</Tag>
         </button>
-        <ol className="deck-dots" aria-label={fmt(dict.deckChapterProgress, { done: chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length, total: chapterTracks.length })}>
-          {chapterTracks.map((t, i) => {
-            const idx = chapter * CHAPTER + i;
-            const done = starsForTrack(state.save.tracks[t.id]) > 0;
-            const cls = ['deck-dot', done && 'is-done', idx === index && 'is-current'].filter(Boolean).join(' ');
-            return (
-              <li key={t.id} className={cls} aria-current={idx === index ? 'true' : undefined}>
-                <button type="button" className="deck-dot-hit" onClick={() => go(idx)} aria-label={t.title} />
-              </li>
-            );
-          })}
-        </ol>
-        <div className="deck-total mono" aria-label={`${dict.deckStars}: ${state.stars}`}>
-          <Stars value={1} max={1} /> {state.stars}
-        </div>
+        <Segments
+          states={chapterTracks.map<SegmentState>((t, i) =>
+            chapter * CHAPTER + i === index ? 'current' : starsForTrack(state.save.tracks[t.id]) > 0 ? 'done' : 'rest',
+          )}
+          labels={chapterTracks.map((t) => fmt(dict.deckSegmentAria, { title: t.title }))}
+          onSelect={(i) => go(chapter * CHAPTER + i)}
+          aria-label={fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}
+        />
       </header>
 
-      <div ref={stageRef} className="deck-stage" tabIndex={0} onKeyDown={onKey} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+      <div
+        className="deck-stage"
+        tabIndex={0}
+        onKeyDown={onKey}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
         {windowCards(index, n).map((i) => {
           const t = CATALOG[i];
-          const l = i === index ? lock : lockFor(state, t.id, t.stars);
+          const current = i === index;
           return (
             <DeckCard
               key={t.id}
               track={t}
               mount={(el) => (el ? cards.current.set(i, el) : cards.current.delete(i))}
-              current={i === index}
-              lock={l}
+              current={current}
+              lock={current ? lock : lockFor(state, t.id, t.stars)}
               daily={t.id === state.dailyId}
               best={starsForTrack(state.save.tracks[t.id])}
               rank={state.save.tracks[t.id]?.rank}
-              onTap={() => (i === index ? setDetails((d) => !d) : go(i))}
+              details={current && details}
+              onTap={() => (current ? setDetails((d) => !d) : go(i))}
             />
           );
         })}
-      </div>
-
-      {details && (
-        <div className="deck-details" role="region" aria-label={dict.deckDetails}>
-          <div className="deck-tags">
-            {[
-              track.features.laneChanges > 0 && dict.tagLanes,
-              track.features.circles > 0 && dict.tagCircles,
-              track.features.rolls > 0 && dict.tagRolls,
-              track.features.slides > 0 && dict.tagSlides,
-              track.features.holds > 0 && dict.tagHolds,
-            ]
-              .filter(Boolean)
-              .map((tag) => (
-                <span key={tag as string} className="deck-tag micro">
-                  {tag}
-                </span>
-              ))}
-            <span className="deck-tag deck-tag-genre micro">{dict.genres[track.genre]}</span>
-          </div>
-          {onRecords && (
-            <button type="button" className="deck-link" onClick={() => onRecords({ id: track.id, title: track.title })}>
-              {dict.records}
-            </button>
-          )}
-        </div>
-      )}
-
-      <div className="deck-play-wrap">
-        <button
-          type="button"
-          className={`deck-play${lock.locked ? ' is-locked' : ''}`}
-          onClick={onPlay}
-          disabled={busy !== null || (lock.locked && !lock.premium)}
-          aria-label={lock.locked ? (lock.premium ? fmt(dict.deckOpenFor, { n: lock.price }) : fmt(dict.deckNeedStars, { n: lock.need })) : fmt(dict.deckPlayAria, { title: track.title })}
-        >
-          <span className="deck-play-ring" aria-hidden="true" />
-          {lock.locked ? (lock.premium ? <CrystalIcon size={30} /> : <LockIcon size={30} />) : <PlayIcon size={40} />}
-        </button>
-        <div className="deck-play-hint micro">
-          {lock.locked ? (
-            lock.premium ? (
-              <>
-                {fmt(dict.deckOpenFor, { n: lock.price })} {plural(lock.price, dict.crystalsNoun)}
-              </>
-            ) : (
-              fmt(dict.deckNeedStars, { n: Math.max(0, lock.need - state.stars) })
-            )
-          ) : (
-            dict.play
-          )}
-        </div>
       </div>
     </section>
   );
@@ -274,40 +218,73 @@ interface CardProps {
   track: TrackMeta;
   /** Registers the element so the motion loop can write its transform. */
   mount: (el: HTMLElement | null) => void;
-  /** The centre card (the one PLAY refers to). */
+  /** The centre card (the one the primary button refers to). */
   current: boolean;
   lock: LockState;
   daily: boolean;
   best: number;
   rank?: string;
+  /** Mechanics and genre as a column of dark tags (tap the centre card). */
+  details: boolean;
   onTap: () => void;
 }
 
-function DeckCard({ track, mount, current, lock, daily, best, rank, onTap }: CardProps) {
+function DeckCard({ track, mount, current, lock, daily, best, rank, details, onTap }: CardProps) {
   const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
+  // The centre card glows in its cover's accent (spec §2.5); the neighbours only drop a shadow.
+  const style: CSSProperties | undefined = current ? { boxShadow: cardGlow(coverSpec(track.id, track.genre).palette.accent) } : undefined;
+  const tags: (string | false)[] = [
+    track.features.laneChanges > 0 && dict.tagLanes,
+    track.features.circles > 0 && dict.tagCircles,
+    track.features.rolls > 0 && dict.tagRolls,
+    track.features.slides > 0 && dict.tagSlides,
+    track.features.holds > 0 && dict.tagHolds,
+    dict.genres[track.genre],
+  ];
+  const shown = tags.filter((t): t is string => typeof t === 'string');
+  const gold = rank === 'S' || rank === 'SS';
   // Position, scale and opacity are written by the motion loop (see paint in TrackDeck).
   return (
-    <article ref={mount} className={cls} aria-hidden={current ? undefined : true} onClick={onTap}>
+    <article ref={mount} className={cls} style={style} aria-hidden={current ? undefined : true} onClick={onTap}>
       <div className="deck-art" aria-hidden="true">
         <TrackCover id={track.id} genre={track.genre} />
       </div>
-      {daily && (
-        <span className="deck-ribbon micro">
-          <SunIcon size={10} /> {dict.dailyTrack}
-        </span>
-      )}
+      <div className="deck-tags" aria-hidden={details ? undefined : true}>
+        {daily && (
+          <Tag shape="flush" icon={<Icon name="sun" />}>
+            {dict.dailyTrack}
+          </Tag>
+        )}
+        {details && (
+          <div className="deck-details" role="region" aria-label={dict.deckDetails}>
+            {shown.map((tag) => (
+              <Tag key={tag} variant="dark" shape="flush">
+                {tag}
+              </Tag>
+            ))}
+          </div>
+        )}
+      </div>
       {lock.locked && (
         <span className="deck-lock" aria-hidden="true">
-          {lock.premium ? <CrystalIcon size={28} /> : <LockIcon size={28} />}
-          <span className="mono">{lock.premium ? lock.price : `★ ${lock.need}`}</span>
+          <Icon name="lock" size={32} />
+          {lock.premium ? (
+            <Chip variant="cy" icon={<CrystalIcon size={16} halo />}>
+              {lock.price}
+            </Chip>
+          ) : (
+            <Chip variant="gd" icon={<Stars value={1} max={1} />}>
+              {lock.need}
+            </Chip>
+          )}
         </span>
       )}
       <div className="deck-text">
         <h1 className="deck-title">{track.title}</h1>
         <div className="deck-meta">
-          <Stars value={best} size="md" />
-          <Difficulty stars={track.stars} size="md" />
-          {rank && <span className={`deck-rank rank-${rank}`}>{rank}</span>}
+          <Stars value={best} size="md" halo />
+          <Difficulty stars={track.stars} />
+          {rank && <span className={gold ? 'deck-rank deck-rank-gold' : 'deck-rank'}>{rank}</span>}
         </div>
       </div>
     </article>

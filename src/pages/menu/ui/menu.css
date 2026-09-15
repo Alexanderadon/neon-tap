@@ -1,160 +1,102 @@
 /* ==========================================================================
-   MENU — the deck. Edge-to-edge column: deck (head · cards · PLAY), two round buttons at the
-   bottom corners (shop with the crystal balance, profile), everything else behind the profile sheet.
+   MENU (MenuPage.tsx) — one column: top bar 44 · (chapter row 24 + deck | sub-header 24 + body) ·
+   action zone (trio 48 + 16 + primary 64). Top anchored at safe-top + 8, bottom at safe-bottom + 24;
+   whatever is left over sits between the deck and the action zone. The scene is the focused cover.
    ========================================================================== */
-.menu {
-  isolation: isolate;
-  padding: max(8px, var(--safe-top)) 0 0;
-  gap: 0;
+/* No gutters on the menu: the deck stage spans the viewport so the neighbour cards peek in; the column blocks centre themselves. */
+.screen.menu {
+  gap: 16px;
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  overflow: hidden;
+  background: var(--bg);
+}
+/* The screen-enter keyframes end on `transform: none`, so the scene (absolute, inset 0) fills the fixed screen. */
+.menu > .scene {
+  z-index: -1;
+}
+
+/* The screen's own 16 px gap spaces the sub-header and the body; the frame's margin would double it. */
+.menu > .sub {
+  margin-top: 0;
+}
+
+/* --- profile ------------------------------------------------------------- */
+.profile {
+  display: flex;
+  flex-direction: column;
   align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+.profile-card {
+  height: 112px;
+  gap: 16px;
+  justify-content: center;
+}
+.profile-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+}
+.profile-two {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.profile-name {
   overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
 }
-
-/*
- * Slow-moving neon grid behind the reel: a perspective floor of cyan lines scrolling towards the
- * viewer plus a magenta horizon glow. Pure gradients + keyframes — no images, no JS.
- * `.menu-bg` is a fixed, masked, clipping window; its pseudo-element is the grid, one tile (44px)
- * taller than the window on each side and moved with `transform` only (compositor-driven).
- */
-.menu-bg {
-  position: fixed;
-  left: -20vw;
-  right: -20vw;
-  bottom: -10vh;
-  height: 62vh;
-  z-index: -1;
+.profile-hint {
   overflow: hidden;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 35%, #000 80%, transparent 100%);
-  opacity: 0.4;
+  text-overflow: ellipsis;
+  font: var(--t-13);
+  color: var(--w55);
 }
-.menu-bg::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -44px;
-  bottom: -44px;
-  background-image:
-    linear-gradient(rgba(0, 240, 255, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.11) 1px, transparent 1px);
-  background-size: 100% 44px, 64px 100%;
-  transform-origin: 50% 44px;
-  transform: perspective(520px) rotateX(64deg);
-  will-change: transform;
-  animation: menu-grid 4s linear infinite;
+.profile-chev {
+  flex: none;
+  color: var(--w30);
 }
-.menu::after {
-  content: '';
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 55vh;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(60% 50% at 50% 100%, rgba(255, 43, 214, 0.18), transparent 70%),
-    radial-gradient(40% 35% at 50% 100%, rgba(0, 240, 255, 0.1), transparent 70%);
-  animation: menu-horizon 6s ease-in-out infinite alternate;
-}
-@keyframes menu-grid {
-  from {
-    transform: perspective(520px) rotateX(64deg) translateY(0);
-  }
-  to {
-    transform: perspective(520px) rotateX(64deg) translateY(44px);
-  }
-}
-@keyframes menu-horizon {
-  from {
-    opacity: 0.7;
-    transform: scaleX(1);
-  }
-  to {
-    opacity: 1;
-    transform: scaleX(1.08);
-  }
-}
-
-/* --- round corner buttons ------------------------------------------------ */
-.menu-round {
-  position: fixed;
-  bottom: calc(max(12px, var(--safe-bottom)) + 26px);
-  z-index: 5;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(10, 12, 20, 0.85);
-  color: rgba(255, 255, 255, 0.85);
+.profile-stats {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  transition: transform 0.12s ease, border-color 0.2s ease;
-}
-.menu-round:active {
-  transform: scale(0.94);
-}
-.menu-round:focus-visible {
-  outline: 2px solid var(--c-cyan);
-  outline-offset: 3px;
-}
-.menu-round-shop {
-  left: calc(50% - 48px - 56px - 24px);
-  border-color: rgba(255, 43, 214, 0.45);
-}
-.menu-round-profile {
-  right: calc(50% - 48px - 56px - 24px);
-  border-color: rgba(0, 240, 255, 0.35);
-}
-.menu-round-shop {
-  flex-direction: column;
-  gap: 0;
-  color: #7df9ff;
-}
-.menu-round-n {
-  font-size: 11px;
-  line-height: 1;
-  margin-top: 2px;
-}
-@media (max-width: 379px) {
-  .menu-round-shop {
-    left: 12px;
-  }
-  .menu-round-profile {
-    right: 12px;
-  }
-}
-
-/* --- profile sheet ------------------------------------------------------- */
-.profile-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 16px;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
 }
-.profile-actions > :last-child {
-  grid-column: 1 / -1;
+.profile-stats b {
+  font-weight: 700;
+  color: #fff;
 }
-.menu-foot {
+.profile-doors {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
-.menu-foot a {
-  color: inherit;
+.profile-doors .obj-end .chip {
+  height: 32px;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .menu-bg::before,
-  .menu::after {
-    animation: none;
-  }
+.profile-foot {
+  display: block;
+  height: 16px;
+  margin-top: 4px;
+  font: var(--t-11);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
+  color: var(--w30);
+}
+.profile-foot:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: var(--r-999);
 }

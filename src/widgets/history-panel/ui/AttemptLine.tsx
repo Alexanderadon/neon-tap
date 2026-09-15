@@ -1,6 +1,6 @@
 import { dict, fmt } from '@/shared/i18n';
 import { bestOf, playsOf, trendOf, useHistory } from '@/entities/history';
-import { formatScore } from '../lib/format';
+import { formatScore } from '@/shared/lib/format';
 import { TrendMark } from './TrendMark';
 import './history.css';
 
