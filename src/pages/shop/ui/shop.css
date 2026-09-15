@@ -1,35 +1,10 @@
+/*
+ * Shop screen (ShopPage.tsx): one 335 column in 20 px gutters; the top zone sits at safe-top + 8,
+ * the bottom zone at safe-bottom + 24, the list between them scrolls inside (spec §1.4).
+ */
 .shop {
-  gap: 16px;
+  overflow: hidden;
 }
-/* Sticky top bar: back arrow · title · balance — reachable however far the list is scrolled. */
-.shop-head {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  width: 100%;
-  max-width: 760px;
-  display: grid;
-  grid-template-columns: 44px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0 10px;
-  background: linear-gradient(to bottom, #05060a 70%, rgba(5, 6, 10, 0));
-}
-.shop-title {
-  text-align: left;
-  margin: 0;
-}
-.shop-back {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(10, 12, 20, 0.85);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-.shop-back:active {
-  transform: scale(0.94);
+.shop > .topbar {
+  flex: none;
 }

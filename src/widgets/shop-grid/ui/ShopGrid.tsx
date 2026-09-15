@@ -1,66 +1,161 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { dict, fmt, plural } from '@/shared/i18n';
-import { audioEngine, sfxGem } from '@/shared/lib/audio';
-import { themeFor } from '@/shared/lib/render';
-import { Button, CrystalIcon, Difficulty, Modal } from '@/shared/ui';
-import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, type TrackMeta } from '@/entities/track';
-import { buyTrack, grandTotalStars, isForSale, trackPrice, unlockStates, useProgress, type UnlockInfo } from '@/entities/progress';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { dict, fmt } from '@/shared/i18n';
+import { ads, stubAds } from '@/shared/lib/ads';
+import { audioEngine, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
+import { navigate } from '@/shared/lib/router';
+import type { Genre } from '@/shared/types/chart';
+import { ActionZone, CrystalIcon, Disc, Icon, ObjButton, Panel, PrimaryAction, SubHeader, Tag, Thumb, Trio, useSwipeBack } from '@/shared/ui';
+import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
+import { dailyTrackId, grandTotalStars, localDateString, useProgress } from '@/entities/progress';
+import { startSession } from '@/entities/play-session';
+import { clearActiveDuel } from '@/entities/duel';
+import { buyTrackWithCrystals, purchasePaths, purchasePlan, watchAdAndUnlock } from '@/features/buy-track';
+import { shopItems, stableOrder, type ShopItem } from '../model/shopItems';
+import { arrivedSince, readSeenCrystals, writeSeenCrystals } from '../model/seenCrystals';
+import { ShopCard, PREVIEW_SEC } from './ShopCard';
+import { PurchaseSheet } from './PurchaseSheet';
+import { AdScreen } from './AdScreen';
+import { AdReward } from './AdReward';
+import { centreOf } from '../lib/centreOf';
+import { CrystalFlight, type FlightPath } from './CrystalFlight';
 import './shop-grid.css';
 
-interface Item {
-  track: TrackMeta;
-  info: UnlockInfo;
-  price: number;
+/** A wallet counter tick for the top bar: from → to after `delay` seconds (same shape as TopBar's CounterTick). */
+export interface WalletTick {
+  from: number;
+  to: number;
+  delay?: number;
+}
+
+export interface SceneTrack {
+  id: string;
+  genre?: Genre;
+}
+
+interface Props {
+  /** The wallet's crystal chip (TopBar's `crystalsRef`) — the flights land on it. */
+  crystalsRef: RefObject<HTMLElement>;
+  /** The track whose cover tints the scene: the first card, the one playing, the one being bought. */
+  onSceneTrack: (track: SceneTrack | null) => void;
+  /** The wallet ticks (a purchase, crystals that arrived since the last visit). */
+  onWalletTick: (tick: WalletTick) => void;
+  /** «Назад», Escape, the back swipe. */
+  onBack: () => void;
+  /** The other two doors of the bottom row. */
+  onRecords: () => void;
+  onProfile: () => void;
+  /** A tap on an owned card: open the deck on that track. */
+  onTrack: (id: string) => void;
 }
 
 const TOAST_MS = 2600;
-/** A preview: this many seconds, starting a third of the way in (past the intro). */
-const PREVIEW_SEC = 5;
+/** A preview starts a third of the way in (past the intro). */
 const PREVIEW_AT = 1 / 3;
+/** The wallet ticks when the last crystal lands (mockup: .8 s). */
+const TICK_DELAY = 0.8;
+const TICK_MS = 350;
 
-/** Star-locked tracks on sale at a time: the next few on the road, not the whole catalog. */
-const LOCKED_ON_SALE = 6;
+type View = 'list' | 'ad' | 'reward';
+
+function reducedMotion(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function storage(): Storage | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * What the crystals can buy: premium tracks, the next LOCKED_ON_SALE tracks still closed by stars
- * (an early unlock) and the ones already bought (shown as owned, at the bottom). Tracks open by
- * stars alone are not listed — nothing to sell.
+ * The shop (package B): the «МАГАЗИН» sub-header, the list of ShopCards, the bottom action zone,
+ * and every state on top of it — the purchase sheet (enough / not enough crystals, with the
+ * rewarded ad as the second way), the ad frame, the «Трек открыт!» reward, the gold toast, and the
+ * crystals flying into the wallet. The page around it draws the scene and the top bar.
  */
-export function ShopGrid() {
+export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack }: Props) {
   const save = useProgress((s) => s);
   const stars = grandTotalStars(save, TRACK_IDS);
-  const states = unlockStates(TRACK_IDS, { stars, premium: PREMIUM_IDS, purchased: save.purchased });
-  const items: Item[] = [];
-  let lockedShown = 0;
-  CATALOG.forEach((track, i) => {
-    const info = states[i];
-    if (!isForSale(info, stars)) return;
-    if (!info.premium && !info.purchased && lockedShown++ >= LOCKED_ON_SALE) return;
-    items.push({ track, info, price: trackPrice(track.stars, track.premium === true) });
-  });
-  // Owned tracks sink to the bottom; the rest keep catalog order (easiest first).
-  items.sort((a, b) => Number(a.info.purchased) - Number(b.info.purchased));
+  const live = useMemo(() => shopItems({ catalog: CATALOG, stars, premium: PREMIUM_IDS, purchased: save.purchased }), [stars, save.purchased]);
+  const orderRef = useRef<string[] | null>(null);
+  if (orderRef.current === null) orderRef.current = live.map((i) => i.track.id);
+  const order = orderRef.current;
+  const items = useMemo(() => stableOrder(live, order), [live, order]);
+  const daily = useMemo(() => {
+    const id = dailyTrackId(localDateString(), TRACK_IDS);
+    return id ? (findTrack(id) ?? null) : null;
+  }, []);
 
-  const [confirm, setConfirm] = useState<Item | null>(null);
+  const [view, setView] = useState<View>('list');
+  const [sheet, setSheet] = useState<ShopItem | null>(null);
+  const [adTrack, setAdTrack] = useState<TrackMeta | null>(null);
+  const [rewardTrack, setRewardTrack] = useState<TrackMeta | null>(null);
+  const [justBought, setJustBought] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const closeConfirm = useCallback(() => setConfirm(null), []);
+  const [flight, setFlight] = useState<FlightPath | null>(null);
+  /** The balance the cards still show while a tick is pending (prices recolour with the chip, not before). */
+  const [heldBalance, setHeldBalance] = useState<number | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const sheetPrimaryRef = useRef<HTMLDivElement>(null);
+  const listPrimaryRef = useRef<HTMLDivElement>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
+  // --- wallet ticks and flights ---
+  const launchTick = useCallback(
+    (from: number, to: number, origin: { x: number; y: number } | null) => {
+      const target = centreOf(crystalsRef.current);
+      const fly = origin !== null && target !== null && !reducedMotion();
+      const delay = fly ? TICK_DELAY : 0;
+      if (fly) setFlight({ from: origin, to: target });
+      setHeldBalance(from);
+      onWalletTick({ from, to, delay });
+      window.setTimeout(
+        () => {
+          if (mounted.current) setHeldBalance(null);
+        },
+        delay * 1000 + TICK_MS,
+      );
+    },
+    [crystalsRef, onWalletTick],
+  );
+  const endFlight = useCallback(() => setFlight(null), []);
+
+  // Crystals that arrived since the last visit fly in (mockup screen 7); the balance seen is remembered per viewer.
+  const crystals = save.crystals;
+  useEffect(() => {
+    const store = storage();
+    const seen = readSeenCrystals(store);
+    const arrived = arrivedSince(seen, crystals);
+    if (!(arrived > 0) || seen === null) {
+      writeSeenCrystals(store, crystals);
+      return;
+    }
+    // The seen balance is written when the flight starts, so a strict-mode double mount still flies once.
+    const t = window.setTimeout(() => {
+      writeSeenCrystals(store, crystals);
+      launchTick(seen, crystals, centreOf(listPrimaryRef.current?.querySelector('.primary-lead')));
+    }, 400);
+    return () => window.clearTimeout(t);
+    // Mount only: a later change of the balance is a purchase, handled by `buy`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- toast ---
   useEffect(() => {
     if (!toast) return;
     const id = window.setTimeout(() => setToast(null), TOAST_MS);
     return () => window.clearTimeout(id);
   }, [toast]);
 
-  const buy = () => {
-    if (!confirm) return;
-    const { ok } = buyTrack(confirm.track.id, confirm.price);
-    if (ok) {
-      sfxGem(true);
-      setToast(fmt(dict.shopBoughtToast, { title: confirm.track.title }));
-    }
-    setConfirm(null);
-  };
-
+  // --- preview (five seconds of the song) ---
   const [previewing, setPreviewing] = useState<string | null>(null);
   const previewToken = useRef(0);
   const stopPreview = useCallback(() => {
@@ -69,7 +164,6 @@ export function ShopGrid() {
     setPreviewing(null);
   }, []);
   useEffect(() => stopPreview, [stopPreview]);
-  /** Tap the cover: five seconds of the song from a third in; tap again (or another cover) to stop. */
   const togglePreview = useCallback(
     async (track: TrackMeta) => {
       if (previewing === track.id) {
@@ -86,126 +180,225 @@ export function ShopGrid() {
           if (token === previewToken.current) setPreviewing(null);
         });
       } catch {
+        // The clip did not load (network): the disc quietly returns to the triangle.
         if (token === previewToken.current) setPreviewing(null);
       }
     },
     [previewing, stopPreview],
   );
+
+  // --- the scene follows the focus: the ad / reward track, the sheet, the preview, else the first card ---
+  const previewTrack = previewing ? items.find((i) => i.track.id === previewing)?.track : undefined;
+  const focus = adTrack ?? rewardTrack ?? sheet?.track ?? previewTrack ?? items[0]?.track ?? null;
+  const focusId = focus?.id;
+  const focusGenre = focus?.genre;
+  useEffect(() => {
+    onSceneTrack(focusId ? { id: focusId, genre: focusGenre } : null);
+  }, [focusId, focusGenre, onSceneTrack]);
+
+  // --- back: closes what is open first, then leaves ---
+  const back = useCallback(() => {
+    if (view === 'ad') return;
+    if (sheet) {
+      setSheet(null);
+      return;
+    }
+    if (view === 'reward') {
+      setView('list');
+      setRewardTrack(null);
+      return;
+    }
+    onBack();
+  }, [view, sheet, onBack]);
+  useSwipeBack(back, view !== 'ad');
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') back();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [back]);
+
+  // --- play (the daily track from «ЗАРАБОТАТЬ», the unlocked track from «ИГРАТЬ») ---
+  const playTrack = useCallback(
+    async (id: string) => {
+      if (busy) return;
+      setBusy(id);
+      stopPreview();
+      try {
+        const chart = await loadChart(id);
+        clearActiveDuel();
+        startSession(chart, 'catalog');
+        navigate('game');
+      } finally {
+        if (mounted.current) setBusy(null);
+      }
+    },
+    [busy, stopPreview],
+  );
+
+  // --- purchase ---
+  const openSheet = useCallback((item: ShopItem) => {
+    sfxUi();
+    setSheet(item);
+  }, []);
+  const closeSheet = useCallback(() => setSheet(null), []);
+  const buy = useCallback(() => {
+    if (!sheet) return;
+    const item = sheet;
+    const before = save.crystals;
+    const origin = centreOf(sheetPrimaryRef.current?.querySelector('.primary-lead'));
+    const { ok } = buyTrackWithCrystals(item.track.id, item.price);
+    setSheet(null);
+    if (!ok) return;
+    sfxGem(true);
+    setJustBought(item.track.id);
+    setToast(fmt(dict.shopBoughtToast, { title: item.track.title }));
+    writeSeenCrystals(storage(), before - item.price);
+    launchTick(before, before - item.price, origin);
+  }, [sheet, save.crystals, launchTick]);
+
+  const startAd = useCallback(async () => {
+    if (!sheet) return;
+    const item = sheet;
+    setSheet(null);
+    stopPreview();
+    setAdTrack(item.track);
+    setView('ad');
+    const { unlocked } = await watchAdAndUnlock(item.track.id);
+    if (!mounted.current) return;
+    setAdTrack(null);
+    if (unlocked) {
+      sfxMilestone();
+      setJustBought(item.track.id);
+      setRewardTrack(item.track);
+      setView('reward');
+    } else {
+      setView('list');
+    }
+  }, [sheet, stopPreview]);
+  const closeAd = useCallback(() => {
+    // The stub resolves 'closed' (no reward); a real provider shows its own confirmation and closes itself.
+    if (ads === stubAds) stubAds.cancel();
+  }, []);
+
+  const earn = useCallback(() => {
+    setSheet(null);
+    if (daily) void playTrack(daily.id);
+    else onBack();
+  }, [daily, playTrack, onBack]);
+
+  const balance = heldBalance ?? save.crystals;
+  const plan = sheet ? purchasePlan(sheet.price, save.crystals) : null;
+  const paths = plan ? purchasePaths(plan, ads.available()) : null;
+  const empty = items.length === 0;
+
+  const trio = (
+    <Trio>
+      <ObjButton icon={<Icon name="back" size={20} />} label={dict.back} onClick={back} />
+      <ObjButton icon={<Icon name="trophy" size={20} />} label={dict.records} onClick={onRecords} />
+      <ObjButton icon={<Icon name="user" size={20} />} label={dict.profile} onClick={onProfile} />
+    </Trio>
+  );
+
   return (
-    <div className="shopgrid">
-      {items.length === 0 && <div className="shopgrid-empty">{dict.shopEmpty}</div>}
-      {items.map((it, i) => (
-        <ShopCard
-          key={it.track.id}
-          item={it}
-          index={i}
-          balance={save.crystals}
-          onBuy={() => setConfirm(it)}
-          previewing={previewing === it.track.id}
-          onPreview={() => togglePreview(it.track)}
-        />
-      ))}
-      <Modal open={confirm !== null} title={dict.shopConfirmTitle} onClose={closeConfirm} closeLabel={dict.shopConfirmNo} variant="dialog">
-        {confirm && (
-          <div className="shop-confirm">
-            <p className="shop-confirm-text">
-              {fmt(dict.shopConfirmText, {
-                title: confirm.track.title,
-                price: confirm.price,
-                noun: plural(confirm.price, dict.crystalsNoun),
-                left: save.crystals - confirm.price,
-              })}
-            </p>
-            <div className="shop-confirm-actions">
-              <Button onClick={buy} autoFocus>
-                {dict.shopConfirmYes}
-              </Button>
-              <Button variant="ghost" onClick={closeConfirm}>
-                {dict.shopConfirmNo}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-      {toast && (
-        <div className="shopgrid-toast" role="status">
-          <CrystalIcon size={14} /> {toast}
+    <div className="shop-body">
+      {view === 'reward' && rewardTrack ? (
+        <SubHeader center>
+          <b>{rewardTrack.title}</b>
+          <span>·</span>
+          <span>{rewardTrack.premium ? dict.shopPremium : dict.shopBought}</span>
+        </SubHeader>
+      ) : (
+        <SubHeader tag={<Tag>{dict.shop}</Tag>} text={dict.shopEarnHint} />
+      )}
+
+      {view === 'reward' && rewardTrack ? (
+        <AdReward track={rewardTrack} />
+      ) : (
+        <div className="shop-list" role="list">
+          {empty && (
+            <Panel layout="score" className="shop-empty">
+              <Icon name="bag" size={32} />
+              <span>{dict.shopEmpty}</span>
+            </Panel>
+          )}
+          {items.map((it) => (
+            <ShopCard
+              key={it.track.id}
+              item={it}
+              balance={balance}
+              previewing={previewing === it.track.id}
+              justBought={justBought === it.track.id}
+              onPreview={() => void togglePreview(it.track)}
+              onOpen={() => (it.kind === 'owned' ? onTrack(it.track.id) : openSheet(it))}
+            />
+          ))}
         </div>
       )}
-    </div>
-  );
-}
 
-interface CardProps {
-  item: Item;
-  index: number;
-  balance: number;
-  onBuy: () => void;
-  /** This card's five-second listen is playing. */
-  previewing: boolean;
-  onPreview: () => void;
-}
-
-function ShopCard({ item, index, balance, onBuy, previewing, onPreview }: CardProps) {
-  const { track, info, price } = item;
-  const owned = info.purchased;
-  const tone = track.premium ? '#ff2bd6' : themeFor(track.genre, track.id).accent;
-  const premium = info.premium;
-  const short = Math.max(0, price - balance);
-  const canBuy = !owned && short === 0;
-  const cls = ['shopcard', owned && 'shopcard-owned', premium && 'shopcard-premium'].filter(Boolean).join(' ');
-  return (
-    <article className={cls} style={{ ['--tone' as string]: tone, ['--i' as string]: index }}>
-      <button
-        type="button"
-        className={`shopcard-listen${previewing ? ' is-playing' : ''}`}
-        onClick={onPreview}
-        aria-label={`${previewing ? dict.shopPreviewStop : dict.shopPreview} · ${track.title}`}
-        aria-pressed={previewing}
-      >
-        <TrackCover id={track.id} genre={track.genre} title={track.title} className="shopcard-cover" />
-        <span className="shopcard-listen-icon" aria-hidden="true">
-          {previewing ? (
-            <span className="shopcard-eq">
-              <i />
-              <i />
-              <i />
+      <ActionZone className={view === 'reward' ? 'shop-actions shop-actions-reward' : 'shop-actions'}>
+        {toast && (
+          <div className="shop-toast" role="status">
+            <span className="shop-cy">
+              <CrystalIcon size={20} />
             </span>
+            {toast}
+          </div>
+        )}
+        {trio}
+        <div className="shop-primary" ref={listPrimaryRef}>
+          {view === 'reward' && rewardTrack ? (
+            <PrimaryAction
+              lead={
+                <Disc>
+                  <Icon name="play" size={24} />
+                </Disc>
+              }
+              label={dict.play}
+              sub={rewardTrack.title}
+              beat
+              disabled={busy !== null}
+              onClick={() => void playTrack(rewardTrack.id)}
+            />
           ) : (
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M4.5 2.5v11l9-5.5z" />
-            </svg>
-          )}
-        </span>
-      </button>
-      <div className="shopcard-body">
-        <div className="shopcard-title">{track.title}</div>
-        <div className="shopcard-genre">
-          {premium && <span className="shopcard-tag">{dict.shopPremium}</span>}
-          <Difficulty stars={track.stars} className="shopcard-diff" />
-          {!owned && (
-            <span className={`shopcard-price${short > 0 ? ' is-short' : ''}`}>
-              {' · '}
-              <CrystalIcon size={11} /> {price}
-            </span>
+            <PrimaryAction
+              lead={
+                daily ? (
+                  <Thumb>
+                    <TrackCover id={daily.id} genre={daily.genre} title={daily.title} />
+                  </Thumb>
+                ) : (
+                  <Disc>
+                    <Icon name="play" size={24} />
+                  </Disc>
+                )
+              }
+              label={empty ? dict.play : dict.shopEarn}
+              sub={daily ? (empty ? daily.title : fmt(dict.shopDailyLabel, { title: daily.title })) : dict.shopEarnHint}
+              beat
+              disabled={busy !== null}
+              onClick={earn}
+            />
           )}
         </div>
-      </div>
-      <div className="shopcard-side">
-        {owned ? (
-          <span className="shopcard-bought">{dict.shopBought}</span>
-        ) : (
-          <Button
-            size="md"
-            className={`shopcard-buy${short > 0 ? ' is-short' : ''}`}
-            disabled={!canBuy}
-            onClick={onBuy}
-            aria-label={`${dict.shopBuy} · ${price} ${plural(price, dict.crystalsNoun)}${short > 0 ? ` · ${fmt(dict.shopNotEnough, { n: short })}` : ''}`}
-          >
-            {dict.shopBuy}
-          </Button>
-        )}
-      </div>
-    </article>
+      </ActionZone>
+
+      {sheet && plan && paths && (
+        <PurchaseSheet
+          item={sheet}
+          plan={plan}
+          paths={paths}
+          daily={daily}
+          onBuy={buy}
+          onAd={() => void startAd()}
+          onEarn={earn}
+          onClose={closeSheet}
+          primaryRef={sheetPrimaryRef}
+        />
+      )}
+      {view === 'ad' && adTrack && <AdScreen track={adTrack} onClose={closeAd} />}
+      {flight && <CrystalFlight path={flight} onDone={endFlight} />}
+    </div>
   );
 }
