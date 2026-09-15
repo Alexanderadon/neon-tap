@@ -56,8 +56,9 @@ interface Redis {
 }
 
 function redisFromEnv(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/+$/, '');
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Either the Upstash console's names or the ones the Vercel ⇄ Upstash marketplace integration injects.
+  const url = (process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL)?.replace(/\/+$/, '');
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
   if (!url || !token) return null;
   return {
     async cmd(...args) {
