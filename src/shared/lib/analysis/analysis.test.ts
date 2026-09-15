@@ -9,7 +9,7 @@ import { patternSteps } from './phrasePattern';
 import { circleSpread } from './laneAssign';
 import { chartFeatures, rateStars } from './stars';
 import { synthesizeClicks } from './synthetic';
-import { fakeAnalysis, isHoldType, maxFingers, thumbViolations } from './playability';
+import { fakeAnalysis, handHops, isHoldType, maxFingers, thumbViolations } from './playability';
 import { DENSITY_LIMIT } from '@/shared/config/constants';
 import type { NoteTuple } from '@/shared/types/chart';
 
@@ -155,6 +155,12 @@ describe('composeChart', () => {
     for (const a of [chart, composeChart(fakeAnalysis(32, sustainedLoop)), composeChart(fakeAnalysis(16, fillLoop))]) {
       expect(a.notes.filter(isHoldType).length).toBeGreaterThan(0);
       expect(thumbViolations(a.notes, a.sections!)).toEqual([]);
+    }
+  });
+
+  it('never makes one thumb hop lanes on a sixteenth or into a long note (fast notes alternate hands)', () => {
+    for (const a of [chart, composeChart(fakeAnalysis(32, sustainedLoop)), composeChart(fakeAnalysis(16, fillLoop))]) {
+      expect(handHops(a.notes, a.sections!, 0.125)).toEqual([]);
     }
   });
 

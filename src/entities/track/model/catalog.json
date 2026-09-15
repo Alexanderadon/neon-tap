@@ -6,16 +6,16 @@
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/metal-song-energetic",
     "genre": "rock",
-    "bpm": 135.1,
+    "bpm": 135,
     "duration": 98.56,
     "stars": 1,
-    "notes": 104,
+    "notes": 116,
     "features": {
       "circles": 7,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 12,
+      "holds": 14,
       "laneChanges": 1
     }
   },
@@ -29,7 +29,7 @@
     "bpm": 69.9,
     "duration": 112.04,
     "stars": 1,
-    "notes": 132,
+    "notes": 142,
     "features": {
       "circles": 4,
       "spins": 0,
@@ -49,13 +49,13 @@
     "bpm": 119.7,
     "duration": 116.06,
     "stars": 1,
-    "notes": 138,
+    "notes": 140,
     "features": {
       "circles": 4,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 32,
+      "holds": 31,
       "laneChanges": 5
     }
   },
@@ -66,16 +66,16 @@
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/chill-lofi-inspired",
     "genre": "lofi",
-    "bpm": 79.5,
+    "bpm": 79.6,
     "duration": 123.19,
     "stars": 1,
-    "notes": 155,
+    "notes": 154,
     "features": {
       "circles": 4,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 15,
+      "holds": 16,
       "laneChanges": 3
     }
   },
@@ -89,14 +89,14 @@
     "bpm": 69.9,
     "duration": 116.58,
     "stars": 1,
-    "notes": 161,
+    "notes": 149,
     "features": {
       "circles": 4,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
       "holds": 9,
-      "laneChanges": 1
+      "laneChanges": 3
     }
   },
   {
@@ -106,16 +106,16 @@
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/fight-for-better-future-rockmetal",
     "genre": "metal",
-    "bpm": 78,
+    "bpm": 76.6,
     "duration": 136.25,
     "stars": 1,
-    "notes": 228,
+    "notes": 231,
     "features": {
-      "circles": 8,
+      "circles": 4,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 21,
+      "holds": 23,
       "laneChanges": 2
     }
   },
@@ -129,7 +129,7 @@
     "bpm": 110.1,
     "duration": 87.38,
     "stars": 2,
-    "notes": 181,
+    "notes": 180,
     "features": {
       "circles": 4,
       "spins": 0,
@@ -148,15 +148,15 @@
     "genre": "hardstyle",
     "bpm": 128.9,
     "duration": 93.81,
-    "stars": 2,
-    "notes": 193,
+    "stars": 3,
+    "notes": 207,
     "features": {
-      "circles": 8,
+      "circles": 4,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 10,
-      "laneChanges": 6
+      "holds": 9,
+      "laneChanges": 4
     }
   },
   {
@@ -169,14 +169,14 @@
     "bpm": 129.4,
     "duration": 150.05,
     "stars": 2,
-    "notes": 208,
+    "notes": 209,
     "features": {
-      "circles": 12,
-      "spins": 1,
+      "circles": 8,
+      "spins": 0,
       "rolls": 0,
-      "slides": 3,
-      "holds": 21,
-      "laneChanges": 7
+      "slides": 0,
+      "holds": 26,
+      "laneChanges": 5
     }
   },
   {
@@ -189,14 +189,14 @@
     "bpm": 108.5,
     "duration": 130.95,
     "stars": 2,
-    "notes": 287,
+    "notes": 258,
     "features": {
-      "circles": 12,
-      "spins": 1,
+      "circles": 8,
+      "spins": 0,
       "rolls": 0,
-      "slides": 1,
-      "holds": 15,
-      "laneChanges": 4
+      "slides": 0,
+      "holds": 19,
+      "laneChanges": 3
     }
   },
   {
@@ -208,14 +208,14 @@
     "genre": "jazz",
     "bpm": 120.1,
     "duration": 138,
-    "stars": 2,
-    "notes": 291,
+    "stars": 3,
+    "notes": 338,
     "features": {
       "circles": 0,
-      "spins": 0,
+      "spins": 1,
       "rolls": 0,
-      "slides": 0,
-      "holds": 38,
+      "slides": 3,
+      "holds": 33,
       "laneChanges": 7
     }
   },
@@ -228,14 +228,14 @@
     "genre": "lofi",
     "bpm": 160.9,
     "duration": 150.05,
-    "stars": 2,
-    "notes": 299,
+    "stars": 3,
+    "notes": 303,
     "features": {
-      "circles": 8,
-      "spins": 0,
+      "circles": 12,
+      "spins": 1,
       "rolls": 0,
-      "slides": 0,
-      "holds": 60,
+      "slides": 21,
+      "holds": 38,
       "laneChanges": 9
     }
   },
@@ -249,13 +249,13 @@
     "bpm": 143.7,
     "duration": 150.05,
     "stars": 4,
-    "notes": 383,
+    "notes": 386,
     "features": {
       "circles": 10,
       "spins": 0,
       "rolls": 0,
-      "slides": 13,
-      "holds": 38,
+      "slides": 12,
+      "holds": 41,
       "laneChanges": 14
     }
   },
@@ -269,13 +269,13 @@
     "bpm": 113.2,
     "duration": 150.05,
     "stars": 4,
-    "notes": 390,
+    "notes": 415,
     "features": {
       "circles": 18,
       "spins": 1,
       "rolls": 0,
       "slides": 1,
-      "holds": 21,
+      "holds": 22,
       "laneChanges": 12
     }
   },
@@ -289,13 +289,13 @@
     "bpm": 123.5,
     "duration": 150.05,
     "stars": 4,
-    "notes": 395,
+    "notes": 394,
     "features": {
       "circles": 18,
       "spins": 1,
       "rolls": 0,
       "slides": 1,
-      "holds": 34,
+      "holds": 35,
       "laneChanges": 7
     }
   },
@@ -309,13 +309,13 @@
     "bpm": 129.6,
     "duration": 145.97,
     "stars": 4,
-    "notes": 407,
+    "notes": 389,
     "features": {
-      "circles": 12,
+      "circles": 18,
       "spins": 1,
       "rolls": 0,
-      "slides": 6,
-      "holds": 50,
+      "slides": 8,
+      "holds": 44,
       "laneChanges": 15
     }
   },
@@ -329,13 +329,13 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 4,
-    "notes": 437,
+    "notes": 430,
     "features": {
       "circles": 12,
       "spins": 1,
       "rolls": 0,
       "slides": 1,
-      "holds": 35,
+      "holds": 34,
       "laneChanges": 6
     }
   },
@@ -348,15 +348,15 @@
     "genre": "ambient",
     "bpm": 136,
     "duration": 150.05,
-    "stars": 4,
-    "notes": 446,
+    "stars": 3,
+    "notes": 347,
     "features": {
-      "circles": 14,
-      "spins": 2,
+      "circles": 6,
+      "spins": 1,
       "rolls": 0,
-      "slides": 3,
-      "holds": 32,
-      "laneChanges": 7
+      "slides": 4,
+      "holds": 34,
+      "laneChanges": 6
     }
   },
   {
@@ -369,7 +369,7 @@
     "bpm": 123.9,
     "duration": 150.05,
     "stars": 4,
-    "notes": 450,
+    "notes": 447,
     "features": {
       "circles": 6,
       "spins": 0,
@@ -389,13 +389,13 @@
     "bpm": 99.5,
     "duration": 80.14,
     "stars": 5,
-    "notes": 245,
+    "notes": 242,
     "features": {
-      "circles": 16,
+      "circles": 12,
       "spins": 0,
-      "rolls": 5,
-      "slides": 0,
-      "holds": 13,
+      "rolls": 0,
+      "slides": 1,
+      "holds": 12,
       "laneChanges": 6
     }
   },
@@ -409,13 +409,13 @@
     "bpm": 139.8,
     "duration": 112.9,
     "stars": 5,
-    "notes": 314,
+    "notes": 312,
     "features": {
-      "circles": 10,
-      "spins": 1,
+      "circles": 15,
+      "spins": 2,
       "rolls": 0,
-      "slides": 2,
-      "holds": 30,
+      "slides": 0,
+      "holds": 25,
       "laneChanges": 8
     }
   },
@@ -429,13 +429,13 @@
     "bpm": 207,
     "duration": 150.05,
     "stars": 5,
-    "notes": 401,
+    "notes": 428,
     "features": {
-      "circles": 26,
+      "circles": 31,
       "spins": 1,
-      "rolls": 1,
-      "slides": 7,
-      "holds": 39,
+      "rolls": 0,
+      "slides": 12,
+      "holds": 37,
       "laneChanges": 12
     }
   },
@@ -448,8 +448,8 @@
     "genre": "acoustic",
     "bpm": 172.1,
     "duration": 150.05,
-    "stars": 5,
-    "notes": 426,
+    "stars": 4,
+    "notes": 424,
     "features": {
       "circles": 20,
       "spins": 2,
@@ -470,7 +470,7 @@
     "bpm": 128.8,
     "duration": 137.46,
     "stars": 5,
-    "notes": 490,
+    "notes": 492,
     "features": {
       "circles": 24,
       "spins": 1,
@@ -490,14 +490,14 @@
     "bpm": 120.1,
     "duration": 150.05,
     "stars": 5,
-    "notes": 493,
+    "notes": 504,
     "features": {
       "circles": 22,
       "spins": 0,
       "rolls": 0,
-      "slides": 3,
-      "holds": 35,
-      "laneChanges": 14
+      "slides": 4,
+      "holds": 32,
+      "laneChanges": 15
     }
   },
   {
@@ -510,13 +510,13 @@
     "bpm": 113.4,
     "duration": 138.92,
     "stars": 5,
-    "notes": 518,
+    "notes": 520,
     "features": {
       "circles": 47,
       "spins": 1,
-      "rolls": 2,
+      "rolls": 3,
       "slides": 0,
-      "holds": 68,
+      "holds": 67,
       "laneChanges": 12
     }
   },
@@ -530,13 +530,13 @@
     "bpm": 128.8,
     "duration": 150.05,
     "stars": 5,
-    "notes": 531,
+    "notes": 532,
     "features": {
-      "circles": 28,
+      "circles": 26,
       "spins": 2,
       "rolls": 0,
-      "slides": 1,
-      "holds": 13,
+      "slides": 0,
+      "holds": 12,
       "laneChanges": 8
     }
   },
@@ -550,14 +550,14 @@
     "bpm": 128.7,
     "duration": 106.84,
     "stars": 6,
-    "notes": 351,
+    "notes": 327,
     "features": {
       "circles": 31,
       "spins": 1,
       "rolls": 4,
-      "slides": 2,
-      "holds": 22,
-      "laneChanges": 9
+      "slides": 3,
+      "holds": 20,
+      "laneChanges": 5
     }
   },
   {
@@ -575,9 +575,9 @@
       "circles": 16,
       "spins": 1,
       "rolls": 0,
-      "slides": 11,
-      "holds": 47,
-      "laneChanges": 7
+      "slides": 10,
+      "holds": 48,
+      "laneChanges": 6
     }
   },
   {
@@ -588,16 +588,16 @@
     "sourceUrl": "https://opengameart.org/content/polygons-n-light",
     "genre": "electronic",
     "premium": true,
-    "bpm": 144,
+    "bpm": 143.9,
     "duration": 106.53,
     "stars": 6,
-    "notes": 364,
+    "notes": 369,
     "features": {
       "circles": 26,
       "spins": 0,
       "rolls": 14,
-      "slides": 6,
-      "holds": 11,
+      "slides": 5,
+      "holds": 12,
       "laneChanges": 11
     }
   },
@@ -609,16 +609,16 @@
     "sourceUrl": "https://opengameart.org/content/ciptuned-rock-tune",
     "genre": "chiptune",
     "premium": true,
-    "bpm": 216.8,
+    "bpm": 216.6,
     "duration": 137.48,
-    "stars": 6,
-    "notes": 402,
+    "stars": 5,
+    "notes": 394,
     "features": {
-      "circles": 22,
+      "circles": 20,
       "spins": 2,
       "rolls": 0,
       "slides": 3,
-      "holds": 14,
+      "holds": 11,
       "laneChanges": 22
     }
   },
@@ -632,13 +632,13 @@
     "bpm": 143.6,
     "duration": 150.05,
     "stars": 6,
-    "notes": 465,
+    "notes": 467,
     "features": {
-      "circles": 23,
+      "circles": 24,
       "spins": 1,
-      "rolls": 6,
-      "slides": 5,
-      "holds": 30,
+      "rolls": 7,
+      "slides": 6,
+      "holds": 27,
       "laneChanges": 17
     }
   },
@@ -651,14 +651,14 @@
     "genre": "synthpop",
     "bpm": 217,
     "duration": 128.81,
-    "stars": 6,
-    "notes": 501,
+    "stars": 7,
+    "notes": 511,
     "features": {
       "circles": 24,
       "spins": 2,
       "rolls": 0,
       "slides": 3,
-      "holds": 24,
+      "holds": 23,
       "laneChanges": 10
     }
   },
@@ -672,13 +672,13 @@
     "bpm": 151.3,
     "duration": 135.24,
     "stars": 6,
-    "notes": 513,
+    "notes": 518,
     "features": {
       "circles": 44,
       "spins": 2,
-      "rolls": 6,
+      "rolls": 3,
       "slides": 0,
-      "holds": 18,
+      "holds": 21,
       "laneChanges": 16
     }
   },
@@ -691,14 +691,14 @@
     "genre": "breakbeat",
     "bpm": 99.5,
     "duration": 150.05,
-    "stars": 6,
-    "notes": 532,
+    "stars": 7,
+    "notes": 553,
     "features": {
-      "circles": 18,
+      "circles": 39,
       "spins": 0,
-      "rolls": 0,
+      "rolls": 9,
       "slides": 0,
-      "holds": 14,
+      "holds": 13,
       "laneChanges": 11
     }
   },
@@ -712,13 +712,13 @@
     "bpm": 143.4,
     "duration": 150.05,
     "stars": 6,
-    "notes": 541,
+    "notes": 544,
     "features": {
-      "circles": 57,
+      "circles": 54,
       "spins": 2,
-      "rolls": 7,
-      "slides": 4,
-      "holds": 18,
+      "rolls": 4,
+      "slides": 3,
+      "holds": 19,
       "laneChanges": 15
     }
   },
@@ -732,14 +732,14 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 6,
-    "notes": 570,
+    "notes": 567,
     "features": {
-      "circles": 44,
+      "circles": 46,
       "spins": 1,
-      "rolls": 3,
-      "slides": 6,
-      "holds": 36,
-      "laneChanges": 18
+      "rolls": 2,
+      "slides": 5,
+      "holds": 38,
+      "laneChanges": 17
     }
   },
   {
@@ -751,15 +751,15 @@
     "genre": "dnb",
     "bpm": 163,
     "duration": 150.05,
-    "stars": 6,
-    "notes": 580,
+    "stars": 7,
+    "notes": 577,
     "features": {
-      "circles": 28,
-      "spins": 0,
-      "rolls": 10,
-      "slides": 3,
+      "circles": 29,
+      "spins": 1,
+      "rolls": 9,
+      "slides": 2,
       "holds": 16,
-      "laneChanges": 18
+      "laneChanges": 19
     }
   },
   {
@@ -772,11 +772,11 @@
     "bpm": 160.9,
     "duration": 83.88,
     "stars": 7,
-    "notes": 363,
+    "notes": 369,
     "features": {
-      "circles": 15,
+      "circles": 16,
       "spins": 1,
-      "rolls": 1,
+      "rolls": 2,
       "slides": 7,
       "holds": 19,
       "laneChanges": 3
@@ -789,14 +789,14 @@
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/trance-boss-battle",
     "genre": "trance",
-    "bpm": 151.4,
+    "bpm": 151.5,
     "duration": 102.43,
     "stars": 7,
-    "notes": 415,
+    "notes": 420,
     "features": {
-      "circles": 44,
+      "circles": 23,
       "spins": 1,
-      "rolls": 6,
+      "rolls": 5,
       "slides": 0,
       "holds": 6,
       "laneChanges": 11
@@ -813,14 +813,14 @@
     "bpm": 163.2,
     "duration": 125.13,
     "stars": 7,
-    "notes": 439,
+    "notes": 446,
     "features": {
-      "circles": 45,
+      "circles": 43,
       "spins": 0,
-      "rolls": 15,
+      "rolls": 16,
       "slides": 2,
-      "holds": 24,
-      "laneChanges": 15
+      "holds": 23,
+      "laneChanges": 14
     }
   },
   {
@@ -833,13 +833,13 @@
     "bpm": 139.8,
     "duration": 129.57,
     "stars": 7,
-    "notes": 512,
+    "notes": 511,
     "features": {
       "circles": 29,
       "spins": 1,
-      "rolls": 3,
-      "slides": 2,
-      "holds": 19,
+      "rolls": 2,
+      "slides": 3,
+      "holds": 17,
       "laneChanges": 13
     }
   },
@@ -852,14 +852,14 @@
     "genre": "metal",
     "bpm": 151.7,
     "duration": 127.43,
-    "stars": 7,
-    "notes": 513,
+    "stars": 8,
+    "notes": 537,
     "features": {
-      "circles": 39,
+      "circles": 38,
       "spins": 0,
       "rolls": 1,
-      "slides": 8,
-      "holds": 31,
+      "slides": 4,
+      "holds": 32,
       "laneChanges": 15
     }
   },
@@ -872,15 +872,15 @@
     "genre": "synthwave",
     "bpm": 161.1,
     "duration": 150.05,
-    "stars": 7,
-    "notes": 577,
+    "stars": 8,
+    "notes": 596,
     "features": {
-      "circles": 50,
+      "circles": 58,
       "spins": 1,
-      "rolls": 1,
-      "slides": 13,
-      "holds": 58,
-      "laneChanges": 21
+      "rolls": 4,
+      "slides": 18,
+      "holds": 42,
+      "laneChanges": 19
     }
   },
   {
@@ -893,13 +893,13 @@
     "bpm": 171.4,
     "duration": 136.96,
     "stars": 7,
-    "notes": 606,
+    "notes": 605,
     "features": {
-      "circles": 41,
+      "circles": 39,
       "spins": 2,
-      "rolls": 2,
-      "slides": 2,
-      "holds": 20,
+      "rolls": 0,
+      "slides": 3,
+      "holds": 19,
       "laneChanges": 9
     }
   },
@@ -913,7 +913,7 @@
     "bpm": 172.8,
     "duration": 150.05,
     "stars": 7,
-    "notes": 613,
+    "notes": 607,
     "features": {
       "circles": 48,
       "spins": 1,
@@ -933,11 +933,11 @@
     "bpm": 142.9,
     "duration": 141.98,
     "stars": 7,
-    "notes": 634,
+    "notes": 632,
     "features": {
-      "circles": 35,
+      "circles": 28,
       "spins": 1,
-      "rolls": 8,
+      "rolls": 7,
       "slides": 3,
       "holds": 30,
       "laneChanges": 19
@@ -953,13 +953,13 @@
     "bpm": 117.5,
     "duration": 150.05,
     "stars": 7,
-    "notes": 647,
+    "notes": 631,
     "features": {
       "circles": 57,
       "spins": 0,
-      "rolls": 9,
-      "slides": 0,
-      "holds": 19,
+      "rolls": 11,
+      "slides": 1,
+      "holds": 16,
       "laneChanges": 13
     }
   },
@@ -973,7 +973,7 @@
     "bpm": 129.5,
     "duration": 150.05,
     "stars": 7,
-    "notes": 667,
+    "notes": 668,
     "features": {
       "circles": 58,
       "spins": 1,
@@ -990,14 +990,14 @@
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/midnight-drive",
     "genre": "synthwave",
-    "bpm": 161,
+    "bpm": 161.1,
     "duration": 150.05,
     "stars": 7,
-    "notes": 668,
+    "notes": 666,
     "features": {
-      "circles": 58,
+      "circles": 56,
       "spins": 0,
-      "rolls": 0,
+      "rolls": 1,
       "slides": 6,
       "holds": 29,
       "laneChanges": 12
@@ -1012,15 +1012,15 @@
     "genre": "electronic",
     "bpm": 152.6,
     "duration": 127.35,
-    "stars": 8,
-    "notes": 497,
+    "stars": 7,
+    "notes": 490,
     "features": {
-      "circles": 36,
-      "spins": 1,
-      "rolls": 3,
-      "slides": 4,
-      "holds": 16,
-      "laneChanges": 13
+      "circles": 35,
+      "spins": 0,
+      "rolls": 2,
+      "slides": 0,
+      "holds": 19,
+      "laneChanges": 14
     }
   },
   {
@@ -1033,14 +1033,14 @@
     "bpm": 152,
     "duration": 150.05,
     "stars": 8,
-    "notes": 658,
+    "notes": 661,
     "features": {
-      "circles": 53,
+      "circles": 56,
       "spins": 0,
       "rolls": 3,
       "slides": 3,
-      "holds": 30,
-      "laneChanges": 15
+      "holds": 32,
+      "laneChanges": 16
     }
   },
   {
@@ -1053,14 +1053,14 @@
     "premium": true,
     "bpm": 139.8,
     "duration": 150.05,
-    "stars": 8,
-    "notes": 703,
+    "stars": 9,
+    "notes": 738,
     "features": {
-      "circles": 55,
+      "circles": 58,
       "spins": 1,
       "rolls": 9,
-      "slides": 1,
-      "holds": 13,
+      "slides": 2,
+      "holds": 14,
       "laneChanges": 14
     }
   },
@@ -1074,14 +1074,14 @@
     "bpm": 216.8,
     "duration": 149.97,
     "stars": 8,
-    "notes": 730,
+    "notes": 724,
     "features": {
-      "circles": 20,
+      "circles": 32,
       "spins": 0,
-      "rolls": 2,
-      "slides": 30,
+      "rolls": 0,
+      "slides": 28,
       "holds": 78,
-      "laneChanges": 26
+      "laneChanges": 28
     }
   },
   {
@@ -1094,13 +1094,13 @@
     "bpm": 143.5,
     "duration": 150.05,
     "stars": 8,
-    "notes": 766,
+    "notes": 755,
     "features": {
       "circles": 58,
       "spins": 0,
       "rolls": 5,
       "slides": 0,
-      "holds": 16,
+      "holds": 15,
       "laneChanges": 17
     }
   },
@@ -1112,12 +1112,12 @@
     "sourceUrl": "https://opengameart.org/content/fever-stadium",
     "genre": "eurobeat",
     "premium": true,
-    "bpm": 163.1,
+    "bpm": 163,
     "duration": 85.81,
     "stars": 9,
-    "notes": 479,
+    "notes": 485,
     "features": {
-      "circles": 44,
+      "circles": 42,
       "spins": 0,
       "rolls": 3,
       "slides": 1,
@@ -1135,13 +1135,13 @@
     "bpm": 185,
     "duration": 109.77,
     "stars": 9,
-    "notes": 574,
+    "notes": 577,
     "features": {
-      "circles": 49,
+      "circles": 48,
       "spins": 0,
-      "rolls": 3,
+      "rolls": 2,
       "slides": 1,
-      "holds": 41,
+      "holds": 43,
       "laneChanges": 14
     }
   },
@@ -1155,13 +1155,13 @@
     "bpm": 161.1,
     "duration": 120.03,
     "stars": 9,
-    "notes": 683,
+    "notes": 686,
     "features": {
-      "circles": 60,
+      "circles": 46,
       "spins": 0,
-      "rolls": 7,
+      "rolls": 5,
       "slides": 0,
-      "holds": 8,
+      "holds": 6,
       "laneChanges": 16
     }
   },
