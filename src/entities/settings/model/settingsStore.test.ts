@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NICKNAME_MAX, getSettings, isValidNickname, sanitizeNickname, updateSettings } from './settingsStore';
+import { NICKNAME_MAX, getSettings, isValidNickname, sanitizeNickname, settingsFromJson, updateSettings } from './settingsStore';
 
 describe('settingsStore', () => {
   it('starts with the tutorial not done', () => {
@@ -13,6 +13,24 @@ describe('settingsStore', () => {
     expect(getSettings().tutorialDone).toBe(true);
     updateSettings({ tutorialDone: false });
     expect(getSettings().tutorialDone).toBe(false);
+  });
+
+  it('starts with the letter avatar and keeps only known avatar ids', () => {
+    expect(getSettings().avatar).toBe('');
+    updateSettings({ avatar: 'fox' });
+    expect(getSettings().avatar).toBe('fox');
+    updateSettings({ avatar: 'unicorn' });
+    expect(getSettings().avatar).toBe('');
+    updateSettings({ avatar: 'owl' });
+    updateSettings({ avatar: 42 as unknown as string });
+    expect(getSettings().avatar).toBe('');
+  });
+
+  it('keeps the avatar when another field changes', () => {
+    updateSettings({ avatar: 'panda' });
+    updateSettings({ nickname: 'Neo' });
+    expect(getSettings().avatar).toBe('panda');
+    updateSettings({ avatar: '', nickname: '' });
   });
 
   it('keeps the other fields intact when marking the tutorial done', () => {
@@ -40,5 +58,25 @@ describe('sanitizeNickname', () => {
 
   it('caps the length', () => {
     expect(sanitizeNickname('a'.repeat(40))).toHaveLength(NICKNAME_MAX);
+  });
+});
+
+describe('settingsFromJson', () => {
+  it('migrates a save from before avatars: the field takes the letter default', () => {
+    const s = settingsFromJson(JSON.stringify({ version: 1, nickname: 'Neo', musicVolume: 0.5 }));
+    expect(s.avatar).toBe('');
+    expect(s.nickname).toBe('Neo');
+    expect(s.musicVolume).toBe(0.5);
+  });
+
+  it('keeps a known avatar and drops an unknown one', () => {
+    expect(settingsFromJson(JSON.stringify({ avatar: 'ghost' })).avatar).toBe('ghost');
+    expect(settingsFromJson(JSON.stringify({ avatar: 'zebra' })).avatar).toBe('');
+    expect(settingsFromJson(JSON.stringify({ avatar: 7 })).avatar).toBe('');
+  });
+
+  it('falls back to the defaults on garbage', () => {
+    expect(settingsFromJson('{not json').avatar).toBe('');
+    expect(settingsFromJson(null).nickname).toBe('');
   });
 });

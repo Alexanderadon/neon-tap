@@ -1,12 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { ads, stubAds } from '@/shared/lib/ads';
 import { audioEngine, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
 import { navigate } from '@/shared/lib/router';
+import { centreOf } from '@/shared/lib/viewport';
 import type { Genre } from '@/shared/types/chart';
-import { ActionZone, CrystalIcon, Disc, Icon, ObjButton, Panel, PrimaryAction, SubHeader, Tag, Thumb, Trio, useSwipeBack } from '@/shared/ui';
+import {
+  ActionZone,
+  CrystalFlight,
+  CrystalIcon,
+  Disc,
+  Icon,
+  ObjButton,
+  Panel,
+  PrimaryAction,
+  SubHeader,
+  Tag,
+  Thumb,
+  Trio,
+  useSwipeBack,
+  type FlightPath,
+} from '@/shared/ui';
 import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
-import { dailyTrackId, grandTotalStars, localDateString, useProgress } from '@/entities/progress';
+import { dailyTrackId, grandTotalStars, localDateString, progressStore, useProgress } from '@/entities/progress';
 import { startSession } from '@/entities/play-session';
 import { clearActiveDuel } from '@/entities/duel';
 import { buyTrackWithCrystals, purchasePaths, purchasePlan, watchAdAndUnlock } from '@/features/buy-track';
@@ -16,8 +32,6 @@ import { ShopCard, PREVIEW_SEC } from './ShopCard';
 import { PurchaseSheet } from './PurchaseSheet';
 import { AdScreen } from './AdScreen';
 import { AdReward } from './AdReward';
-import { centreOf } from '../lib/centreOf';
-import { CrystalFlight, type FlightPath } from './CrystalFlight';
 import './shop-grid.css';
 
 /** A wallet counter tick for the top bar: from → to after `delay` seconds (same shape as TopBar's CounterTick). */
@@ -46,6 +60,10 @@ interface Props {
   onProfile: () => void;
   /** A tap on an owned card: open the deck on that track. */
   onTrack: (id: string) => void;
+  /** A second tag after «МАГАЗИН» in the sub-header (the 48-hour deal's «48 ч»). */
+  headerTag?: ReactNode;
+  /** «Пополнить» in the not-enough sheet — opens the crystal packs; absent when purchases are unavailable. */
+  onTopUp?: () => void;
 }
 
 const TOAST_MS = 2600;
@@ -75,7 +93,7 @@ function storage(): Storage | null {
  * rewarded ad as the second way), the ad frame, the «Трек открыт!» reward, the gold toast, and the
  * crystals flying into the wallet. The page around it draws the scene and the top bar.
  */
-export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack }: Props) {
+export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack, headerTag, onTopUp }: Props) {
   const save = useProgress((s) => s);
   const stars = grandTotalStars(save, TRACK_IDS);
   const live = useMemo(() => shopItems({ catalog: CATALOG, stars, premium: PREMIUM_IDS, purchased: save.purchased }), [stars, save.purchased]);
@@ -147,6 +165,8 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
     // Mount only: a later change of the balance is a purchase, handled by `buy`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Whatever balance the visit ends with was seen (a crystal pack bought over the shop must not fly again next time).
+  useEffect(() => () => writeSeenCrystals(storage(), progressStore.get().crystals), []);
 
   // --- toast ---
   useEffect(() => {
@@ -310,7 +330,15 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
           <span>{rewardTrack.premium ? dict.shopPremium : dict.shopBought}</span>
         </SubHeader>
       ) : (
-        <SubHeader tag={<Tag>{dict.shop}</Tag>} text={dict.shopEarnHint} />
+        <SubHeader
+          tag={
+            <>
+              <Tag>{dict.shop}</Tag>
+              {headerTag}
+            </>
+          }
+          text={dict.shopEarnHint}
+        />
       )}
 
       {view === 'reward' && rewardTrack ? (
@@ -394,6 +422,13 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
           onAd={() => void startAd()}
           onEarn={earn}
           onClose={closeSheet}
+          onTopUp={
+            onTopUp &&
+            (() => {
+              setSheet(null);
+              onTopUp();
+            })
+          }
           primaryRef={sheetPrimaryRef}
         />
       )}

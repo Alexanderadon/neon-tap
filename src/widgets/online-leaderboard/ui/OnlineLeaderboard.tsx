@@ -1,7 +1,8 @@
 import { dict, fmt } from '@/shared/i18n';
 import { formatScore } from '@/shared/lib/format';
-import { Icon, ListRow, ObjButton, PlaceChip, SegmentsPulse, StatePanel, Tag } from '@/shared/ui';
+import { Avatar, Icon, ListRow, ObjButton, PlaceChip, SegmentsPulse, StatePanel, Tag } from '@/shared/ui';
 import { useSettings } from '@/entities/settings';
+import { avatarArtOf } from '@/entities/avatar';
 import type { ChartSource } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
 import { NicknameDialog, useSubmitScore } from '@/features/submit-score';
@@ -23,6 +24,7 @@ interface Props {
 export function OnlineLeaderboard({ result, source }: Props) {
   const { status, top, position, improved, skipNickname, retry } = useSubmitScore(result, source);
   const nickname = useSettings((s) => s.nickname);
+  const avatar = useSettings((s) => s.avatar);
   const debug = useSettings((s) => s.debugOverlay);
 
   if (status === 'idle' || status === 'probing') return null;
@@ -32,6 +34,14 @@ export function OnlineLeaderboard({ result, source }: Props) {
   const rows = top.slice(0, SHOW);
   const meInTop = rows.some((e) => e.name.toLocaleLowerCase() === me);
   const waiting = status === 'need-name' || status === 'submitting';
+  const isMe = (name: string) => !!me && name.toLocaleLowerCase() === me;
+  /** My row leads with the place and my avatar (the chosen picture or the letter); others with the place only. */
+  const lead = (place: number, mine: boolean) => (
+    <>
+      <PlaceChip place={place} />
+      {mine && <Avatar name={nickname} art={avatarArtOf(avatar)} />}
+    </>
+  );
 
   return (
     <>
@@ -41,15 +51,9 @@ export function OnlineLeaderboard({ result, source }: Props) {
         {!waiting && rows.length > 0 && (
           <ol className="online-list">
             {rows.map((e, i) => (
-              <ListRow
-                key={`${e.name}-${i}`}
-                lead={<PlaceChip place={i + 1} />}
-                name={e.name}
-                score={formatScore(e.score)}
-                me={!!me && e.name.toLocaleLowerCase() === me}
-              />
+              <ListRow key={`${e.name}-${i}`} lead={lead(i + 1, isMe(e.name))} name={e.name} score={formatScore(e.score)} me={isMe(e.name)} />
             ))}
-            {!meInTop && position !== null && me && <ListRow lead={<PlaceChip place={position} />} name={nickname} score={formatScore(result.score)} me />}
+            {!meInTop && position !== null && me && <ListRow lead={lead(position, true)} name={nickname} score={formatScore(result.score)} me />}
           </ol>
         )}
         {!waiting && position !== null && (

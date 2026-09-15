@@ -1,5 +1,6 @@
-/* Avatar (Avatar.tsx): the cyan sphere with the first letter — 32 (letter 13/900, underside 2), 48 (20, 4), 96 (44, 4). */
+/* Avatar (Avatar.tsx): the cyan sphere with the first letter — 32 (letter 13/900, underside 2), 48 (20, 4), 56 (22, 4), 96 (44, 4). */
 .ava {
+  position: relative;
   display: grid;
   place-items: center;
   width: 32px;
@@ -19,6 +20,12 @@
   font-size: 20px;
   box-shadow: 0 4px 0 var(--cyan-under);
 }
+.ava-56 {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+  box-shadow: 0 4px 0 var(--cyan-under);
+}
 .ava-96 {
   width: 96px;
   height: 96px;
@@ -32,6 +39,7 @@
   color: var(--w55);
 }
 .ava-48.ava-empty,
+.ava-56.ava-empty,
 .ava-96.ava-empty {
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.1),
@@ -42,4 +50,32 @@
   background: var(--dark-face);
   box-shadow: var(--sh-chip);
   color: var(--w80);
+}
+/* A chosen picture: the sphere is its frame — dark face under the art, black underside; the art fills the circle. */
+.ava-art {
+  overflow: hidden;
+  background: transparent; /* the art carries its own neon ring and a transparent outside */
+  box-shadow: none;
+  color: var(--bg);
+}
+.ava-48.ava-art,
+.ava-56.ava-art,
+.ava-96.ava-art {
+  box-shadow: none;
+}
+.ava-art > img,
+.ava-art > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+/* The chosen cell of a picker: a 2 px cyan ring (2 px gap) around the sphere with the list row's soft cyan glow. */
+.ava-selected {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--cyan),
+    0 0 16px rgba(0, 240, 255, 0.35);
 }

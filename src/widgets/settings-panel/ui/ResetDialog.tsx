@@ -4,6 +4,7 @@ import { sfxUi } from '@/shared/lib/audio';
 import { Coin, CrystalIcon, Disc, Icon, Line, ObjButton, PrimaryAction, Stars } from '@/shared/ui';
 import { grandTotalStars, resetProgress, useProgress } from '@/entities/progress';
 import { TRACK_IDS } from '@/entities/track';
+import { resetOffers } from '@/entities/offers';
 import './reset-dialog.css';
 
 interface Props {
@@ -47,6 +48,8 @@ export function ResetDialog({ open, onClose }: Props) {
   const confirm = () => {
     sfxUi();
     resetProgress();
+    // The bought music pack goes with the purchased tracks, so the offer may return.
+    resetOffers();
     onClose();
   };
   return (

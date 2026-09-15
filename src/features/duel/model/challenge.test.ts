@@ -39,8 +39,8 @@ describe('challenge', () => {
       fetch: async () => null,
       reply: async () => null,
     };
-    const a = createChallenge(result, 'Саша', client);
-    const b = createChallenge(result, 'Саша', client);
+    const a = createChallenge(result, { name: 'Саша' }, client);
+    const b = createChallenge(result, { name: 'Саша' }, client);
     expect(await a).toEqual(duel);
     expect(await b).toEqual(duel);
     expect(calls).toBe(1);
@@ -59,9 +59,30 @@ describe('challenge', () => {
       },
     };
     const mine = { ...result, score: 70_000 } as PlayResult;
-    await replyToDuel(duel, mine, 'Петя', client);
-    const r = await replyToDuel(duel, mine, 'Петя', client);
+    await replyToDuel(duel, mine, { name: 'Петя' }, client);
+    const r = await replyToDuel(duel, mine, { name: 'Петя', avatar: 'owl' }, client);
     expect(r?.beaten).toBe(true);
     expect(calls).toBe(1);
+  });
+
+  it('sends the chosen avatar with the run and nothing when there is none', async () => {
+    const sent: unknown[] = [];
+    const client: DuelsClient = {
+      create: async (_track, run) => {
+        sent.push(run);
+        return duel;
+      },
+      fetch: async () => null,
+      reply: async (_id, run) => {
+        sent.push(run);
+        return { duel, beaten: false };
+      },
+    };
+    const first = { ...result } as PlayResult;
+    const second = { ...result, score: 1 } as PlayResult;
+    await createChallenge(first, { name: 'Саша', avatar: 'fox' }, client);
+    await replyToDuel(duel, second, { name: 'Петя', avatar: '' }, client);
+    expect(sent[0]).toMatchObject({ name: 'Саша', avatar: 'fox', score: 60_775 });
+    expect(sent[1]).toEqual({ name: 'Петя', score: 1, accuracy: 0.9, rank: 'A' });
   });
 });

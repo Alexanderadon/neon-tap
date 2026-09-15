@@ -100,3 +100,9 @@
   outline-offset: 2px;
   border-radius: var(--r-999);
 }
+/* The «Аватар» row's end slot: the current avatar 32 before the chevron. */
+.profile-ava-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

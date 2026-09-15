@@ -4,6 +4,7 @@ import { formatScore } from '@/shared/lib/format';
 import { Avatar, Icon, ListRow, StatePanel, Tag } from '@/shared/ui';
 import { CATALOG, TrackCover } from '@/entities/track';
 import { duelVerdict } from '@/entities/duel';
+import { avatarArtOf } from '@/entities/avatar';
 import { duelStatus, type DuelStatus } from '../model/duelStatus';
 import type { MyDuelsState } from '../model/useMyDuels';
 import './duel-list.css';
@@ -50,7 +51,7 @@ export function DuelList({ state, onPlay }: Props) {
                   <ListRow
                     key={`${r.name}-${r.at}`}
                     as="div"
-                    lead={<Avatar name={r.name} tone="other" />}
+                    lead={<Avatar name={r.name} tone="other" art={avatarArtOf(r.avatar)} />}
                     name={r.name}
                     score={formatScore(r.score)}
                     end={beat ? <Tag variant="bad">{dict.duelBeat}</Tag> : <Tag variant="dark">{dict.duelBehind}</Tag>}

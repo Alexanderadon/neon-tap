@@ -260,100 +260,16 @@
   }
 }
 
-/* ---- the flight layer: three crystals from the button into the wallet chip, transform only, on top of everything ---- */
-.shop-flight {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-}
-.shop-fly {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  color: var(--cyan);
-  opacity: 0;
-  animation: shop-fly 0.7s cubic-bezier(0.4, 0, 0.6, 1) both;
-}
-.shop-fly > svg {
-  display: block;
-  width: 20px;
-  height: 20px;
-  overflow: visible;
-}
-@keyframes shop-fly {
-  0% {
-    opacity: 0;
-    transform: translate(var(--x0), var(--y0));
-  }
-  15% {
-    opacity: 1;
-  }
-  60% {
-    opacity: 1;
-    transform: translate(var(--xm), var(--ym)) scale(1.2);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--x1), var(--y1)) scale(0.5);
-  }
-}
-
-/* ---- Sheet: the purchase sheet over a plain veil (no blur) ---- */
-.sheet-root {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-}
-.sheet-dim {
-  position: absolute;
-  inset: 0;
-  background: rgba(5, 6, 10, 0.8);
-  animation: shop-fade 0.25s ease-out both;
-}
-.sheet {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 32px var(--gutter) calc(var(--safe-bottom) + 24px);
-  border-radius: var(--r-24) var(--r-24) 0 0;
-  background: var(--panel);
-  box-shadow:
-    inset 0 0 0 1px var(--w10),
-    inset 0 2px 0 rgba(255, 255, 255, 0.06),
-    0 -16px 32px rgba(0, 0, 0, 0.5);
-  color: #fff;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  animation: shop-rise 0.4s ease-out both;
-}
-.sheet-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: var(--col);
-  margin: 0 auto;
-}
-.sheet-h1,
+/* ---- the purchase sheet's content (the shell — veil, panel, title, actions — is shared/ui Sheet) ---- */
 .sheet-h2 {
   width: 100%;
   height: 24px;
-  margin: 0;
+  margin: 16px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
   font: var(--t-20);
   letter-spacing: var(--track-title);
-}
-.sheet-h1 {
-  animation: shop-rise 0.4s ease-out 0.1s both;
-}
-.sheet-h2 {
-  margin-top: 16px;
   animation: shop-rise 0.4s ease-out 0.2s both;
 }
 /* The cover 96, r 16, with a 4 px underside and the panel's soft drop. */
@@ -406,19 +322,6 @@
   font: var(--t-13);
   color: var(--w55);
   animation: shop-rise 0.4s ease-out 0.5s both;
-}
-.sheet-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  margin-top: 24px;
-}
-.sheet-actions-tight {
-  margin-top: 16px;
-}
-.sheet-primary {
-  height: 64px;
 }
 /* The ad row (ObjButton construction) sits 16 under the coins. */
 .shop-adrow {
@@ -671,9 +574,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .shop-toast,
-  .sheet-dim,
-  .sheet,
-  .sheet-h1,
   .sheet-h2,
   .sheet-cover,
   .sheet-meta,
@@ -688,8 +588,7 @@
     animation-delay: 0s;
   }
   .reward-spark,
-  .reward-cf,
-  .shop-fly {
+  .reward-cf {
     animation: none;
     display: none;
   }

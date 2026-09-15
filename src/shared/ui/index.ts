@@ -19,11 +19,14 @@ export { Panel } from './Panel';
 export { Coin } from './Coin';
 export type { CoinTone } from './Coin';
 export { RingCountdown } from './RingCountdown';
+export { CrystalFlight, FLIGHT_MS, FLIGHT_STEP_MS } from './CrystalFlight';
+export type { FlightPath } from './CrystalFlight';
 export { Icon } from './icons';
 export type { IconName } from './icons';
 // Layout: the frame of every non-game screen and its bottom action zone.
 export { Frame, SubHeader, FrameBody, Line } from './Frame';
 export { ActionZone, Trio } from './ActionZone';
+export { Sheet } from './Sheet';
 // Lists and states.
 export { Segments, SegmentsPulse } from './Segments';
 export { segmentStates } from './segmentStates';

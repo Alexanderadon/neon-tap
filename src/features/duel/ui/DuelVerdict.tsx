@@ -13,17 +13,18 @@ import './duel.css';
  */
 export function DuelVerdict({ duel, result }: { duel: Duel; result: PlayResult }) {
   const nickname = useSettings((s) => s.nickname);
+  const avatar = useSettings((s) => s.avatar);
   const [sent, setSent] = useState(false);
   const beaten = !result.failed && duelVerdict(duel.host, result) === 'beaten';
 
   useEffect(() => {
     if (result.failed || !nickname) return;
     let alive = true;
-    void replyToDuel(duel, result, nickname).then((r) => alive && r && setSent(true));
+    void replyToDuel(duel, result, { name: nickname, avatar }).then((r) => alive && r && setSent(true));
     return () => {
       alive = false;
     };
-  }, [duel, result, nickname]);
+  }, [duel, result, nickname, avatar]);
 
   const mine = result.score.toLocaleString('ru-RU');
   const theirs = duel.host.score.toLocaleString('ru-RU');
