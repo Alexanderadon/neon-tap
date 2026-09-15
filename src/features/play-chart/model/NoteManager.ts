@@ -306,8 +306,8 @@ export class NoteManager {
       const w = windowsFor(note);
       const early = note.kind === 'circle' ? this.circleEarly : w.good;
       if (delta < -early) {
-        // Touch assist: an early press arms a plain tap (never a long note — a hold needs a finger). A second press clears the arm.
-        if (this.assistWindow > 0 && -delta <= this.assistWindow && note.duration === 0) note.armed = !note.armed;
+        // Touch assist: an early press arms a plain tap (never a long note — a hold needs a finger). A second early press keeps it armed — a nervous double tap must not turn into a miss.
+        if (this.assistWindow > 0 && -delta <= this.assistWindow && note.duration === 0) note.armed = true;
         return null;
       }
       const j = judgeDelta(delta, w, early);

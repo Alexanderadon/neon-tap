@@ -92,7 +92,7 @@ describe('NoteManager', () => {
       expect(events).toEqual([expect.objectContaining({ judgement: 'great', tail: false })]);
     });
 
-    it('never arms a long note (a hold needs a finger) and a second early press disarms', () => {
+    it('never arms a long note (a hold needs a finger) and a second early press keeps the arm', () => {
       const { nm } = make(
         [
           [1, 0, 0.5],
@@ -105,7 +105,7 @@ describe('NoteManager', () => {
       expect(nm.press(1, 2.7)).toBeNull();
       expect(nm.pool[1].armed).toBe(true);
       expect(nm.press(1, 2.75)).toBeNull();
-      expect(nm.pool[1].armed).toBe(false);
+      expect(nm.pool[1].armed).toBe(true);
     });
 
     it('is off by default (desktop keeps strict timing)', () => {
