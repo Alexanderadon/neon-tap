@@ -89,8 +89,9 @@ export function isBonus(note: { kind: NoteKind | null; gem: number }): boolean {
 }
 
 /** Circles get the wider windows; everything on the lanes keeps the tight ones. */
-function windowsFor(note: { kind: string | null }): HitWindows {
-  return note.kind === 'circle' ? CIRCLE_HIT_WINDOWS : HIT_WINDOWS;
+/** Hit windows in song seconds: the real-time windows times the song's playback rate (a faster level must not shrink them). */
+function scaled(w: HitWindows, k: number): HitWindows {
+  return k === 1 ? w : { perfect: w.perfect * k, great: w.great * k, good: w.good * k };
 }
 
 export class NoteManager {
@@ -107,6 +108,12 @@ export class NoteManager {
   /** A bonus item (spell or crystal) went by untouched: no judgement, it is simply gone. */
   onSkip: ((note: PooledNote) => void) | null = null;
   readonly assistWindow: number;
+  /** Song-time per real second (the level's playback rate): every timing window is real seconds × this. */
+  timeScale = 1;
+
+  private windowsFor(note: { kind: string | null }): HitWindows {
+    return scaled(note.kind === 'circle' ? CIRCLE_HIT_WINDOWS : HIT_WINDOWS, this.timeScale);
+  }
   /** Seconds before a circle's moment from which a tap on it counts (at least as Good). */
   readonly circleEarly: number;
 
@@ -216,7 +223,7 @@ export class NoteManager {
           continue;
         }
         if (note.state === NoteState.Pending) {
-          const w = windowsFor(note);
+          const w = this.windowsFor(note);
           if (note.armed && songTime >= note.time) {
             // Touch assist fires on the note's own moment, never before the sound.
             note.assisted = true;
@@ -263,12 +270,13 @@ export class NoteManager {
 
   /** Tail verdict when a hold-type note reaches its end. */
   private tailJudgement(note: PooledNote, isHeld: (lane: number) => boolean): Judgement {
-    if (note.kind === 'roll') return note.taps >= note.extra ? 'perfect' : note.taps >= Math.ceil(note.extra / 2) ? 'good' : 'miss';
+    // A long note whose head was hit never ends in a miss: all the way → Perfect, part of the way → Good.
+    if (note.kind === 'roll') return note.taps >= note.extra ? 'perfect' : note.taps >= Math.ceil(note.extra / 2) ? 'great' : 'good';
     if (note.kind === 'spin') return spinJudgement(note.spin, note.extra);
-    if (note.kind === 'slide') return isHeld(note.extra) ? (note.judgement ?? 'perfect') : 'miss';
-    // A plain hold reaching its end is credited only while the finger is still there (a release
-    // inside the window was judged by release(); a lost release — pause, blur — is a broken hold).
-    return isHeld(note.lane) ? (note.judgement ?? 'perfect') : 'miss';
+    if (note.kind === 'slide') return isHeld(note.extra) ? (note.judgement ?? 'perfect') : 'good';
+    // A plain hold reaching its end with the finger still there is credited in full; a lost release
+    // (pause, blur) is a Good.
+    return isHeld(note.lane) ? (note.judgement ?? 'perfect') : 'good';
   }
 
   /**
@@ -294,7 +302,7 @@ export class NoteManager {
       const note = this.pool[list[i]];
       if (note.state === NoteState.Holding && note.kind === 'roll') {
         // Extra tap on an active roll.
-        if (songTime <= note.endTime + HIT_WINDOWS.good) {
+        if (songTime <= note.endTime + HIT_WINDOWS.good * this.timeScale) {
           note.taps++;
           this.onRollTap?.(note);
           return null;
@@ -303,11 +311,11 @@ export class NoteManager {
       }
       if (note.state !== NoteState.Pending) continue;
       const delta = songTime - note.time;
-      const w = windowsFor(note);
+      const w = this.windowsFor(note);
       const early = note.kind === 'circle' ? this.circleEarly : w.good;
       if (delta < -early) {
         // Touch assist: an early press arms a plain tap (never a long note — a hold needs a finger). A second early press keeps it armed — a nervous double tap must not turn into a miss.
-        if (this.assistWindow > 0 && -delta <= this.assistWindow && note.duration === 0) note.armed = true;
+        if (this.assistWindow > 0 && -delta <= this.assistWindow * this.timeScale && note.duration === 0) note.armed = true;
         return null;
       }
       const j = judgeDelta(delta, w, early);
@@ -315,7 +323,7 @@ export class NoteManager {
       // In a dense stream two notes of one lane can both be inside the window: judge the nearer one.
       const nxt = i + 1 < len ? this.pool[list[i + 1]] : null;
       if (nxt && nxt.state === NoteState.Pending && nxt.kind !== 'circle' && Math.abs(songTime - nxt.time) < Math.abs(delta)) {
-        const jn = judgeDelta(songTime - nxt.time, windowsFor(nxt), windowsFor(nxt).good);
+        const jn = judgeDelta(songTime - nxt.time, this.windowsFor(nxt), this.windowsFor(nxt).good);
         if (jn) {
           this.hit(nxt, jn, songTime - nxt.time);
           return jn;
@@ -335,8 +343,10 @@ export class NoteManager {
       const n = this.pool[i];
       if (n.state !== NoteState.Holding || n.kind !== 'slide' || n.extra !== bucket) continue;
       const delta = songTime - n.endTime;
-      const j = judgeDelta(delta);
-      if (j && delta <= HIT_WINDOWS.good) this.finishHold(n, j);
+      const w = this.windowsFor(n);
+      const j = judgeDelta(delta, w);
+      // Let go before the end lane's window: the head was hit, so the tail is a Good, never a miss.
+      this.finishHold(n, j && delta <= w.good ? j : 'good');
       return;
     }
     const list = this.laneNotes[bucket];
@@ -349,9 +359,10 @@ export class NoteManager {
       }
       if (note.kind === 'roll' || note.kind === 'slide') continue; // rolls: taps decide; slides: judged in the end lane
       const delta = songTime - note.endTime;
-      const j = judgeDelta(delta);
-      // Released early → tail broken; within the window → judged like a tap.
-      this.finishHold(note, j && delta <= HIT_WINDOWS.good ? j : 'miss');
+      const w = this.windowsFor(note);
+      const j = judgeDelta(delta, w);
+      // Within the window → judged like a tap; let go early → Good (the head was hit: a long note never ends in a miss).
+      this.finishHold(note, j && delta <= w.good ? j : 'good');
       return;
     }
   }
