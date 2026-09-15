@@ -23,7 +23,22 @@ export type IconName =
   | 'trash'
   | 'sound'
   | 'cloud-off'
-  | 'tray';
+  | 'tray'
+  | 'book'
+  | 'sliders'
+  | 'ad'
+  | 'back'
+  | 'metro'
+  | 'phones'
+  | 'skip'
+  | 'bubble'
+  | 'sound-off'
+  | 'gauge'
+  | 'battery'
+  | 'bolt'
+  | 'cap'
+  | 'share'
+  | 'plus-square';
 
 const PATHS: Record<IconName, string> = {
   play: 'M8 5v14l11-7z',
@@ -48,6 +63,21 @@ const PATHS: Record<IconName, string> = {
   sound: 'M4 10v4h4l5 4V6L8 10H4zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11',
   'cloud-off': 'M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 17 8.5M19 12a3.5 3.5 0 0 1-1 6.9H9M3 3l18 18',
   tray: 'M12 3v11M7.5 9.5 12 14l4.5-4.5M4 17.5v1a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-1',
+  book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5ZM4 19a2 2 0 0 0 2 2h13M9 7h6',
+  sliders: 'M4 7h10M18 7h2M4 17h4M12 17h8M18 7a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM12 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
+  ad: 'M5 5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM10 9v5l4-2.5zM8 21h8',
+  back: 'M19 12H5M11 6l-6 6 6 6',
+  metro: 'M9 4h6l3 16H6L9 4ZM12 15l5-9M8 13h8',
+  phones: 'M4 15v-3a8 8 0 0 1 16 0v3M4 16a2 2 0 0 1 4 0v2a2 2 0 0 1-4 0zM16 16a2 2 0 0 1 4 0v2a2 2 0 0 1-4 0z',
+  skip: 'M5 5l9 7-9 7zM18 5v14',
+  bubble: 'M4 5h16v11h-8l-4 4v-4H4zM8 9h8M8 12h5',
+  'sound-off': 'M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4zM16 9.5l5 5M21 9.5l-5 5',
+  gauge: 'M4 17a8 8 0 0 1 16 0M12 17l4-6M4 20h16',
+  battery: 'M3 8h15v8H3zM21 11v2M7 11v2M10.5 11v2',
+  bolt: 'M13 3 5 13h6l-1 8 8-10h-6z',
+  cap: 'M3 9l9-4 9 4-9 4zM7 11v5c0 1.5 2.5 3 5 3s5-1.5 5-3v-5',
+  share: 'M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1',
+  'plus-square': 'M7.5 4h9a3.5 3.5 0 0 1 3.5 3.5v9a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-9A3.5 3.5 0 0 1 7.5 4zM12 8.5v7M8.5 12h7',
 };
 
 /** Icons drawn with a fill (the play triangle, the stop square) instead of a stroke. */

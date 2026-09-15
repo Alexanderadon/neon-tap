@@ -1,0 +1,30 @@
+/* TextField (TextField.tsx): 48 px, r 16, dark face, 2 px underside; focus ring 2 px cyan inside. */
+.field {
+  display: block;
+  width: 100%;
+  height: 48px;
+  min-width: 0;
+  padding: 0 16px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-16);
+  background: var(--dark-face);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    0 2px 0 #000;
+  color: #fff;
+  font: var(--t-15);
+  caret-color: var(--cyan);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field::placeholder {
+  color: var(--w30);
+  opacity: 1;
+}
+.field:focus {
+  box-shadow:
+    inset 0 0 0 2px var(--cyan),
+    0 2px 0 #000;
+}

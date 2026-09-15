@@ -11,6 +11,8 @@ interface Props {
   className?: string;
   style?: CSSProperties;
   'aria-label'?: string;
+  /** The pressable panel toggles a section («Подробнее»). */
+  'aria-expanded'?: boolean;
   children: ReactNode;
 }
 
@@ -25,7 +27,7 @@ export function Panel({ onPress, label, layout = 'plain', className, style, chil
   );
   if (onPress) {
     return (
-      <button type="button" className={cls} style={style} aria-label={rest['aria-label']} onClick={onPress}>
+      <button type="button" className={cls} style={style} aria-label={rest['aria-label']} aria-expanded={rest['aria-expanded']} onClick={onPress}>
         {body}
       </button>
     );

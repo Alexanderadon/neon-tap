@@ -1,3 +1,4 @@
+/* Screen (Screen.tsx): the full-viewport page wrapper and its enter animation. */
 .screen {
   position: fixed;
   inset: 0;
@@ -13,18 +14,21 @@
   overscroll-behavior: contain;
   touch-action: pan-y;
 }
-@media (pointer: coarse) {
-  .btn {
-    min-height: 44px;
-  }
-  .slider input[type='range'] {
-    height: 36px;
-  }
+/* The design-system frame on a Screen: the same column, gutters and anchors as `Frame` (the scene paints the ground). */
+.screen-frame {
+  isolation: isolate;
+  gap: 0;
+  padding: calc(var(--safe-top) + 8px) max(var(--gutter), var(--safe-right)) calc(var(--safe-bottom) + 24px) max(var(--gutter), var(--safe-left));
+  background: transparent;
+  color: #fff;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .screen-center {
   /* Centre via auto margins, not `justify-content: center`: with plain centering a screen taller
-   * than the viewport (result page, settings on a phone) overflows upwards and its top is
-   * unreachable by scrolling. Auto margins centre when there is room and collapse to 0 otherwise. */
+   * than the viewport overflows upwards and its top is unreachable by scrolling. Auto margins
+   * centre when there is room and collapse to 0 otherwise. */
   justify-content: flex-start;
 }
 .screen-center > :first-child {
@@ -36,301 +40,28 @@
 
 /*
  * Route change: the router remounts the page with a new key, so the screen replays this
- * 250 ms enter — a fade + rise with the neon glitch folded into the first frames (this replaced
- * the old `glitch-in` class; there is one glitch definition on purpose).
+ * 250 ms enter — a fade + rise, transform and opacity only (no `filter`: the no-filter policy
+ * holds for the whole screen too, and the old hue-rotate glitch was a "website" effect).
  */
 @keyframes screen-enter {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(12px) translateX(-6px) skewX(4deg) scale(0.985);
-    filter: hue-rotate(60deg) saturate(3);
-    clip-path: inset(30% 0 40% 0);
+    transform: translateY(8px);
   }
-  25% {
-    opacity: 1;
-    transform: translateY(4px) translateX(4px) skewX(-2deg);
-    clip-path: inset(5% 0 60% 0);
-  }
-  50% {
-    transform: translateY(1px) translateX(-2px);
-    filter: none;
-    clip-path: inset(50% 0 0 0);
-  }
-  100% {
+  to {
     opacity: 1;
     transform: none;
-    filter: none;
-    clip-path: inset(0);
   }
 }
 .screen-enter {
   /* `backwards`, not `both`: a kept final keyframe leaves a (identity) transform on the screen, which
    * turns it into the containing block for every position: fixed child — the menu dock would then
    * sit mid-screen instead of at the viewport bottom. */
-  animation: screen-enter 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: screen-enter 0.25s var(--ease-out) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .screen-enter {
     animation: none;
   }
-  .btn {
-    transition: none;
-  }
-}
-
-.btn {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 2px solid var(--c-cyan);
-  color: var(--c-cyan);
-  background: rgba(0, 240, 255, 0.06);
-  border-radius: 10px;
-  padding: 10px 18px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25), inset 0 0 12px rgba(0, 240, 255, 0.08);
-  touch-action: manipulation;
-  user-select: none;
-}
-.btn:hover,
-.btn:focus-visible {
-  background: rgba(0, 240, 255, 0.16);
-  box-shadow: 0 0 24px rgba(0, 240, 255, 0.55), inset 0 0 16px rgba(0, 240, 255, 0.15);
-  outline: none;
-}
-.btn:active {
-  transform: scale(0.97);
-}
-.btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.btn-ghost {
-  border-color: rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.8);
-  background: transparent;
-  box-shadow: none;
-}
-.btn-ghost:hover,
-.btn-ghost:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
-}
-.btn-danger {
-  border-color: var(--c-magenta);
-  color: var(--c-magenta);
-  background: rgba(255, 43, 214, 0.06);
-  box-shadow: 0 0 12px rgba(255, 43, 214, 0.25);
-}
-.btn-danger:hover,
-.btn-danger:focus-visible {
-  background: rgba(255, 43, 214, 0.16);
-  box-shadow: 0 0 24px rgba(255, 43, 214, 0.55);
-}
-.btn-lg {
-  font-size: 18px;
-  padding: 14px 28px;
-}
-.btn-xl {
-  font-size: 26px;
-  padding: 20px 48px;
-  border-radius: 14px;
-  border-width: 3px;
-}
-
-.slider {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-.slider-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-}
-.slider-label {
-  color: rgba(255, 255, 255, 0.85);
-}
-.slider-value {
-  font-family: var(--font-display);
-  color: var(--c-cyan);
-}
-.slider-hint {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
-}
-.slider input[type='range'] {
-  width: 100%;
-  accent-color: var(--c-cyan);
-  height: 28px;
-}
-
-/* Song difficulty (see Difficulty.tsx): a flame and the number, coloured by tier. */
-.difficulty {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 7px 2px 5px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-}
-.difficulty-md {
-  font-size: 16px;
-  gap: 4px;
-  padding: 3px 9px 3px 6px;
-}
-.difficulty-icon {
-  width: 1.2em;
-  height: 1.2em;
-  flex: none;
-  filter: drop-shadow(0 0 4px currentColor);
-}
-
-/* --- modal (records panel, nickname dialog) --- */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(3, 4, 8, 0.72);
-  backdrop-filter: blur(3px);
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  animation: modal-fade 0.15s ease both;
-}
-@keyframes modal-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes modal-rise {
-  from {
-    transform: translateY(24px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-.modal-panel {
-  width: 100%;
-  max-width: 520px;
-  max-height: min(88vh, 88dvh);
-  display: flex;
-  flex-direction: column;
-  background: #0b0d16;
-  border: 1px solid rgba(0, 240, 255, 0.25);
-  border-bottom: none;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -8px 40px rgba(0, 240, 255, 0.12);
-  padding: 14px 16px max(16px, env(safe-area-inset-bottom));
-  animation: modal-rise 0.18s cubic-bezier(0.2, 1, 0.3, 1) both;
-  outline: none;
-}
-.modal-dialog {
-  align-items: center;
-  padding: 16px;
-}
-.modal-dialog .modal-panel {
-  max-width: 400px;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
-  border-radius: 16px;
-  padding-bottom: 16px;
-}
-@media (min-width: 720px) {
-  .modal-sheet {
-    align-items: stretch;
-    justify-content: flex-end;
-  }
-  .modal-sheet .modal-panel {
-    max-width: 440px;
-    max-height: none;
-    border-radius: 0;
-    border-bottom: none;
-    border-left: 1px solid rgba(0, 240, 255, 0.25);
-    padding: 20px 22px;
-    animation-name: modal-slide;
-  }
-  @keyframes modal-slide {
-    from {
-      transform: translateX(40px);
-      opacity: 0;
-    }
-    to {
-      transform: none;
-      opacity: 1;
-    }
-  }
-}
-.modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.modal-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--c-cyan);
-  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
-}
-.modal-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.modal-close:hover,
-.modal-close:focus-visible {
-  border-color: var(--c-cyan);
-  color: var(--c-cyan);
-  outline: none;
-}
-.modal-body {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
-}
-
-.text-input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  font: inherit;
-  font-size: 16px;
-}
-.text-input:focus {
-  outline: none;
-  border-color: var(--c-cyan);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
 }

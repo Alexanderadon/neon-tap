@@ -16,16 +16,37 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'
   end?: ReactNode;
   /** Magenta caption («Сброс») — the only magenta text allowed on a button. */
   danger?: boolean;
+  /** The primary button's construction (`40px 1fr 40px`): icon · two centred lines (label 15/700 + `sub` 13/700) · `end`. */
+  construction?: boolean;
+  /** Second centred line of the construction variant. */
+  sub?: ReactNode;
 }
 
 /** Object button 105 × 48 (rows of three) or 335 × 48 (wide): dark 3D face, 2 px light, 4 px underside (spec §2.11). */
-export function ObjButton({ icon, label, badge, active = false, wide = false, end, danger = false, className, type = 'button', ...rest }: Props) {
-  const cls = ['obj', wide && 'obj-wide', active && 'obj-on', danger && 'obj-danger', className].filter(Boolean).join(' ');
+export function ObjButton({
+  icon,
+  label,
+  badge,
+  active = false,
+  wide = false,
+  end,
+  danger = false,
+  construction = false,
+  sub,
+  className,
+  type = 'button',
+  ...rest
+}: Props) {
+  const row = wide || construction;
+  const cls = ['obj', row && 'obj-wide', construction && 'obj-cons', active && 'obj-on', danger && 'obj-danger', className].filter(Boolean).join(' ');
   return (
     <button type={type} className={cls} {...rest}>
       <span className="obj-icon">{icon}</span>
-      <span className="obj-label">{label}</span>
-      {wide && end !== undefined && <span className="obj-end">{end}</span>}
+      <span className="obj-label">
+        {construction ? <b className="obj-title">{label}</b> : label}
+        {construction && sub !== undefined && <small className="obj-sub">{sub}</small>}
+      </span>
+      {row && end !== undefined && <span className="obj-end">{end}</span>}
       {badge !== undefined && badge !== 0 && badge !== '' && <i className="obj-badge">{badge}</i>}
     </button>
   );

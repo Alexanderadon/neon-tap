@@ -77,8 +77,11 @@ describe('saveResult', () => {
     expect(meta.starsBefore).toBe(0);
     expect(meta.starsAfter).toBe(3);
     expect(meta.dailyBonus).toBe(false);
+    expect(meta.bestBefore).toBeNull();
     const save = progressStore.get();
     expect(save.tracks[OTHER_ID].rank).toBe('A');
+    // The next run knows the exact record it is measured against («БЫЛО N»).
+    expect(saveResult(run(OTHER_ID, { score: 4000 }), 'catalog', DATE).bestBefore).toBe(5000);
     expect(save.counters).toMatchObject({ tracksPlayed: 1, maxCombo: 70, maxTrackStars: 6 });
     expect(meta.goalsCompleted).toContain('hardest-6');
     expect(save.goalsClaimed).toContain('hardest-6');

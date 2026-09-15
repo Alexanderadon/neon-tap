@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NICKNAME_MAX, getSettings, sanitizeNickname, updateSettings } from './settingsStore';
+import { NICKNAME_MAX, getSettings, isValidNickname, sanitizeNickname, updateSettings } from './settingsStore';
 
 describe('settingsStore', () => {
   it('starts with the tutorial not done', () => {
@@ -21,6 +21,13 @@ describe('settingsStore', () => {
     const after = getSettings();
     expect({ ...after, tutorialDone: false }).toEqual({ ...before, tutorialDone: false });
     updateSettings({ tutorialDone: false });
+  });
+});
+
+describe('isValidNickname', () => {
+  it('accepts anything non-empty once trimmed', () => {
+    expect(isValidNickname('  ')).toBe(false);
+    expect(isValidNickname('Neo')).toBe(true);
   });
 });
 

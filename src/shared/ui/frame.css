@@ -1,0 +1,110 @@
+/*
+ * Frame (Frame.tsx): the screen skeleton (spec §1.4) — one 335 column in 20 px gutters, the top
+ * bar at safe-top + 8, the sub-header 24 at +16, the body from +32, the action zone (trio 48 · 16 ·
+ * primary 64) at safe-bottom + 24. The frame scrolls on short viewports.
+ */
+.frame {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-top) + 8px) max(var(--gutter), var(--safe-right)) calc(var(--safe-bottom) + 24px) max(var(--gutter), var(--safe-left));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  color: #fff;
+  font: var(--t-13);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  animation: frame-enter 0.25s var(--ease-out) backwards;
+}
+@keyframes frame-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Sub-header 335 × 24: tag + line / segments, or one centred line. */
+.sub {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: var(--col);
+  height: 24px;
+  flex: none;
+  margin-top: 16px;
+}
+.sub-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-13);
+  color: var(--w55);
+}
+.sub-text b,
+.sub-center b {
+  font-weight: 700;
+  color: #fff;
+}
+.sub-right {
+  margin-left: auto;
+}
+.sub-center {
+  justify-content: center;
+  gap: 8px;
+  font: var(--t-13);
+  color: var(--w55);
+}
+.frame-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--col);
+  flex: 1 0 auto;
+  padding-top: 32px;
+}
+/* A scrolling middle (lists) under the action zone; the scrollbar would be a second, foreign signal. */
+.frame-body-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 4px 0 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.frame-body-scroll::-webkit-scrollbar {
+  display: none;
+}
+.frame-body-scroll > * {
+  flex: none;
+}
+.line {
+  display: block;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.line b {
+  color: #fff;
+  font-weight: 700;
+}
+.line-w80 {
+  color: var(--w80);
+}
+@media (prefers-reduced-motion: reduce) {
+  .frame {
+    animation: none;
+  }
+}

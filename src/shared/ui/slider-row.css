@@ -1,0 +1,91 @@
+/* SliderRow (SliderRow.tsx): 48 px row — label 104 («Эффекты» is 100 px in Unbounded 15/700) · track 8 (cyan fill, thumb 24) · value 56 cyan. */
+.srow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  width: 100%;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.srow-label {
+  width: 104px;
+  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-15);
+  color: #fff;
+}
+.srow-bar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 8px;
+  border-radius: var(--r-999);
+  background: var(--w10);
+  --pct: 0%;
+}
+.srow-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8px;
+  width: var(--pct);
+  border-radius: var(--r-999);
+  background: var(--cyan);
+}
+.srow-thumb {
+  position: absolute;
+  top: -8px;
+  left: var(--pct);
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  background: var(--cyan-face);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 0 var(--cyan-under);
+  pointer-events: none;
+}
+/* The native range sits invisibly over the track: its thumb is 24 px wide too, so a drag lands where the drawn thumb is. */
+.srow-input {
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  top: -20px;
+  width: calc(100% + 24px);
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.srow-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 48px;
+}
+.srow-input::-moz-range-thumb {
+  width: 24px;
+  height: 48px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.srow-bar:has(.srow-input:focus-visible) .srow-thumb {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.srow-value {
+  width: 56px;
+  flex: none;
+  text-align: right;
+  font: var(--t-15);
+  color: var(--cyan);
+}

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Icon } from './icons';
 import './primary-action.css';
 
@@ -19,11 +19,14 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'
   tone?: PrimaryTone;
 }
 
-/** The 335 × 64 primary button: `40px 1fr 40px` grid, cyan 3D face, one construction on every screen (spec §2.12). */
-export function PrimaryAction({ lead, label, sub, icon, beat = false, tone = 'cyan', className, type = 'button', ...rest }: Props) {
+/** The 335 × 64 primary button: `40px 1fr 40px` grid, cyan 3D face, one construction on every screen (spec §2.12). The ref is the button (flights measure it). */
+export const PrimaryAction = forwardRef<HTMLButtonElement, Props>(function PrimaryAction(
+  { lead, label, sub, icon, beat = false, tone = 'cyan', className, type = 'button', ...rest },
+  ref,
+) {
   const cls = ['primary', tone !== 'cyan' && `primary-${tone}`, beat && tone === 'cyan' && 'primary-beat', className].filter(Boolean).join(' ');
   return (
-    <button type={type} className={cls} {...rest}>
+    <button ref={ref} type={type} className={cls} {...rest}>
       <span className="primary-lead">{lead}</span>
       <span className="primary-lbl">
         <b className="primary-label">{label}</b>
@@ -32,7 +35,7 @@ export function PrimaryAction({ lead, label, sub, icon, beat = false, tone = 'cy
       <span className="primary-icon">{icon === undefined ? <Icon name="arrow" size={24} /> : icon}</span>
     </button>
   );
-}
+});
 
 /** The 40 px black disc for the left slot (play triangle, lock, crystal, check …). */
 export function Disc({ children, className }: { children: ReactNode; className?: string }) {

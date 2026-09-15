@@ -1,0 +1,51 @@
+/* Toggle (Toggle.tsx): 48 × 28 pill; the native checkbox is stretched over it, invisible. */
+.tgl {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--r-999);
+  background: var(--w10);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.4);
+  transition: background 0.15s ease;
+}
+.tgl-on {
+  background: var(--cyan);
+}
+.tgl-knob {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 0 #000;
+  transition: transform 0.15s var(--ease-out);
+  pointer-events: none;
+}
+.tgl-on .tgl-knob {
+  transform: translateX(20px);
+}
+.tgl-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.tgl:has(.tgl-input:focus-visible) {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tgl,
+  .tgl-knob {
+    transition: none;
+  }
+}

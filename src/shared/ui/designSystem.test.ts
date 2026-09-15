@@ -12,6 +12,13 @@ import { Coin } from './Coin';
 import { ProgressBar } from './ProgressBar';
 import { RingCountdown } from './RingCountdown';
 import { Icon } from './icons';
+import { difficultyColor } from './difficultyColor';
+import { Difficulty } from './Difficulty';
+import { Segments, SegmentsPulse } from './Segments';
+import { segmentStates } from './segmentStates';
+import { ListRow, PlaceChip, StatePanel } from './ListRow';
+import { Avatar } from './Avatar';
+import { Trio } from './ActionZone';
 
 const html = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 
@@ -138,5 +145,74 @@ describe('RingCountdown', () => {
     const out = html(createElement(RingCountdown, { size: 40, seconds: 30, progress: 0.5 }));
     expect(out).not.toContain('ring-run');
     expect(out).toContain('stroke-dashoffset="59.69"');
+  });
+});
+
+describe('Difficulty', () => {
+  it('maps tiers to the v3 palette: lime, cyan, gold, orange, magenta', () => {
+    expect(difficultyColor(1)).toBe('#b6ff00');
+    expect(difficultyColor(2)).toBe('#b6ff00');
+    expect(difficultyColor(3)).toBe('#00f0ff');
+    expect(difficultyColor(5)).toBe('#ffd700');
+    expect(difficultyColor(6)).toBe('#ffd700');
+    expect(difficultyColor(7)).toBe('#ff8a00');
+    expect(difficultyColor(9)).toBe('#ff2bd6');
+    expect(difficultyColor(42)).toBe('#ff2bd6');
+  });
+
+  it('is the dark chip with a coloured flame and the number, without CSS filters', () => {
+    const out = html(createElement(Difficulty, { stars: 7 }));
+    expect(out).toContain('class="chip chip-dark chip-flame"');
+    expect(out).toContain('color:#ff8a00');
+    expect(out).toContain('<span class="chip-text">7</span>');
+    expect(out).not.toContain('filter');
+  });
+});
+
+describe('Segments', () => {
+  it('derives states from the current index and marks done / current segments', () => {
+    expect(segmentStates(4, 1)).toEqual(['done', 'current', 'rest', 'rest']);
+    expect(segmentStates(3, 3)).toEqual(['done', 'done', 'done']);
+    const out = html(createElement(Segments, { states: segmentStates(3, 1) }));
+    expect(out.match(/<i class="seg/g)?.length).toBe(3);
+    expect(out).toContain('seg seg-done');
+    expect(out).toContain('seg seg-cur');
+  });
+
+  it('becomes a list of 24 px tap targets with onSelect and pulses while loading', () => {
+    const out = html(createElement(Segments, { states: segmentStates(2, 0), onSelect: () => {}, labels: ['a', 'b'] }));
+    expect(out.startsWith('<ol class="segs"')).toBe(true);
+    expect(out.match(/class="seg-hit"/g)?.length).toBe(2);
+    expect(out).toContain('aria-current="true"');
+    const pulse = html(createElement(SegmentsPulse, { count: 10 }));
+    expect(pulse.match(/animation-delay/g)?.length).toBe(10);
+    expect(pulse).toContain('segs-pulse');
+  });
+});
+
+describe('ListRow / StatePanel / Avatar / Trio', () => {
+  it('ListRow marks my row and gilds the first three places', () => {
+    const me = html(createElement(ListRow, { lead: createElement(PlaceChip, { place: 2 }), name: 'Neo', score: '102 400', me: true }));
+    expect(me).toContain('class="lrow lrow-me"');
+    expect(me).toContain('lrow-pos lrow-pos-top');
+    expect(me).toContain('aria-current="true"');
+    expect(html(createElement(PlaceChip, { place: 4 }))).toBe('<span class="lrow-pos">4</span>');
+    expect(html(createElement(ListRow, { as: 'div', name: 'x' })).startsWith('<div class="lrow"')).toBe(true);
+  });
+
+  it('StatePanel is a status by default and an alert on errors', () => {
+    expect(html(createElement(StatePanel, { icon: 'i', children: 'x' }))).toContain('role="status"');
+    expect(html(createElement(StatePanel, { icon: 'i', role: 'alert', children: 'x' }))).toContain('role="alert"');
+  });
+
+  it('Avatar shows the first letter, a «?» on the dark face while empty, and the other tone for other people', () => {
+    expect(html(createElement(Avatar, { name: 'neo' }))).toBe('<span class="ava" aria-hidden="true">N</span>');
+    expect(html(createElement(Avatar, { name: '', size: 48 }))).toContain('class="ava ava-48 ava-empty"');
+    expect(html(createElement(Avatar, { name: 'Zed', size: 96, tone: 'other' }))).toContain('class="ava ava-96 ava-other"');
+  });
+
+  it('Trio is the row of three, or one full-width cell', () => {
+    expect(html(createElement(Trio, { children: 'x' }))).toBe('<div class="trio">x</div>');
+    expect(html(createElement(Trio, { one: true, children: 'x' }))).toBe('<div class="trio trio-one">x</div>');
   });
 });

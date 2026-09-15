@@ -24,11 +24,15 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
 }
 .obj:active {
   transform: translateY(2px);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 2px 0 #000;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    0 2px 0 #000;
 }
 .obj:focus-visible {
   outline: 2px solid var(--cyan);
@@ -72,7 +76,9 @@
   box-shadow: var(--sh-primary);
 }
 .obj-on:active {
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.6), 0 2px 0 var(--cyan-under);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.6),
+    0 2px 0 var(--cyan-under);
 }
 .obj-danger {
   color: var(--mag);
@@ -134,4 +140,40 @@
   .obj {
     transition: none;
   }
+}
+
+/* The primary button's construction as an object button: icon 20 · two centred lines · arrow 20 (the shop's ad row). */
+.obj-cons {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 0;
+  padding: 0 12px;
+}
+.obj-cons .obj-icon {
+  justify-self: center;
+  color: var(--w80);
+}
+.obj-cons .obj-label {
+  flex: none;
+  text-align: center;
+}
+.obj-cons .obj-end {
+  justify-self: center;
+  margin: 0;
+  color: var(--w80);
+}
+.obj-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-15);
+  color: #fff;
+}
+.obj-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-13b);
+  color: var(--w55);
 }
