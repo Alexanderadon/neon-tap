@@ -19,7 +19,8 @@
     "assets:analyze": "tsx --tsconfig tsconfig.node.json scripts/analyze-tracks.ts",
     "assets:charts": "tsx --tsconfig tsconfig.node.json scripts/generate-charts.ts",
     "chart:tutorial": "node scripts/gen-tutorial.mjs",
-    "assets:icons": "tsx --tsconfig tsconfig.node.json scripts/make-icons.ts"
+    "assets:icons": "tsx --tsconfig tsconfig.node.json scripts/make-icons.ts",
+    "assets:fetch-music": "tsx --tsconfig tsconfig.node.json scripts/fetch-music.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

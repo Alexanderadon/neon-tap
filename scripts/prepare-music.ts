@@ -1,6 +1,6 @@
 /**
  * assets-src/music-raw/* → public/music/<id>.mp3
- * Trims to ≤ 150 s (GDD: 90–150 s sessions), normalises loudness, fades the cut, encodes 128 kbps.
+ * Trims to ≤ 150 s (GDD: 90–150 s sessions), normalises loudness, fades the cut, encodes MP3 VBR -q:a 1 (~225 kbps: 128 kbps hissed on hi-hats in headphones).
  * Licenses report: `npm run assets:licenses`.
  */
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -38,6 +38,23 @@ for (const t of tracks) {
   const cut = Math.min(dur, MAX_SEC);
   const fade = cut < dur ? `,afade=t=out:st=${(cut - 3).toFixed(2)}:d=3` : '';
   const loops = t.loops ?? 1;
-  ffmpeg([...(loops > 1 ? ['-stream_loop', String(loops - 1)] : []), '-i', src, '-t', String(cut), '-af', `loudnorm=I=-14:TP=-1.5:LRA=11${fade}`, '-ac', '2', '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '128k', out]);
+  ffmpeg([
+    ...(loops > 1 ? ['-stream_loop', String(loops - 1)] : []),
+    '-i',
+    src,
+    '-t',
+    String(cut),
+    '-af',
+    `loudnorm=I=-14:TP=-1.5:LRA=11${fade}`,
+    '-ac',
+    '2',
+    '-ar',
+    '44100',
+    '-codec:a',
+    'libmp3lame',
+    '-q:a',
+    '1',
+    out,
+  ]);
   console.log(`${t.id}: ${dur.toFixed(1)}s → ${cut.toFixed(1)}s`);
 }
