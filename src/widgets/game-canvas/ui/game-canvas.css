@@ -40,6 +40,10 @@
   color: var(--w80);
   z-index: 2;
 }
+/* The shared .chip-btn:active press (translateY) would drop the centring transform and jump the chip 24 px to the right. */
+.game-pause-chip.chip-btn:active {
+  transform: translateX(-50%) translateY(1px);
+}
 
 /* Full-screen frames over the frozen field. `.game-shade` = the .8 veil; the scene canvas sits under the content (z −1) but over the veil. */
 .game-frame {
