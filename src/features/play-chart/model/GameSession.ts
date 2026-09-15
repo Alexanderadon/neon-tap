@@ -92,7 +92,8 @@ const FADE_IN_SEC = 2.0;
 /** The spinner's wheel fades out this long after its verdict. */
 const SPIN_FADE_SEC = 0.35;
 const MILESTONES = [50, 100, 250, 500, 1000];
-const ASSIST_WINDOW = 0.4;
+/** Touch assist: a tap this early (beyond the Good window) arms the note to fire on its own moment — a bit of slack for touch latency, not a whole beat. */
+const ASSIST_WINDOW = 0.2;
 export const MAX_HEARTS = 5;
 /** A heart caught with all ten lives already there pays this many crystals. */
 const HEART_OVERFLOW_CRYSTALS = 5;
