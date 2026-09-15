@@ -84,3 +84,27 @@ export function newlyUnlocked(catalogIds: readonly string[], before: number, aft
   });
   return out;
 }
+
+/** The nearest track still closed by stars (the result screen's «до открытия …» bar). */
+export interface NextUnlock {
+  id: string;
+  /** Stars required. */
+  need: number;
+  /** Stars the player has now. */
+  have: number;
+  /** Stars still missing (≥ 1). */
+  missing: number;
+}
+
+/**
+ * The next track that opens by stars: the first closed, non-premium entry in catalog order (the
+ * catalog is sorted easiest first, so it is also the cheapest). Premium and bought tracks never
+ * open by stars and are skipped; `null` when everything star-gated is already open.
+ */
+export function nextUnlock(states: readonly UnlockInfo[], stars: number): NextUnlock | null {
+  for (const s of states) {
+    if (s.unlocked || s.premium || s.purchased) continue;
+    return { id: s.id, need: s.need, have: stars, missing: Math.max(1, s.need - stars) };
+  }
+  return null;
+}

@@ -1,277 +1,337 @@
+/*
+ * Result screen (ResultBreakdown.tsx) — final.html, right phone. One 335 column, gaps of 16 between
+ * zones, 24 before the action zone; every row one height (24 / 32 / 56 / 48 / 64); radii 24 / 16 / 999.
+ * Motion (spec §3): everything `both`, nothing loops but the primary button's breath; `.is-settled`
+ * on the root jumps to the final state. No `filter` anywhere — halos live inside the SVGs.
+ */
 .result {
-  width: 100%;
-  max-width: 460px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-}
-.result-track {
-  margin-bottom: 4px;
-}
-.result-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-}
-.result-diff {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-@keyframes rank-pop {
-  0% {
-    transform: scale(2.4);
-    opacity: 0;
-    filter: blur(6px);
-  }
-  60% {
-    transform: scale(0.94);
-    opacity: 1;
-    filter: none;
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-.result-rank {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(96px, 28vw, 150px);
-  line-height: 1;
-  animation: rank-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
-  text-shadow: 0 0 30px currentColor, 0 0 70px currentColor;
-}
-.result-failed {
-  font-size: clamp(44px, 12vw, 80px);
-  color: var(--c-magenta);
-  letter-spacing: 0.08em;
-}
-/* One line of meaning under the verdict ("Дошёл до 1:42 из 2:17", "До S не хватило 12 нот"). */
-.result-meaning {
-  font-size: 15px;
-  color: #ffd700;
-  text-align: center;
-}
-.result-meaning.is-failed {
-  color: rgba(255, 255, 255, 0.6);
-}
-/* The verdict: three big stars popping in one by one (see Stars), the earned ones lit. */
-.result-stars {
-  padding: 10px 0 4px;
-}
-/* Four numbers, one row: score · accuracy · max combo · rank. */
-.result-numbers {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  align-items: stretch;
+  gap: 16px;
   width: 100%;
-  gap: 8px;
-  padding: 12px 8px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.result-number {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.result-number b {
-  font-family: var(--font-display);
-  font-size: 20px;
+  flex: 1;
+  color: #fff;
+  font: var(--t-13);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: center;
 }
-/* The score runs up, then lands with a punch: a scale pop and a burst of glow that fades. */
-@keyframes score-pop {
-  0% {
+
+/* --- keyframes --- */
+@keyframes result-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes result-score-pop {
+  50% {
+    transform: scale(1.1);
+  }
+  to {
     transform: scale(1);
   }
-  35% {
-    transform: scale(1.32);
-    text-shadow: 0 0 18px #ffd700, 0 0 44px rgba(255, 215, 0, 0.8);
-    color: #ffd700;
-  }
-  100% {
-    transform: scale(1);
-    text-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
-  }
 }
-@keyframes score-burst {
+/* Confetti stays in the star zone: it falls 120 px and is gone before the score panel. */
+@keyframes result-fall {
   0% {
-    transform: scale(0.4);
+    opacity: 0;
+    transform: translateY(0) rotate(var(--cf-r));
+  }
+  10% {
+    opacity: 0.9;
+  }
+  75% {
     opacity: 0.9;
   }
   100% {
-    transform: scale(2.6);
     opacity: 0;
+    transform: translateY(120px) rotate(calc(var(--cf-r) + 360deg));
   }
 }
-.result-score {
-  position: relative;
-}
-.result-score b {
-  transform-origin: 50% 60%;
-}
-.result-score.is-done b {
-  animation: score-pop 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both;
-  color: #ffd700;
-}
-.result-score.is-done::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  width: 56px;
-  height: 56px;
-  margin: -28px 0 0 -28px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 215, 0, 0.9);
-  box-shadow: 0 0 24px rgba(255, 215, 0, 0.6);
-  pointer-events: none;
-  animation: score-burst 0.6s ease-out both;
-}
-/* Achievements earned this run: one row of gold coins with the family glyph, the tier number under. */
-@keyframes badge-in {
+/* Loot flies into the wallet: coin centre → a bowed midpoint at 1.2 → chip centre at .5 (transform only). */
+@keyframes reward-fly {
   0% {
-    transform: scale(0.3) rotate(-25deg);
     opacity: 0;
+    transform: translate(var(--x0), var(--y0)) scale(1);
   }
-  70% {
-    transform: scale(1.12) rotate(4deg);
+  15% {
     opacity: 1;
   }
+  60% {
+    opacity: 1;
+    transform: translate(var(--xm), var(--ym)) scale(1.2);
+  }
   100% {
-    transform: scale(1) rotate(0);
+    opacity: 0;
+    transform: translate(var(--x1), var(--y1)) scale(0.5);
   }
 }
-.result-badges {
+
+/* --- title line 24: «Metal Song · Глава 1» --- */
+.result-sub {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  list-style: none;
-  margin: 0 auto;
-  padding: 0 4px;
-  width: max-content;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
+  height: 24px;
+  min-width: 0;
+  font: var(--t-13);
+  color: var(--w55);
 }
-.result-badge {
+.result-sub b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* --- hero 144: stars 96 / 120 / 96 (Stars.tsx does the pops and sparks), confetti on top --- */
+.result-hero {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 144px;
+}
+.result-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.result-cf {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  border-radius: var(--r-999);
+  opacity: 0;
+  animation: result-fall var(--cf-d) linear both;
+}
+.result-cf-gem {
+  clip-path: polygon(50% 0, 100% 40%, 50% 100%, 0 40%);
+}
+
+/* --- verdict 32: «+2 ЗВЕЗДЫ» in the emboss material; «ПРОВАЛ» in magenta --- */
+/* The verdict (shared Headline) pops at 1.3 s; a failed run at 0.3 s. */
+.result-verdict.headline-pop {
+  animation-delay: 1.3s;
+}
+
+/* --- record tag 24 riding on the score panel 112 (overlap 12) --- */
+.result-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  flex: 0 0 auto;
-  animation: badge-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
-.result-badge-ring {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: #ffd700;
-  background: radial-gradient(circle at 50% 35%, rgba(255, 215, 0, 0.28), rgba(11, 13, 22, 0.9) 70%);
-  border: 2px solid #ffd700;
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.55);
-}
-.result-badge-n {
-  font-size: 10px;
-  color: #ffd700;
-}
-.result-number .micro {
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
-}
-/* Celebrations as pills: stars gained, achievements, crystals — never paragraphs. */
-.result-pills {
+.result-tab {
+  position: relative;
+  z-index: 2;
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
+  height: 24px;
+  margin-bottom: -12px;
+  animation: result-rise 0.4s ease-out 1.6s both;
 }
-.result-pill {
-  display: inline-flex;
+.result-score-panel {
+  height: 112px;
+  animation: result-rise 0.4s ease-out 1.6s both;
+}
+/* One highlight sweep across the gold half once the score has landed (spec §3: 3.0 s). */
+.result-tab .tag-shine {
+  animation-delay: 3s;
+}
+/* The final number sets the width from the start; the counter sits centred on top of it. */
+.result-score {
+  position: relative;
+  display: block;
+  height: 48px;
+  font: var(--t-44);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  text-shadow: var(--emboss);
+}
+.result-score-final {
+  display: block;
+  visibility: hidden;
+  font-weight: 900;
+}
+.result-score-cnt {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+.result-score.is-done .result-score-final {
+  visibility: visible;
+  animation: result-score-pop 0.35s var(--ease-pop) both;
+}
+.result-stats {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 215, 0, 0.5);
-  color: #ffd700;
-  font-size: 12px;
-  background: rgba(255, 215, 0, 0.08);
+  justify-content: center;
+  gap: 8px;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w55);
+}
+.result-stats b {
+  font-weight: 700;
+  color: #fff;
+}
+.result-stats b.is-gold {
+  color: var(--gold);
+}
+
+/* --- loot 56: three coins on the 3-column grid --- */
+.result-loot {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  height: 56px;
+}
+.result-loot-cell {
+  display: block;
+  min-width: 0;
+}
+
+/* --- unlock bar 32: text 16 + 8 + track 8 --- */
+.result-unlock {
+  height: 32px;
+  animation: result-rise 0.4s ease-out 3.3s both;
+}
+
+/* --- action zone: 24 above (16 gap + 8), trio 48, 16, primary 64 --- */
+.result-actions {
+  padding-top: 8px;
+}
+.result-trio {
+  animation: result-rise 0.4s ease-out 3.4s both;
+}
+.result-primary {
+  animation: result-rise 0.4s ease-out 3.5s both;
+}
+/* The breath starts once the button has risen (spec §3: 3.9 s). */
+.result-primary .primary-beat {
+  animation-delay: 3.9s;
+}
+
+/* --- failed run: the verdict at 0.3, the panel at 0.8, the buttons at once (spec §3) --- */
+.result.is-failed .result-verdict.headline-pop {
+  animation-delay: 0.3s;
+}
+.result.is-failed .result-tab,
+.result.is-failed .result-score-panel {
+  animation-delay: 0.8s;
+}
+.result.is-failed .result-unlock {
+  animation-delay: 1s;
+}
+.result.is-failed .result-trio,
+.result.is-failed .result-primary {
+  animation: none;
+}
+.result.is-failed .result-primary .primary-beat {
+  animation-delay: 0s;
+}
+
+/* --- skip: any tap before the end (or reduced motion) rewinds everything to the final frame --- */
+.result.is-settled,
+.result.is-settled * {
+  animation-delay: 0s !important;
+  animation-duration: 0.01s !important;
+}
+.result.is-settled .primary-beat {
+  animation-duration: 0.5s !important;
+}
+.result.is-settled .result-confetti {
+  display: none;
+}
+
+/* --- reward flights: the topmost layer (a portal on body) --- */
+.reward-flights {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+.reward-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  opacity: 0;
+  animation: reward-fly 0.7s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.reward-fly-crystal {
+  color: var(--cyan);
+}
+.reward-fly > svg,
+.reward-fly .stars {
+  display: block;
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+
+/* --- «Подробнее»: everything analytical, opened by a tap on the score panel --- */
+.result-details {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
 }
 .result-grid {
-  width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 18px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 8px 24px;
+  padding: 16px;
 }
 .result-row {
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  align-items: center;
+  height: 24px;
+  font: var(--t-13);
+  color: var(--w80);
 }
 .result-row b {
-  font-family: var(--font-display);
+  font: var(--t-15);
+  color: #fff;
 }
-.result-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  width: 100%;
-  margin-top: 6px;
+.result-row.is-bad,
+.result-row.is-bad b {
+  color: var(--mag);
 }
-.result-actions .btn-xl {
-  width: 100%;
-}
-.result-secondary {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-/* Everything analytical lives here, closed by default. */
-.result-details {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* --- where did I miss --- */
 .result-section {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-  text-align: left;
+  gap: 8px;
 }
 .result-section-title {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font: var(--t-11);
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--w55);
 }
 .result-section-sub {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  font: var(--t-13);
+  color: var(--w55);
   margin-top: -4px;
 }
 .result-strip {
@@ -290,8 +350,8 @@
   top: 0;
   height: 46px;
   width: 1px;
-  background: #ffffff;
-  box-shadow: 0 0 6px #ffffff;
+  background: #fff;
+  box-shadow: 0 0 6px #fff;
   pointer-events: none;
   transform: translateX(-0.5px);
 }
@@ -300,24 +360,24 @@
   top: -22px;
   transform: translateX(-50%);
   padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(5, 6, 10, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: #ffffff;
+  border-radius: var(--r-999);
+  background: var(--panel);
+  border: 1px solid var(--w30);
+  font: var(--t-11);
+  color: #fff;
   pointer-events: none;
   white-space: nowrap;
 }
 .result-strip-axis {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  margin-top: 3px;
+  font: var(--t-11);
+  letter-spacing: 0;
+  color: var(--w30);
+  margin-top: 4px;
 }
 .result-strip-hint {
-  color: rgba(255, 255, 255, 0.28);
+  color: var(--w30);
 }
 .result-chart {
   display: block;
@@ -327,52 +387,76 @@
 }
 .result-chart-axis {
   font-size: 9px;
-  fill: rgba(255, 255, 255, 0.5);
+  fill: var(--w55);
 }
 .result-chart-legend {
   font-size: 9px;
-  fill: rgba(255, 255, 255, 0.55);
+  fill: var(--w55);
 }
 .result-chart-legend-combo {
-  fill: var(--c-cyan);
+  fill: var(--cyan);
 }
+/* Highlights in one grey; only the misses carry magenta. */
 .result-highlights {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .result-highlights li {
-  padding: 6px 10px;
-  border-left: 3px solid currentColor;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-left: 3px solid var(--w30);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 14px;
+  background: var(--w10);
+  font: var(--t-13);
+  color: var(--w80);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result-highlights li.is-bad {
+  border-left-color: var(--mag);
 }
 .result-replay-canvas {
   display: block;
   width: 100%;
   height: 190px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-16);
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--w10);
 }
 .result-share {
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 6px;
+  width: 100%;
 }
 .result-share-status {
-  min-height: 1.2em;
-  font-size: 12px;
-  color: var(--c-lime);
+  grid-column: 1 / -1;
+  min-height: 16px;
+  font: var(--t-13);
+  text-align: center;
+  color: var(--w55);
 }
 .result-share-status.is-error {
-  color: var(--c-magenta);
+  color: var(--mag);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-verdict,
+  .result-tab,
+  .result-score-panel,
+  .result-unlock,
+  .result-trio,
+  .result-primary,
+  .result-cf,
+  .result-score.is-done .result-score-final,
+  .reward-fly {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
 }
