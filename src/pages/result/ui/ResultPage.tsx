@@ -23,6 +23,7 @@ import { ChallengeButton } from '@/widgets/duel-challenge';
 import { TopBar } from '@/widgets/top-bar';
 import { DuelVerdict } from '@/features/duel';
 import { clearActiveDuel, useActiveDuel } from '@/entities/duel';
+import { NicknameDialog, useSubmitScore } from '@/features/submit-score';
 import { useCatalogState } from '@/widgets/track-list';
 import { AttemptLine } from '@/widgets/history-panel';
 import { OnlineLeaderboard } from '@/widgets/online-leaderboard';
@@ -43,6 +44,8 @@ export function ResultPage() {
     if (!chart || !result) navigate('menu');
   }, [chart, result]);
 
+  // Post the run to the online table as soon as the result is on screen (the table in «Подробнее» reuses the same shared request).
+  const submission = useSubmitScore(result, source);
   const retry = useCallback(() => navigate('game'), []);
   // The run answers a duel when it was started from a challenge link.
   const duel = useActiveDuel();
@@ -121,12 +124,7 @@ export function ResultPage() {
     <Screen frame className="result-screen">
       <CoverScene id={result.trackId} genre={chart.genre} position="fixed" />
       <div className={settled ? 'result-page is-settled' : 'result-page'} onPointerDown={settled ? undefined : settle}>
-        <TopBar
-          crystals={crystalsTick}
-          stars={starsTick}
-          crystalsRef={crystalsRef}
-          starsRef={starsRef}
-        />
+        <TopBar crystals={crystalsTick} stars={starsTick} crystalsRef={crystalsRef} starsRef={starsRef} />
         <ResultBreakdown
           result={result}
           meta={resultMeta}
@@ -149,6 +147,7 @@ export function ResultPage() {
           extraBottom={<OnlineLeaderboard result={result} source={source} />}
         />
       </div>
+      <NicknameDialog open={submission.status === 'need-name'} onSkip={submission.skipNickname} />
     </Screen>
   );
 }
