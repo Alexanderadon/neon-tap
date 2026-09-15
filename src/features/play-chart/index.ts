@@ -5,3 +5,6 @@ export type { PooledNote, JudgeEvent } from './model/NoteManager';
 export { Lives } from './model/Lives';
 export { pickGems, gemTotal, isGemCandidate, BIG_GEM_VALUE, GEM_MIN_TIME } from './model/gems';
 export type { GemPick } from './model/gems';
+export { LEVELS } from './model/levels';
+export { reviveReducer, REVIVE_IDLE, REVIVE_OFFER_SEC, REVIVE_HEARTS, REFILL_AT, REVIVE_RESUME_AT } from './model/revive';
+export type { ReviveState, ReviveAction, RevivePhase } from './model/revive';

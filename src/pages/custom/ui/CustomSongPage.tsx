@@ -1,18 +1,21 @@
-import { dict } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { Button, Screen } from '@/shared/ui';
+import { sfxUi } from '@/shared/lib/audio';
+import { Screen } from '@/shared/ui';
 import { SongDropZone } from '@/widgets/song-drop-zone';
-import '../../page.css';
+import { TopBar } from '@/widgets/top-bar';
+import './custom-page.css';
 
+/** «Своя музыка»: the top bar and the one-card screen of SongDropZone (screens-game.html, frames 16–19). */
 export function CustomSongPage() {
   return (
-    <Screen center>
-      <h1 className="page-title">{dict.customTitle}</h1>
-      <p className="page-intro">{dict.customIntro}</p>
-      <SongDropZone />
-      <Button variant="ghost" onClick={() => navigate('menu')}>
-        {dict.back}
-      </Button>
+    <Screen frame className="customp">
+      <TopBar />
+      <SongDropZone
+        onBack={() => {
+          sfxUi();
+          navigate('menu');
+        }}
+      />
     </Screen>
   );
 }

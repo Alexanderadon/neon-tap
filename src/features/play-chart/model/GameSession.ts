@@ -1,6 +1,5 @@
 import { CIRCLE_BUCKET, CIRCLE_KEY, HIT_WINDOWS, KEY_LAYOUTS, MAX_LANES, SPIN_BONUS_PER_REV, SPIN_BUCKET } from '@/shared/config/constants';
 import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxGem, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
-import { dict, fmt } from '@/shared/i18n';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
 import { FpsMeter, LowFpsDetector, themeFor } from '@/shared/lib/render';
@@ -15,6 +14,7 @@ import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
+import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -34,10 +34,19 @@ export type SessionEvent =
   | { type: 'star'; stars: number; next: number | null }
   /** The next level's count-in has begun (level 2 and up; the first level is `start`). */
   | { type: 'level'; level: number }
-  | { type: 'fail' }
+  /** Out of hearts and the run cannot be revived: the fail frame shows `stars` kept (0 = «ПРОВАЛ», else «СТОП»). */
+  | { type: 'fail'; stars: number }
   | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
-  | { type: 'pause' }
-  | { type: 'resume' };
+  /** Paused (the host draws the pause overlay from this snapshot). */
+  | { type: 'pause'; score: number; accuracy: number; level: number }
+  | { type: 'resume' }
+  /**
+   * The fifth heart is gone and a revive can be offered: the field is frozen, the music paused, and
+   * fail() waits for the host — `revive()` after a rewarded ad, `declineRevive()` otherwise.
+   */
+  | { type: 'hearts-out'; score: number; accuracy: number; level: number }
+  /** A revive was granted: hearts pop back, the count-in runs, then `resume` follows. */
+  | { type: 'revive' };
 
 export interface SessionOptions {
   chart: ChartFile;
@@ -54,6 +63,8 @@ export interface SessionOptions {
   noFail?: boolean;
   /** Tutorial: no hearts drawn, no heart-loss effects (implies no fail). */
   hideHearts?: boolean;
+  /** Offer a rewarded revive when the hearts run out (default on; off in the tutorial / no-fail runs). */
+  revive?: boolean;
   /** Crystals: a few plain taps per run become gems (default on; off in the tutorial). */
   gems?: boolean;
   /** Levels: the song is played up to three times in a row, faster each time, a star per level (default on; the tutorial plays once). */
@@ -72,6 +83,8 @@ export interface SessionOptions {
 const TIME_REPORT_MS = 100;
 
 const LEAD_IN = 2.0;
+/** The fail / stop frame (stars, verdict, tag) stays this long before the result. */
+const FAIL_SHOW_SEC = 1.5;
 /** Between levels: the star show, with the song's tail fading out under it; the next pass fades back in over its count-in. */
 const STAR_SHOW_SEC = 2.4;
 const FADE_OUT_SEC = 1.8;
@@ -143,6 +156,12 @@ export class GameSession {
   private offsetTarget = 0;
   private failTimer = 0;
   private levelTimer = 0;
+  private reviveTimer = 0;
+  /** Revive: frozen with the offer open / hearts popping back and counting in; the one revive is spent; seconds since the reward. */
+  private heartsOut = false;
+  private reviving = false;
+  private reviveUsed = false;
+  private reviveAge = 0;
   /** The audio buffer reached its end; the run finishes once the last window has closed. */
   private audioEnded = false;
   /** Level being played (1-based), the stars earned so far and the level's playback rate (the slow spell scales it). */
@@ -283,7 +302,11 @@ export class GameSession {
   restart(): void {
     if (this.destroyed) return;
     window.clearTimeout(this.failTimer);
+    window.clearTimeout(this.reviveTimer);
     this.pauseWanted = false;
+    this.heartsOut = false;
+    this.reviving = false;
+    this.reviveUsed = false;
     this.scoring.reset();
     this.timeline.reset();
     this.lives.reset();
@@ -351,12 +374,64 @@ export class GameSession {
     this.paused = true;
     this.clock.pause();
     audioEngine.pause();
-    this.opts.onEvent({ type: 'pause' });
+    this.opts.onEvent({ type: 'pause', score: this.scoring.score, accuracy: this.scoring.accuracy, level: this.level });
   }
 
   resume(): void {
-    if (!this.paused) return;
+    // The revive offer and its count-in are frozen states of their own: Esc / the pause chip do not end them.
+    if (!this.paused || this.heartsOut || this.reviving) return;
     this.resumeAt(this.clock.position() - 1);
+  }
+
+  /** The revive offer is open (field frozen, music paused, fail deferred). */
+  get isHeartsOut(): boolean {
+    return this.heartsOut;
+  }
+
+  /**
+   * Hearts ran out but a revive can be offered: freeze like a pause, tell the host and wait —
+   * `revive()` or `declineRevive()` continue from here. Once per run.
+   */
+  private freezeHeartsOut(): void {
+    if (this.finished || this.heartsOut) return;
+    this.heartsOut = true;
+    this.paused = true;
+    this.clock.pause();
+    audioEngine.pause();
+    audioEngine.missEffect();
+    this.opts.onEvent({ type: 'hearts-out', score: this.scoring.score, accuracy: this.scoring.accuracy, level: this.level });
+  }
+
+  /**
+   * The rewarded ad paid out: five hearts back, the HUD hearts pop in one by one, the «3 / 2 / 1»
+   * runs, and the song goes on from one second before the freeze (`REVIVE_RESUME_AT`). The field
+   * does not move until then — not a note is skipped.
+   */
+  revive(): void {
+    if (!this.heartsOut || this.destroyed) return;
+    this.heartsOut = false;
+    this.reviving = true;
+    this.reviveUsed = true;
+    this.reviveAge = 0;
+    this.lives.reset();
+    if (this.lives.max !== REVIVE_HEARTS) this.lives.hearts = REVIVE_HEARTS;
+    this.heartLostAt = -1;
+    this.opts.onEvent({ type: 'revive' });
+    window.clearTimeout(this.reviveTimer);
+    this.reviveTimer = window.setTimeout(() => {
+      if (this.destroyed || !this.reviving) return;
+      this.reviving = false;
+      this.resumeAt(this.clock.position() - 1);
+    }, REVIVE_RESUME_AT * 1000);
+  }
+
+  /** No ad (declined, timed out, closed): the run fails as it always did. */
+  declineRevive(): void {
+    if (!this.heartsOut) return;
+    this.heartsOut = false;
+    this.reviveUsed = true;
+    this.paused = false;
+    this.fail();
   }
 
   /** Dev (no-fail sessions, `window.__neon.seek(sec)`): jump the song; notes before the point are auto-missed. */
@@ -395,6 +470,7 @@ export class GameSession {
     this.destroyed = true;
     window.clearTimeout(this.failTimer);
     window.clearTimeout(this.levelTimer);
+    window.clearTimeout(this.reviveTimer);
     cancelAnimationFrame(this.raf);
     this.input.detach();
     this.resizeObserver?.disconnect();
@@ -540,7 +616,10 @@ export class GameSession {
         this.opts.onEvent({ type: 'life-lost', hearts: this.lives.hearts });
       }
       this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
-      if (dead && !this.opts.noFail && !this.opts.hideHearts) this.fail();
+      if (dead && !this.opts.noFail && !this.opts.hideHearts) {
+        if (canOfferRevive(this.reviveUsed, this.opts.revive !== false)) this.freezeHeartsOut();
+        else this.fail();
+      }
       return;
     }
 
@@ -618,6 +697,7 @@ export class GameSession {
     const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     this.fps.tick(dt);
+    if (this.reviving) this.reviveAge += dt;
 
     // The device's output latency can change mid-song (a headset connects): keep the heard time honest.
     this.clock.deviceLatency = audioEngine.outputLatency();
@@ -711,6 +791,7 @@ export class GameSession {
       levels: this.levelCount > 1 ? this.levelCount : 0,
       level: this.level,
       stars: this.starsEarned,
+      revive: this.reviving ? this.reviveAge : -1,
       debug: this.opts.debug
         ? {
             fps: this.fps.fps,
@@ -723,16 +804,9 @@ export class GameSession {
         : null,
     });
 
-    if (this.failed) {
-      // Out of hearts past the first level: the run stops, but the stars stay.
-      const kept = levelOutcome(this.level, true).stars;
-      if (kept > 0) this.renderer.drawOverlayText(dict.levelStop, fmt(dict.levelKept, { n: kept }), '#ffd700');
-      else this.renderer.drawOverlayText('ПРОВАЛ', 'R — ещё раз', '#ff2bd6');
-    } else if (songTime < 0) {
-      this.renderer.drawOverlayText(String(Math.ceil(-songTime)));
-    } else if (this.paused) {
-      this.renderer.drawOverlayText('ПАУЗА', 'Esc — продолжить · R — заново');
-    }
+    // The fail frame, the pause menu and the revive offer are DOM overlays (GameCanvas); the canvas
+    // keeps the frozen field under them. The count-in is drawn here, over the first falling tiles.
+    if (!this.failed && !this.paused && songTime < 0) this.renderer.drawCountdown(-songTime);
     this.raf = requestAnimationFrame(this.frame);
   };
 
@@ -742,8 +816,9 @@ export class GameSession {
     if (this.finished) return;
     this.failed = true;
     audioEngine.missEffect();
-    this.opts.onEvent({ type: 'fail' });
-    this.failTimer = window.setTimeout(() => this.finish(), 900);
+    // Out of hearts past the first level: the run stops, but the stars stay («СТОП»); before it — «ПРОВАЛ».
+    this.opts.onEvent({ type: 'fail', stars: levelOutcome(this.level, true).stars });
+    this.failTimer = window.setTimeout(() => this.finish(), FAIL_SHOW_SEC * 1000);
     this.finished = true;
     audioEngine.stop();
   }

@@ -1,124 +1,117 @@
-import { dict } from '@/shared/i18n';
+import { dict, fmt } from '@/shared/i18n';
+import { Panel, Tag } from '@/shared/ui';
 import type { TutorialKind, TutorialStep } from '@/features/tutorial';
 import './tutorial-overlay.css';
 
 interface Props {
   step: TutorialStep | null;
-  /** Index of `step` in the script and the script length (step dots). */
+  /** Index of `step` in the script and the script length (the «2 / 16» tag). */
   index: number;
   total: number;
   /** 0..1 through the current step. */
   progress: number;
-  /** The player already landed a hit in this step → encouragement. */
+  /** The player already landed a hit in this step → the step tag turns into «ОТЛИЧНО!». */
   succeeded: boolean;
   /** Show finger hints instead of key hints. */
   touch: boolean;
-  onSkip: () => void;
 }
 
 /**
- * Caption layer above the game canvas: mechanic icon with a CSS-animated hint, title, text,
- * input hint, a "lanes: N" chip with the key caps (desktop) or the touch zones (phones), step
- * dots and live encouragement. Pointer events pass through everywhere except the skip button,
- * so the canvas keeps receiving taps.
+ * The tutorial caption (screens-game.html, frames 12–13): a 335 × 112 Panel under the HUD chip
+ * line — a 56 px disc with the mechanic's icon, the step's title 20/700 and hint 13, and the step
+ * bar 8 px in the gold face; the dark «2 / 16» tag rides on the panel's top edge and becomes the
+ * gold «ОТЛИЧНО!» after the first hit. No buttons: skipping lives in the pause menu. Pointer events
+ * pass through, so the canvas keeps receiving taps.
  */
-export function TutorialOverlay({ step, index, total, progress, succeeded, touch, onSkip }: Props) {
+export function TutorialOverlay({ step, index, total, progress, succeeded, touch }: Props) {
+  if (!step) return <div className="tut" aria-live="polite" />;
+  const praise = step.id === 'finale' ? dict.tutorialDone : dict.tutorialGreat;
   return (
     <div className="tut" aria-live="polite">
-      {step && (
-        <div className={`tut-card tut-kind-${step.kind}`} key={step.id}>
-          <div className="tut-head">
-            <MechanicIcon kind={step.kind} lanes={step.lanes} />
-            <div className="tut-titles">
-              <div className="tut-title">{step.title}</div>
-              <div className="tut-hint">{touch ? step.hintTouch : step.hintDesktop}</div>
-            </div>
-            <div className={`tut-great ${succeeded ? 'on' : ''}`}>{step.id === 'finale' ? dict.tutorialDone : dict.tutorialGreat}</div>
-            <button type="button" className="tut-skip" onClick={onSkip} aria-label={dict.tutorialSkip}>
-              ×
-            </button>
-          </div>
-          <div className="tut-dots">
-            {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={`tut-dot ${i < index ? 'done' : i === index ? 'now' : ''}`} />
-            ))}
-          </div>
-          <div className="tut-bar">
-            <div className="tut-bar-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
-          </div>
+      <div className="tut-wrap" key={step.id}>
+        <div className="tut-step">
+          {succeeded ? <Tag className="tut-step-great">{praise}</Tag> : <Tag variant="dark">{fmt(dict.tutorialStep, { n: index + 1, total })}</Tag>}
         </div>
-      )}
+        <Panel className="tut-card" aria-label={step.title}>
+          <div className="tut-row">
+            <span className="tut-mech" aria-hidden="true">
+              <MechanicIcon kind={step.kind} lanes={step.lanes} />
+            </span>
+            <span className="tut-txt">
+              <b>{step.title}</b>
+              <small>{touch ? step.hintTouch : step.hintDesktop}</small>
+            </span>
+          </div>
+          <div className="tut-bar" aria-hidden="true">
+            <i style={{ width: `${Math.round(progress * 100)}%` }} />
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }
 
-/** Simple inline SVG per mechanic; motion comes from CSS keyframes on the classed elements. */
+/** Mechanic icons 40 px: cyan and white only, stroke 2, transform-only motion (CSS keyframes on the classed parts). */
 function MechanicIcon({ kind, lanes }: { kind: TutorialKind; lanes: number }) {
-  const props = { className: `tut-icon tut-icon-${kind}`, viewBox: '0 0 48 48', width: 48, height: 48, 'aria-hidden': true } as const;
+  const props = { className: `tut-icon tut-icon-${kind}`, viewBox: '0 0 48 48', width: 40, height: 40, 'aria-hidden': true } as const;
   switch (kind) {
     case 'tap':
     case 'free':
       return (
         <svg {...props}>
-          <rect x="16" y="2" width="16" height="44" rx="3" className="ic-lane" />
-          <line x1="12" y1="38" x2="36" y2="38" className="ic-line" />
-          <rect x="17" y="8" width="14" height="6" rx="2" className="ic-note ic-fall" />
-          <circle cx="24" cy="38" r="5" className="ic-pulse" />
+          <rect x="16" y="2" width="16" height="44" rx="8" className="ic-lane" />
+          <line x1="12" y1="36" x2="36" y2="36" className="ic-line" />
+          <rect x="18" y="20" width="12" height="6" rx="3" className="ic-note ic-fall" />
+          <circle cx="24" cy="36" r="5" className="ic-finger ic-press" />
         </svg>
       );
     case 'hold':
       return (
         <svg {...props}>
-          <rect x="16" y="2" width="16" height="44" rx="3" className="ic-lane" />
-          <line x1="12" y1="38" x2="36" y2="38" className="ic-line" />
-          <rect x="18" y="4" width="12" height="30" rx="4" className="ic-hold ic-fall-hold" />
-          <circle cx="24" cy="38" r="5" className="ic-finger ic-hold-press" />
+          <rect x="16" y="2" width="16" height="44" rx="8" className="ic-lane" />
+          <line x1="12" y1="36" x2="36" y2="36" className="ic-line" />
+          <rect x="18" y="4" width="12" height="30" rx="6" className="ic-note ic-fall-hold" />
+          <circle cx="24" cy="36" r="5" className="ic-finger ic-hold-press" />
         </svg>
       );
     case 'slide':
       return (
         <svg {...props}>
-          <rect x="4" y="2" width="18" height="44" rx="3" className="ic-lane" />
-          <rect x="26" y="2" width="18" height="44" rx="3" className="ic-lane" />
-          <line x1="2" y1="38" x2="46" y2="38" className="ic-line" />
-          <path d="M9 6 H17 L39 30 H31 Z" className="ic-hold" />
-          <circle cx="13" cy="38" r="5" className="ic-finger ic-slide-move" />
+          <rect x="4" y="2" width="18" height="44" rx="8" className="ic-lane" />
+          <rect x="26" y="2" width="18" height="44" rx="8" className="ic-lane" />
+          <line x1="2" y1="36" x2="46" y2="36" className="ic-line" />
+          <path d="M9 6 H17 L39 30 H31 Z" className="ic-note" />
+          <circle cx="13" cy="36" r="5" className="ic-finger ic-slide-move" />
         </svg>
       );
     case 'roll':
       return (
         <svg {...props}>
-          <rect x="16" y="2" width="16" height="44" rx="3" className="ic-lane" />
-          <line x1="12" y1="38" x2="36" y2="38" className="ic-line" />
-          <rect x="18" y="6" width="12" height="26" rx="4" className="ic-roll" />
+          <rect x="16" y="2" width="16" height="44" rx="8" className="ic-lane" />
+          <line x1="12" y1="36" x2="36" y2="36" className="ic-line" />
+          <rect x="18" y="6" width="12" height="26" rx="6" className="ic-note" />
           <line x1="18" y1="13" x2="30" y2="13" className="ic-stripe" />
           <line x1="18" y1="19" x2="30" y2="19" className="ic-stripe" />
           <line x1="18" y1="25" x2="30" y2="25" className="ic-stripe" />
-          <circle cx="24" cy="38" r="5" className="ic-finger ic-roll-tap" />
-          <text x="40" y="12" className="ic-count">
-            3
-          </text>
+          <circle cx="24" cy="36" r="5" className="ic-finger ic-roll-tap" />
         </svg>
       );
     case 'circle':
       return (
         <svg {...props}>
-          <circle cx="24" cy="24" r="11" className="ic-circle" />
+          <circle cx="24" cy="24" r="11" className="ic-disc" />
           <circle cx="24" cy="24" r="20" className="ic-ring ic-shrink" />
-          <text x="24" y="29" className="ic-num">
-            1
-          </text>
+          <circle cx="24" cy="24" r="5" className="ic-finger ic-press" />
         </svg>
       );
     case 'spell':
-      // The slow-motion clock: a spinning hand and a glow that breathes.
+      // The slow-motion clock: a turning hand.
       return (
         <svg {...props}>
-          <circle cx="24" cy="24" r="18" className="ic-clock-glow ic-breathe" />
-          <circle cx="24" cy="24" r="13" className="ic-clock" />
-          <line x1="24" y1="24" x2="24" y2="14" className="ic-hand ic-hand-spin" />
-          <line x1="24" y1="24" x2="31" y2="24" className="ic-hand ic-hand-short" />
-          <circle cx="24" cy="24" r="1.8" className="ic-hand-pin" />
+          <circle cx="24" cy="24" r="16" className="ic-ring" />
+          <line x1="24" y1="24" x2="24" y2="12" className="ic-hand ic-hand-spin" />
+          <line x1="24" y1="24" x2="31" y2="24" className="ic-hand" />
+          <circle cx="24" cy="24" r="2" className="ic-finger" />
         </svg>
       );
     case 'spin':
@@ -131,7 +124,7 @@ function MechanicIcon({ kind, lanes }: { kind: TutorialKind; lanes: number }) {
             <line x1="24" y1="24" x2="36.1" y2="31" className="ic-hand" />
             <line x1="24" y1="24" x2="11.9" y2="31" className="ic-hand" />
           </g>
-          <circle cx="24" cy="24" r="4" className="ic-circle" />
+          <circle cx="24" cy="24" r="4" className="ic-disc" />
           <circle cx="24" cy="6" r="4" className="ic-finger ic-spin-orbit" />
         </svg>
       );
@@ -141,42 +134,38 @@ function MechanicIcon({ kind, lanes }: { kind: TutorialKind; lanes: number }) {
       return (
         <svg {...props}>
           <path d="M6 24 Q12 8 18 24 T30 24 T42 24" className="ic-wave" />
-          <circle cx="24" cy="24" r="4" className="ic-pulse" />
+          <circle cx="24" cy="24" r="5" className="ic-finger ic-press" />
         </svg>
       );
   }
 }
 
-/**
- * Lane-count icon: `n` bars grow out of the middle one after another (the lane morph), then
- * the whole field settles; the count sits in the corner.
- */
+/** Lane-count icon: `n` rounded lanes grow out of the middle one after another (the lane morph); two fingers press left and right. */
 function LanesIcon({ n, ...props }: { n: number; className: string; viewBox: string; width: number; height: number; 'aria-hidden': true }) {
   const gap = 2;
-  const w = (42 - gap * (n - 1)) / n;
+  const w = (44 - gap * (n - 1)) / n;
   return (
     <svg {...props}>
       {Array.from({ length: n }, (_, i) => {
-        const x = 3 + i * (w + gap);
+        const x = 2 + i * (w + gap);
         // Bars spread from the centre: the outer ones appear last.
         const order = Math.abs(i - (n - 1) / 2);
         return (
           <rect
             key={i}
             x={x}
-            y="4"
+            y="2"
             width={w}
-            height="40"
-            rx="2"
+            height="44"
+            rx={Math.min(8, w / 2)}
             className="ic-lane ic-lane-grow"
             style={{ animationDelay: `${order * 0.12}s`, transformOrigin: `${x + w / 2}px 24px` }}
           />
         );
       })}
-      <line x1="2" y1="38" x2="46" y2="38" className="ic-line" />
-      <text x="44" y="12" className="ic-count">
-        {n}
-      </text>
+      <line x1="2" y1="36" x2="46" y2="36" className="ic-line" />
+      <circle cx={2 + w / 2} cy="36" r="5" className="ic-finger ic-press" />
+      {n > 1 && <circle cx={2 + (n - 1) * (w + gap) + w / 2} cy="36" r="5" className="ic-finger ic-press ic-press-late" />}
     </svg>
   );
 }

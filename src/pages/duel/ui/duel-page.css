@@ -1,61 +1,125 @@
-.duel-page {
-  gap: 14px;
-  text-align: center;
+/*
+ * DuelPage (DuelPage.tsx): the main screen's skeleton — scene, top bar, sub row (tag + text),
+ * the 292 × 420 deck card with the host's plate, the bottom action zone. One 335 px column.
+ */
+.duelp {
+  overflow: hidden;
 }
-.duel-page-status {
-  color: rgba(255, 255, 255, 0.6);
+/* Stage 420 (32 under the sub row); the card is the deck card as it is, without the neighbours. */
+.duelp-stage {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  margin-top: 32px;
+  flex: none;
 }
-.duel-page-kicker {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--c-magenta);
+.duelp-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 292px;
+  height: 420px;
+  margin-left: -146px;
+  border-radius: var(--r-24);
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow:
+    var(--sh-card),
+    0 0 48px rgba(0, 240, 255, 0.3);
 }
-.duel-page-cover {
-  width: 132px;
-  height: 132px;
-  border-radius: 20px;
-  box-shadow: 0 0 30px rgba(255, 43, 214, 0.35);
+.duelp-card-plain {
+  background: linear-gradient(180deg, #0b0d16, #23252f);
+  box-shadow: var(--sh-card);
 }
-.duel-page-title {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 22px;
-  margin: 0;
+.duelp-art {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 420px;
+  height: 420px;
+  margin-left: -210px;
 }
-.duel-page-host {
+.duelp-art > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.duelp-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(5, 6, 10, 0.92) 0%, rgba(5, 6, 10, 0.55) 32%, rgba(5, 6, 10, 0) 60%);
+  pointer-events: none;
+}
+.duelp-flush {
+  position: absolute;
+  left: 0;
+  top: 24px;
+  z-index: 2;
+}
+/* The host's plate: avatar 48, score 44/900 in the score material, the dark «ТВОЙ ЛУЧШИЙ …» tag. */
+.duelp-plate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 12px 22px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 8px;
+  transform: translate(-50%, -60%);
 }
-.duel-page-name {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.75);
+.duelp-score {
+  height: 48px;
+  font: var(--t-44);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  text-shadow: var(--emboss);
 }
-.duel-page-score {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 34px;
-  color: #ffd700;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
+.duelp-text {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
 }
-.duel-page-question {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
+.duelp-title {
+  margin: 0 0 8px;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
 }
-.duel-page-actions {
+.duelp-title-dim {
+  color: var(--w55);
+}
+.duelp-meta {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 12px;
+  height: 32px;
+}
+.duelp-rank {
+  margin-left: auto;
+  font: var(--t-20h);
+  color: #fff;
+  text-shadow: 0 2px 0 #000;
+}
+.duelp-rank-gold {
+  color: var(--gold);
+  text-shadow:
+    0 2px 0 var(--gold-under),
+    0 0 12px rgba(255, 200, 0, 0.5);
+}
+
+/* Not found: a 112 px panel in the hero slot with the duel icon and one line. */
+.duelp-missing {
+  margin-top: 32px;
+}
+
+/* Bottom action zone: trio 48, gap 16, primary 64, bottom-anchored. */
+.duelp-bottom {
+  padding-top: 24px;
 }
