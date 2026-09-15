@@ -1,0 +1,4 @@
+/* CustomSongPage (CustomSongPage.tsx): the shared frame; SongDropZone fills the rest. */
+.customp {
+  overflow: hidden;
+}

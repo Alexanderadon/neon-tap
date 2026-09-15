@@ -1,78 +1,137 @@
-.dropzone {
-  width: 100%;
-  max-width: 520px;
-  min-height: 220px;
-  border: 2px dashed rgba(0, 240, 255, 0.45);
-  border-radius: 16px;
+/*
+ * SongDropZone (SongDropZone.tsx): the main screen's skeleton under the top bar — sub row (tag +
+ * short text), a 420 px stage with one card 292 × 420, the bottom action zone. One 335 px column.
+ */
+.dz {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 24px;
-  cursor: pointer;
-  text-align: center;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  width: var(--col);
+  flex: 1;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.dropzone:hover,
-.dropzone:focus-visible,
-.dropzone-over {
-  background: rgba(0, 240, 255, 0.07);
-  border-color: var(--c-cyan);
-  box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
-  outline: none;
-}
-.dropzone-busy,
-.dropzone-ready {
-  cursor: default;
-  border-style: solid;
-}
-.dropzone-icon {
-  font-size: 48px;
-  color: var(--c-cyan);
-  text-shadow: 0 0 20px var(--c-cyan);
-}
-.dropzone-label {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 15px;
-}
-.dropzone-error {
-  color: var(--c-magenta);
-  font-size: 13px;
-}
-.dropzone-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-  word-break: break-word;
-}
-.dropzone-meta {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-}
-.dropzone-choose {
-  margin-top: 8px;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.6);
-}
-.dropzone-diffs {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.dz-stage {
+  position: relative;
   width: 100%;
+  height: 420px;
+  margin-top: 32px;
+  flex: none;
 }
-.dropzone-diffs .btn {
+.dz-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 292px;
+  height: 420px;
+  margin-left: -146px;
+  border-radius: var(--r-24);
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: var(--sh-card);
+}
+/* The placeholder: a plain dark face with a 96 px note in the middle. */
+.dz-card-plain {
+  background: linear-gradient(180deg, #0b0d16, #23252f);
+}
+.dz-card-ready {
+  box-shadow:
+    var(--sh-card),
+    0 0 48px rgba(0, 240, 255, 0.3);
+}
+.dz-ph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--w30);
+}
+.dz-art {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 420px;
+  height: 420px;
+  margin-left: -210px;
+}
+.dz-art > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.dz-card-ready::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(5, 6, 10, 0.92) 0%, rgba(5, 6, 10, 0.55) 32%, rgba(5, 6, 10, 0) 60%);
+  pointer-events: none;
+}
+.dz-flush {
+  position: absolute;
+  left: 0;
+  top: 24px;
+  z-index: 2;
+}
+.dz-text {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+}
+.dz-title {
+  margin: 0 0 8px;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+}
+.dz-title-dim {
+  color: var(--w55);
+}
+.dz-meta {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
 }
-.dropzone-diffs small {
-  font-family: system-ui, sans-serif;
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 12px;
+/* Analysis: the unlock bar inside the card — stage w80 left, «42 %» gold right, gold-face track. */
+.dz-cbar {
+  height: 32px;
+}
+.dz-cbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w80);
+}
+.dz-cbar-row b {
+  color: var(--gold);
+  font-weight: 700;
+}
+.dz-bar {
+  position: relative;
+  margin-top: 8px;
+  height: 8px;
+  border-radius: var(--r-999);
+  background: var(--w10);
+  overflow: hidden;
+}
+.dz-bar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8px;
+  border-radius: var(--r-999);
+  background: var(--gold-face);
+  transition: width 0.2s linear;
+}
+/* Bottom action zone: trio 48, gap 16, primary 64, bottom-anchored. */
+.dz-bottom {
+  padding-top: 24px;
 }

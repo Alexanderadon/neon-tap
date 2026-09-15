@@ -1,18 +1,15 @@
-import { CIRCLE_OPEN_SHARE, COMBO_THRESHOLDS, KEY_LABELS, LANE_COUNT, MAX_LANES } from '@/shared/config/constants';
+import { CIRCLE_OPEN_SHARE, KEY_LABELS, LANE_COUNT, MAX_LANES } from '@/shared/config/constants';
 import { SPECTRUM_BANDS } from '@/shared/lib/audio';
 import {
   DEFAULT_THEME,
-  goodJudgementColor,
   hexToRgba,
   renderBeam,
   renderCrystal,
   renderGlowBar,
   renderGlowDot,
   renderGlowRing,
-  renderHeart,
   renderNoteSprite,
   renderSpell,
-  renderStar,
   type NoteSprite,
   type Theme,
 } from '@/shared/lib/render';
@@ -22,6 +19,27 @@ import type { SpellKind } from '@/entities/chart';
 import { dict, fmt } from '@/shared/i18n';
 import { NoteState, type NoteManager, type PooledNote } from '../model/NoteManager';
 import { computeLayout, touchZoneRect, type Layout } from './layout';
+import { heartsRefilled, REFILL_AT, reviveCountdown, reviveDigitProgress, REVIVE_COUNT_START, REVIVE_RESUME_AT } from '../model/revive';
+import {
+  CHIP_H,
+  COL_W,
+  EMBOSS_COMBO_GOLD,
+  EMBOSS_GOLD,
+  GUTTER,
+  HUD,
+  HUD_FONT,
+  chipSprite,
+  crystalSprite,
+  drawSpaced,
+  easeOut,
+  embossText,
+  formatAccuracy,
+  formatScore,
+  heartSprite,
+  popEase,
+  starSprite,
+  tagSprite,
+} from './hudSprites';
 
 /** What the renderer needs to draw a spinner. */
 export interface SpinFrame {
@@ -76,6 +94,8 @@ export interface FrameState {
   levels: number;
   level: number;
   stars: number;
+  /** Seconds since a revive was granted (hearts pop back, then the count-in), or -1. */
+  revive: number;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
@@ -85,10 +105,7 @@ export interface FrameState {
  */
 export type FxLevel = 'full' | 'low';
 
-const FONT = "'Unbounded', 'Segoe UI', system-ui, sans-serif";
-const HEART_COLOR = '#ff2bd6';
-/** A gilded heart: an extra life drawn over one of the five slots. */
-const GOLD_HEART_COLOR = '#ffd700';
+const FONT = HUD_FONT;
 const TRANSITION_SEC = 0.35; // a beat of empty field is all the generator leaves: the morph must be done before the next tile lands
 const RING_POOL = 16;
 const PRESS_BOUNCE_SEC = 0.12;
@@ -110,10 +127,38 @@ const GEM_DOT = MAX_LANES;
 /** Level stars: gold, with its own glow dot for the star show's sparks. */
 const STAR_COLOR = '#ffd700';
 const STAR_DOT = MAX_LANES + 1;
-/** Star show phases as fractions of its length: zoom in, hold, fly to the HUD slot, land. */
-const STAR_IN = 0.14;
-const STAR_HOLD_END = 0.7;
-const STAR_LAND = 0.9;
+/**
+ * Star show timeline (screens-game.html, frame 7), seconds of a 2.4 s show: the star pops, sparks,
+ * the verdict and the tag pair follow, then the star flies to its HUD slot and the slot pops.
+ */
+const SHOW_LEN = 2.4;
+const SHOW_POP = 0.3;
+const SHOW_SPARK = 0.45;
+const SHOW_VERDICT = 0.8;
+const SHOW_TAGS = 1.1;
+const SHOW_FLY = 1.8;
+const SHOW_LAND = 2.3;
+/** HUD geometry (px from the safe top / the column edges), straight from the mock. */
+const HUD_CHIP_TOP = 14;
+const HUD_ROW2_Y = 66;
+const HUD_SLOW_TOP = 86;
+const HUD_COMBO_TOP = 110;
+const HUD_COMBO_TOP_TUTORIAL = 206;
+const HUD_MILESTONE_TOP = 182;
+const HUD_LANES_TOP = 252;
+const HUD_COUNT_CENTER = 300;
+const HUD_READY_TOP = 364;
+const HUD_STAR_CENTER = 176;
+const HUD_VERDICT_CENTER = 284;
+const HUD_TAGS_TOP = 316;
+const HEART_PX = 20;
+const HEART_STEP = 24;
+const STAR_PX = 20;
+const STAR_STEP = 28;
+const STAR_BIG_PX = 120;
+const CHIP_SCORE_W = 112;
+const CHIP_ACC_W = 96;
+const LANE_TAG_SEC = 1.4;
 /** Flying crystals (note → HUD counter) in flight at once. */
 const FLY_POOL = 4;
 const FLY_SEC = 0.55;
@@ -193,16 +238,18 @@ export class Renderer {
   private current = LANE_COUNT;
   private transition: { from: number; to: number; start: number } | null = null;
   private glowDots: NoteSprite[] = [];
+  // HUD chrome sprites (hudSprites.ts): glossy hearts / stars, the crystal, the chip faces, cached tags.
   private heartOn!: NoteSprite;
   private heartOff!: NoteSprite;
   private heartGold!: NoteSprite;
-  private heartSize = 18;
   private starOn!: NoteSprite;
   private starOff!: NoteSprite;
   private starBig!: NoteSprite;
-  private starSize = 20;
+  private chipScore!: NoteSprite;
+  private chipAcc!: NoteSprite;
+  private readonly tags = new Map<string, NoteSprite>();
   /** The star show between levels: which star, the next level's speed, its length in seconds; `starAge` runs 0..seconds. */
-  private starShow: { stars: number; rate: number; seconds: number; landed: boolean } | null = null;
+  private starShow: { stars: number; rate: number; seconds: number; landed: boolean; sparked: boolean } | null = null;
   private starAge = 0;
   private starLandedAge = 1;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
@@ -231,8 +278,16 @@ export class Renderer {
   /** Counter pop after a crystal lands in the HUD. */
   private gemPopAge = 1;
   private hudGem!: NoteSprite;
-  private bannerText = '';
+  /** Where the crystal glyph was last drawn (the number's width decides). */
+  private gemX = 0;
+  /** Milestone tag («100 КОМБО») flying through, and the lane-change card («5» + «5 ПОЛОС · ШИРЕ»). */
+  private banner: NoteSprite | null = null;
   private bannerAge = 1;
+  private laneTag: { n: number; tag: NoteSprite; age: number } | null = null;
+  /** The combo that just broke (its number ticks out). */
+  private brokenCombo = 0;
+  /** Count-in: the longest lead seen since play last ran (drives the «ПРИГОТОВЬСЯ» rise). */
+  private countdownMax = 0;
   private sparkTimer = 0;
   readonly particles = new ParticlePool(300);
   readonly shake = new ScreenShake();
@@ -250,7 +305,6 @@ export class Renderer {
   readonly theme: Theme;
   /** Lane colour per lane index (theme palette wrapped to MAX_LANES). */
   private readonly laneColors: string[];
-  private readonly judgementColor: Record<Judgement, string>;
   /** Dark disc / text colour taken from the theme background. */
   private readonly inkColor: string;
   private readonly discColor: string;
@@ -281,8 +335,6 @@ export class Renderer {
     this.laneCounts = [...new Set([...laneCounts, LANE_COUNT])];
     this.theme = theme;
     this.laneColors = Array.from({ length: MAX_LANES }, (_, i) => theme.laneColors[i % theme.laneColors.length]);
-    // GOOD must never be white (PERFECT is), so themes with a white lane fall back to another lane colour.
-    this.judgementColor = { perfect: '#ffffff', great: theme.accent, good: goodJudgementColor(theme), miss: theme.glow };
     this.inkColor = theme.bg[0];
     this.discColor = hexToRgba(theme.bg[1], 0.92);
     this.resize();
@@ -350,15 +402,18 @@ export class Renderer {
     this.glowDots = this.laneColors.map((c) => renderGlowDot(c, 16, this.dpr));
     this.glowDots.push(renderGlowDot(GEM_COLOR, 16, this.dpr)); // GEM_DOT
     this.glowDots.push(renderGlowDot(STAR_COLOR, 16, this.dpr)); // STAR_DOT
-    this.heartSize = this.height > this.width ? 16 : 20;
-    this.starSize = Math.round(this.heartSize * 1.2);
-    this.starOn = renderStar(STAR_COLOR, this.starSize, this.dpr, true);
-    this.starOff = renderStar(STAR_COLOR, this.starSize, this.dpr, false);
-    this.starBig = renderStar(STAR_COLOR, Math.round(Math.min(this.width, this.height) * 0.3), this.dpr, true);
-    this.hudGem = renderCrystal(GEM_COLOR, this.heartSize * 1.15, this.dpr);
-    this.heartOn = renderHeart(HEART_COLOR, this.heartSize, this.dpr, true);
-    this.heartOff = renderHeart(HEART_COLOR, this.heartSize, this.dpr, false);
-    this.heartGold = renderHeart(GOLD_HEART_COLOR, this.heartSize, this.dpr, true);
+    this.starOn = starSprite(true, STAR_PX, this.dpr);
+    this.starOff = starSprite(false, STAR_PX, this.dpr);
+    this.starBig = starSprite(true, STAR_BIG_PX, this.dpr, true);
+    this.hudGem = crystalSprite(16, this.dpr);
+    this.heartOn = heartSprite('on', HEART_PX, this.dpr);
+    this.heartOff = heartSprite('off', HEART_PX, this.dpr);
+    this.heartGold = heartSprite('gold', HEART_PX, this.dpr);
+    this.chipScore = chipSprite(CHIP_SCORE_W, this.dpr);
+    this.chipAcc = chipSprite(CHIP_ACC_W, this.dpr);
+    this.tags.clear();
+    if (this.laneTag) this.laneTag = null;
+    this.banner = null;
     // Background layer sprites — sized once here, only scaled with drawImage per frame.
     const { accent, glow } = this.theme;
     this.barW = base.laneAreaWidth / SPECTRUM_BANDS;
@@ -382,6 +437,28 @@ export class Renderer {
     }
     this.transition = { from, to: n, start: performance.now() / 1000 };
     this.shake.trigger(2);
+    // HUD: «5» + «5 ПОЛОС · ШИРЕ» under the combo (frame 4).
+    this.laneTag = { n, tag: this.tag(fmt(n > from ? dict.lanesWider : dict.lanesNarrower, { n }), 'dark'), age: 0 };
+  }
+
+  /** A cached 24 px tag sprite (gold / dark, pill or a half of a pair). */
+  private tag(text: string, kind: 'gold' | 'dark', shape: 'pill' | 'left' | 'right' = 'pill'): NoteSprite {
+    const key = `${kind}:${shape}:${text}`;
+    let sp = this.tags.get(key);
+    if (!sp) {
+      sp = tagSprite(text, kind, this.dpr, shape);
+      this.tags.set(key, sp);
+    }
+    return sp;
+  }
+
+  /** The 335 px column of the HUD (spec §1.4), centred; narrower screens keep 20 px gutters. */
+  private get colW(): number {
+    return Math.min(COL_W, this.width - GUTTER * 2);
+  }
+
+  private get colX(): number {
+    return (this.width - this.colW) / 2;
   }
 
   private buildSet(n: number): LaneSet {
@@ -619,29 +696,29 @@ export class Renderer {
     this.flyBig[i] = big ? 1 : 0;
   }
 
-  /** Where the crystal counter sits (right side, hearts row). */
+  /** Where the crystal counter's glyph sits (right end of the hearts row). */
   private gemHudPos(): { x: number; y: number } {
-    return { x: this.layout.width - 14 - this.heartSize * 0.6, y: 50 + this.safeTop + this.heartSize / 2 };
+    return { x: this.gemX || this.colX + this.colW - 24, y: this.safeTop + HUD_ROW2_Y };
   }
 
   comboMilestone(combo: number): void {
     this.shake.trigger(2.5);
     if (this.fxLevel === 'full') this.shockAge = 0;
-    this.bannerText = `${combo} COMBO`;
+    this.banner = this.tag(fmt(dict.comboMilestone, { n: combo }), 'gold');
     this.bannerAge = 0;
     const { laneX, laneWidth, hitY, lanes } = this.layout;
     for (let i = 0; i < lanes; i++) this.particles.emit(laneX + (i + 0.5) * laneWidth, hitY, 12, i % this.laneColors.length, 420, 6, 0.8);
   }
 
   comboBreak(x: number, y: number, combo: number): void {
+    this.brokenCombo = combo;
     const count = Math.min(60, 10 + combo / 4);
     for (let i = 0; i < 4; i++) this.particles.emit(x, y, Math.round(count / 4), i, 380, 5, 0.7);
   }
 
-  /** Where level star `index` of `count` sits: the middle of the hearts row, under the pause button, between the hearts and the crystals. */
+  /** Where level star `index` of `count` sits: three 20 px stars, gap 8, centred in the hearts row. */
   private starPos(index: number, count: number): { x: number; y: number } {
-    const step = this.starSize * 1.45;
-    return { x: this.layout.width / 2 + (index - (count - 1) / 2) * step, y: 61 + this.safeTop };
+    return { x: this.layout.width / 2 + (index - (count - 1) / 2) * STAR_STEP, y: this.safeTop + HUD_ROW2_Y };
   }
 
   /**
@@ -650,12 +727,15 @@ export class Renderer {
    * next count-in.
    */
   starEarned(stars: number, nextRate: number, seconds: number): void {
-    this.starShow = { stars, rate: nextRate, seconds, landed: false };
+    this.starShow = { stars, rate: nextRate, seconds, landed: false, sparked: false };
     this.starAge = 0;
     this.shake.trigger(3);
-    if (this.fxLevel === 'full') this.shockAge = 0;
-    const { width, height } = this.layout;
-    this.particles.emit(width / 2, height * 0.4, 40, STAR_DOT, 520, 6, 0.9);
+  }
+
+  /** Star show moments scaled to its length (2.4 s by design). */
+  private showAt(sec: number): number {
+    const show = this.starShow;
+    return show ? (sec * show.seconds) / SHOW_LEN : sec;
   }
 
   /** Drop the star show (restart mid-show). */
@@ -693,7 +773,12 @@ export class Renderer {
     const show = this.starShow;
     if (show) {
       this.starAge += dt;
-      if (!show.landed && this.starAge >= show.seconds * STAR_LAND) {
+      if (!show.sparked && this.starAge >= this.showAt(SHOW_SPARK)) {
+        // Twelve sparks out of the star (the 40-particle burst is gone).
+        show.sparked = true;
+        this.particles.emit(this.layout.width / 2, this.safeTop + HUD_STAR_CENTER, 12, STAR_DOT, 260, 4, 0.7);
+      }
+      if (!show.landed && this.starAge >= this.showAt(SHOW_LAND)) {
         // The star lands in its slot: the slot pops and sparks off.
         show.landed = true;
         this.starLandedAge = 0;
@@ -703,22 +788,27 @@ export class Renderer {
       if (this.starAge >= show.seconds) this.starShow = null;
     }
     if (this.starLandedAge < 1) this.starLandedAge += dt / 0.35;
+    if (this.laneTag) {
+      this.laneTag.age += dt;
+      if (this.laneTag.age >= LANE_TAG_SEC) this.laneTag = null;
+    }
     this.sparkTimer += dt;
     this.ambientTime += dt;
   }
 
-  /** Combo counter baseline: under the score / hearts / stars rows and the slow bar, above the circle band. */
-  private comboY(): number {
-    return 104 + this.safeTop;
+  /** Top of the 64 px combo block: under the state row (or, in the tutorial, under the caption card). */
+  private comboTop(tutorial: boolean): number {
+    return this.safeTop + (tutorial ? HUD_COMBO_TOP_TUTORIAL : HUD_COMBO_TOP);
   }
 
+  /** Centre of the combo number (the break burst's origin). */
   get comboAnchorY(): number {
-    return this.comboY();
+    return this.safeTop + HUD_COMBO_TOP + 24;
   }
 
+  /** Five hearts 20, gap 4, at the left of the state row. */
   private heartPos(index: number): { x: number; y: number } {
-    const step = this.heartSize * 1.25;
-    return { x: 14 + this.heartSize / 2 + index * step, y: 50 + this.safeTop + this.heartSize / 2 };
+    return { x: this.colX + HEART_PX / 2 + index * HEART_STEP, y: this.safeTop + HUD_ROW2_Y };
   }
 
   draw(notes: NoteManager, s: FrameState): void {
@@ -965,94 +1055,135 @@ export class Renderer {
     if (tr && trAge < 1) this.drawTransitionFx(tr.from, tr.to, trAge);
     this.drawHud(s);
     if (this.starShow) this.drawStarShow(s);
+    if (s.revive >= 0) this.drawRevive(s.revive);
   }
 
-  /** The star show between levels (see `starEarned`); drawn over everything, the HUD included. */
+  /**
+   * The star show between levels (see `starEarned`), drawn over the HUD: veil .4, one 120 px star
+   * with a halo in the hero slot, «+1 ЗВЕЗДА» in the verdict material, the «БЫСТРЕЕ НА 12 % |
+   * УРОВЕНЬ 2 / 3» pair, then the star flies to its HUD slot (transform only). No rays, no blur.
+   */
   private drawStarShow(s: FrameState): void {
     const show = this.starShow;
     if (!show) return;
     const ctx = this.ctx;
-    const { width, height, portrait } = this.layout;
-    const u = Math.min(1, this.starAge / show.seconds);
-    if (u >= STAR_LAND) return; // landed: the HUD row draws it
+    const { width, height } = this.layout;
+    const t = this.starAge;
+    const at = (sec: number) => this.showAt(sec);
+    if (t >= at(SHOW_LAND)) return; // landed: the HUD row draws it
     const cx = width / 2;
-    const cy = height * 0.4;
-    const sp = this.starBig;
-    const bigSize = sp.width - sp.pad * 2;
-    const hudK = this.starSize / bigSize;
-    let x = cx;
-    let y = cy;
-    let k = 1;
-    let alpha = 1;
-    let veil: number;
-    if (u < STAR_IN) {
-      const t = u / STAR_IN;
-      const c = 1.7; // back-out overshoot
-      const q = t - 1;
-      k = 1 + q * q * ((c + 1) * q + c);
-      alpha = Math.min(1, t * 3);
-      veil = t;
-    } else if (u < STAR_HOLD_END) {
-      k = 1 + 0.05 * Math.sin(this.starAge * 7);
-      veil = 1;
-    } else {
-      const t = (u - STAR_HOLD_END) / (STAR_LAND - STAR_HOLD_END);
-      const e = t * t * (3 - 2 * t);
-      const target = this.starPos(show.stars - 1, Math.max(show.stars, s.levels));
-      x = cx + (target.x - cx) * e;
-      y = cy + (target.y - cy) * e - Math.sin(Math.PI * e) * height * 0.06;
-      k = 1 + (hudK - 1) * e;
-      veil = 1 - t;
-    }
-    ctx.fillStyle = `rgba(5,6,10,${0.4 * veil})`;
+    const cy = this.safeTop + HUD_STAR_CENTER;
+    const flyT = t < at(SHOW_FLY) ? 0 : Math.min(1, (t - at(SHOW_FLY)) / (at(SHOW_LAND) - at(SHOW_FLY)));
+    const veil = t < 0.3 ? t / 0.3 : 1 - flyT;
+    ctx.fillStyle = `rgba(5,6,10,${(0.4 * veil).toFixed(3)})`;
     ctx.fillRect(0, 0, width, height);
 
-    // Slowly turning rays behind the star.
-    if (veil > 0) {
-      const rays = 10;
-      const r = Math.min(width, height) * 0.55;
+    // The star: pops at 0.3 s, breathes, flies to its slot from 1.8 s.
+    const sp = this.starBig;
+    let x = cx;
+    let y = cy;
+    let k = 0;
+    if (t >= at(SHOW_POP)) {
+      const u = (t - at(SHOW_POP)) / 0.5;
+      k = u < 1 ? popEase(u) : 1 + 0.03 * Math.sin(t * 7);
+    }
+    if (flyT > 0) {
+      const e = flyT * flyT * (3 - 2 * flyT);
+      const target = this.starPos(show.stars - 1, Math.max(show.stars, s.levels));
+      x = cx + (target.x - cx) * e;
+      y = cy + (target.y - cy) * e;
+      k = 1 + (STAR_PX / STAR_BIG_PX - 1) * e;
+    }
+    if (k > 0) {
       ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(this.starAge * 0.45);
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-      grad.addColorStop(0, 'rgba(255,215,0,0.55)');
-      grad.addColorStop(1, 'rgba(255,215,0,0)');
-      ctx.fillStyle = grad;
-      ctx.globalAlpha = 0.6 * veil;
-      for (let i = 0; i < rays; i++) {
-        const a = (i * Math.PI * 2) / rays;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, r, a, a + 0.14);
-        ctx.closePath();
-        ctx.fill();
-      }
+      ctx.translate(x, y);
+      ctx.scale(k, k);
+      ctx.drawImage(sp.canvas, -sp.width / 2, -sp.height / 2, sp.width, sp.height);
       ctx.restore();
-      ctx.globalAlpha = 1;
     }
 
+    // Verdict and tags: in from 0.8 / 1.1 s, gone with the flight.
+    const wordsOut = flyT > 0 ? Math.max(0, 1 - flyT * 5) : 1;
+    if (t >= at(SHOW_VERDICT) && wordsOut > 0) {
+      const u = Math.min(1, (t - at(SHOW_VERDICT)) / 0.5);
+      const kv = 0.4 + 0.6 * popEase(u);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, u * 3) * wordsOut;
+      ctx.translate(cx, this.safeTop + HUD_VERDICT_CENTER);
+      ctx.scale(kv, kv);
+      embossText(ctx, dict.plusStar.toUpperCase(), 0, 0, 28, EMBOSS_GOLD, 28 * 0.04);
+      ctx.restore();
+    }
+    if (t >= at(SHOW_TAGS) && wordsOut > 0) {
+      const u = easeOut(Math.min(1, (t - at(SHOW_TAGS)) / 0.4));
+      const left = this.tag(fmt(dict.levelFaster, { n: Math.round((show.rate - 1) * 100) }), 'gold', 'left');
+      const right = this.tag(fmt(dict.levelOf, { n: Math.min(show.stars + 1, s.levels), m: s.levels }), 'dark', 'right');
+      const total = left.width + right.width;
+      const ty = this.safeTop + HUD_TAGS_TOP + (1 - u) * 8;
+      ctx.globalAlpha = u * wordsOut;
+      ctx.drawImage(left.canvas, cx - total / 2, ty, left.width, left.height);
+      ctx.drawImage(right.canvas, cx - total / 2 + left.width, ty, right.width, right.height);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /**
+   * The count-in «3 / 2 / 1» over the first falling tiles: veil .28, a 96/900 digit in the doubled
+   * verdict material (pop per digit) and the gold «ПРИГОТОВЬСЯ» tag under it (frame 5).
+   */
+  drawCountdown(secondsLeft: number): void {
+    const ctx = this.ctx;
+    const { width, height } = this.layout;
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.countdownMax = Math.max(this.countdownMax, secondsLeft);
+    ctx.fillStyle = 'rgba(5,6,10,0.28)';
+    ctx.fillRect(0, 0, width, height);
+    const digit = Math.max(1, Math.ceil(secondsLeft));
+    const into = digit - secondsLeft;
+    this.drawBigDigit(String(digit), popEase(Math.min(1, into / 0.5)), Math.min(1, into / 0.15));
+    const rise = easeOut(Math.min(1, (this.countdownMax - secondsLeft) / 0.4));
+    this.drawTagCentred(this.tag(dict.getReady, 'gold'), this.safeTop + HUD_READY_TOP + (1 - rise) * 8, rise);
+  }
+
+  /** One 96 px digit in the hero slot, scaled by `k`, faded by `alpha`. */
+  private drawBigDigit(text: string, k: number, alpha: number): void {
+    const ctx = this.ctx;
+    if (k <= 0 || alpha <= 0) return;
+    ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
-    ctx.globalAlpha = 1;
+    ctx.translate(this.layout.width / 2, this.safeTop + HUD_COUNT_CENTER);
+    ctx.scale(0.4 + 0.6 * k, 0.4 + 0.6 * k);
+    embossText(ctx, text, 0, 0, 96, EMBOSS_GOLD, 96 * 0.02);
+    ctx.restore();
+  }
 
-    // The words, only while the star holds: what was won and how much faster the song comes back.
-    if (u < STAR_HOLD_END) {
-      const t = u < STAR_IN ? Math.min(1, (u / STAR_IN) * 1.5) : 1;
-      ctx.globalAlpha = t;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `900 ${portrait ? 34 : 44}px ${FONT}`;
-      ctx.fillStyle = STAR_COLOR;
-      ctx.shadowColor = STAR_COLOR;
-      ctx.shadowBlur = 24;
-      const ty = cy + bigSize * 0.78;
-      ctx.fillText(dict.levelStar.toUpperCase(), cx, ty);
-      ctx.shadowBlur = 0;
-      ctx.font = `700 ${portrait ? 16 : 20}px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillText(fmt(dict.levelFaster, { n: Math.round((show.rate - 1) * 100) }).toUpperCase(), cx, ty + (portrait ? 34 : 42));
-      ctx.globalAlpha = 1;
-    }
+  private drawTagCentred(tag: NoteSprite, top: number, alpha = 1): void {
+    if (alpha <= 0) return;
+    const ctx = this.ctx;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(tag.canvas, this.layout.width / 2 - tag.width / 2, top, tag.width, tag.height);
+    ctx.globalAlpha = 1;
+  }
+
+  /**
+   * After the rewarded ad (frame 21): the field stays frozen under a .28 veil, the HUD hearts pop
+   * back one by one (drawn by drawHud from `revive`), then «3 / 2 / 1» with the gold «ПОЕХАЛИ» tag.
+   */
+  private drawRevive(age: number): void {
+    const ctx = this.ctx;
+    const { width, height } = this.layout;
+    ctx.fillStyle = 'rgba(5,6,10,0.28)';
+    ctx.fillRect(0, 0, width, height);
+    const digit = reviveCountdown(age);
+    if (digit === null) return;
+    const u = reviveDigitProgress(age);
+    // cd keyframes: 0–30 % scale .4 → 1 and in, 85–100 % out (the last digit stays until play resumes).
+    const k = popEase(Math.min(1, u / 0.3));
+    const last = age >= REVIVE_RESUME_AT - 1;
+    const alpha = u < 0.3 ? Math.min(1, u / 0.1) : !last && u > 0.85 ? 1 - (u - 0.85) / 0.15 : 1;
+    this.drawBigDigit(String(digit), k, alpha);
+    const rise = easeOut(Math.min(1, (age - REVIVE_COUNT_START) / 0.4));
+    this.drawTagCentred(this.tag(dict.goTag, 'gold'), this.safeTop + HUD_READY_TOP + (1 - rise) * 8, rise);
   }
 
   // --- music-synchronised background -------------------------------------------------------
@@ -1544,94 +1675,67 @@ export class Renderer {
     this.shake.trigger(1.5);
   }
 
+  /**
+   * The HUD (screens-game.html, frames 1–5): track progress 4 px at the safe top; row 1 — the score
+   * chip 112 and the accuracy chip 96 (the pause chip between them is a DOM button); row 2 — five
+   * hearts, three level stars, the crystal count; the slow bar; the combo in the verdict material
+   * with its «КОМБО» caption; the judgement popup under the hit line; the milestone and lane tags.
+   */
   private drawHud(s: FrameState): void {
     const ctx = this.ctx;
-    const { width, height, laneX, laneAreaWidth, hitY, portrait } = this.layout;
-    const { accent, glow } = this.theme;
-    const centerX = laneX + laneAreaWidth / 2;
-    ctx.textAlign = 'center';
+    const { width, height, hitY } = this.layout;
+    const top = this.safeTop;
+    const colX = this.colX;
+    const colW = this.colW;
+    const cx = width / 2;
+    const tutorial = s.maxHearts === 0 && s.levels === 0;
+    if (s.songTime >= 0) this.countdownMax = 0;
     ctx.textBaseline = 'middle';
 
-    // Combo: font scales with combo, colour by threshold, pops on every hit and trembles from 20.
-    if (s.combo >= 2) {
-      const base = 32 + Math.min(s.combo, 500) * 0.06;
-      let color = 'rgba(255,255,255,0.9)';
-      for (const t of COMBO_THRESHOLDS) {
-        if (s.combo >= t.combo) {
-          color = t.color;
-          break;
+    // Row 0: track progress.
+    roundRect(ctx, colX, top, colW, 4, 2);
+    ctx.fillStyle = HUD.w10;
+    ctx.fill();
+    if (s.progress > 0) {
+      roundRect(ctx, colX, top, Math.max(4, colW * s.progress), 4, 2);
+      ctx.fillStyle = HUD.cyan;
+      ctx.fill();
+    }
+
+    // Row 1: score chip (left) and accuracy chip (right); the pause chip in the middle is DOM.
+    const chipY = top + HUD_CHIP_TOP;
+    ctx.drawImage(this.chipScore.canvas, colX, chipY, this.chipScore.width, this.chipScore.height);
+    ctx.drawImage(this.chipAcc.canvas, colX + colW - CHIP_ACC_W, chipY, this.chipAcc.width, this.chipAcc.height);
+    ctx.font = `700 15px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(formatScore(s.score), colX + CHIP_SCORE_W / 2, chipY + CHIP_H / 2 + 0.5);
+    ctx.fillStyle = s.accuracy >= 0.95 ? HUD.gold : '#ffffff';
+    ctx.fillText(formatAccuracy(s.accuracy), colX + colW - CHIP_ACC_W / 2, chipY + CHIP_H / 2 + 0.5);
+
+    // Row 2: hearts · level stars · crystals.
+    if (s.maxHearts > 0) {
+      const lostShake = s.heartLostAge < 0.35 ? (1 - s.heartLostAge / 0.35) * 4 : 0;
+      const dx = lostShake ? (Math.random() * 2 - 1) * lostShake : 0;
+      const refilling = s.revive >= 0;
+      const shown = refilling ? heartsRefilled(s.revive) : s.hearts;
+      for (let i = 0; i < s.maxHearts; i++) {
+        const { x, y } = this.heartPos(i);
+        const on = i < shown;
+        const sp = on && i < s.goldHearts ? this.heartGold : on ? this.heartOn : this.heartOff;
+        let k = 1;
+        if (refilling && on) {
+          const age = s.revive - REFILL_AT[i];
+          if (age < 0.5) {
+            // The grey slot stays under the heart popping in.
+            ctx.drawImage(this.heartOff.canvas, x - sp.width / 2 + dx, y - sp.height / 2, sp.width, sp.height);
+            k = popEase(age / 0.5);
+          }
         }
+        ctx.drawImage(sp.canvas, x - (sp.width * k) / 2 + dx, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
       }
-      const pop = s.comboAge < 0.16 ? (1 - s.comboAge / 0.16) ** 2 : 0;
-      const pulse = s.combo >= 500 ? 1 + 0.06 * Math.sin(performance.now() / 90) : 1;
-      const size = Math.round(base * pulse * (1 + 0.28 * pop));
-      let jx = 0;
-      let jy = 0;
-      if (s.combo >= 20) {
-        const amp = Math.min(3, 0.7 + s.combo / 120);
-        jx = (Math.random() * 2 - 1) * amp;
-        jy = (Math.random() * 2 - 1) * amp;
-      }
-      const x = centerX + jx;
-      const y = this.comboY() + jy;
-      ctx.font = `900 ${size}px ${FONT}`;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.35;
-      ctx.fillText(String(s.combo), x, y + 2);
-      ctx.globalAlpha = 1;
-      ctx.fillText(String(s.combo), x, y);
-      ctx.font = `400 12px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillText('COMBO', centerX, this.comboY() + base * 0.62);
-    } else if (s.comboBreakAge >= 0 && s.comboBreakAge < 0.4) {
-      ctx.font = `900 40px ${FONT}`;
-      ctx.globalAlpha = 1 - s.comboBreakAge / 0.4;
-      ctx.fillStyle = glow;
-      ctx.fillText('×', centerX, this.comboY());
-      ctx.globalAlpha = 1;
     }
 
-    // Judgement + points popup.
-    if (s.lastJudgement && s.lastJudgementAge < 0.5) {
-      const a = 1 - s.lastJudgementAge / 0.5;
-      const scale = 1 + (1 - Math.min(1, s.lastJudgementAge / 0.08)) * 0.35;
-      ctx.font = `700 ${Math.round(22 * scale)}px ${FONT}`;
-      ctx.fillStyle = this.judgementColor[s.lastJudgement];
-      ctx.globalAlpha = a;
-      // On touch the popup sits under the line (over the touch zones), never in the corridor the next tiles fall through.
-      const jy = this.touch ? hitY + this.layout.noteHeight * 2.6 : hitY - this.layout.noteHeight * 3.4;
-      ctx.fillText(s.lastJudgement.toUpperCase(), centerX, jy);
-      if (s.lastGain > 0) {
-        ctx.font = `700 14px ${FONT}`;
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillText(`+${s.lastGain}`, centerX, jy - 20 - s.lastJudgementAge * 30);
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // Milestone banner sliding through.
-    if (this.bannerAge < 1) {
-      const a = this.bannerAge;
-      const ease = a < 0.2 ? 1 - (1 - a / 0.2) ** 3 : a > 0.8 ? (1 - a) / 0.2 : 1;
-      const x = width * (1.2 - 0.7 * Math.min(1, a / 0.2)) - (a > 0.8 ? (a - 0.8) * width : 0);
-      ctx.globalAlpha = Math.max(0, Math.min(1, ease));
-      ctx.font = `900 ${portrait ? 26 : 34}px ${FONT}`;
-      ctx.fillStyle = '#ffd700';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.bannerText, Math.min(width / 2, x), hitY * 0.27);
-      ctx.globalAlpha = 1;
-    }
-
-    ctx.font = `700 ${portrait ? 18 : 22}px ${FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    const hudY = 30 + this.safeTop;
-    ctx.fillText(s.score.toLocaleString('ru-RU'), 14, hudY);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = s.accuracy >= 0.95 ? '#ffd700' : 'rgba(255,255,255,0.85)';
-    ctx.fillText(`${(s.accuracy * 100).toFixed(2)}%`, width - 14, hudY);
-
-    // Level stars, mid top row: earned ones lit, the one being played for breathing, the rest outlined.
     if (s.levels > 0) {
       const show = this.starShow;
       const flying = show && !show.landed ? show.stars - 1 : -1; // its slot stays dark until the show's star lands
@@ -1640,62 +1744,129 @@ export class Renderer {
         const lit = i < s.stars && i !== flying;
         const sp = lit ? this.starOn : this.starOff;
         let k = 1;
-        if (lit && i === s.stars - 1 && this.starLandedAge < 1) k = 1 + 0.5 * (1 - this.starLandedAge) ** 2;
-        if (!lit && i === s.level - 1) ctx.globalAlpha = 0.55 + 0.35 * Math.sin(performance.now() / 260);
+        if (lit && i === s.stars - 1 && this.starLandedAge < 1) k = 1 + 0.5 * (1 - popEase(this.starLandedAge));
+        if (!lit && i === s.level - 1) ctx.globalAlpha = 0.725 + 0.175 * Math.sin(performance.now() / 510);
         ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
         ctx.globalAlpha = 1;
       }
     }
 
-    const lostShake = s.heartLostAge < 0.35 ? (1 - s.heartLostAge / 0.35) * 4 : 0;
-    for (let i = 0; i < s.maxHearts; i++) {
-      const { x, y } = this.heartPos(i);
-      const sp = i < s.goldHearts ? this.heartGold : i < s.hearts ? this.heartOn : this.heartOff;
-      const dx = lostShake ? (Math.random() * 2 - 1) * lostShake : 0;
-      ctx.drawImage(sp.canvas, x - sp.width / 2 + dx, y - sp.height / 2, sp.width, sp.height);
-    }
-
-    // Crystal counter (right, hearts row): icon + count; pops when a crystal lands, dimmed until the first pick-up.
     if (s.crystals >= 0) {
       const { x, y } = this.gemHudPos();
       const pop = this.gemPopAge < 1 ? (1 - this.gemPopAge) ** 2 : 0;
-      const k = 1 + 0.45 * pop;
+      const k = 1 + 0.35 * pop;
       const sp = this.hudGem;
-      const iw = this.heartSize * 1.15;
       ctx.globalAlpha = s.crystals > 0 || s.gemAge < 1 ? 1 : 0.55;
+      ctx.font = `700 15px ${FONT}`;
       ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
-      ctx.font = `700 ${Math.round((portrait ? 14 : 16) * (1 + 0.25 * pop))}px ${FONT}`;
+      ctx.font = `700 15px ${FONT}`;
       ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = pop > 0 ? '#ffffff' : GEM_COLOR;
-      ctx.fillText(String(s.crystals), x - iw * 0.7, y);
+      ctx.fillStyle = pop > 0 ? '#ffffff' : HUD.cyan;
+      const label = String(s.crystals);
+      ctx.fillText(label, colX + colW, y + 0.5);
+      // The glyph sits 4 px before the number, whatever its width; the flying crystals aim there too.
+      this.gemX = colX + colW - ctx.measureText(label).width - 4 - 8;
       ctx.globalAlpha = 1;
     }
 
-    // Slow-spell bar under the stars row, its label inside.
+    // Row 3: the slow-motion bar — the unlock bar's track, cyan fill with a glow, no text inside.
     if (s.slowRemaining >= 0) {
-      const barW = Math.min(220, laneAreaWidth * 0.6);
-      const barH = 14;
-      const x = centerX - barW / 2;
-      const y = 74 + this.safeTop;
-      ctx.fillStyle = accent;
-      ctx.globalAlpha = 0.15;
-      roundRect(ctx, x, y, barW, barH, 4);
+      const y = top + HUD_SLOW_TOP;
+      roundRect(ctx, colX, y, colW, 8, 4);
+      ctx.fillStyle = HUD.w10;
+      ctx.fill();
+      const w = Math.max(8, colW * s.slowRemaining);
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = HUD.cyan;
+      roundRect(ctx, colX - 3, y - 3, w + 6, 14, 7);
       ctx.fill();
       ctx.globalAlpha = 1;
-      roundRect(ctx, x, y, barW * s.slowRemaining, barH, 4);
+      roundRect(ctx, colX, y, w, 8, 4);
       ctx.fill();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `700 10px ${FONT}`;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText('ЗАМЕДЛЕНИЕ', centerX, y + barH / 2 + 0.5);
     }
 
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(0, this.safeTop, width, 3);
-    ctx.fillStyle = accent;
-    ctx.fillRect(0, this.safeTop, width * s.progress, 3);
+    // Combo: 44/900 in the score material (white to 49, gold from 50), «КОМБО» 11 under it. Pop 1 → 1.1 → 1 on a hit; on a break the number ticks out.
+    const comboTop = this.comboTop(tutorial);
+    if (s.combo >= 2 && !this.starShow) {
+      const pop = s.comboAge < 0.35 ? Math.sin((Math.PI * s.comboAge) / 0.35) : 0;
+      const k = 1 + 0.1 * pop;
+      ctx.save();
+      ctx.translate(cx, comboTop + 24);
+      ctx.scale(k, k);
+      embossText(ctx, String(s.combo), 0, 0, 44, s.combo >= 50 ? EMBOSS_COMBO_GOLD : EMBOSS_GOLD, 44 * 0.02);
+      ctx.restore();
+      this.caption(dict.comboWord, cx, comboTop + 56, HUD.w55);
+    } else if (s.comboBreakAge >= 0 && s.comboBreakAge < 0.35 && this.brokenCombo > 0) {
+      const a = s.comboBreakAge / 0.35;
+      ctx.save();
+      ctx.globalAlpha = 1 - a * a;
+      ctx.translate(cx, comboTop + 24 - 8 * a);
+      embossText(ctx, String(this.brokenCombo), 0, 0, 44, this.brokenCombo >= 50 ? EMBOSS_COMBO_GOLD : EMBOSS_GOLD, 44 * 0.02);
+      ctx.restore();
+      this.caption(dict.comboWord, cx, comboTop + 56, HUD.w30);
+    }
+
+    // Judgement popup: «+300» 13/700 over the word 20/700 caps; under the line on touch, above it on desktop.
+    if (s.lastJudgement && s.lastJudgementAge < 0.5) {
+      const age = s.lastJudgementAge;
+      const a = age < 0.35 ? 1 : 1 - (age - 0.35) / 0.15;
+      const k = 0.7 + 0.3 * popEase(Math.min(1, age / 0.2));
+      const jTop = this.touch ? hitY + this.layout.noteHeight * 2.6 - 24 : hitY - this.layout.noteHeight * 3.4 - 24;
+      const miss = s.lastJudgement === 'miss';
+      const color = miss ? HUD.mag : s.lastJudgement === 'great' ? HUD.cyan : s.lastJudgement === 'good' ? HUD.w80 : '#ffffff';
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.translate(cx, jTop + 36);
+      ctx.scale(k, k);
+      ctx.font = `700 20px ${FONT}`;
+      ctx.fillStyle = '#000';
+      drawSpaced(ctx, dict.judgeWord[s.lastJudgement].toUpperCase(), 0, 2, 0.4);
+      ctx.fillStyle = color;
+      drawSpaced(ctx, dict.judgeWord[s.lastJudgement].toUpperCase(), 0, 0, 0.4);
+      ctx.restore();
+      if (!miss && s.lastGain > 0) {
+        ctx.globalAlpha = Math.max(0, a);
+        ctx.font = `700 13px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = HUD.w80;
+        ctx.fillText(`+${s.lastGain}`, cx, jTop + 8);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Milestone: the gold «100 КОМБО» tag flies through (right → centre → left, 1.1 s, transform only).
+    if (this.banner && this.bannerAge < 1) {
+      const a = this.bannerAge;
+      let dx = 0;
+      let alpha = 1;
+      if (a < 0.18) {
+        const u = a / 0.18;
+        dx = 120 * (1 - u);
+        alpha = u;
+      } else if (a > 0.8) {
+        const u = (a - 0.8) / 0.2;
+        dx = -120 * u;
+        alpha = 1 - u;
+      }
+      const tag = this.banner;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(tag.canvas, cx - tag.width / 2 + dx, top + HUD_MILESTONE_TOP, tag.width, tag.height);
+      ctx.globalAlpha = 1;
+    }
+
+    // Lane-count change: «5» 44/900 and the dark «5 ПОЛОС · ШИРЕ» tag, pop in, hold, fade.
+    if (this.laneTag) {
+      const { n, tag, age } = this.laneTag;
+      const k = 0.4 + 0.6 * popEase(Math.min(1, age / 0.5));
+      const alpha = Math.min(1, age / 0.15) * (age > LANE_TAG_SEC - 0.3 ? (LANE_TAG_SEC - age) / 0.3 : 1);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.translate(cx, top + HUD_LANES_TOP + 24);
+      ctx.scale(k, k);
+      embossText(ctx, String(n), 0, 0, 44, EMBOSS_GOLD, 44 * 0.02);
+      ctx.restore();
+      this.drawTagCentred(tag, top + HUD_LANES_TOP + 56, Math.max(0, alpha));
+    }
 
     if (s.debug) {
       ctx.textAlign = 'left';
@@ -1709,23 +1880,13 @@ export class Renderer {
     }
   }
 
-  /** Overlay for countdown / pause / fail. */
-  drawOverlayText(title: string, subtitle?: string, color = '#ffffff'): void {
+  /** 11/700 caps caption with .12em tracking, centred. */
+  private caption(text: string, cx: number, y: number, color: string): void {
     const ctx = this.ctx;
-    const { width, height } = this.layout;
-    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    ctx.fillStyle = 'rgba(5,6,10,0.28)'; // light enough that the first tiles already falling stay readable
-    ctx.fillRect(0, 0, width, height);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `900 ${Math.min(64, width / 6)}px ${FONT}`;
+    ctx.font = `700 11px ${FONT}`;
     ctx.fillStyle = color;
-    ctx.fillText(title, width / 2, height * 0.42);
-    if (subtitle) {
-      ctx.font = `400 15px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.fillText(subtitle, width / 2, height * 0.42 + 56);
-    }
+    ctx.textBaseline = 'middle';
+    drawSpaced(ctx, text.toUpperCase(), cx, y, 11 * 0.12);
   }
 }
 
