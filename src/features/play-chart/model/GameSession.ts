@@ -326,6 +326,7 @@ export class GameSession {
     audioEngine.stop();
     this.level = level;
     this.baseRate = levelRate(level);
+    this.notes.timeScale = this.baseRate; // hit windows stay real seconds on a faster level
     this.betweenLevels = false;
     this.audioEnded = false;
     this.notes.reset();

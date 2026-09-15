@@ -60,11 +60,22 @@ describe('NoteManager', () => {
     ]);
   });
 
-  it('breaks a hold released too early', () => {
+  it('keeps the windows real seconds on a faster level (timeScale = playback rate)', () => {
+    const { nm, events } = make([[1, 0]]);
+    nm.timeScale = 1.2; // ×1.2 level: 0.17 song-seconds late is 0.142 real seconds — inside Good (0.15 s)
+    expect(nm.press(0, 1.17)).toBe('good');
+    const late = make([[1, 0]]);
+    expect(late.nm.press(0, 1.17)).toBeNull(); // the same lateness at ×1 is outside the window
+    late.nm.update(1.3, notHeld);
+    expect(events[0].judgement).toBe('good');
+    expect(late.events[0].judgement).toBe('miss');
+  });
+
+  it('grades a hold released too early as Good (the head was hit, so never a miss)', () => {
     const { nm, events } = make([[1, 3, 1]]);
     nm.press(3, 1.0);
     nm.release(3, 1.4);
-    expect(events[1]).toMatchObject({ judgement: 'miss', tail: true });
+    expect(events[1]).toMatchObject({ judgement: 'good', tail: true });
   });
 
   it('misses both head and tail of an untouched hold', () => {
@@ -171,7 +182,7 @@ describe('NoteManager', () => {
       expect(nm.pool[0].state).toBe(NoteState.Holding);
       nm.update(2.0, notHeld);
       expect(nm.pool[0].taps).toBe(3);
-      expect(events[1]).toMatchObject({ judgement: 'good', tail: true }); // 3 of 4 → good
+      expect(events[1]).toMatchObject({ judgement: 'great', tail: true }); // 3 of 4 → great; fewer than half → good, never a miss
     });
 
     it('is perfect when all taps land', () => {
@@ -194,11 +205,11 @@ describe('NoteManager', () => {
       expect(events[1]).toMatchObject({ judgement: 'perfect', tail: true });
     });
 
-    it('misses when nothing is held in the end lane at the end', () => {
+    it('grades a slide as Good when nothing is held in the end lane at the end', () => {
       const { nm, events } = make([[1, 0, 1, 'slide', 2]]);
       nm.press(0, 1.0);
       nm.update(2.0, notHeld);
-      expect(events[1]).toMatchObject({ judgement: 'miss', tail: true });
+      expect(events[1]).toMatchObject({ judgement: 'good', tail: true });
     });
 
     it('accepts a release in the end lane within the window', () => {
@@ -287,11 +298,11 @@ describe('NoteManager', () => {
       ]);
     });
 
-    it('credits a hold at its end only while the finger is still down (a lost release breaks it)', () => {
+    it('credits a hold in full at its end only while the finger is still down (a lost release is a Good)', () => {
       const { nm, events } = make([[1, 0, 1]]);
       expect(nm.press(0, 1)).toBe('perfect');
       nm.update(2.1, notHeld); // the finger is gone and no release ever arrived
-      expect(events[1]).toMatchObject({ judgement: 'miss', tail: true });
+      expect(events[1]).toMatchObject({ judgement: 'good', tail: true });
       const { nm: nm2, events: ev2 } = make([[1, 0, 1]]);
       nm2.press(0, 1);
       nm2.update(2.1, held);
