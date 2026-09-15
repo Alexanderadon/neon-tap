@@ -1,10 +1,96 @@
 :root {
-  --c-bg: #05060a;
-  --c-cyan: #00f0ff;
-  --c-magenta: #ff2bd6;
-  --c-lime: #b6ff00;
+  /*
+   * Design system v3 (.tmp/ux/spec.md §1). Colours: exactly these hexes, four grey steps,
+   * one gold face and one dark face for every "object" (chips, tags, buttons, coins, panels).
+   */
+  --bg: #05060a;
+  --panel: #0b0d16;
+  --cyan: #00f0ff;
+  --gold: #ffd700;
+  --mag: #ff2bd6;
+  --lime: #b6ff00;
+  --w80: rgba(255, 255, 255, 0.8);
+  --w55: rgba(255, 255, 255, 0.55);
+  --w30: rgba(255, 255, 255, 0.3);
+  --w10: rgba(255, 255, 255, 0.1);
+  --gold-face: linear-gradient(180deg, #fff3a0, #ffd23f 45%, #ff8a00);
+  --gold-off: linear-gradient(180deg, #3a3d4c, #23252f 45%, #15161d);
+  --dark-face: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)), var(--panel);
+  --cyan-face: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1)), var(--cyan);
+  --mag-face: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1)), var(--mag);
+  --coin-face: linear-gradient(180deg, rgba(255, 215, 0, 0.18), rgba(255, 215, 0, 0.05)), var(--panel);
+  /* Undersides ("подошвы") and outlines. */
+  --gold-rim: #8a4500;
+  --gold-under: #7a3a00;
+  --cyan-under: #005c66;
+  --mag-under: #5a0a48;
+  /* Verdict / score material: 1.5 px outline + 3 px underside + soft gold glow, text-shadow only (no -webkit-text-stroke, no filter). */
+  --emboss: -1.5px 0 0 #7a3a00, 1.5px 0 0 #7a3a00, 0 -1.5px 0 #7a3a00, 0 1.5px 0 #7a3a00, -1.1px -1.1px 0 #7a3a00, 1.1px -1.1px 0 #7a3a00,
+    -1.1px 1.1px 0 #7a3a00, 1.1px 1.1px 0 #7a3a00, -1.5px 3px 0 #7a3a00, 1.5px 3px 0 #7a3a00, 0 3px 0 #7a3a00, 0 4.5px 0 #7a3a00,
+    0 0 18px rgba(255, 200, 0, 0.6);
+  /* The same material at double scale for the 96 px countdown digits. */
+  --emboss2: -3px 0 0 #7a3a00, 3px 0 0 #7a3a00, 0 -3px 0 #7a3a00, 0 3px 0 #7a3a00, -2.2px -2.2px 0 #7a3a00, 2.2px -2.2px 0 #7a3a00, -2.2px 2.2px 0 #7a3a00,
+    2.2px 2.2px 0 #7a3a00, -3px 6px 0 #7a3a00, 3px 6px 0 #7a3a00, 0 6px 0 #7a3a00, 0 9px 0 #7a3a00, 0 0 36px rgba(255, 200, 0, 0.6);
+  /* Magenta verdict («ПРОВАЛ»): same construction, magenta underside. */
+  --emboss-mag: -1.5px 0 0 #5a0a48, 1.5px 0 0 #5a0a48, 0 -1.5px 0 #5a0a48, 0 1.5px 0 #5a0a48, -1.1px -1.1px 0 #5a0a48, 1.1px -1.1px 0 #5a0a48,
+    -1.1px 1.1px 0 #5a0a48, 1.1px 1.1px 0 #5a0a48, -1.5px 3px 0 #5a0a48, 1.5px 3px 0 #5a0a48, 0 3px 0 #5a0a48, 0 4.5px 0 #5a0a48,
+    0 0 18px rgba(255, 43, 214, 0.5);
+  /* Object shadows (light from above, underside below) — spec §1.5. */
+  --sh-chip: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 0 #000;
+  --sh-tag-gold: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 0 #8a4500;
+  --sh-obj: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 4px 0 #000;
+  --sh-coin: inset 0 2px 0 rgba(255, 255, 255, 0.12), 0 4px 0 #000;
+  --sh-panel: inset 0 0 0 1px var(--w10), inset 0 2px 0 rgba(255, 255, 255, 0.06), 0 4px 0 #000, 0 16px 32px rgba(0, 0, 0, 0.5);
+  --sh-primary: inset 0 2px 0 rgba(255, 255, 255, 0.6), 0 4px 0 #005c66, 0 12px 28px rgba(0, 240, 255, 0.25);
+  --sh-primary-mag: inset 0 2px 0 rgba(255, 255, 255, 0.5), 0 4px 0 #000, 0 12px 28px rgba(255, 43, 214, 0.25);
+  --sh-avatar: 0 2px 0 #005c66;
+  --sh-card: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --glow-cyan: 0 0 8px rgba(0, 240, 255, 0.8);
+  --glow-mag: 0 0 8px rgba(255, 43, 214, 0.6);
+  /* Type scale (spec §1.2): six sizes, Unbounded only, tabular digits everywhere. */
+  --font: 'Unbounded', 'Arial Black', 'Segoe UI', system-ui, sans-serif;
+  --t-11: 700 11px/16px var(--font);
+  --t-13: 400 13px/16px var(--font);
+  --t-13b: 700 13px/16px var(--font);
+  --t-15: 700 15px/24px var(--font);
+  --t-20: 700 20px/24px var(--font);
+  --t-20h: 900 20px/32px var(--font);
+  --t-28: 900 28px/32px var(--font);
+  --t-44: 900 44px/48px var(--font);
+  --track-caps: 0.12em;
+  --track-title: 0.02em;
+  --track-verdict: 0.04em;
+  /* Radii (spec §1.3): exactly three. */
+  --r-24: 24px;
+  --r-16: 16px;
+  --r-999: 999px;
+  /* 8-pt spacing (4 only inside a component). */
+  --s-4: 4px;
+  --s-8: 8px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-40: 40px;
+  --s-48: 48px;
+  --s-64: 64px;
+  /* One 335 px column in 20 px gutters. */
+  --col: min(100%, 335px);
+  --gutter: 20px;
+  /* Motion. */
+  --ease-pop: cubic-bezier(0.2, 1.6, 0.4, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-count: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Legacy names — kept so untouched screens keep working; new code uses the tokens above. */
+  --c-bg: var(--bg);
+  --c-cyan: var(--cyan);
+  --c-magenta: var(--mag);
+  --c-lime: var(--lime);
   --c-orange: #ff8a00;
-  --font-display: 'Unbounded', 'Segoe UI', system-ui, sans-serif;
+  --c-gold: var(--gold);
+  --c-panel: var(--panel);
+  --font-display: var(--font);
   /* Numbers (stars, BPM, counters, ranks) sit in a monospace so columns of digits line up. */
   --font-mono: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', 'SF Mono', Consolas, 'Roboto Mono', monospace;
   color-scheme: dark;

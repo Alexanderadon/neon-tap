@@ -1,0 +1,102 @@
+/* TopBar (TopBar.tsx): 335 × 44, identical on every non-game screen — identity left, wallet right. */
+.topbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: var(--col);
+  height: 44px;
+  margin: 0 auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.topbar-title {
+  justify-content: center;
+}
+.topbar-brand {
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
+}
+.topbar-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  min-width: 0;
+}
+.topbar-name {
+  font: var(--t-15);
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-wallet {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.topbar-slot {
+  position: relative;
+  display: inline-flex;
+}
+/* "+35" next to a chip: 11/700 in the currency's colour, glued to the top-right corner. */
+.topbar-delta {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font: var(--t-11);
+  font-style: normal;
+  letter-spacing: 0;
+  color: inherit;
+  text-shadow: 0 1px 0 #000, 0 0 8px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.topbar-slot .chip-cy ~ .topbar-delta {
+  color: var(--cyan);
+}
+.topbar-slot .chip-gd ~ .topbar-delta {
+  color: var(--gold);
+}
+
+/* Avatar: 32 px cyan sphere with the first letter of the nickname (spec §2.1); `.ava-q` = no name yet. */
+.ava {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.95), var(--cyan) 45%, var(--cyan-under) 100%);
+  box-shadow: var(--sh-avatar);
+  color: var(--bg);
+  font: 900 13px/1 var(--font);
+  text-transform: uppercase;
+  user-select: none;
+}
+.ava-q {
+  background: var(--dark-face);
+  box-shadow: var(--sh-chip);
+  color: var(--w55);
+}
+/* Someone else's avatar (duel rows): dark face, light letter. */
+.ava-o {
+  background: var(--dark-face);
+  box-shadow: var(--sh-chip);
+  color: var(--w80);
+}
+/* ×1.5 (player card) and ×3 (welcome) sizes. */
+.ava-big {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  box-shadow: 0 4px 0 var(--cyan-under);
+}
+.ava-hero {
+  width: 96px;
+  height: 96px;
+  font-size: 44px;
+  box-shadow: 0 4px 0 var(--cyan-under);
+}

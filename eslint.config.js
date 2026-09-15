@@ -7,7 +7,7 @@ import boundaries from 'eslint-plugin-boundaries';
 const LAYERS = ['app', 'pages', 'widgets', 'features', 'entities', 'shared'];
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', 'assets-src', 'scripts'] },
+  { ignores: ['dist', 'node_modules', 'coverage', 'assets-src', 'scripts', '.tmp'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

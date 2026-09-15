@@ -1,0 +1,51 @@
+/* Panel (Panel.tsx): radius 24, dark face with a 1 px rim, 2 px light, 4 px underside, soft drop shadow. */
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-24);
+  background: var(--panel);
+  box-shadow: var(--sh-panel);
+  color: #fff;
+  font: var(--t-13);
+  text-align: left;
+  white-space: nowrap;
+}
+.panel-score {
+  align-items: center;
+  padding: 24px 16px 16px;
+  text-align: center;
+}
+.panel-label {
+  display: block;
+  font: var(--t-11);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--w55);
+}
+.panel-press {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.panel-press:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 0 0 1px var(--w10), inset 0 2px 0 rgba(255, 255, 255, 0.06), 0 2px 0 #000, 0 12px 24px rgba(0, 0, 0, 0.45);
+}
+.panel-press:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-press {
+    transition: none;
+  }
+}

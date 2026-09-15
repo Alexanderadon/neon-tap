@@ -1,6 +1,7 @@
 export { Button } from './Button';
 export { Slider } from './Slider';
-export { Stars } from './Stars';
+export { Stars, Star } from './Stars';
+export type { StarsSize } from './Stars';
 export { Difficulty } from './Difficulty';
 export { difficultyColor } from './difficultyColor';
 export { ProgressBar } from './ProgressBar';
@@ -8,3 +9,18 @@ export { Screen } from './Screen';
 export { Modal } from './Modal';
 export { CrystalIcon } from './CrystalIcon';
 export { useSwipeBack } from './useSwipeBack';
+// Design system v3 (spec.md §2): objects with a face and an underside.
+export { Tag } from './Tag';
+export type { TagVariant, TagShape } from './Tag';
+export { Chip } from './Chip';
+export type { ChipVariant } from './Chip';
+export { CounterSwap } from './CounterSwap';
+export { ObjButton } from './ObjButton';
+export { PrimaryAction, Disc, Thumb } from './PrimaryAction';
+export type { PrimaryTone } from './PrimaryAction';
+export { Panel } from './Panel';
+export { Coin } from './Coin';
+export type { CoinTone } from './Coin';
+export { RingCountdown } from './RingCountdown';
+export { Icon } from './icons';
+export type { IconName } from './icons';

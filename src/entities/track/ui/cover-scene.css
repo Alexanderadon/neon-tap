@@ -1,0 +1,56 @@
+/*
+ * CoverScene (CoverScene.tsx): a 24 px canvas of the cover blown up past the screen, 35 %, under the veil.
+ * z-index −1 keeps it under every in-flow sibling (no need to position the content); the screen that
+ * hosts it must not paint an opaque background of its own.
+ */
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.scene-fixed {
+  position: fixed;
+}
+.scene-cover {
+  position: absolute;
+  inset: -25%;
+  width: 150%;
+  height: 150%;
+  display: block;
+  /* The upscale is the blur: let the browser interpolate, never pixelate. */
+  image-rendering: auto;
+  opacity: 0.35;
+  animation: scene-in 0.3s ease-out both;
+}
+.scene-cover-out {
+  animation: scene-out 0.3s ease-out both;
+}
+@keyframes scene-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@keyframes scene-out {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.scene-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 6, 10, 0.55) 0%, rgba(5, 6, 10, 0.25) 30%, rgba(5, 6, 10, 0.7) 62%, rgba(5, 6, 10, 0.96) 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-cover,
+  .scene-cover-out {
+    animation-duration: 0.01s;
+  }
+}

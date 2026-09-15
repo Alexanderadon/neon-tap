@@ -1,0 +1,150 @@
+/* PrimaryAction (PrimaryAction.tsx): 335 × 64, r 16, cyan 3D face, grid 40px 1fr 40px. */
+.primary {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  width: 100%;
+  height: 64px;
+  padding: 0 12px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-16);
+  background: var(--cyan-face);
+  box-shadow: var(--sh-primary);
+  color: var(--bg);
+  font: var(--t-20);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.primary:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.6), 0 2px 0 var(--cyan-under), 0 8px 20px rgba(0, 240, 255, 0.2);
+}
+.primary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.primary-lead,
+.primary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+.primary-icon > svg {
+  width: 24px;
+  height: 24px;
+}
+.primary-icon > svg:not(.icon) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.primary-lbl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 4px;
+}
+.primary-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  text-transform: uppercase;
+}
+.primary-sub {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-13b);
+  opacity: 0.7;
+}
+.primary-disc {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--cyan);
+}
+.primary-disc > svg {
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+}
+.primary-thumb {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(5, 6, 10, 0.35);
+}
+.primary-thumb > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+@keyframes primary-beat {
+  to {
+    transform: translateY(-2px);
+  }
+}
+.primary-beat {
+  animation: primary-beat 0.5s ease-in-out infinite alternate;
+}
+.primary-beat:active {
+  animation: none;
+}
+
+/* Locked / waiting: dark face, dim text, no beat. */
+.primary-locked {
+  background: var(--dark-face);
+  color: var(--w30);
+  box-shadow: var(--sh-obj);
+  cursor: default;
+}
+.primary-locked .primary-disc {
+  background: var(--w10);
+  color: var(--w30);
+}
+.primary-locked:active {
+  transform: none;
+  box-shadow: var(--sh-obj);
+}
+/* Danger («СБРОСИТЬ»): magenta face, black underside. */
+.primary-danger {
+  background: var(--mag-face);
+  color: #fff;
+  box-shadow: var(--sh-primary-mag);
+}
+.primary-danger .primary-disc {
+  color: var(--mag);
+}
+.primary-danger:active {
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.5), 0 2px 0 #000, 0 8px 20px rgba(255, 43, 214, 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .primary {
+    transition: none;
+  }
+  .primary-beat {
+    animation: none;
+  }
+}

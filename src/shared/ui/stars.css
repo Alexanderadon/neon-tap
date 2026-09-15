@@ -1,0 +1,109 @@
+/* Level stars (Stars.tsx): glossy 3D gold when earned, the same shape in dark grey while still to be won. */
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  --star: 16px;
+}
+.stars-md {
+  --star: 26px;
+}
+.star-wrap {
+  position: relative;
+  display: block;
+  width: var(--star);
+  height: var(--star);
+  flex: none;
+}
+.star {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Hero (result): 96 / 120 / 96, bottom-aligned, the middle one raised 16 — 144 px tall block. */
+.stars-hero {
+  --star: 96px;
+  height: 144px;
+  gap: 8px;
+  align-items: flex-end;
+  justify-content: center;
+}
+.stars-hero .star-wrap-big {
+  --star: 120px;
+  margin-bottom: 16px;
+}
+
+/* The result screen: earned stars pop with sparks, the unearned one fades in (delays set inline). */
+@keyframes star-pop {
+  0% {
+    transform: scale(0) rotate(-30deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes star-dim {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes star-burst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(20px) scaleY(0);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(var(--l)) scaleY(1.4);
+  }
+}
+.stars-animate .star-wrap {
+  transform-origin: 50% 55%;
+}
+.stars-animate .star-wrap-on {
+  animation: star-pop 0.5s var(--ease-pop) both;
+}
+.stars-animate .star-wrap-off {
+  animation: star-dim 0.4s ease-out both;
+}
+.star-sparks {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.star-spark {
+  position: absolute;
+  left: -1.5px;
+  top: 0;
+  width: 3px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  transform-origin: 50% 0;
+  opacity: 0;
+  transform: rotate(var(--a)) translateY(20px) scaleY(0);
+  animation: star-burst 0.7s cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
+.star-spark-gold {
+  background: var(--gold);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stars-animate .star-wrap,
+  .star-spark {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}

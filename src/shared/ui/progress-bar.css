@@ -1,0 +1,95 @@
+/* ProgressBar (ProgressBar.tsx): 16 px text row + 8 px gap + 8 px pill track; fill = base (gold face) + add (light gold). */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  font: var(--t-13);
+  color: var(--w80);
+}
+.progress-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.progress-label b {
+  color: #fff;
+  font-weight: 700;
+}
+.progress-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  font: var(--t-13b);
+  color: var(--gold);
+}
+.progress-cyan .progress-right {
+  color: var(--cyan);
+}
+.progress-right > svg,
+.progress-right .stars {
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+}
+.progress-track {
+  position: relative;
+  height: 8px;
+  border-radius: var(--r-999);
+  background: var(--w10);
+  overflow: hidden;
+}
+.progress-base,
+.progress-add {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8px;
+  border-radius: var(--r-999);
+}
+.progress-base {
+  background: var(--gold-face);
+  transition: width 0.4s var(--ease-out);
+}
+.progress-cyan .progress-base {
+  background: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+.progress-add {
+  width: 100%;
+  background: #fff3a0;
+}
+.progress-cyan .progress-add {
+  background: #fff;
+}
+@keyframes progress-grow {
+  from {
+    clip-path: inset(0 var(--pb-from) 0 var(--pb-base));
+  }
+  to {
+    clip-path: inset(0 var(--pb-to) 0 var(--pb-base));
+  }
+}
+.progress-animate .progress-add {
+  animation: progress-grow 0.6s var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress-base {
+    transition: none;
+  }
+  .progress-animate .progress-add {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}
