@@ -1,0 +1,137 @@
+/* ObjButton (ObjButton.tsx): 105 × 48 object button — icon 20 over an 11 px caption; `.obj-wide` is the 335 × 48 row. */
+.obj {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 48px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-16);
+  background: var(--dark-face);
+  box-shadow: var(--sh-obj);
+  color: var(--w80);
+  font: var(--t-11);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.obj:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 2px 0 #000;
+}
+.obj:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.obj:disabled {
+  color: var(--w30);
+  cursor: default;
+}
+.obj:disabled:active {
+  transform: none;
+  box-shadow: var(--sh-obj);
+}
+.obj-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.obj-icon > svg {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+.obj-icon > svg:not(.icon) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.obj-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.obj-on {
+  background: var(--cyan-face);
+  color: var(--bg);
+  box-shadow: var(--sh-primary);
+}
+.obj-on:active {
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.6), 0 2px 0 var(--cyan-under);
+}
+.obj-danger {
+  color: var(--mag);
+}
+.obj-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-999);
+  background: var(--mag);
+  color: #fff;
+  font: var(--t-11);
+  letter-spacing: 0;
+  font-style: normal;
+  text-align: center;
+  box-shadow: var(--glow-mag);
+}
+
+/* Wide row: icon · 15/700 label · state on the right. */
+.obj-wide {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 16px 0 12px;
+  font: var(--t-15);
+  letter-spacing: 0;
+  text-transform: none;
+  color: #fff;
+}
+.obj-wide .obj-icon {
+  color: var(--w80);
+}
+.obj-wide .obj-label {
+  flex: 1;
+  text-align: left;
+}
+.obj-end {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin-left: auto;
+  color: var(--w30);
+}
+.obj-end > svg {
+  width: 20px;
+  height: 20px;
+}
+.obj-end > svg:not(.icon) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (prefers-reduced-motion: reduce) {
+  .obj {
+    transition: none;
+  }
+}

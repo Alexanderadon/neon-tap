@@ -1,0 +1,74 @@
+/* Coin (Coin.tsx): 105 × 56, r 16, gold-tinted dark face, 2 px light, 4 px underside. */
+.coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  min-width: 0;
+  border-radius: var(--r-16);
+  background: var(--coin-face);
+  box-shadow: var(--sh-coin);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.coin-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  max-width: 100%;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+  color: #fff;
+}
+.coin-cy {
+  color: var(--cyan);
+}
+.coin-gd {
+  color: var(--gold);
+}
+.coin-mag {
+  color: var(--mag);
+}
+.coin-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.coin-icon > svg,
+.coin-icon .stars {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+.coin-caption {
+  display: block;
+  height: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--t-13);
+  color: var(--w55);
+}
+@keyframes coin-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.coin-drop {
+  animation: coin-drop 0.5s var(--ease-pop) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin-drop {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}
