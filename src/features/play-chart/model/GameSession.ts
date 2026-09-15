@@ -380,6 +380,16 @@ export class GameSession {
   resume(): void {
     // The revive offer and its count-in are frozen states of their own: Esc / the pause chip do not end them.
     if (!this.paused || this.heartsOut || this.reviving) return;
+    // After a phone call or a long background the context is "interrupted"/suspended: its clock stands
+    // still, so starting the song now would freeze the run. Resume the context first — this call comes
+    // from a tap, so the browser allows it — and start only once it actually runs.
+    const ctx = audioEngine.context;
+    if (ctx && ctx.state !== 'running') {
+      void audioEngine.ensureContext().then(() => {
+        if (this.paused && !this.destroyed && audioEngine.context?.state === 'running') this.resumeAt(this.clock.position() - 1);
+      });
+      return;
+    }
     this.resumeAt(this.clock.position() - 1);
   }
 
@@ -706,6 +716,10 @@ export class GameSession {
       const step = OFFSET_SLEW * dt;
       this.clock.userOffset += Math.abs(d) <= step ? d : Math.sign(d) * step;
     }
+    // The context died under us (a call, an interruption): the audio clock is frozen, so pause instead of
+    // showing a run that never moves — «Продолжить» brings the context back.
+    if (!this.paused && !this.finished && this.started && !this.heartsOut && !this.reviving && audioEngine.context && audioEngine.context.state !== 'running')
+      this.pause();
     const songTime = this.clock.songTime();
     if (!this.paused && !this.finished) {
       const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
