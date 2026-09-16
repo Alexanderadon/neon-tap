@@ -1,17 +1,23 @@
 /**
- * Test-only checkers for what a phone can actually play: two thumbs, one long note at a time, the
- * free thumb on its own half, a beat to let go. Every chart generator test (mix or instrument
- * layers) runs through these so the old two-finger bugs cannot come back.
+ * Checkers for what a phone can actually play: two thumbs, one long note at a time, the free
+ * thumb on its own half, a beat to let go, never two notes in one lane inside one judgement span,
+ * nothing under a spinner. Every chart generator test (mix or instrument layers) runs through
+ * these so the old two-finger bugs cannot come back, and `assertPlayable` is the generator's own
+ * gate: a chart that fails it is never written.
  */
 import { STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
 import { handOf } from './laneAssign';
-import type { NoteTuple } from '@/shared/types/chart';
+import { FAST_RATE, budgetOf, rateStarsBudget } from './budget';
+import type { ChartLevel, NoteTuple, SectionTuple } from '@/shared/types/chart';
 
-/** 120 BPM sixteenth grid with per-slot overrides. */
-export function fakeAnalysis(bars: number, pattern: (bar: number, step: number) => Partial<Slot>): SongAnalysis {
+/** No two notes in one lane closer than this (song s): both would sit inside one judgement span. */
+export const SAME_LANE_MIN_SEC = 0.3;
+
+/** A sixteenth grid at `bpm` (120 by default) with per-slot overrides. */
+export function fakeAnalysis(bars: number, pattern: (bar: number, step: number) => Partial<Slot>, bpm = 120): SongAnalysis {
   const slots: Slot[] = [];
   const beats: number[] = [];
-  const step = 0.125; // 120 BPM sixteenth
+  const step = 15 / bpm;
   for (let b = 0; b < bars; b++) {
     for (let s = 0; s < STEPS_PER_BAR; s++) {
       if (s % 4 === 0) beats.push((b * STEPS_PER_BAR + s) * step);
@@ -30,12 +36,12 @@ export function fakeAnalysis(bars: number, pattern: (bar: number, step: number) 
   }
   beats.push(bars * STEPS_PER_BAR * step);
   return {
-    bpm: 120,
+    bpm,
     confidence: 1,
     beats,
     slots,
     barCount: bars,
-    duration: bars * 2,
+    duration: bars * STEPS_PER_BAR * step,
     onsetCount: 0,
     beatConfidence: 1,
   };
@@ -114,4 +120,88 @@ export function handHops(notes: readonly NoteTuple[], sections: readonly [number
     if (a !== -1 && a === b) out.push(`hop at ${cur[0]}: lane ${prev[1]} → ${cur[1]} on one thumb (${n} lanes, gap ${gap.toFixed(3)})`);
   }
   return out;
+}
+
+/** Two lane notes (taps, holds, rolls, slides — circles float above the lanes) in ONE lane closer than `minSec`: both would sit inside one judgement span. */
+export function sameLaneClose(notes: readonly NoteTuple[], minSec = SAME_LANE_MIN_SEC): string[] {
+  const out: string[] = [];
+  const byLane = new Map<number, NoteTuple[]>();
+  for (const n of notes) {
+    if (n[3] === 'spin' || n[3] === 'circle') continue;
+    const list = byLane.get(n[1]) ?? [];
+    list.push(n);
+    byLane.set(n[1], list);
+  }
+  for (const [lane, list] of [...byLane.entries()].sort((a, b) => a[0] - b[0])) {
+    list.sort((a, b) => a[0] - b[0]);
+    for (let i = 1; i < list.length; i++) {
+      const gap = list[i][0] - list[i - 1][0];
+      if (gap > 0 && gap < minSec - 1e-9) out.push(`lane ${lane}: notes at ${list[i - 1][0]} and ${list[i][0]} only ${gap.toFixed(3)} s apart`);
+    }
+  }
+  return out;
+}
+
+/** Smallest gap between two distinct event times (spinners excluded); Infinity below two events. */
+export function minEventGap(notes: readonly NoteTuple[]): number {
+  const times = [...new Set(notes.filter((n) => n[3] !== 'spin').map((n) => n[0]))].sort((a, b) => a - b);
+  let min = Infinity;
+  for (let i = 1; i < times.length; i++) min = Math.min(min, times[i] - times[i - 1]);
+  return min;
+}
+
+/** Lane notes that start while a spinner is up: the field must be empty for the whole wheel. */
+export function spinnerOverlap(notes: readonly NoteTuple[]): string[] {
+  const out: string[] = [];
+  for (const s of notes.filter((n) => n[3] === 'spin')) {
+    const end = s[0] + (s[2] as number);
+    for (const n of notes) if (n[3] !== 'spin' && n[0] >= s[0] - 1e-6 && n[0] < end - 1e-6) out.push(`note at ${n[0]} during spinner ${s[0]}–${end}`);
+  }
+  return out;
+}
+
+/** The lane notes (spinners excluded) inside the `winSec`-second window that holds the most distinct event times. */
+export function densestWindow(notes: readonly NoteTuple[], winSec: number): NoteTuple[] {
+  const lane = notes.filter((n) => n[3] !== 'spin');
+  const times = [...new Set(lane.map((n) => n[0]))].sort((a, b) => a - b);
+  let bestFrom = 0;
+  let bestCount = 0;
+  let j = 0;
+  for (let i = 0; i < times.length; i++) {
+    while (times[i] - times[j] > winSec) j++;
+    if (i - j + 1 > bestCount) {
+      bestCount = i - j + 1;
+      bestFrom = times[j];
+    }
+  }
+  return lane.filter((n) => n[0] >= bestFrom && n[0] <= bestFrom + winSec);
+}
+
+/** Budget rating of the densest `winSec` seconds alone — a level is lost in its worst phrase, not on average. */
+export function worstWindowStars(notes: readonly NoteTuple[], bpm: number, sections?: readonly SectionTuple[], winSec = 8): number {
+  return rateStarsBudget(densestWindow(notes, winSec), bpm, sections).stars;
+}
+
+/**
+ * The generator's gate: throws, naming the offending notes, when the chart breaks a hands rule at
+ * the fastest level — a thumb violation, a hand hop at ×1.2 (`stepSec` is a sixteenth in song
+ * seconds), more than two fingers, two notes in one lane inside a judgement span, a note under a
+ * spinner, or two events closer than the chart's ★ allows (its pair gap, else its grid gap).
+ */
+export function assertPlayable(chart: ChartLevel, stepSec: number): void {
+  const sections: SectionTuple[] = chart.sections ?? [[0, 4]];
+  const lane = chart.notes.filter((n) => n[3] !== 'spin');
+  const b = budgetOf(chart.stars);
+  const minGap = b.pairMinSec || b.minGapSec;
+  const gap = minEventGap(lane);
+  const fingers = maxFingers(lane);
+  const problems = [
+    ...thumbViolations(lane, sections),
+    ...handHops(lane, sections, stepSec * FAST_RATE),
+    ...(fingers > 2 ? [`${fingers} fingers needed at once`] : []),
+    ...sameLaneClose(lane),
+    ...spinnerOverlap(chart.notes),
+    ...(gap < minGap - 1e-9 ? [`events ${gap.toFixed(3)} s apart, ★${chart.stars} allows ${minGap}`] : []),
+  ];
+  if (problems.length) throw new Error(`unplayable chart (${problems.length} problems):\n  ${problems.slice(0, 12).join('\n  ')}`);
 }

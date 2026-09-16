@@ -25,7 +25,8 @@
     "genre": "rock",
     "raw": "action-track.mp3",
     "sourceUrl": "https://opengameart.org/content/action-track",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "chart": { "rolls": "none" }
   },
   {
     "id": "chase",
@@ -98,7 +99,8 @@
     "genre": "chiptune",
     "raw": "space-cadet-training-montage.wav",
     "sourceUrl": "https://opengameart.org/content/space-cadet-training-montage",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "chart": { "stars": 3 }
   },
   {
     "id": "since-2-am",
@@ -255,7 +257,8 @@
     "genre": "breakbeat",
     "raw": "lucid-trigger.wav",
     "sourceUrl": "https://opengameart.org/content/lucid-trigger",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0",
+    "chart": { "rolls": "many" }
   },
   {
     "id": "hard-boss-battle-2",
