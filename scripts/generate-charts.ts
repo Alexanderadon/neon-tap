@@ -54,6 +54,9 @@ interface RawTrack {
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 /** Picture cover made by `npm run assets:covers` — recorded in the catalog so the app knows to show it. */
 const coverFile = (id: string): string | undefined => (existsSync(join(ROOT, 'public', 'covers', `${id}.webp`)) ? `covers/${id}.webp` : undefined);
+/** The picture's accent colour (`assets:covers` keeps them in assets-src/covers-raw/tints.json). */
+const TINTS = join(ROOT, 'assets-src', 'covers-raw', 'tints.json');
+const tints: Record<string, string> = existsSync(TINTS) ? (JSON.parse(readFileSync(TINTS, 'utf8')) as Record<string, string>) : {};
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
@@ -186,6 +189,7 @@ const catalog = built.map((c) => ({
   ...(c.premium ? { premium: true } : {}),
   ...(c.pack ? { pack: c.pack } : {}),
   ...(coverFile(c.id) ? { cover: coverFile(c.id) } : {}),
+  ...(coverFile(c.id) && tints[c.id] ? { tint: tints[c.id] } : {}),
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,

@@ -14,6 +14,8 @@ export interface TrackMeta {
   pack?: string;
   /** Picture cover, a path under `public/` (`covers/<id>.webp`); absent → procedural art. */
   cover?: string;
+  /** The picture's accent colour (`#rrggbb`) for the play button; absent → the procedural palette's accent. */
+  tint?: string;
   bpm: number;
   duration: number;
   /** Difficulty of the song's chart, 1–10. */

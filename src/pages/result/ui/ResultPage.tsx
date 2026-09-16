@@ -3,7 +3,7 @@ import { navigate } from '@/shared/lib/router';
 import { Icon, ObjButton, Screen } from '@/shared/ui';
 import { dict } from '@/shared/i18n';
 import { startSession, useSession } from '@/entities/play-session';
-import { CATALOG, CoverScene, TRACK_IDS, chapterAt, chapterTitle, findTrack, loadChart } from '@/entities/track';
+import { CATALOG, CoverScene, TRACK_IDS, chapterAt, chapterTitle, findTrack, loadChart, trackTint } from '@/entities/track';
 import { grandTotalStars, findGoal, nextUnlock, useProgress } from '@/entities/progress';
 import { attemptsOf, useHistory } from '@/entities/history';
 import {
@@ -129,6 +129,7 @@ export function ResultPage() {
           meta={resultMeta}
           title={chart.title}
           chapter={chapter}
+          tint={isCatalog ? trackTint(chart.id, chart.genre) : undefined}
           onRetry={retry}
           onNext={nextId ? () => void next() : undefined}
           nextTrack={nextTrack}

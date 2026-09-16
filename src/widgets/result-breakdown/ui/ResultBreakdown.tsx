@@ -7,7 +7,7 @@ import type { Genre } from '@/shared/types/chart';
 import type { ChartFile } from '@/entities/chart';
 import { formatClock, type PlayResult } from '@/entities/score';
 import type { PlaySession } from '@/entities/play-session';
-import { TrackCover } from '@/entities/track';
+import { TrackCover, trackTint } from '@/entities/track';
 import { voice } from '@/features/voice-feedback';
 import { formatScore } from '@/shared/lib/format';
 import { flightsOf, type Loot } from '../lib/loot';
@@ -50,6 +50,8 @@ interface Props {
   /** Catalog chapter title («Глава 1» / «Рок-пак»); omitted for custom songs. */
   chapter?: string;
   onRetry: () => void;
+  /** The played track's accent for «ЕЩЁ РАЗ» (a catalog track); custom songs keep the cyan. */
+  tint?: string;
   /** "Next" — the following playable track; the primary becomes «ЕЩЁ РАЗ» without it or after a fail. */
   onNext?: () => void;
   nextTrack?: NextTrack;
@@ -83,6 +85,7 @@ export function ResultBreakdown({
   meta,
   title,
   chapter,
+  tint,
   onRetry,
   onNext,
   nextTrack,
@@ -261,6 +264,7 @@ export function ResultBreakdown({
               }
               label={dict.next}
               sub={nextTrack.title}
+              tint={trackTint(nextTrack.id, nextTrack.genre)}
               beat
               onClick={onNext}
               autoFocus
@@ -274,6 +278,7 @@ export function ResultBreakdown({
               }
               label={dict.retry}
               sub={title}
+              tint={tint}
               beat
               onClick={onRetry}
               autoFocus

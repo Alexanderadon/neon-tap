@@ -43,6 +43,7 @@ const FITS_3: BudgetFeatures = {
   eighthShare: 0,
   sixteenthShare: 0,
   maxPerBar: 4,
+  barSec: 2,
   maxLanes: 4,
   chordsPerBarMax: 0,
   chordsPerPhraseMax: 0,
@@ -85,7 +86,7 @@ describe('failsAt', () => {
       { peak1s: 3.5 },
       { minGapSec: 0.2 },
       { maxPerBar: 5 },
-      { maxLanes: 5 },
+      { maxLanes: 6 },
       { chordsPerBarMax: 1 },
       { chordsPerPhraseMax: 1 },
       { circlesPerBarMax: 4 },
@@ -172,9 +173,9 @@ describe('targetStars', () => {
   });
 
   it('is clamped by the chapter and overridden per track', () => {
-    expect(targetStars(wild, 'easy')).toBe(2);
-    expect(targetStars(calm, 'easy')).toBe(1);
-    expect(targetStars(wild, 'medium')).toBe(4);
+    expect(targetStars(wild, 'easy')).toBe(3);
+    expect(targetStars(calm, 'easy')).toBe(2);
+    expect(targetStars(wild, 'medium')).toBe(5);
     expect(targetStars(calm, 'medium')).toBe(3);
     expect(targetStars(calm, 'normal', 5)).toBe(5);
     expect(targetStars(wild, 'easy', 9)).toBe(MAX_STARS);
