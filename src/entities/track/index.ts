@@ -5,7 +5,7 @@ export type { Chapter } from './model/chapters';
 export { loadChart } from './api/loadChart';
 export { TrackCover } from './ui/TrackCover';
 export type { TrackCoverProps } from './ui/TrackCover';
-export { coverSpec, COVER_PALETTES, DEFAULT_GENRE, isGenre } from './model/cover';
+export { coverImage, coverSpec, COVER_PALETTES, DEFAULT_GENRE, isGenre } from './model/cover';
 export type { CoverSpec, CoverPalette } from './model/cover';
 export { CoverScene, SCENE_PX } from './ui/CoverScene';
 export { drawCover } from './lib/drawCover';

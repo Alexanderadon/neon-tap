@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Genre } from '@/shared/types/chart';
-import { coverSpec } from '../model/cover';
+import { coverImage, coverSpec } from '../model/cover';
 import { drawCover } from '../lib/drawCover';
 import './cover-scene.css';
 
@@ -47,7 +47,22 @@ function SceneCanvas({ id, genre }: { id: string; genre?: Genre }) {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCover(ctx, coverSpec(id, genre), SCENE_PX);
+    const picture = coverImage(id);
+    if (!picture) {
+      drawCover(ctx, coverSpec(id, genre), SCENE_PX);
+      return;
+    }
+    // A picture cover: the picture squeezed into the 24 × 24 canvas is the colour wash.
+    let live = true;
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => {
+      if (live) ctx.drawImage(img, 0, 0, SCENE_PX, SCENE_PX);
+    };
+    img.src = picture;
+    return () => {
+      live = false;
+    };
   }, [id, genre]);
   return <canvas ref={ref} className="scene-cover" width={SCENE_PX} height={SCENE_PX} data-track={id} />;
 }

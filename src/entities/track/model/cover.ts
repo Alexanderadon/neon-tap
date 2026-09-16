@@ -82,6 +82,12 @@ export interface CoverSpec {
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
 /** Build the full cover description. Same `id` + `genre` → identical output. */
+/** The track's picture cover (`/covers/<id>.webp`) when the catalog has one; null → procedural art. */
+export function coverImage(id: string): string | null {
+  const cover = findTrack(id)?.cover;
+  return cover ? `/${cover}` : null;
+}
+
 export function coverSpec(id: string, genre: Genre | undefined): CoverSpec {
   const g = genre && isGenre(genre) ? genre : DEFAULT_GENRE;
   // A pack's tracks share one cover: the art is seeded by the pack, not the track.

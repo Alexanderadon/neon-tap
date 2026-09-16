@@ -42,6 +42,8 @@ interface RawTrack {
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+/** Picture cover made by `npm run assets:covers` — recorded in the catalog so the app knows to show it. */
+const coverFile = (id: string): string | undefined => (existsSync(join(ROOT, 'public', 'covers', `${id}.webp`)) ? `covers/${id}.webp` : undefined);
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
@@ -159,6 +161,7 @@ const catalog = built.map((c) => ({
   genre: c.genre,
   ...(c.premium ? { premium: true } : {}),
   ...(c.pack ? { pack: c.pack } : {}),
+  ...(coverFile(c.id) ? { cover: coverFile(c.id) } : {}),
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,
