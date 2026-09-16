@@ -20,6 +20,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const sourceName = (url: string): string => (url.includes('freemusicarchive.org') ? 'Free Music Archive' : 'OpenGameArt');
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
 const sfx = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'sfx.json'), 'utf8')) as SfxRegistry;
+/** The tutorial's song — a CC0 track kept only for the tutorial (assets-src/tutorial.json). */
+const tutorial = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tutorial.json'), 'utf8')) as RawTrack;
 
 const md: string[] = [
   '# Asset licenses',
@@ -34,6 +36,7 @@ const md: string[] = [
   '| File | Title | Author | Source | License |',
   '|---|---|---|---|---|',
   ...tracks.map((t) => `| \`${t.id}.mp3\` | ${t.title} | ${t.artist} | [${sourceName(t.sourceUrl)}](${t.sourceUrl}) | ${t.license} |`),
+  `| \`tutorial.mp3\` | Apparatus Overlord (the tutorial song) | ${tutorial.artist} | [${sourceName(tutorial.sourceUrl)}](${tutorial.sourceUrl}) | ${tutorial.license} |`,
   '',
   '## Sound effects',
   '',

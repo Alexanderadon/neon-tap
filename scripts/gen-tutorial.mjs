@@ -1,4 +1,5 @@
-// Generates public/charts/tutorial.json from a plan in beat units on the beat grid of Apparatus Overlord.
+// Generates public/charts/tutorial.json from a plan in beat units on the beat grid of the tutorial song
+// (assets-src/tutorial.json: Apparatus Overlord by vitalezzz, CC0, kept as music/tutorial.mp3 — the track itself left the catalog).
 // Plain node, no deps. Run: npm run chart:tutorial   (or node scripts/gen-tutorial.mjs from anywhere)
 // The plan below is the source of truth for the tutorial chart; features/tutorial/model/chart.test.ts
 // checks the generated file against the caption script (TUTORIAL_PLAN) and the design rules.
@@ -7,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const CHARTS = new URL('../public/charts/', import.meta.url);
 const OUT = new URL('tutorial.json', CHARTS);
 
-const src = JSON.parse(readFileSync(new URL('apparatus-overlord.json', CHARTS), 'utf8'));
+const src = JSON.parse(readFileSync(new URL('../assets-src/tutorial.json', import.meta.url), 'utf8'));
 const beats = src.beats;
 
 /** Beat index (fractional) → seconds on the tracked grid (same maths as features/tutorial beatTime). */

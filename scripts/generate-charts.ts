@@ -91,7 +91,9 @@ for (const t of tracks) {
 // The published order is the players' order (chapters and unlocks go by position), so it is kept:
 // a track already in catalog.json keeps its place and its chapter profile; only new tracks are
 // rated in and sorted after the known ones. Delete catalog.json to re-rank everything from scratch.
-const published: string[] = existsSync(CATALOG) ? (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map((t) => t.id) : [];
+const published: string[] = existsSync(CATALOG)
+  ? (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map((t) => t.id).filter((id) => tracks.some((t) => t.id === id)) // deleted tracks drop out, the rest close ranks
+  : [];
 const normalStars = new Map(analysed.map((a) => [a.t.id, composeChart(a.analysis, { seed: hash(a.t.id) }).stars]));
 const calmest = [...analysed]
   .filter((a) => !a.t.premium)

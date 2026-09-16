@@ -33,12 +33,12 @@ const stepOf = (n: ParsedNote) => script[captionAt(script, n.time)];
 const notesIn = (id: TutorialStepId) => notes.filter((n) => stepOf(n)?.id === id);
 
 describe('public/charts/tutorial.json', () => {
-  it('is a valid ChartFile that reuses a CC0 catalog track', () => {
+  it('is a valid ChartFile on the tutorial song (a CC0 track kept for the tutorial only)', () => {
     expect(file.id).toBe('tutorial');
     expect(file.title).toBe('Обучение');
     expect(file.chart.stars).toBe(1);
     expect(beats.length).toBeGreaterThan(100);
-    const src = JSON.parse(readFileSync(new URL('public/charts/apparatus-overlord.json', ROOT), 'utf8')) as ChartFile;
+    const src = JSON.parse(readFileSync(new URL('assets-src/tutorial.json', ROOT), 'utf8')) as ChartFile;
     expect(file.audio).toBe(src.audio);
     expect(file.bpm).toBe(src.bpm);
     expect(file.offset).toBe(src.offset);
