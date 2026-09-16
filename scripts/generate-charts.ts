@@ -2,27 +2,35 @@
  * public/music/<id>.mp3 → public/charts/<id>.json + src/entities/track/model/catalog.json
  *
  * Runs the exact same analysis pipeline the browser uses for custom songs
- * (src/shared/lib/analysis): onsets → tempo → DP beat tracking → 16th grid → per-bar rhythm
- * templates → holds / slides / rolls / circle windows / lane-count sections. One chart per song;
- * the catalog is sorted easiest-first by the chart's star rating. The BEGINNER_TRACKS calmest
- * songs (by their normal rating) are re-read with the EASY profile so chapter one is a real
- * on-ramp: beats only, no rolls / slides / chords, 3–4 lanes.
+ * (src/shared/lib/analysis): onsets → tempo → DP beat tracking → 16th grid → audibility → one
+ * figure per phrase under the song's ★ budget → holds / slides / rolls / chords / circle windows /
+ * spinners / lane-count sections. One chart per song. The chapter comes from the catalog position
+ * (the first BEGINNER_TRACKS are chapter one ★1–2, the next MEDIUM_TRACKS chapter two ★3–4, the
+ * rest and the packs ★2–6); a per-track `chart` in tracks.json overrides the target ★ and the roll
+ * policy. Every chart passes the hands gate (`assertPlayable`) and the ★ gate (its check rating is
+ * at most its target, never above MAX_STARS) or the run aborts. `--dry` composes and prints without
+ * writing the charts or the catalog.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePcm, probeDuration } from './ffmpeg';
 import {
-  EASY,
   LAYERS,
-  MEDIUM,
+  MAX_STARS,
+  STEPS_PER_BAR,
   analyzeSong,
+  assertPlayable,
   chartFeatures,
   composeChart,
   layerEnergy,
   layerStrengths,
+  rateStars,
+  songEnergy,
+  type Chapter,
+  type ComposeTrace,
   type LayerStrengths,
-  type Profile,
+  type RollPolicy,
   type StemLayers,
 } from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
@@ -39,6 +47,8 @@ interface RawTrack {
   raw: string;
   sourceUrl: string;
   license: string;
+  /** Per-track composer overrides: the target ★ (still ≤ 6) and the mid-phrase roll policy. */
+  chart?: { stars?: number; rolls?: RollPolicy };
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -50,11 +60,13 @@ const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
 /** Raw Demucs output (stem-{drums,bass,other,vocals}.mp3): the chart follows these instruments; never shipped. */
 const STEMS_SRC = process.env.STEMS_DIR ?? 'D:/neon-tap-tools/stems';
 const RATE = 22050;
-/** The calmest songs get the beginner reading (chapter one), the next ones the medium reading (chapter two). */
+/** The first tracks of the catalog are chapter one (★1–2), the next ones chapter two (★3–4). */
 const BEGINNER_TRACKS = 10;
 const MEDIUM_TRACKS = 10;
+/** Compose and print only — neither the charts nor the catalog are written. */
+const DRY = process.argv.includes('--dry');
 
-mkdirSync(CHART_DIR, { recursive: true });
+if (!DRY) mkdirSync(CHART_DIR, { recursive: true });
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
 
 interface Analysed {
@@ -89,35 +101,41 @@ for (const t of tracks) {
 }
 
 // The published order is the players' order (chapters and unlocks go by position), so it is kept:
-// a track already in catalog.json keeps its place and its chapter profile; only new tracks are
-// rated in and sorted after the known ones. Delete catalog.json to re-rank everything from scratch.
+// a track already in catalog.json keeps its place and its chapter; only new tracks are rated in
+// and sorted after the known ones. Delete catalog.json to re-rank everything from scratch — a
+// first-time catalog is ordered by song energy, the measure the composer's target ★ comes from.
 const published: string[] = existsSync(CATALOG)
   ? (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map((t) => t.id).filter((id) => tracks.some((t) => t.id === id)) // deleted tracks drop out, the rest close ranks
   : [];
-const normalStars = new Map(analysed.map((a) => [a.t.id, composeChart(a.analysis, { seed: hash(a.t.id) }).stars]));
-const calmest = [...analysed]
-  .filter((a) => !a.t.premium)
-  .sort((a, b) => normalStars.get(a.t.id)! - normalStars.get(b.t.id)! || a.t.id.localeCompare(b.t.id))
-  .map((a) => a.t.id);
-const profiles = new Map<string, Profile>();
-if (published.length) {
-  published.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
-  published.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
-} else {
-  calmest.slice(0, BEGINNER_TRACKS).forEach((id) => profiles.set(id, EASY));
-  calmest.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => profiles.set(id, MEDIUM));
-}
+const energyOf = (a: Analysed): number => {
+  let trace: ComposeTrace | undefined;
+  composeChart(a.analysis, { seed: hash(a.t.id), layers: a.layers, onTrace: (tr) => (trace = tr) });
+  return songEnergy(trace!.energy);
+};
+const order = published.length
+  ? published
+  : [...analysed]
+      .filter((a) => !a.t.premium && !a.t.pack)
+      .map((a) => ({ id: a.t.id, energy: energyOf(a) }))
+      .sort((a, b) => a.energy - b.energy || a.id.localeCompare(b.id))
+      .map((a) => a.id);
+const chapters = new Map<string, Chapter>();
+order.slice(0, BEGINNER_TRACKS).forEach((id) => chapters.set(id, 'easy'));
+order.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => chapters.set(id, 'medium'));
 
 const built: ChartFile[] = [];
 for (const { t, duration, analysis, layers, ms } of analysed) {
-  const profile = profiles.get(t.id);
-  let followed = '';
+  const chapter: Chapter = t.pack ? 'normal' : (chapters.get(t.id) ?? 'normal');
+  let trace: ComposeTrace | undefined;
   const chart = composeChart(analysis, {
     seed: hash(t.id),
-    profile,
+    chapter,
     layers,
-    onLayers: (per) => (followed = per.map((l) => (l ? l[0] : '-')).join('')),
+    targetStars: t.chart?.stars,
+    rolls: t.chart?.rolls,
+    onTrace: (tr) => (trace = tr),
   });
+  checkGates(t.id, chart, analysis, trace!);
   const file2: ChartFile = {
     id: t.id,
     title: t.title,
@@ -134,13 +152,17 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
     beats: analysis.beats,
     chart,
   };
-  writeFileSync(join(CHART_DIR, `${t.id}.json`), JSON.stringify(file2));
+  if (!DRY) writeFileSync(join(CHART_DIR, `${t.id}.json`), JSON.stringify(file2));
   built.push(file2);
   const f = chartFeatures(chart);
+  const lane = chart.notes.filter((n) => n[3] !== 'spin');
+  const chords = lane.length - new Set(lane.map((n) => n[0])).size;
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
-    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : profile === EASY ? ' E' : profile === MEDIUM ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ★${chart.stars} ${(chart.notes.length / duration).toFixed(2)}/s ` +
-      `notes ${String(chart.notes.length).padStart(4)} holds ${f.holds} slides ${f.slides} rolls ${f.rolls} circles ${f.circles} spins ${f.spins} [${lanes}] ${ms} ms${followed ? ' ' + followed : ''}`,
+    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : chapter === 'easy' ? ' E' : chapter === 'medium' ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ` +
+      `★${trace!.target} (check ★${trace!.stars}) E ${songEnergy(trace!.energy).toFixed(2)} levels ${trace!.levels.join('')} shrinks ${trace!.shrinks}/${trace!.repairs} ` +
+      `${(chart.notes.length / duration).toFixed(2)}/s notes ${String(chart.notes.length).padStart(4)} H${f.holds}/S${f.slides}/R${f.rolls}/C${f.circles}/Sp${f.spins}/Ch${chords} [${lanes}] ${ms} ms` +
+      (trace!.fails.length ? ` fails: ${trace!.fails.join(', ')}` : ''),
   );
 }
 
@@ -170,8 +192,34 @@ const catalog = built.map((c) => ({
   notes: c.chart.notes.length,
   features: chartFeatures(c.chart),
 }));
-writeFileSync(CATALOG, JSON.stringify(catalog, null, 2) + '\n');
-console.log(`catalog.json: ${catalog.length} tracks`);
+if (DRY) console.log(`--dry: ${catalog.length} tracks composed, nothing written`);
+else {
+  writeFileSync(CATALOG, JSON.stringify(catalog, null, 2) + '\n');
+  console.log(`catalog.json: ${catalog.length} tracks`);
+}
+
+/**
+ * The gates every shipped chart passes, or the run aborts naming the track and the reasons: the
+ * hands rules at the fastest level (`assertPlayable`), ★ ≤ MAX_STARS, and the check rating (the ★
+ * whose budget the chart fits, recomputed here on the bar grid) at most the composer's target.
+ */
+function checkGates(id: string, chart: ChartFile['chart'], analysis: ReturnType<typeof analyzeSong>, trace: ComposeTrace): void {
+  const slots = analysis.slots;
+  const last = slots[slots.length - 1];
+  const slotSec = slots.length > 1 ? (last.time - slots[0].time) / (slots.length - 1) : 15 / analysis.bpm;
+  const barTimes = slots.filter((s) => s.step === 0).map((s) => s.time);
+  barTimes.push(last.time + slotSec * (STEPS_PER_BAR - last.step));
+  const problems: string[] = [];
+  try {
+    assertPlayable(chart, slotSec);
+  } catch (err) {
+    problems.push(err instanceof Error ? err.message : String(err));
+  }
+  if (chart.stars > MAX_STARS) problems.push(`★${chart.stars} above the ceiling ★${MAX_STARS}`);
+  const check = rateStars(chart.notes, analysis.bpm, chart.sections, barTimes);
+  if (check > trace.target) problems.push(`check ★${check} above the target ★${trace.target}: ${trace.fails.join(', ') || 'see budgetFeatures'}`);
+  if (problems.length) throw new Error(`${id}: chart failed the gate\n  ${problems.join('\n  ')}`);
+}
 
 function hash(s: string): number {
   let h = 2166136261;

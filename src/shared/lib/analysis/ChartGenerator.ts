@@ -1,699 +1,834 @@
-import { DENSITY_LIMIT, LANE_COUNT } from '@/shared/config/constants';
+import { LANE_COUNT } from '@/shared/config/constants';
 import { percentile } from '@/shared/lib/math';
-import type { ChartLevel, SpellKind } from '@/shared/types/chart';
-import { STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
-import { PHRASE_BARS, decide, groupBars, isEnergetic, rateIntensity, rng, salience, type Bar, type Event } from './bars';
-import { assignLanes } from './laneAssign';
-import { EASY_LANE_POOLS, LANE_POOLS, planSections } from './lanePlan';
+import type { ChartLevel, NoteTuple, SectionTuple, SpellKind } from '@/shared/types/chart';
+import { STEPS_PER_BAR, type SongAnalysis } from './SongAnalyzer';
+import { PHRASE_BARS, clearHitsPerBar, decide, groupBars, phraseLevels, rng, round3, type Bar, type Event } from './bars';
 import {
-  ACCENT_REL,
-  MIN_GAP_INTENSE,
-  MIN_GAP_SLOTS,
-  MIN_NOTE_STRENGTH,
-  MIN_RAW_STRENGTH,
-  ROLL_MAX_TAPS,
-  ROLL_MIN_TAPS,
-  SOUND_REL,
-  detectFill,
-  gridBonus,
-  patternSteps,
-  type PhrasePattern,
-} from './phrasePattern';
-import { eventsToTuples, rateStars } from './stars';
-import { LAYERS, MELODIC_LAYERS, pickLayer, soundSustain, sustainFloor, type Layer, type StemLayers } from './layers';
+  BUDGETS,
+  MAX_STARS,
+  eventWeights,
+  failsAt,
+  foldBpm,
+  gapSlots,
+  rateStarsBudget,
+  targetStars,
+  windowPeak,
+  type Budget,
+  type Chapter,
+  type SongEnergy,
+} from './budget';
+import { MIN_AUDIBLE, figureOf, gridBonus, shrinkFigure, stepDist, type Figure } from './figure';
+import { assignLanes } from './laneAssign';
+import { MELODIC_LAYERS, PRESENCE_REL, layerP90, presentLayers, ringAt, type Layer, type StemLayers } from './layers';
+import { ROLL_MAX_TAPS, ROLL_MIN_TAPS, detectFill } from './phrasePattern';
+import { eventsToTuples } from './stars';
 
 /**
  * Chart composer: turns the analysed beat grid into ONE playable, musical chart per song.
  *
- * The player must feel they are playing the music themselves, so notes reproduce the rhythmic
- * figure the ear hears — "ту ту ТУ ту ту ТУ" → tap tap TAP tap tap TAP — the same way in every
- * bar of a phrase. For each 4-bar phrase the *rhythm profile* (per-step mean of boosted onset
- * salience over its bars) is peak-picked into *pattern steps*; every bar of the phrase gets a
- * note on each pattern step where that bar actually sounds. Accents (the loudest steps of the
- * profile, the "ТУ") become chords; very strong hits off the pattern (fills, stabs) are added on
- * their own. Then the song's structure adds the mechanics: sustained melodic sounds → holds
- * (some of them slides into a neighbouring lane), drum fills → rolls, intense phrase starts →
- * circle-only windows that follow the same pattern, phrases → lane-count changes (2–6 lanes).
- * Density follows the music (per-bar caps by intensity, a rolling per-second cap), and
- * everything is playable with two thumbs.
+ * The song's ★ is chosen first (from its energy and the chapter) and everything is placed under
+ * that budget (`budget.ts`): the smallest gap between tiles, the figure size, the events per bar,
+ * the densest 1 / 4 / 8 seconds, the mechanics per phrase. Tiles sit only on audible hits — the
+ * attack-gated maxima of the mix, or of an instrument that is really playing in the phrase — and
+ * never below the ear's floor (a slot the mix and the stems both leave quiet). Every 4-bar phrase
+ * has ONE figure (beats first, an eighth grid where the ★ allows it, one pickup pair at most)
+ * repeated in every bar where it sounds; when the rolling windows still overflow, a whole step
+ * leaves the phrase, never a random tile. Then the music adds the mechanics — rolls on real drum
+ * streams, holds where an instrument rings at least a beat, slides, chords only at ★5–6, circle
+ * windows at real drops, a spinner on a breakdown — each only while the windows hold. The rating
+ * at the end is a check, not a readout: the chart is thinned until it fits its target, and the
+ * same chart plays at ×1 / ×1.12 / ×1.2, so every limit was sized for ×1.2.
  */
 
-/**
- * Difficulty profile. `normal` is the song as it is; `easy` is the beginner reading of the same
- * song for the first chapter: beats only (a beat between notes), a few notes per bar, no rolls,
- * slides, chords or sixteenths, holds no longer than a bar, sparse circles, 3–4 lanes.
- */
-export interface Profile {
-  /** Max notes per bar by intensity [quiet, medium, intense]. */
-  maxNotes: readonly [number, number, number];
-  /** Fewer lanes → fewer notes per bar. */
-  maxNotesByLanes: Record<number, number>;
-  /** Rolling 1-second cap by bar intensity; intense bars of energetic songs go up to `densityPeak`. */
-  density: readonly [number, number, number];
-  densityPeak: number;
-  /** Min slots between plain notes; null = the phrase rule (a sixteenth in intense bars, an eighth elsewhere). */
-  gap: number | null;
-  rolls: boolean;
-  slides: boolean;
-  chords: boolean;
-  extras: boolean;
-  maxHoldSlots: number;
-  circleGapSlots: number;
-  circlesPerWindow: number;
-  lanePools: typeof LANE_POOLS;
-  keepLanesChance: number;
-  /** Which spells the chart may carry: the slow-motion spell is a tool for hard songs, not a beginner's first surprise. */
-  spells: readonly SpellKind[];
-  /** Max spinners per chart (breakdowns become a wheel to circle); 0 for beginners. */
-  spinners: number;
-}
-
-export const NORMAL: Profile = {
-  // The figure of the phrase decides the tiles; these ceilings only keep a verse lighter than a drop.
-  maxNotes: [6, 9, 12],
-  maxNotesByLanes: { 2: 8, 3: 10 },
-  density: [4, 5.5, 6.5],
-  densityPeak: DENSITY_LIMIT,
-  gap: null,
-  rolls: true,
-  slides: true,
-  chords: true,
-  extras: true,
-  maxHoldSlots: 16,
-  circleGapSlots: 2,
-  circlesPerWindow: Infinity,
-  spinners: 2,
-  lanePools: LANE_POOLS,
-  keepLanesChance: 0.4,
-  spells: ['slow', 'heart'],
-};
-
-/** Chapter two: eighths allowed, a few holds and slides, still no rolls or chords, up to five lanes. */
-export const MEDIUM: Profile = {
-  // The second chapter plays the same figures; what it spares the player is rolls, chords and wide fields.
-  maxNotes: [6, 9, 12],
-  maxNotesByLanes: { 2: 8, 3: 10 },
-  density: [4, 5.5, 6.5],
-  densityPeak: DENSITY_LIMIT,
-  gap: null,
-  rolls: false,
-  slides: true,
-  chords: false,
-  extras: false,
-  maxHoldSlots: 16,
-  circleGapSlots: 4,
-  circlesPerWindow: 6,
-  spinners: 1,
-  lanePools: [[3], [3, 4], [4, 5]],
-  keepLanesChance: 0.6,
-  spells: ['heart'],
-};
-
-export const EASY: Profile = {
-  // The first chapter: the figures on beats and eighths (no sixteenths), no slides / rolls / chords / spinners, few circles, 3–4 lanes.
-  maxNotes: [4, 6, 8],
-  maxNotesByLanes: { 2: 6, 3: 8 },
-  density: [3, 4, 5],
-  densityPeak: 5,
-  gap: 2,
-  rolls: false,
-  slides: false,
-  chords: false,
-  extras: false,
-  maxHoldSlots: 16,
-  circleGapSlots: 4,
-  circlesPerWindow: 4,
-  spinners: 0,
-  lanePools: EASY_LANE_POOLS,
-  keepLanesChance: 0.8,
-  spells: ['heart'],
-};
-/** Empty field before a lane-count change: at least a beat, and at least this long in seconds — the field morph (0.35 s) plus a hit window must fit. */
-const SECTION_GAP_SEC = 0.6;
-/** Notes on (near-)silent slots are dropped — a note with nothing to hear feels random. */
-/** Quiet phrases are scaled so their own peaks reach this salience. */
-const BOOST_TARGET = 0.65;
-const MAX_BOOST = 10;
-
-const HOLD_CHANCE = [0.9, 0.7, 0.45] as const; // by intensity
-const HOLD_BUDGET = 3;
-/** Share of long holds (≥ 1 beat) that become slides into a neighbouring lane. */
-const SLIDE_CHANCE = 0.4;
-/** Two-finger rule: at most ONE hold-type note (hold / roll / slide) at a time (`activeHold` below), chords only while nothing is held. */
-const MAX_CHORD = 2;
-/** Streams: the last bar of an intense phrase whose pattern has four audible eighths on the second half ends in a 4-tap roll. */
-const ROLL_STREAM_MIN_STRENGTH = 0.35;
-const ROLL_COOLDOWN_BARS = 2;
-/** A roll never asks for more than this many taps per second (fast songs get fewer taps, or no roll at all). */
-const ROLL_MAX_TAPS_PER_SEC = 6;
-/** Sustained bass-heavy sounds (drops, rumbles) become rolls this often (decided per phrase step, so the figure repeats). */
-const ROLL_ON_BASS_CHANCE = 0.5;
-
-/** A spell note every this many bars, starting at bar 4 (after the intro). */
-const SPELL_EVERY_BARS = 8;
-/** Slow-motion is a tool for the hard songs: only charts rated at least this many stars carry it. */
-const SLOW_FROM_STARS = 9; // with the stream most tracks are ★6–10: slow-motion stays a tool for the very hardest
-
-/** Circle windows: an intense phrase start switches to circles ONLY, on every pattern hit, for 2–4 bars while the pattern stays strong. */
-const CIRCLE_WINDOW_MIN_BARS = 2;
-const CIRCLE_WINDOW_MAX_BARS = 2;
-/** A bar extends the window while its pattern hits keep this share of the first bar's strength. */
-const CIRCLE_KEEP_REL = 0.75;
-/** Songs this hard may open a window at EVERY intense phrase start (others only on 8-bar boundaries). */
-const CIRCLE_EVERY_PHRASE_STARS = 6;
-/** Lane bars between two windows — at most a third of the song is circles. */
-const CIRCLE_COOLDOWN_BARS = 16;
-/** A sound must ring at least a beat to become a hold; shorter sounds are taps. */
-const HOLD_MIN_SLOTS_SOUND = 4;
-/** A hit must start this abruptly (Slot.attack) to count; below it the sound is a swell, not a tap. */
+/** A hit must start this abruptly (`Slot.attack`) to count; below it the sound is a swell, not a tap. */
 const ATTACK_MIN = 0.35;
-/** An instrument "starts a note" at a slot when its onset strength there is at least this. */
-const SOUND_AT = 0.3;
-/** A stem's own onset (on its own scale) counts as a hit of this strength next to the mix's. */
-const STEM_HIT_WEIGHT = 0.8;
-/** Drum-stem onsets (hi-hats the mix hides) join the stream at this strength. */
-const DRUM_HIT_WEIGHT = 0.6;
-/** A chord needs a second instrument hitting at the same moment at least this hard. */
-const CHORD_OTHER = 0.6;
-/** With stems the lane count changes only where the music changes — or after this many phrases without one. */
-const LANES_FALLBACK_PHRASES = 4;
-/** Spinner: a quiet stretch (a breakdown after louder bars) of this many bars becomes a wheel. */
+/** Below this mix strength a slot is silence unless a present stem clearly hits there (an onset maximum this strong, at real energy). */
+const SILENCE = 0.05;
+const SILENCE_STEM = 0.5;
+/** The ear's floor for a tile: the mix reaches this, or a present stem clearly hits — anything placed below it is a "quiet tile" (§B). */
+const QUIET_MIX = 0.3;
+/** A phrase counts as intense for the song energy at this many clear hits per bar — absolute, unlike the relative phrase levels. */
+const INTENSE_CLEAR_PER_BAR = 3;
+/** Quiet phrases (an intro of soft stabs) are lifted so their clear peaks reach 0.5 — at most ×2.5, so pad noise stays below MIN_AUDIBLE. */
+const BOOST_TARGET = 0.5;
+const MAX_BOOST = 2.5;
+/** A present stem's own onset counts as a hit of this strength next to the mix's; drum onsets (hi-hats the mix hides) a little less. */
+const STEM_WEIGHT = 0.8;
+const DRUM_WEIGHT = 0.6;
+/** A bar sounds a figure step when its own audibility reaches this share of the phrase profile there. */
+const SOUND_REL = 0.35;
+/** Figure steps this loud (share of the profile max) are accents — chord candidates at ★5–6. */
+const ACCENT_REL = 0.85;
+/** Holds: a sound must ring at least a beat; a hold never exceeds a bar. */
+const HOLD_MIN_SLOTS = 4;
+const HOLD_MAX_SLOTS = 16;
+/** A ringing instrument starts a note at an onset maximum at least this strong. */
+const HOLD_ONSET = 0.3;
+/** Without stems the mix must report a sustain this long, and the slot must not be bass-heavy. */
+const HOLD_MIX_SUSTAIN = 6;
+const HOLD_MIX_LOW = 0.55;
+/** The other thumb taps at most this many figure tiles per beat under a hold. */
+const HOLD_TAPS_PER_BEAT = 1;
+/** A hold swallows only figure steps quieter than this share of the profile max. */
+const HOLD_SWALLOW_REL = 0.5;
+/** Legato phrases (this share of the figure rings ≥ a beat): long tiles are the honest reading — a third of the figure stays taps, 3 holds per bar. */
+const LEGATO_SHARE = 0.6;
+const HOLDS_PER_BAR = 2;
+const HOLDS_PER_BAR_LEGATO = 3;
+/** After a long note the thumb needs this long (song s) to lift and move — at least two slots. */
+const RELEASE_SEC = 0.25;
+/** A slide is exactly two beats long, from a hold that rings at least that. */
+const SLIDE_SLOTS = 8;
+const SLIDE_CHANCE = 0.3;
+/** Rolls: taps per song-second (6/s real at ×1.2), at least 0.7 s long, on a drum stream — every eighth of the half bar at least ROLL_STREAM_SLOT, the four on average ROLL_STREAM_MIN. */
+const ROLL_TAPS_PER_SEC = 5;
+const ROLL_MIN_SEC = 0.7;
+const ROLL_STREAM_MIN = 0.4;
+const ROLL_STREAM_SLOT = 0.3;
+/** A phrase-end stream needs the drums on all four eighths of the second half in this many of the phrase's bars. */
+const ROLL_STREAM_BARS = 3;
+/** Mid-phrase drum streams roll this often (bars), by policy. */
+const ROLL_MID_EVERY_BARS = { normal: 8, many: PHRASE_BARS };
+/** A chord needs two present instruments hitting at least this hard at the same slot. */
+const CHORD_STEM = 0.6;
+/** Circle windows: the first two bars of a real drop, at least this many bars apart. */
+const CIRCLE_WINDOW_BARS = 2;
+const CIRCLE_MIN_APART_BARS = 16;
+/** Spinner: a breakdown of this many bars (bar energy ≤ SPIN_ENERGY_REL × the median bar, still audible). */
 const SPIN_MIN_BARS = 2;
 const SPIN_MAX_BARS = 4;
-const SPIN_COOLDOWN_BARS = 24;
-/** Empty field before a spinner starts (a beat) and after it ends (the notes' whole fall, 3.5 beats: nothing falls while the wheel is up). */
+/** Empty field before a spinner starts (a beat) and after it ends (the notes' whole fall, 3.5 beats). */
 const SPIN_GAP_BEFORE = 4;
 const SPIN_GAP_AFTER = 14;
+const SPIN_COOLDOWN_BARS = 24;
+const SPIN_ENERGY_REL = 0.6;
+const SPIN_AUDIBLE = 0.1;
+/** Lane-count sections: 8-bar blocks, at least 16 bars each, an empty 0.6 s (≥ a beat) before a change — the field morph plus a hit window must fit. */
+const SECTION_BARS = 8;
+const SECTION_MIN_BARS = 16;
+const SECTION_GAP_SEC = 0.6;
+/** A spell note every this many bars, starting at bar 4 (after the intro); slow-motion only on the hardest charts. */
+const SPELL_EVERY_BARS = 8;
+const SLOW_FROM_STARS = 6;
+/** Shrink and repair iterations: each removes a figure step (a plain tap) from the offending stretch. */
+const MAX_SHRINK = 40;
+const MAX_REPAIR = 40;
+const EPS = 1e-9;
+
+export type RollPolicy = 'none' | 'normal' | 'many';
 
 export interface ComposeOptions {
   seed?: number;
-  /** Difficulty profile; default NORMAL. */
-  profile?: Profile;
-  /**
-   * Per-instrument onset strengths from separated stems. With them every 4-bar phrase follows ONE
-   * instrument — the singer, the hi-hat, the bass line — instead of "whatever is loud".
-   */
+  /** The chapter the song is published in — its ★ range (§B); default `'normal'` (custom songs, packs). */
+  chapter?: Chapter;
+  /** Per-instrument onsets and energies from separated stems: audible hits, ringing sounds, chords come from what really plays. */
   layers?: StemLayers;
-  /** Reports the layer chosen per phrase (tooling / logs). */
-  onLayers?: (layers: (Layer | null)[]) => void;
-  /** Let the lane count follow the music (2–6 lanes). Default on. */
-  laneVariation?: boolean;
+  /** Per-track ★ override (`tracks.json` `chart.stars`), clamped to 1–6. */
+  targetStars?: number;
+  /** Roll policy (`tracks.json` `chart.rolls`): how often a mid-phrase drum stream rolls, or no rolls at all; default `'normal'`. */
+  rolls?: RollPolicy;
+  /** Reports what the composer decided (tooling / logs). */
+  onTrace?: (trace: ComposeTrace) => void;
 }
 
-/** Keep at most `limit(bar)` distinct note times in any 1-second window, dropping the least salient extras. */
-function capDensity(events: Event[], slots: readonly Slot[], limit: (bar: Bar) => number): Event[] {
-  const kept: Event[] = [];
-  const weight = (e: Event) => salience(slots[e.si]) + (e.step % 4 === 0 ? 0.3 : 0) + (e.accent ? 0.2 : 0) + (e.kind ? 1 : 0);
-  for (const ev of events) {
-    kept.push(ev);
-    const t = slots[ev.si].time;
-    const window = kept.filter((e) => slots[e.si].time > t - 1);
-    if (window.length <= limit(ev.bar)) continue;
-    let weakest = window[0];
-    for (const e of window) if (weight(e) < weight(weakest)) weakest = e;
-    kept.splice(kept.indexOf(weakest), 1);
-  }
-  return kept;
+export interface ComposeTrace {
+  target: number;
+  energy: SongEnergy;
+  levels: (0 | 1 | 2)[];
+  /** Sorted figure steps per phrase, after shrinking. */
+  figures: number[][];
+  shrinks: number;
+  repairs: number;
+  /** The check: the smallest ★ the finished chart fits (the chart carries its target when it fits that), and why it misses its target when it does. */
+  stars: number;
+  fails: string[];
 }
 
 export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}): ChartLevel {
   const seed = opts.seed ?? 1337;
-  const P = opts.profile ?? NORMAL;
+  const chapter = opts.chapter ?? 'normal';
+  const rollPolicy = opts.rolls ?? 'normal';
   const random = rng(seed);
   const slots = analysis.slots;
-  if (slots.length < STEPS_PER_BAR) return { stars: 1, notes: [], sections: [[0, LANE_COUNT]] };
-
+  const L = opts.layers;
+  const empty: ChartLevel = { stars: 1, notes: [], sections: [[0, LANE_COUNT]] };
+  if (slots.length < STEPS_PER_BAR) {
+    opts.onTrace?.({
+      target: 1,
+      energy: { clearPerSec: 0, intenseShare: 0, bpmFolded: foldBpm(analysis.bpm) },
+      levels: [],
+      figures: [],
+      shrinks: 0,
+      repairs: 0,
+      stars: 1,
+      fails: [],
+    });
+    return empty;
+  }
   const bars = groupBars(slots);
-  rateIntensity(bars);
-  const SECTION_GAP_SLOTS = Math.max(4, Math.ceil(SECTION_GAP_SEC / (15 / Math.max(60, analysis.bpm))));
-  const energetic = isEnergetic(bars);
-  // Quiet phrases (intros, breakdowns) are boosted so their own peaks still get sparse notes;
-  // true silence stays empty thanks to the absolute floor below.
-  const phrasesRaw: Bar[][] = [];
-  for (let p = 0; p * PHRASE_BARS < bars.length; p++) phrasesRaw.push(bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS));
-  const boost = new Map<number, number>();
-  for (const phrase of phrasesRaw) {
-    const peak = percentile(
-      phrase.flatMap((b) => b.slots.map(salience)),
-      0.9,
-    );
-    const factor = peak >= MIN_RAW_STRENGTH ? Math.min(MAX_BOOST, Math.max(1, BOOST_TARGET / peak)) : 1;
-    for (const b of phrase) boost.set(b.index, factor);
-  }
-  const sal = slots.map((s) => Math.min(1, salience(s) * (boost.get(s.bar) ?? 1)));
-  /** Unscaled hit evidence per slot (the mix, or the followed instrument): silence gate for notes. */
-  const raw = slots.map((s) => s.strength);
+  const phrases: Bar[][] = [];
+  for (let p = 0; p * PHRASE_BARS < bars.length; p++) phrases.push(bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS));
+  const phraseOf = (bar: Bar): number => Math.floor(bar.index / PHRASE_BARS);
+  const phraseOfSlot = (si: number): number => Math.floor(slots[si].bar / PHRASE_BARS);
+  const slotSec = percentile(
+    slots.slice(1).map((s, i) => s.time - slots[i].time),
+    0.5,
+  );
+  const last = slots.length - 1;
+  const timeAt = (si: number): number => (si <= last ? slots[si].time : slots[last].time + (si - last) * slotSec);
+  const barEnd = (bar: Bar): number => bar.start + bar.slots.length;
+  const isPeak = (arr: ArrayLike<number>, i: number): boolean => arr[i] >= (arr[i - 1] ?? 0) && arr[i] >= (arr[i + 1] ?? 0);
+  const releaseSlots = Math.max(2, Math.ceil(RELEASE_SEC / slotSec - EPS));
+  const sectionGapSlots = Math.max(4, Math.ceil(SECTION_GAP_SEC / slotSec - EPS));
+
+  // ---- Pass 1: audibility — what the ear hears at every slot ----
+  const present: Set<Layer>[] = phrases.map((ph) => {
+    if (!L) return new Set<Layer>();
+    const idx: number[] = [];
+    for (const b of ph) for (let k = 0; k < b.slots.length; k++) idx.push(b.start + k);
+    return presentLayers(L, idx);
+  });
+  const p90 = L ? layerP90(L) : null;
   /**
-   * What the ear hears at a slot: the mix's hit, or — with stems — a bass note, a sung syllable, a
-   * lead note or a hi-hat whose soft attack the mix under-reports. Profiles and per-bar checks read this.
+   * The present stems hitting at `gi` (onset maxima): the strongest one's raw onset, its weight for `aud`
+   * (drums a little less), and whether one hits clearly — at least SILENCE_STEM with real energy there.
    */
-  const heard = (gi: number): number => {
-    if (gi < 0 || gi >= sal.length) return 0;
-    // Only an attack is a hit: the end of a swell (a reverse bass peaking before the kick, a rising pad) is not something to tap.
-    if ((slots[gi].attack ?? 1) < ATTACK_MIN) return 0;
-    let v = sal[gi];
-    if (opts.layers) {
-      for (const l of MELODIC_LAYERS) v = Math.max(v, STEM_HIT_WEIGHT * opts.layers.onset[l][gi]);
-      v = Math.max(v, DRUM_HIT_WEIGHT * opts.layers.onset.drums[gi]);
+  const stemAt = (gi: number): { raw: number; weighted: number; clear: boolean } => {
+    const hit = { raw: 0, weighted: 0, clear: false };
+    if (!L || !p90) return hit;
+    for (const l of present[phraseOfSlot(gi)]) {
+      const o = L.onset[l];
+      if (!isPeak(o, gi)) continue;
+      hit.raw = Math.max(hit.raw, o[gi]);
+      hit.weighted = Math.max(hit.weighted, (l === 'drums' ? DRUM_WEIGHT : STEM_WEIGHT) * o[gi]);
+      if (o[gi] >= SILENCE_STEM && L.energy[l][gi] >= PRESENCE_REL * p90[l]) hit.clear = true;
     }
-    return v;
+    return hit;
   };
-  // Tiles sit on what the ear hears: the audible hits of the song itself (the mix), bar by bar.
-  // Separated stems do not move a tile; they say which instrument leads a phrase (lane changes
-  // follow the music), whether a sound rings on (holds) and whether two instruments hit together (chords).
-  const phraseLayer: (Layer | null)[] = [];
-  if (opts.layers) {
-    for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
-      const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
-      const idx: number[] = [];
-      for (const b of phrase) for (let k = 0; k < b.slots.length; k++) idx.push(b.start + k);
-      const prev = phraseLayer[phraseLayer.length - 1] ?? null;
-      let run = 0;
-      for (let q = phraseLayer.length - 1; q >= 0 && phraseLayer[q] === prev; q--) run++;
-      phraseLayer.push(pickLayer(opts.layers, idx, prev, run));
+  /** The ear's floor for a tile, attack or not: the mix reaches QUIET_MIX, or a present stem clearly hits. */
+  const audibleAt = (gi: number): boolean => slots[gi].strength >= QUIET_MIX || stemAt(gi).clear;
+  const aud = new Float32Array(slots.length);
+  const audibility = (): void => {
+    // The peak test is grid-weighted: when a stab and a kick light adjacent slots (an off-grid "ta" 40 ms
+    // before the beat), the beat is the hit and the stab its shoulder — never the other way round.
+    const strength = slots.map((s) => s.strength * (1 + gridBonus(s.step)));
+    for (let gi = 0; gi < slots.length; gi++) {
+      const s = slots[gi];
+      if ((s.attack ?? 1) < ATTACK_MIN) continue;
+      // De-smear: the analysis window lights two slots for one hit; only the louder one is the mix's hit,
+      // the shoulder keeps half so a bar can still "sound" a step that peaks a slot away.
+      const stem = stemAt(gi);
+      aud[gi] = s.strength < SILENCE && !stem.clear ? 0 : Math.max(isPeak(strength, gi) ? s.strength : 0.5 * s.strength, stem.weighted);
     }
-    opts.onLayers?.(phraseLayer);
-  }
-  const layered = !!opts.layers;
-  /**
-   * How long the sound at a slot rings: with stems, the longest ring of any melodic instrument
-   * that starts a note there (a kick under a held synth chord is a tap, the chord's start is the
-   * hold); without stems, the mix's guess.
-   */
-  const floors = new Map<Layer, number>();
-  const sustainAt = (si: number): number => {
-    if (!opts.layers) return slots[si].sustain;
+    // A mild phrase boost: a quiet intro whose peaks are real still gets its figure; pad noise (p90 < 0.2) gets nothing.
+    for (const ph of phrases) {
+      const peaks: number[] = [];
+      for (const b of ph) for (let k = 0; k < b.slots.length; k++) if (aud[b.start + k] > 0 && isPeak(aud, b.start + k)) peaks.push(aud[b.start + k]);
+      if (!peaks.length) continue;
+      const loud = percentile(peaks, 0.9);
+      if (loud < BOOST_TARGET / MAX_BOOST) continue;
+      const factor = Math.min(MAX_BOOST, Math.max(1, BOOST_TARGET / loud));
+      if (factor > 1) for (const b of ph) for (let k = 0; k < b.slots.length; k++) aud[b.start + k] = Math.min(1, aud[b.start + k] * factor);
+    }
+  };
+  audibility();
+
+  // ---- Pass 2: phrase levels and song energy ----
+  const levels = phraseLevels(bars, aud);
+  const energyOf = (): SongEnergy => {
+    let clear = 0;
+    for (let gi = 0; gi < slots.length; gi++) if (aud[gi] >= 0.5 && isPeak(aud, gi)) clear++;
+    return {
+      clearPerSec: clear / Math.max(1, analysis.duration),
+      intenseShare: phrases.filter((ph) => clearHitsPerBar(ph, aud) >= INTENSE_CLEAR_PER_BAR).length / Math.max(1, phrases.length),
+      bpmFolded: foldBpm(analysis.bpm),
+    };
+  };
+  const energy = energyOf();
+  /** A drop opens at phrase `p`: loud after a quieter phrase. Its first two bars may become a circle window — never at the song's first drop. */
+  const dropStart = (p: number): boolean => p > 0 && levels[p] === 2 && levels[p - 1] <= 1;
+  const firstDrop = phrases.findIndex((_, p) => dropStart(p));
+  const circlePhrase = (p: number): boolean => dropStart(p) && p !== firstDrop;
+
+  // ---- Pass 3: target ★ and its budget ----
+  const target = targetStars(energy, chapter, opts.targetStars);
+  const B: Budget = BUDGETS[target as 1 | 2 | 3 | 4 | 5 | 6];
+  const Bq: Budget = BUDGETS[Math.max(1, target - 1) as 1 | 2 | 3 | 4 | 5 | 6];
+  /** Quiet and medium phrases keep the wider grid of ★ and ★−1. */
+  const gapFor = (level: number): number => (level === 2 ? gapSlots(B, slotSec) : Math.max(gapSlots(B, slotSec), gapSlots(Bq, slotSec)));
+  const pair = B.pairMinSec > 0 ? { minSec: B.pairMinSec, slotSec } : null;
+
+  // ---- Pass 4: the figure of every phrase ----
+  const profiles = phrases.map((ph) => {
+    const prof = new Array<number>(STEPS_PER_BAR).fill(0);
+    const cnt = new Array<number>(STEPS_PER_BAR).fill(0);
+    for (const b of ph)
+      for (let k = 0; k < b.slots.length && k < STEPS_PER_BAR; k++) {
+        prof[k] += aud[b.start + k];
+        cnt[k]++;
+      }
+    return prof.map((v, k) => (cnt[k] ? v / cnt[k] : 0));
+  });
+  const figures: Figure[] = [];
+  const figuresOf = (): void => {
+    for (let p = 0; p < phrases.length; p++) {
+      const prev = p > 0 && levels[p - 1] === levels[p] ? figures[p - 1] : undefined;
+      figures.push(figureOf(profiles[p], B.steps[levels[p]], gapFor(levels[p]), pair, prev));
+    }
+  };
+  figuresOf();
+  /** The figure's pickup pair (two steps an eighth apart), if it has one. */
+  const pairOf = (fig: Figure): [number, number] | null => {
+    for (const a of fig.steps) for (const b of fig.steps) if (a < b && stepDist(a, b) === 2) return [a, b];
+    return null;
+  };
+  /** A bar sounds a figure step where its audibility reaches the profile's share — and the slot is audible on its own: no tile below the ear's floor. */
+  const sounds = (fig: Figure, bar: Bar, step: number): boolean =>
+    step < bar.slots.length && aud[bar.start + step] >= Math.max(MIN_AUDIBLE, SOUND_REL * fig.profile[step]) && audibleAt(bar.start + step);
+  const plain = (si: number, bar: Bar, step: number, fig: Figure): Event => ({
+    si,
+    bar,
+    step,
+    size: 1,
+    hold: 0,
+    kind: null,
+    taps: 0,
+    accent: fig.steps.includes(step) && fig.profile[step] >= ACCENT_REL * Math.max(...fig.profile),
+    figure: fig.signature,
+  });
+
+  // ---- Pass 5: every bar repeats its phrase's figure where it sounds ----
+  const placeBars = (): Event[] => {
+    const out: Event[] = [];
+    for (const bar of bars) {
+      const p = phraseOf(bar);
+      const fig = figures[p];
+      const cap = B.maxPerBar[levels[p]];
+      const pr = pairOf(fig);
+      const isPair = (a: number, b: number): boolean => !!pr && pr.includes(a) && pr.includes(b);
+      const minGap = (a: number, b: number): number => (isPair(a, b) ? B.pairMinSec : B.minGapSec);
+      const placed: number[] = [];
+      for (const step of fig.steps) {
+        if (placed.length >= cap) break;
+        if (!sounds(fig, bar, step)) continue;
+        const si = bar.start + step;
+        const t = timeAt(si);
+        if (!placed.every((st) => Math.abs(t - timeAt(bar.start + st)) >= minGap(st, step) - EPS)) continue;
+        // Cross-bar gap on actual times. A downbeat is never suppressed by the previous bar's last
+        // step: that step yields instead (the pickup pair of the same figure may stay).
+        let fits = true;
+        for (let k = out.length - 1; k >= 0; k--) {
+          const prev = out[k];
+          const crossPair = prev.figure === fig.signature && isPair(prev.step, step);
+          if (t - timeAt(prev.si) >= (crossPair ? B.pairMinSec : B.minGapSec) - EPS) break;
+          if (step === 0 && prev.step > 0) {
+            out.splice(k, 1);
+            continue;
+          }
+          fits = false;
+          break;
+        }
+        if (!fits) continue;
+        placed.push(step);
+      }
+      placed.sort((a, b) => a - b);
+      for (const step of placed) out.push(plain(bar.start + step, bar, step, fig));
+    }
+    return out;
+  };
+  let events = placeBars();
+
+  // ---- The rolling windows of the budget, with the rating's own weights (tap 1, chord 1.5, roll 1, circle 1, spinner 0) ----
+  const windows: readonly (readonly [number, number])[] = [
+    [1, B.peak1s],
+    [4, B.peak4s],
+    [8, B.peak8s],
+  ];
+  const weightsOf = (evs: readonly Event[]) => eventWeights(eventsToTuples(evs, slots));
+  const windowsHold = (evs: readonly Event[]): boolean => {
+    const w = weightsOf(evs);
+    return windows.every(([win, limit]) => windowPeak(w, win) <= limit + EPS);
+  };
+  /** The first window over the budget, as a time span. */
+  const violating = (evs: readonly Event[]): { from: number; to: number } | null => {
+    const w = weightsOf(evs);
+    for (const [win, limit] of windows) {
+      let j = 0;
+      let sum = 0;
+      for (let i = 0; i < w.length; i++) {
+        sum += w[i].w;
+        while (w[i].t - w[j].t >= win) sum -= w[j++].w;
+        if (sum / win > limit + EPS) return { from: w[j].t, to: w[i].t };
+      }
+    }
+    return null;
+  };
+
+  // ---- Pass 6: shrink — the phrase with the most events in an overflowing window loses a whole step ----
+  let shrinks = 0;
+  const shrink = (): void => {
+    for (let iter = 0; iter < MAX_SHRINK; iter++) {
+      const v = violating(events);
+      if (!v) break;
+      const count = new Map<number, number>();
+      for (const e of events) {
+        const t = round3(timeAt(e.si));
+        if (t >= v.from && t <= v.to) count.set(phraseOf(e.bar), (count.get(phraseOf(e.bar)) ?? 0) + 1);
+      }
+      let worst = -1;
+      for (const [p, n] of count)
+        if (worst < 0 || n > count.get(worst)! || (n === count.get(worst) && figures[p].steps.length > figures[worst].steps.length)) worst = p;
+      if (worst < 0 || !figures[worst].steps.length) break;
+      figures[worst] = shrinkFigure(figures[worst]);
+      events = placeBars();
+      shrinks++;
+    }
+  };
+  shrink();
+
+  // ---- Pass 7: sections — a lane count per 8-bar block from the budget's pools, at least 16 bars per section ----
+  const sections: SectionTuple[] = [];
+  const lastBarOfSection = new Set<number>();
+  const sectionsOf = (): void => {
+    const blockLevel = (b0: number): 0 | 1 | 2 => {
+      const ps = [Math.floor(b0 / PHRASE_BARS), Math.floor((b0 + PHRASE_BARS) / PHRASE_BARS)].filter((p) => p < levels.length);
+      return Math.round(ps.reduce((a, p) => a + levels[p], 0) / Math.max(1, ps.length)) as 0 | 1 | 2;
+    };
+    // Quiet and medium blocks share one pool: a verse never re-shapes the field, only a drop does (and the
+    // way back out of it), so the whole song is two or three sections, not one per level change.
+    const calm = [...new Set([...B.lanes[0], ...B.lanes[1]])];
+    const poolOf = (level: 0 | 1 | 2): readonly number[] => (level === 2 ? B.lanes[2] : calm);
+    let prevLanes = LANE_COUNT;
+    let sectionLevel: 0 | 1 | 2 = blockLevel(0);
+    let sectionStart = 0;
+    for (let b0 = 0; b0 < bars.length; b0 += SECTION_BARS) {
+      const block = bars.slice(b0, b0 + SECTION_BARS);
+      const level = blockLevel(b0);
+      const pool = poolOf(level);
+      let lanes = prevLanes;
+      if (b0 === 0) lanes = pool.includes(LANE_COUNT) ? LANE_COUNT : pool[Math.floor(random() * pool.length)];
+      // A new section needs a level change the current count cannot serve, a full block, a section
+      // at least 16 bars old — and at least 16 bars left to play it.
+      else if (
+        level !== sectionLevel &&
+        !pool.includes(prevLanes) &&
+        block.length === SECTION_BARS &&
+        b0 - sectionStart >= SECTION_MIN_BARS &&
+        bars.length - b0 >= SECTION_MIN_BARS
+      )
+        lanes = pool[Math.floor(random() * pool.length)];
+      if (b0 === 0 || lanes !== prevLanes) {
+        sectionStart = b0;
+        sectionLevel = level;
+      }
+      for (const b of block) b.lanes = lanes;
+      if (!sections.length || sections[sections.length - 1][1] !== lanes) sections.push([sections.length ? round3(block[0].slots[0].time) : 0, lanes]);
+      prevLanes = lanes;
+    }
+    for (let i = 0; i + 1 < bars.length; i++) if (bars[i + 1].lanes !== bars[i].lanes) lastBarOfSection.add(bars[i].index);
+    events = events.filter((ev) => !(lastBarOfSection.has(ev.bar.index) && ev.step >= STEPS_PER_BAR - sectionGapSlots));
+  };
+  sectionsOf();
+
+  // ---- Pass 8: mechanics, each under its cap and only while the windows hold ----
+  /** How long the sound starting at `si` rings, in slots: a present melodic stem's energy-only ring after its onset maximum; from the mix, its sustain. */
+  const ringOf = (si: number): number => {
+    if (!L || !p90) {
+      const s = slots[si];
+      return s.sustain >= HOLD_MIX_SUSTAIN && s.low < HOLD_MIX_LOW ? s.sustain : 0;
+    }
     let best = 0;
-    for (const layer of MELODIC_LAYERS) {
-      if (opts.layers.onset[layer][si] < SOUND_AT) continue;
-      if (!floors.has(layer)) floors.set(layer, sustainFloor(opts.layers, layer));
-      best = Math.max(best, soundSustain(opts.layers, layer, si, floors.get(layer)));
+    for (const l of MELODIC_LAYERS) {
+      if (!present[phraseOfSlot(si)].has(l)) continue;
+      const o = L.onset[l];
+      if (o[si] < HOLD_ONSET || !isPeak(o, si)) continue;
+      best = Math.max(best, ringAt(L, l, si, p90));
     }
     return best;
   };
-  /** Bars where the music changes (another instrument leads, or the energy level moves): lane counts may change there. */
-  const musicChanges = new Set<number>();
-  if (layered) {
-    let sinceChange = 0;
-    for (let p = 0; p * PHRASE_BARS < bars.length; p++) {
-      const phrase = bars.slice(p * PHRASE_BARS, (p + 1) * PHRASE_BARS);
-      const level = Math.round(phrase.reduce((a, b) => a + b.intensity, 0) / phrase.length);
-      const prev = bars.slice((p - 1) * PHRASE_BARS, p * PHRASE_BARS);
-      const prevLevel = prev.length ? Math.round(prev.reduce((a, b) => a + b.intensity, 0) / prev.length) : level;
-      const changed = p > 0 && (phraseLayer[p] !== phraseLayer[p - 1] || level !== prevLevel);
-      if (p > 0 && (changed || ++sinceChange >= LANES_FALLBACK_PHRASES)) {
-        musicChanges.add(p * PHRASE_BARS);
-        sinceChange = 0;
-      }
-    }
-  }
+  const drumOnset = (gi: number): number => (L && present[phraseOfSlot(gi)].has('drums') ? L.onset.drums[gi] : L ? 0 : slots[gi].strength);
+  const isLong = (e: Event): boolean => e.hold > 0;
+  /** Cut a long note so that it ends a release before `si`; too short → a plain tap. */
+  const endBefore = (e: Event, si: number): void => {
+    if (!isLong(e) || e.kind === 'spin' || e.si + e.hold + releaseSlots <= si) return;
+    e.hold = si - releaseSlots - e.si;
+    if (e.hold < HOLD_MIN_SLOTS || e.kind === 'roll') {
+      e.hold = 0;
+      e.taps = 0;
+      if (e.kind === 'roll' || e.kind === 'slide') e.kind = null;
+    } else if (e.kind === 'slide' && e.hold < SLIDE_SLOTS) e.kind = null;
+  };
+  /** Empty the field on [from, to): notes inside go, long notes reaching in are cut short — except a roll that ends by `keepRollUntil`. */
+  const clearWindow = (from: number, to: number, keepRollUntil = -1): void => {
+    events = events.filter((e) => e.si < from || e.si >= to);
+    for (const e of events) if (e.si < from && !(e.kind === 'roll' && e.si + e.hold <= keepRollUntil)) endBefore(e, from);
+  };
+  const barTapCount = (bar: Bar): number => events.filter((e) => e.bar === bar && !e.kind && !isLong(e)).length;
 
-  // Drum fills are found before the lane plan: a lane change needs two beats of silence, and a
-  // fill lives exactly there — so the plan keeps the lane count across a boundary that ends in a fill.
-  const fills = new Map<number, { from: number; taps: number }>();
-  // Phrase-end turnarounds (an intense last bar with four audible eighths on its second half) are
-  // roll candidates too — see the stream rule below — so they keep the lane count as well.
-  const turnarounds = new Set<number>();
-  for (const bar of bars) {
-    const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
-    const f = detectFill(bar, strength);
-    if (f) fills.set(bar.index, f);
-    if (bar.index % PHRASE_BARS === PHRASE_BARS - 1 && bar.intensity === 2 && [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH))
-      turnarounds.add(bar.index);
-  }
-  const sections = planSections(
-    bars,
-    opts.laneVariation ?? true,
-    random,
-    energetic,
-    new Set([...fills.keys(), ...turnarounds]),
-    P.lanePools,
-    P.keepLanesChance,
-    layered ? musicChanges : undefined,
-  );
-  // The phrase's figure decides the tiles; the profile's ceilings only keep a verse lighter than a drop.
-  const densityLimit = (bar: Bar): number => (bar.intensity === 2 && energetic ? P.densityPeak : P.density[bar.intensity]);
-  const barSeconds = (bar: Bar): number => slots[Math.min(slots.length - 1, bar.start + bar.slots.length)].time - slots[bar.start].time;
-  const barCap = (bar: Bar): number =>
-    Math.max(1, Math.min(P.maxNotes[bar.intensity], P.maxNotesByLanes[bar.lanes] ?? 16, Math.floor(densityLimit(bar) * Math.max(0.5, barSeconds(bar)))));
-
-  // 1. The rhythm profile of every 4-bar phrase → pattern steps (the figure) and accents.
-  const phrases: PhrasePattern[] = phrasesRaw.map((phraseBars, index) => {
-    const profile = new Array<number>(STEPS_PER_BAR).fill(0);
-    const counts = new Array<number>(STEPS_PER_BAR).fill(0);
-    let salMax = 0;
-    for (const b of phraseBars) {
-      for (let k = 0; k < b.slots.length && k < STEPS_PER_BAR; k++) {
-        const v = heard(b.start + k);
-        profile[k] += v;
-        counts[k]++;
-        if (v > salMax) salMax = v;
-      }
-    }
-    for (let k = 0; k < STEPS_PER_BAR; k++) profile[k] = counts[k] ? profile[k] / counts[k] : 0;
-    const intense = phraseBars.reduce((a, b) => a + b.intensity, 0) / phraseBars.length >= 1.5;
-    const cap = Math.max(...phraseBars.map(barCap));
-    const steps = patternSteps(profile, intense, cap, P.gap ?? undefined);
-    const pmax = Math.max(...profile);
-    const accents = new Set(steps.filter((s) => profile[s] >= ACCENT_REL * pmax));
-    return {
-      index,
-      bars: phraseBars,
-      profile,
-      steps,
-      accents,
-      salMax,
-      intense,
+  // 8a. Rolls (★4+): a drum stream over a bar's second half — at every phrase end, mid-phrase by policy, or a drum fill.
+  //     Rolls go first: they claim their half-bars, and the holds are then placed around them (a hold placed
+  //     first would only be cut or dropped by the roll, together with the holds it had kept out).
+  const rolls = (): void => {
+    const perPhrase = rollPolicy === 'none' ? 0 : L ? B.rollsPerPhrase : Math.min(1, B.rollsPerPhrase);
+    if (perPhrase <= 0) return;
+    const used = new Map<number, number>();
+    const STREAM = [8, 10, 12, 14];
+    const streams = (bar: Bar): boolean => {
+      if (bar.slots.length !== STEPS_PER_BAR) return false;
+      const v = STREAM.map((k) => drumOnset(bar.start + k));
+      return v.every((x) => x >= ROLL_STREAM_SLOT) && v.reduce((a, x) => a + x, 0) / v.length >= ROLL_STREAM_MIN;
     };
-  });
-  const phraseOf = (bar: Bar): PhrasePattern => phrases[Math.floor(bar.index / PHRASE_BARS)] ?? phrases[phrases.length - 1];
-  /** Does this bar sound the phrase's pattern step? (Its own hit must be there, not just the phrase average.) */
-  const sounds = (phrase: PhrasePattern, bar: Bar, step: number): boolean => {
-    if (step >= bar.slots.length) return false;
-    const gi = bar.start + step;
-    return (
-      heard(gi) >= Math.max(MIN_NOTE_STRENGTH, SOUND_REL * phrase.profile[step]) && (raw[gi] >= MIN_RAW_STRENGTH || heard(gi) >= STEM_HIT_WEIGHT * SOUND_AT)
-    );
-  };
-  /** Two instruments hitting at once (both clearly): a chord. */
-  const twoSounds = (bar: Bar, step: number): boolean => {
-    if (!opts.layers) return false;
-    const gi = bar.start + step;
-    return LAYERS.filter((l) => opts.layers!.onset[l][gi] >= CHORD_OTHER).length >= 2;
-  };
-
-  // 1a. Notes: every bar repeats the phrase figure where it sounds, plus very strong off-pattern hits.
-  //     Drum fills and phrase-end streams become rolls.
-  const events: Event[] = [];
-  let lastRollBar = -10;
-  for (const bar of bars) {
-    const phrase = phraseOf(bar);
-    const cap = barCap(bar);
-    const strength = bar.slots.map((_s, k) => sal[bar.start + k]);
-    const phraseEnd = bar.index % PHRASE_BARS === PHRASE_BARS - 1;
-    const gap = P.gap ?? (bar.intensity === 2 ? MIN_GAP_INTENSE : MIN_GAP_SLOTS);
-    let rollFrom = -1;
-    let rollTaps = 0;
-    const fill = P.rolls ? fills.get(bar.index) : undefined;
-    if (fill) {
-      rollFrom = fill.from;
-      rollTaps = fill.taps;
-    }
-    // Stream → roll: the last bar of an intense phrase with four audible eighths on the second half
-    // (at least two of them part of the figure) ends in "drum it" — the same four hits, in one lane as a Taiko-style roll. Always
-    // on the phrase end, so the 4-bar figure reads as three bars of pattern + one turnaround.
-    if (
-      P.rolls &&
-      rollFrom < 0 &&
-      phraseEnd &&
-      bar.intensity === 2 &&
-      bar.index - lastRollBar >= ROLL_COOLDOWN_BARS &&
-      [8, 10, 12, 14].every((i) => strength[i] >= ROLL_STREAM_MIN_STRENGTH) &&
-      [8, 10, 12, 14].filter((i) => phrase.steps.includes(i)).length >= 2
-    ) {
-      rollFrom = 8;
-      rollTaps = 4;
-    }
-    if (rollFrom >= 0) {
-      // Physical limit: taps per second. At 200+ BPM a one-beat fill is too short to roll — keep the taps.
-      const endIdx = Math.min(slots.length - 1, bar.start + bar.slots.length);
-      const dur = slots[endIdx].time - bar.slots[rollFrom].time;
-      rollTaps = Math.min(rollTaps, Math.floor(dur * ROLL_MAX_TAPS_PER_SEC));
-      if (rollTaps < ROLL_MIN_TAPS) rollFrom = -1;
-    }
-    if (rollFrom >= 0) lastRollBar = bar.index;
-
-    const placed: number[] = [];
-    const fits = (step: number) => !placed.some((st) => Math.abs(st - step) < gap);
-    for (const step of phrase.steps) {
-      if (placed.length >= cap) break;
-      if (rollFrom >= 0 && step >= rollFrom) continue;
-      if (!sounds(phrase, bar, step) || !fits(step)) continue;
-      placed.push(step);
-    }
-    placed.sort((a, b) => a - b);
-    for (const step of placed)
-      events.push({
-        si: bar.start + step,
-        bar,
-        step,
-        size: 1,
-        hold: 0,
-        kind: null,
-        taps: 0,
-        accent: phrase.accents.has(step) && (!layered || twoSounds(bar, step)),
-      });
-    if (rollFrom >= 0 && rollFrom < bar.slots.length) {
-      const len = bar.slots.length - rollFrom;
-      events.push({
-        si: bar.start + rollFrom,
-        bar,
-        step: rollFrom,
-        size: 1,
-        hold: len,
-        kind: 'roll',
-        taps: Math.max(ROLL_MIN_TAPS, Math.min(rollTaps, len)),
-        accent: false,
-      });
-    }
-  }
-
-  // 1b. Breathing room before every lane-count change, and the rolling per-second cap.
-  const lastBarOfSection = new Set<number>();
-  for (let i = 0; i + 1 < bars.length; i++) if (bars[i + 1].lanes !== bars[i].lanes) lastBarOfSection.add(bars[i].index);
-  let filtered = events.filter((ev) => !(lastBarOfSection.has(ev.bar.index) && ev.step >= STEPS_PER_BAR - SECTION_GAP_SLOTS));
-  filtered = capDensity(filtered, slots, densityLimit);
-  events.length = 0;
-  events.push(...filtered);
-
-  // 1c. Circle windows: when an intense phrase (chorus / drop) starts, its first bars switch to
-  // osu!-style hit circles ONLY — lane notes are cleared there (plus one beat before) — and a
-  // circle sits on EVERY pattern hit of the window, so the figure keeps going as circles. The
-  // window lasts 2–4 bars while the pattern stays strong. Hard songs may open one at every
-  // intense phrase start; easier ones only on 8-bar boundaries. Modes never mix.
-  const provisional = rateStars(eventsToTuples(events, slots), analysis.bpm, sections);
-  const everyPhrase = provisional >= CIRCLE_EVERY_PHRASE_STARS;
-  const patternStrength = (phrase: PhrasePattern, bar: Bar): number => {
-    let sum = 0;
-    for (const s of phrase.steps) if (s < bar.slots.length) sum += sal[bar.start + s];
-    return sum;
-  };
-  /** Empty the field on [from, to): notes inside go, long notes reaching in are cut short. */
-  const clearWindow = (from: number, to: number): void => {
-    for (let i = events.length - 1; i >= 0; i--) {
-      const e = events[i];
-      if (e.si >= from && e.si < to) events.splice(i, 1);
-      else if (e.hold > 0 && e.si < from && e.si + e.hold > from) {
-        e.hold = Math.max(2, from - e.si);
-        if (e.kind === 'roll') {
-          // A shortened roll must not become a tap-rate impossibility: fewer taps, or a plain tap.
-          const dur = slots[Math.min(slots.length - 1, e.si + e.hold)].time - slots[e.si].time;
-          e.taps = Math.min(e.taps, Math.floor(dur * ROLL_MAX_TAPS_PER_SEC));
-          if (e.taps < ROLL_MIN_TAPS) {
-            e.kind = null;
-            e.hold = 0;
-            e.taps = 0;
+    const tryRoll = (bar: Bar, from: number, taps: number): boolean => {
+      const p = phraseOf(bar);
+      if ((used.get(p) ?? 0) >= perPhrase || lastBarOfSection.has(bar.index)) return false;
+      const si = bar.start + from;
+      const dur = timeAt(barEnd(bar)) - timeAt(si);
+      if (dur < ROLL_MIN_SEC) return false;
+      const n = Math.min(taps, ROLL_MAX_TAPS, Math.floor(dur * ROLL_TAPS_PER_SEC));
+      if (n < ROLL_MIN_TAPS) return false;
+      // The roll replaces the figure taps it covers (a silent half-bar stays silent) and gets an eighth of air before
+      // its head; the holds placed after it end a release before the head and start none before its thumb is free.
+      const covered = events.filter((e) => e.si >= si && e.si < barEnd(bar));
+      if (!covered.length) return false;
+      const fig = figures[p];
+      const roll: Event = { ...plain(si, bar, from, fig), hold: barEnd(bar) - si, kind: 'roll', taps: n, accent: false };
+      events = events.filter((e) => !(e.si >= si - 2 && e.si < barEnd(bar)));
+      events.push(roll);
+      events.sort((a, b) => a.si - b.si);
+      used.set(p, (used.get(p) ?? 0) + 1);
+      return true;
+    };
+    phrases.forEach((ph, p) => {
+      const lastBar = ph[ph.length - 1];
+      // (a) A phrase-end stream: the drums play all four eighths of the second half in most of the phrase's bars.
+      if (ph.filter(streams).length >= Math.min(ROLL_STREAM_BARS, ph.length) && streams(lastBar)) tryRoll(lastBar, 8, ROLL_MAX_TAPS);
+      // (b) A mid-phrase drum stream, by policy: one of the phrase's other bars every 4 bars ('many'), the
+      //     second bar every 8 bars in loud phrases ('normal'). Where a circle window may open, the phrase's
+      //     first two bars belong to the circles, so the third bar is tried first.
+      if (L && ph.length === PHRASE_BARS) {
+        const mids =
+          rollPolicy === 'many'
+            ? circlePhrase(p)
+              ? [ph[2], ph[1], ph[0]]
+              : [ph[1], ph[2], ph[0]]
+            : ph[0].index % ROLL_MID_EVERY_BARS.normal === 0 && levels[p] === 2
+              ? [circlePhrase(p) ? ph[2] : ph[1]]
+              : [];
+        const mid = mids.find(streams);
+        if (mid) tryRoll(mid, 8, ROLL_MAX_TAPS);
+      }
+      // (c) A drum fill of two beats on the fine grid.
+      if (L)
+        for (const bar of ph)
+          if (!events.some((e) => e.bar === bar && e.kind === 'roll')) {
+            const fill = present[p].has('drums') ? detectFill(L.onset.drums, bar.start, barEnd(bar)) : null;
+            if (fill) tryRoll(bar, fill.from, fill.taps);
           }
+    });
+  };
+  rolls();
+
+  // 8b. Holds: per phrase, the figure steps that ring longest hold — the same step in every bar; where the
+  //     instrument lands elsewhere in a bar (a pad that rings from beat 4 here and beat 12 there), that bar's
+  //     own longest-ringing figure step may hold instead.
+  const holds = (): void => {
+    events.sort((a, b) => a.si - b.si);
+    const holdSteps: number[][] = [];
+    const legato: boolean[] = [];
+    const minTaps: number[] = [];
+    phrases.forEach((ph, p) => {
+      const fig = figures[p];
+      const ring = new Map<number, number>();
+      for (const k of fig.steps) {
+        const rs: number[] = [];
+        for (const e of events) if (e.bar.index >= ph[0].index && e.bar.index <= ph[ph.length - 1].index && e.step === k && !e.kind) rs.push(ringOf(e.si));
+        if (rs.length) ring.set(k, percentile(rs, 0.5));
+      }
+      const ringing = fig.steps.filter((k) => (ring.get(k) ?? 0) >= HOLD_MIN_SLOTS);
+      ringing.sort((a, b) => ring.get(b)! - ring.get(a)! || a - b);
+      const isLegato = fig.steps.length > 0 && ringing.length >= LEGATO_SHARE * fig.steps.length;
+      holdSteps.push(ringing);
+      legato.push(isLegato);
+      minTaps.push(fig.steps.length < 2 ? 0 : Math.ceil(fig.steps.length / (isLegato ? 3 : 2)));
+    });
+    /** The figure step that rings longest in each bar (at least a beat). */
+    const longestInBar = new Map<number, number>();
+    for (const e of events) {
+      if (e.kind || !figures[phraseOf(e.bar)].steps.includes(e.step)) continue;
+      const r = ringOf(e.si);
+      const cur = longestInBar.get(e.bar.index);
+      if (r >= HOLD_MIN_SLOTS && (cur === undefined || r > ringOf(cur))) longestInBar.set(e.bar.index, e.si);
+    }
+    const max = phrases.map((_, p) => Math.max(...figures[p].profile));
+    const weak = (e: Event): boolean => figures[phraseOf(e.bar)].profile[e.step] < HOLD_SWALLOW_REL * max[phraseOf(e.bar)];
+    const usedPhrase = new Map<number, number>();
+    const usedBar = new Map<number, number>();
+    const swallowed = new Set<Event>();
+    let active: Event | null = null;
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i];
+      if (swallowed.has(ev)) continue;
+      if (active && ev.si >= active.si + active.hold + releaseSlots) active = null;
+      if (isLong(ev)) {
+        active = ev;
+        continue;
+      }
+      if (active || ev.kind) continue;
+      const p = phraseOf(ev.bar);
+      if (!holdSteps[p].includes(ev.step) && longestInBar.get(ev.bar.index) !== ev.si) continue;
+      const perBar = legato[p] ? HOLDS_PER_BAR_LEGATO : HOLDS_PER_BAR;
+      const perPhrase = legato[p] ? HOLDS_PER_BAR_LEGATO * phrases[p].length : B.holdsPerPhrase;
+      if ((usedBar.get(ev.bar.index) ?? 0) >= perBar || (usedPhrase.get(p) ?? 0) >= perPhrase) continue;
+      const ring = ringOf(ev.si);
+      if (ring < HOLD_MIN_SLOTS) continue;
+      let dur = Math.min(ring, HOLD_MAX_SLOTS, barEnd(ev.bar) + 4 - ev.si);
+      if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd(ev.bar) - sectionGapSlots - ev.si);
+      else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd(ev.bar) + STEPS_PER_BAR - sectionGapSlots - ev.si);
+      // One long note at a time: the hold ends a release before the next long note, chord or circle.
+      for (let j = i + 1; j < events.length && events[j].si < ev.si + dur + releaseSlots; j++)
+        if (isLong(events[j]) || events[j].size > 1 || events[j].kind === 'circle' || events[j].kind === 'spin')
+          dur = Math.min(dur, events[j].si - releaseSlots - ev.si);
+      // The other thumb keeps at most one figure tap per beat under the hold; weak steps of this bar are swallowed
+      // while at least half the figure (a third in legato phrases) stays taps. Shorten by beats until that holds.
+      let eat: Event[] = [];
+      for (; dur >= HOLD_MIN_SLOTS; dur -= 4) {
+        const under = events.filter((e) => !swallowed.has(e) && e !== ev && e.si > ev.si && e.si < ev.si + dur && e.kind !== 'circle');
+        let taps = barTapCount(ev.bar) - 1 - [...swallowed].filter((e) => e.bar === ev.bar).length;
+        eat = [];
+        for (const e of under) {
+          if (e.bar !== ev.bar || !weak(e) || isLong(e) || e.kind) continue;
+          if (taps - 1 < minTaps[p]) break;
+          eat.push(e);
+          taps--;
+        }
+        if (under.length - eat.length <= Math.floor(dur / 4) * HOLD_TAPS_PER_BEAT) break;
+      }
+      if (dur < HOLD_MIN_SLOTS) continue;
+      for (const e of eat) swallowed.add(e);
+      ev.hold = dur;
+      active = ev;
+      usedBar.set(ev.bar.index, (usedBar.get(ev.bar.index) ?? 0) + 1);
+      usedPhrase.set(p, (usedPhrase.get(p) ?? 0) + 1);
+    }
+    events = events.filter((e) => !swallowed.has(e));
+    // Pad-only bars (an intro, a breakdown with nothing to tap): one hold per bar from the pad's own attack —
+    // the slot where it is audible (the ear's floor, no attack gate: a pad swells in) and rings a beat or
+    // more, beats first. A bar where the pad never clearly starts a note stays empty.
+    const hasEvents = new Set(events.map((e) => e.bar));
+    for (const bar of bars) {
+      if (hasEvents.has(bar) || figures[phraseOf(bar)].steps.length || lastBarOfSection.has(bar.index)) continue;
+      let head = -1;
+      let best = -Infinity;
+      for (let k = 0; k + HOLD_MIN_SLOTS + releaseSlots <= bar.slots.length; k++) {
+        const si = bar.start + k;
+        if (!audibleAt(si) || ringOf(si) < HOLD_MIN_SLOTS) continue;
+        const score = Math.max(slots[si].strength, stemAt(si).raw) + gridBonus(k);
+        if (score > best) {
+          best = score;
+          head = k;
         }
       }
+      if (head < 0) continue;
+      const fig = figures[phraseOf(bar)];
+      const ev = plain(bar.start + head, bar, head, fig);
+      ev.hold = Math.min(ringOf(ev.si), HOLD_MAX_SLOTS - releaseSlots, bar.slots.length - releaseSlots - head);
+      const trial = [...events, ev].sort((a, b) => a.si - b.si);
+      if (!windowsHold(trial)) continue;
+      events = trial;
+    }
+    events.sort((a, b) => a.si - b.si);
+  };
+  holds();
+
+  // 8c. Slides (★3+): a hold of at least two beats becomes a two-beat slide. The hold already keeps the other
+  //     long notes a release away and admits at most one other-thumb tap per beat under it, which a slide
+  //     (the same thumb, a neighbour lane) carries just as well.
+  const slides = (): void => {
+    if (B.slidesPerPhrase <= 0) return;
+    const used = new Map<number, number>();
+    for (const ev of events) {
+      if (!isLong(ev) || ev.kind || ev.hold < SLIDE_SLOTS || ev.bar.lanes < 3) continue;
+      const p = phraseOf(ev.bar);
+      if ((used.get(p) ?? 0) >= B.slidesPerPhrase) continue;
+      if (decide(seed, p, ev.step, 3) >= SLIDE_CHANCE) continue;
+      ev.kind = 'slide';
+      ev.hold = SLIDE_SLOTS;
+      used.set(p, (used.get(p) ?? 0) + 1);
     }
   };
-  let lastWindowEnd = -100;
-  for (const bar of bars) {
-    if (bar.index % PHRASE_BARS !== 0 || bar.intensity !== 2 || bar.index < 4) continue;
-    if (!everyPhrase && bar.index % (PHRASE_BARS * 2) !== 0) continue;
-    if (bar.index < lastWindowEnd + CIRCLE_COOLDOWN_BARS) continue;
-    const phrase = phraseOf(bar);
-    if (!phrase.steps.length) continue;
-    const head = patternStrength(phrase, bar);
-    if (head <= 0) continue;
-    const windowBars: Bar[] = [];
-    for (let k = 0; k < CIRCLE_WINDOW_MAX_BARS && k < phrase.bars.length; k++) {
-      const wb = phrase.bars[k];
-      if (k >= CIRCLE_WINDOW_MIN_BARS && (wb.intensity !== 2 || patternStrength(phrase, wb) < CIRCLE_KEEP_REL * head)) break;
-      windowBars.push(wb);
-    }
-    if (windowBars.length < CIRCLE_WINDOW_MIN_BARS) continue;
-    const startSi = bar.start;
-    const last = windowBars[windowBars.length - 1];
-    const endSi = last.start + last.slots.length;
-    lastWindowEnd = last.index + 1;
-    clearWindow(startSi - 4, endSi);
-    const hits: { si: number; bar: Bar; score: number }[] = [];
-    for (const wb of windowBars) {
-      // The two-beat silence before a lane-count change holds for circles too.
-      const gapFrom = lastBarOfSection.has(wb.index) ? STEPS_PER_BAR - SECTION_GAP_SLOTS : Infinity;
-      for (const step of phrase.steps) {
-        if (step >= gapFrom || !sounds(phrase, wb, step)) continue;
-        hits.push({
-          si: wb.start + step,
-          bar: wb,
-          score: sal[wb.start + step] + gridBonus(step),
-        });
-      }
-    }
-    hits.sort((a, b) => b.score - a.score || a.si - b.si);
-    const chosen: { si: number; bar: Bar }[] = [];
-    for (const h of hits) {
-      if (chosen.length >= P.circlesPerWindow) break;
-      if (chosen.some((c) => Math.abs(c.si - h.si) < P.circleGapSlots)) continue;
-      chosen.push(h);
-    }
-    for (const c of chosen)
-      events.push({
-        si: c.si,
-        bar: c.bar,
-        step: c.si - c.bar.start,
-        size: 1,
-        hold: 0,
-        kind: 'circle',
-        taps: 0,
-        accent: false,
-      });
-  }
-  // 1c'. Spinners: a breakdown — quiet bars right after louder ones, still audible — or the song's
-  //      last calm bars become a wheel: the field empties and the player circles for the whole
-  //      stretch (osu!-style).
-  let spinners = 0;
-  let lastSpinEnd = -100;
-  const audible = (b: Bar): boolean => b.slots.some((_s, j) => raw[b.start + j] >= MIN_RAW_STRENGTH);
-  for (let i = PHRASE_BARS; i < bars.length && spinners < P.spinners; i++) {
-    if (i < lastSpinEnd + SPIN_COOLDOWN_BARS) continue;
-    const breakdown = bars[i].intensity === 0 && bars[i - 1].intensity > 0;
-    const ending = i >= bars.length - SPIN_MAX_BARS && bars[i - 1].intensity > bars[i].intensity && bars.slice(i).every((b) => b.intensity <= 1);
-    if (!breakdown && !ending) continue;
-    const maxIntensity = ending ? 1 : 0;
-    const run: Bar[] = [];
-    for (let k = i; k < bars.length && run.length < SPIN_MAX_BARS; k++) {
-      const b = bars[k];
-      if (b.intensity > maxIntensity || !audible(b)) break;
-      run.push(b);
-      if (lastBarOfSection.has(b.index)) break; // the wheel does not straddle a lane-count change
-    }
-    if (run.length < SPIN_MIN_BARS) continue;
-    const startSi = run[0].start;
-    const last = run[run.length - 1];
-    const endSi = last.start + last.slots.length - SPIN_GAP_AFTER;
-    if (endSi - startSi < STEPS_PER_BAR) continue;
-    clearWindow(startSi - SPIN_GAP_BEFORE, endSi + SPIN_GAP_AFTER);
-    events.push({ si: startSi, bar: run[0], step: 0, size: 1, hold: endSi - startSi, kind: 'spin', taps: 0, accent: false });
-    lastSpinEnd = last.index;
-    spinners++;
-  }
-  events.sort((a, b) => a.si - b.si);
-  filtered = capDensity(events, slots, densityLimit);
-  events.length = 0;
-  events.push(...filtered);
+  slides();
 
-  // 1d. Spell notes: the first plain lane note of every 8th bar (from bar 4) alternates through the
-  //     profile's spells (slow-motion is swapped for a heart below SLOW_FROM_STARS once the chart is rated).
-  const spells = P.spells;
-  let spellCount = 0;
-  for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
-    const ev = events.find((e) => e.bar.index === b && !e.kind && !e.hold) ?? events.find((e) => e.bar.index === b + 1 && !e.kind && !e.hold);
-    if (!ev) continue;
-    if (!spells.length) break;
-    ev.kind = spells[spellCount++ % spells.length];
-  }
-
-  // 2. Holds on sustained melodic sounds (some become slides), chords on accents — under the
-  //    two-finger rule. Hold / slide / bass-roll decisions are taken per (phrase, step), so the
-  //    same step of the figure gets the same treatment in every bar of the phrase.
-  const holdBudget = new Map<number, number>();
-  let activeHold: Event | null = null;
-  /** A long note must end a beat before the next circle: circle windows are circles only, and the free thumb taps them. */
-  const clampBeforeCircle = (i: number, len: number): number => {
-    const si = events[i].si;
-    for (let j = i + 1; j < events.length && events[j].si < si + len + 4; j++) {
-      if (events[j].kind === 'circle') return Math.min(len, events[j].si - 4 - si);
-    }
-    return len;
-  };
-  for (let i = 0; i < events.length; i++) {
-    const ev = events[i];
-    const slot = slots[ev.si];
-    const gapNext = i + 1 < events.length ? events[i + 1].si - ev.si : Infinity;
-    const gapPrev = i > 0 ? ev.si - events[i - 1].si : Infinity;
-    const intensity = ev.bar.intensity;
-    const phraseIdx = Math.floor(ev.bar.index / PHRASE_BARS);
-
-    if (activeHold && activeHold.si + activeHold.hold <= ev.si) activeHold = null;
-    if (ev.kind === 'roll') {
-      // A drum fill beats a sustained note: a plain hold still ringing is cut short at the roll
-      // (if that leaves it ≥ 2 slots); a roll or slide in progress keeps its thumb, the fill stays taps.
-      if (activeHold && !activeHold.kind && ev.si - activeHold.si >= 2) activeHold.hold = ev.si - activeHold.si;
-      else if (activeHold) {
-        ev.kind = null;
-        ev.hold = 0;
-        ev.taps = 0;
+  // 8d. Chords (★5–6): an accent on a beat where two present instruments hit, an eighth of air on both sides, nothing held, not in the first phrase.
+  const chords = (): void => {
+    if (B.chordsPerBar <= 0 || !L) return;
+    const perBar = new Map<number, number>();
+    const perPhrase = new Map<number, number>();
+    let active: Event | null = null;
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i];
+      if (active && ev.si >= active.si + active.hold + releaseSlots) active = null;
+      if (isLong(ev)) {
+        active = ev;
         continue;
       }
-      activeHold = ev;
-      continue;
-    }
-    if (ev.kind) continue; // spells and circles stay plain taps
-    const budget = holdBudget.get(ev.bar.index) ?? HOLD_BUDGET;
-    const melodicSlot = layered ? sustainAt(ev.si) > 0 : slot.low < 0.55;
-    const sustain = sustainAt(ev.si);
-    const bassLen = clampBeforeCircle(i, Math.min(sustain, gapNext, 8));
-    const bassDur = slots[Math.min(slots.length - 1, ev.si + bassLen)].time - slot.time;
-    const bassTaps = Math.min(ROLL_MAX_TAPS, Math.round(bassLen / 2) + 1, Math.floor(bassDur * ROLL_MAX_TAPS_PER_SEC));
-    if (
-      P.rolls &&
-      !layered &&
-      sustain >= 4 &&
-      !melodicSlot &&
-      intensity >= 1 &&
-      budget > 0 &&
-      !activeHold &&
-      gapNext >= 3 &&
-      bassTaps >= ROLL_MIN_TAPS &&
-      decide(seed, phraseIdx, ev.step, 1) < ROLL_ON_BASS_CHANCE
-    ) {
-      const len = bassLen;
-      ev.kind = 'roll';
-      ev.hold = len;
-      ev.taps = bassTaps;
-      ev.size = 1;
-      holdBudget.set(ev.bar.index, budget - 1);
-      activeHold = ev;
-      continue;
-    }
-    // A sustained sound is a hold — with stems always (the instrument really rings), from the mix by the intensity's chance.
-    if (
-      sustain >= HOLD_MIN_SLOTS_SOUND &&
-      melodicSlot &&
-      budget > 0 &&
-      !activeHold &&
-      (layered || decide(seed, phraseIdx, ev.step, 2) < HOLD_CHANCE[intensity])
-    ) {
-      let dur = clampBeforeCircle(i, Math.min(sustain, gapNext, P.maxHoldSlots));
-      const barEnd = ev.bar.start + ev.bar.slots.length;
-      if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd - SECTION_GAP_SLOTS - ev.si);
-      else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd + STEPS_PER_BAR - SECTION_GAP_SLOTS - ev.si);
-      if (dur >= 2) {
-        ev.hold = dur;
+      if (active || ev.kind || !ev.accent || ev.step % 4 !== 0 || ev.bar.lanes < 3) continue;
+      const p = phraseOf(ev.bar);
+      if (p === 0 || (perBar.get(ev.bar.index) ?? 0) >= B.chordsPerBar || (perPhrase.get(p) ?? 0) >= B.chordsPerPhrase) continue;
+      const prevGap = i > 0 ? ev.si - events[i - 1].si : Infinity;
+      const nextGap = i + 1 < events.length ? events[i + 1].si - ev.si : Infinity;
+      if (prevGap < 2 || nextGap < 2) continue;
+      if ([...present[p]].filter((l) => L.onset[l][ev.si] >= CHORD_STEM).length < 2) continue;
+      ev.size = 2;
+      if (!windowsHold(events)) {
         ev.size = 1;
-        if (P.slides && dur >= 4 && intensity >= 1 && ev.bar.lanes >= 3 && decide(seed, phraseIdx, ev.step, 3) < SLIDE_CHANCE) ev.kind = 'slide';
-        holdBudget.set(ev.bar.index, budget - 1);
-        activeHold = ev;
         continue;
       }
+      perBar.set(ev.bar.index, (perBar.get(ev.bar.index) ?? 0) + 1);
+      perPhrase.set(p, (perPhrase.get(p) ?? 0) + 1);
     }
+  };
+  chords();
 
-    if (activeHold) continue; // two-finger rule: one thumb is busy → an accent lands in an outer lane instead
-    const inStream = gapPrev <= 1 || gapNext <= 1;
-    if (!P.chords || !ev.accent || inStream || ev.bar.lanes < 2) continue;
-    ev.size = MAX_CHORD;
-  }
+  // 8e. Circle windows (★2+, never in chapter one): the first two bars of a loud phrase after a quieter one — a real drop, never the song's
+  //     first — become circles only, on the figure's beat steps, a beat apart.
+  const circleWindows = (): void => {
+    if (B.circleWindows <= 0 || chapter === 'easy') return;
+    let windows = 0;
+    let lastStart = -100;
+    for (let p = 1; p < phrases.length && windows < B.circleWindows; p++) {
+      if (!circlePhrase(p)) continue;
+      const wb = phrases[p].slice(0, CIRCLE_WINDOW_BARS);
+      const fig = figures[p];
+      if (wb.length < CIRCLE_WINDOW_BARS || wb[0].index < lastStart + CIRCLE_MIN_APART_BARS || !fig.steps.length) continue;
+      if (wb.some((b) => lastBarOfSection.has(b.index))) continue;
+      const circles: Event[] = [];
+      for (const b of wb) {
+        const beats = fig.steps.filter((k) => k % 4 === 0 && sounds(fig, b, k)).slice(0, B.circlesPerBar);
+        for (const k of beats) circles.push({ ...plain(b.start + k, b, k, fig), kind: 'circle', accent: false });
+      }
+      if (circles.length < 2) continue;
+      const before = events;
+      // A roll ending at the window start stays (it leads into the drop); no circle while its thumb is still releasing.
+      clearWindow(wb[0].start - 4, barEnd(wb[1]), wb[0].start);
+      const busyUntil = Math.max(-1, ...events.filter((e) => e.kind === 'roll' && e.si < wb[0].start).map((e) => e.si + e.hold + releaseSlots));
+      const trial = [...events, ...circles.filter((c) => c.si >= busyUntil)].sort((a, b) => a.si - b.si);
+      if (!windowsHold(trial)) {
+        events = before;
+        continue;
+      }
+      events = trial;
+      windows++;
+      lastStart = wb[0].index;
+    }
+  };
+  circleWindows();
 
-  // 2a. Nothing else while a slide is in progress — a moving thumb cannot tap.
-  const slideSpans = events.filter((e) => e.kind === 'slide').map((e) => [e.si, e.si + e.hold] as const);
-  const playable = events.filter((e) => e.kind === 'slide' || !slideSpans.some(([a, b]) => e.si > a && e.si < b));
+  // 8f. Spinners (★3+): a breakdown — a quiet run after louder bars whose energy really drops, still audible — or the ending.
+  const spinners = (): void => {
+    if (B.spinners <= 0) return;
+    const medianEnergy = percentile(
+      bars.map((b) => b.energy),
+      0.5,
+    );
+    const audible = (b: Bar): boolean => b.slots.some((s) => s.strength >= SPIN_AUDIBLE);
+    const dropped = (b: Bar): boolean => b.energy <= SPIN_ENERGY_REL * medianEnergy;
+    let spins = 0;
+    let lastEnd = -100;
+    for (let i = PHRASE_BARS; i < bars.length && spins < B.spinners; i++) {
+      if (i < lastEnd + SPIN_COOLDOWN_BARS) continue;
+      const breakdown = bars[i].level === 0 && dropped(bars[i]) && (bars[i - 1].level > 0 || !dropped(bars[i - 1]));
+      const ending = i >= bars.length - SPIN_MAX_BARS && bars[i - 1].level > bars[i].level && bars.slice(i).every((b) => b.level <= 1);
+      if (!breakdown && !ending) continue;
+      const maxLevel = ending ? 1 : 0;
+      const run: Bar[] = [];
+      for (let k = i; k < bars.length && run.length < SPIN_MAX_BARS; k++) {
+        const b = bars[k];
+        if (b.level > maxLevel || !audible(b) || (!ending && !dropped(b)) || (k > i && lastBarOfSection.has(b.index - 1))) break;
+        run.push(b);
+        if (lastBarOfSection.has(b.index)) break;
+      }
+      if (run.length < SPIN_MIN_BARS) continue;
+      const startSi = run[0].start;
+      const endSi = barEnd(run[run.length - 1]) - SPIN_GAP_AFTER;
+      if (endSi - startSi < STEPS_PER_BAR) continue;
+      clearWindow(startSi - SPIN_GAP_BEFORE, endSi + SPIN_GAP_AFTER);
+      events.push({ ...plain(startSi, run[0], 0, figures[phraseOf(run[0])]), hold: endSi - startSi, kind: 'spin', accent: false });
+      events.sort((a, b) => a.si - b.si);
+      lastEnd = run[run.length - 1].index;
+      spins++;
+    }
+  };
+  spinners();
 
-  // 3. Lanes.
-  const notes = assignLanes(playable, slots, random);
-  const stars = rateStars(notes, analysis.bpm, sections);
-  if (stars < SLOW_FROM_STARS) for (const n of notes) if (n[3] === 'slow') n[3] = 'heart';
+  // 8g. Spells: the first plain tap of bars 4, 12, 20 … carries a heart; the hardest charts alternate with slow-motion.
+  const spells = (): void => {
+    const kinds: readonly SpellKind[] = target >= SLOW_FROM_STARS ? ['slow', 'heart'] : ['heart'];
+    let n = 0;
+    for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
+      const ev = events.find((e) => (e.bar.index === b || e.bar.index === b + 1) && !e.kind && !isLong(e) && e.size === 1);
+      if (ev) ev.kind = kinds[n++ % kinds.length];
+    }
+  };
+  spells();
+
+  // ---- Pass 9: lanes ----
+  let notes = assignLanes(events, slots, random, releaseSlots);
+
+  // ---- Pass 10: the rating is a check. When a mechanic pushed a feature over the target, the least
+  //      audible plain tap in the offending stretch goes, until the chart fits. ----
+  const barTimes = bars.map((b) => round3(b.slots[0].time));
+  barTimes.push(round3(timeAt(barEnd(bars[bars.length - 1]))));
+  const audAt = new Map<number, number>();
+  for (let gi = 0; gi < slots.length; gi++) audAt.set(round3(slots[gi].time), aud[gi]);
+  let rating = rateStarsBudget(notes, analysis.bpm, sections, barTimes);
+  let repairs = 0;
+  const check = (): void => {
+    while (rating.stars > target && repairs < MAX_REPAIR) {
+      const times = [...new Set(notes.filter((n) => n[3] !== 'spin').map((n) => n[0]))].sort((a, b) => a - b);
+      let region: [number, number] | null = null;
+      const minGap = B.pairMinSec || B.minGapSec;
+      for (let i = 2; i < times.length && !region; i++)
+        if (times[i] - times[i - 1] < B.minGapSec - EPS && times[i - 1] - times[i - 2] < B.minGapSec - EPS) region = [times[i - 2], times[i]];
+      for (let i = 1; i < times.length && !region; i++) if (times[i] - times[i - 1] < minGap - EPS) region = [times[i - 1], times[i]];
+      if (!region) {
+        // A density window (or a full bar): the densest 4 s.
+        let best = 0;
+        let at = 0;
+        let j = 0;
+        for (let i = 0; i < times.length; i++) {
+          while (times[i] - times[j] >= 4) j++;
+          if (i - j + 1 > best) {
+            best = i - j + 1;
+            at = times[j];
+          }
+        }
+        region = [at, at + 4];
+      }
+      const [from, to] = region;
+      const candidates = notes.filter((n) => n.length === 2 && n[0] >= from && n[0] <= to);
+      if (!candidates.length) break;
+      candidates.sort((a, b) => (audAt.get(a[0]) ?? 0) - (audAt.get(b[0]) ?? 0) || a[0] - b[0]);
+      const gone: NoteTuple = candidates[0];
+      notes = notes.filter((n) => n !== gone);
+      repairs++;
+      rating = rateStarsBudget(notes, analysis.bpm, sections, barTimes);
+    }
+  };
+  check();
+  // The chart's ★ is the target it was composed under whenever it fits that budget — a calm ★4 song
+  // that also fits ★3 is still the ★4 chart the chapter asked for; only a chart the repair could not
+  // bring under its target carries the honest higher rating.
+  const fails = failsAt(rating.features, target);
+  const stars = fails.length ? Math.min(MAX_STARS, rating.stars) : target;
+  opts.onTrace?.({
+    target,
+    energy,
+    levels,
+    figures: figures.map((f) => [...f.steps].sort((a, b) => a - b)),
+    shrinks,
+    repairs,
+    stars: rating.stars,
+    fails,
+  });
   return { stars, notes, sections };
 }

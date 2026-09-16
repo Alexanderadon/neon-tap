@@ -1,11 +1,11 @@
 import type { NoteTuple } from '@/shared/types/chart';
 import type { Slot } from './SongAnalyzer';
-import { round3, type Event, PHRASE_BARS } from './bars';
+import { round3, type Event } from './bars';
 
 /** Circles cycle through this many screen positions across the whole field. */
 const CIRCLE_SPREAD = 8;
-/** After a long note ends, its thumb needs this many slots (an eighth) to lift and move before it plays again. */
-const RELEASE_SLOTS = 2;
+/** Consecutive tiles this close (song seconds) are played by different thumbs and never in one lane (one judgement span). */
+const FAST_SEC = 0.3;
 
 type MotionKind = 'up' | 'down' | 'zigzag' | 'trill';
 
@@ -96,13 +96,21 @@ export function circleSpread(n: number): number[] {
   return out;
 }
 
-export function assignLanes(events: readonly Event[], slots: readonly Slot[], random: () => number): NoteTuple[] {
+/**
+ * Lanes for the composed events. `releaseSlots` is how long a thumb stays busy after its long note
+ * ends (the composer's 0.25 s in slots); consecutive tiles closer than `FAST_SEC` go to the other
+ * thumb and never to the same lane, and a hold that arrives while a thumb is busy is played as a tap.
+ */
+export function assignLanes(events: readonly Event[], slots: readonly Slot[], random: () => number, releaseSlots: number): NoteTuple[] {
   const notes: NoteTuple[] = [];
   const heldUntil = new Array<number>(8).fill(-1);
   /** Consecutive events that used each lane — the "≤ 2 in a row per lane" rule. */
   const laneRun = new Array<number>(8).fill(0);
   let lastLane = -1;
+  /** Every lane of the last event (both lanes of a chord). */
+  let lastEventLanes: number[] = [];
   let lastSi = -100;
+  let lastTime = -100;
   let lastSide = 1;
   let motion: Motion | null = null;
   let motionBar = -1;
@@ -110,23 +118,30 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
   let circleIdx = -1;
   let circleOffset = 0;
   let lastCircleSi = -100;
-  let accentSide = 0;
-  /** The thumb holding a hold / roll / slide, and the slot it is busy until (inclusive). */
+  /**
+   * The thumb holding a hold / roll / slide, and the first slot it is free again — the note's end plus
+   * the release, the same slot the composer lets the next long note start on.
+   */
   let busy: { hand: 0 | 1; until: number } | null = null;
   /**
-   * The figure's lanes, remembered per phrase and step: the same "tu-DUN-dun" lands in the same
+   * The figure's lanes, remembered per figure and step: the same "tu-DUN-dun" lands in the same
    * lanes bar after bar, so the hands learn the pattern instead of chasing a new layout every bar.
    */
   const figureLane = new Map<string, number>();
 
-  for (const ev of events) {
-    const slot = slots[ev.si];
-    const n = ev.bar.lanes;
+  for (const composed of events) {
+    const slot = slots[composed.si];
+    const n = composed.bar.lanes;
     if (n !== lastLanes) {
       heldUntil.fill(-1);
       lastLanes = n;
     }
-    if (busy && busy.until < ev.si) busy = null;
+    if (busy && busy.until <= composed.si) busy = null;
+    // A second long note while a thumb is busy is played as a tap — never dropped.
+    const ev: Event =
+      busy && composed.hold > 0 && composed.kind !== 'spin'
+        ? { ...composed, hold: 0, taps: 0, kind: composed.kind === 'roll' || composed.kind === 'slide' ? null : composed.kind }
+        : composed;
     if (ev.kind === 'spin') {
       // The field is empty around a spinner (the composer cleared it): both thumbs are free after it.
       const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);
@@ -134,14 +149,16 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       heldUntil.fill(-1);
       busy = null;
       lastSi = endIdx;
+      lastTime = slots[endIdx].time;
       continue;
     }
     // Only lanes the free thumb can reach: not held, and not on the busy thumb's half.
     const free: number[] = [];
     for (let l = 0; l < n; l++) if (heldUntil[l] < ev.si && (!busy || handOf(l, n) !== busy.hand)) free.push(l);
     if (!free.length) continue;
-    if (busy && (ev.kind === 'circle' || ev.hold > 0)) continue; // one thumb is busy: no circles, no second long note
+    if (busy && ev.kind === 'circle') continue; // one thumb is busy: no circles (the composer keeps its windows clear)
     const gap = ev.si - lastSi;
+    const gapSec = slot.time - lastTime;
 
     if (ev.bar.index !== motionBar) {
       motionBar = ev.bar.index;
@@ -151,14 +168,18 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
 
     let candidates = free.filter((l) => laneRun[l] < 2);
     if (!candidates.length) candidates = free;
-    // Two thumbs, not one: a sixteenth after the last note (or a long note starting within an eighth of
-    // it) is played by the OTHER hand — one thumb cannot hop lanes in 100 ms. The middle lane of an odd
-    // field belongs to either hand, so it never forces a hop.
+    // Two thumbs, not one: a tile closer than FAST_SEC to the last one (or a long note starting within an
+    // eighth of it) is played by the OTHER hand — one thumb cannot hop lanes that fast. The middle lane of
+    // an odd field belongs to either hand, so it never forces a hop.
     const lastHand = lastLane >= 0 ? handOf(lastLane, n) : -1;
-    if (lastHand !== -1 && (gap <= 1 || (ev.hold > 0 && gap <= 2))) {
+    if (lastHand !== -1 && (gap <= 1 || gapSec < FAST_SEC || (ev.hold > 0 && gap <= 2))) {
       const other = candidates.filter((l) => handOf(l, n) !== lastHand);
       if (other.length) candidates = other;
-      else if (busy && candidates.includes(lastLane)) candidates = [lastLane]; // the free thumb repeats its lane rather than hopping
+    }
+    // Never the same lane twice inside one judgement span: a late tap on the first would miss the second.
+    if (lastEventLanes.length && gapSec < FAST_SEC) {
+      const fresh = candidates.filter((l) => !lastEventLanes.includes(l));
+      if (fresh.length) candidates = fresh;
     }
 
     let lanes: number[];
@@ -178,16 +199,13 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       } else circleIdx++;
       lastCircleSi = ev.si;
       lanes = [spread[(circleOffset + circleIdx) % spread.length]];
-    } else if (ev.accent && ev.hold === 0 && !ev.kind && gap > 1) {
-      // An accent that could not be a chord (a thumb is busy) lands in an outer lane, alternating sides.
-      const outer = [0, n - 1].filter((l) => candidates.includes(l));
-      if (outer.length) {
-        accentSide = 1 - accentSide;
-        lanes = [outer.length === 2 ? outer[accentSide] : outer[0]];
-      } else lanes = [candidates[Math.floor(random() * candidates.length)]];
     } else {
       let lane: number;
-      const memory = figureLane.get(`${Math.floor(ev.bar.index / PHRASE_BARS)}:${ev.step}`);
+      const memory = figureLane.get(`${ev.figure}:${ev.step}`);
+      // A step without a lane yet prefers one no other step of its figure has taken, so the figure spreads over the field.
+      const taken = new Set([...figureLane].filter(([key]) => key.startsWith(`${ev.figure}:`)).map(([, l]) => l));
+      const untaken = candidates.filter((l) => !taken.has(l));
+      if (memory === undefined && untaken.length) candidates = untaken;
       if (memory !== undefined && candidates.includes(memory) && gap > 1) {
         lane = memory;
       } else if (gap <= 1 && motion) {
@@ -210,14 +228,14 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
         lane = choose[Math.floor(random() * choose.length)];
       }
       lanes = [lane];
-      if (ev.hold === 0 && !ev.kind) figureLane.set(`${Math.floor(ev.bar.index / PHRASE_BARS)}:${ev.step}`, lane);
+      if (ev.hold === 0 && !ev.kind) figureLane.set(`${ev.figure}:${ev.step}`, lane);
     }
 
     const time = round3(slot.time);
     for (const lane of lanes) {
       if (ev.hold > 0) {
         const endIdx = Math.min(slots.length - 1, ev.si + ev.hold);
-        const freeAt = endIdx + RELEASE_SLOTS;
+        const freeAt = endIdx + releaseSlots;
         const dur = round3(slots[endIdx].time - slot.time);
         // The thumb that takes a long note: its own half; the middle lane goes to the thumb that just played.
         const h = handOf(lane, n);
@@ -249,8 +267,10 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
     for (let l = 0; l < 8; l++) laneRun[l] = lanes.includes(l) ? laneRun[l] + 1 : 0;
     const primary = lanes[lanes.length - 1];
     lastLane = primary;
+    lastEventLanes = lanes;
     lastSide = (primary + 0.5) / n < 0.5 ? 0 : 1;
     lastSi = ev.si;
+    lastTime = slot.time;
   }
 
   notes.sort((a, b) => a[0] - b[0] || a[1] - b[1]);

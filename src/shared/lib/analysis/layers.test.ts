@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeSong, STEPS_PER_BAR, type Slot, type SongAnalysis } from './SongAnalyzer';
-import { fakeAnalysis, maxFingers, thumbViolations } from './playability';
-import { composeChart } from './ChartGenerator';
-import { layerEnergy, layerStrengths, pickLayer, type Layer, type LayerStrengths, type StemLayers } from './layers';
+import { assertPlayable, fakeAnalysis, maxFingers, thumbViolations } from './playability';
+import { composeChart, type ComposeTrace } from './ChartGenerator';
+import { layerEnergy, layerP90, layerStrengths, presentLayers, ringAt, type Layer, type LayerStrengths, type StemLayers } from './layers';
 import { synthesizeClicks } from './synthetic';
 import type { NoteTuple } from '@/shared/types/chart';
 
@@ -87,63 +87,60 @@ describe('layerEnergy', () => {
   });
 });
 
-describe('pickLayer', () => {
-  it('follows the layer whose peaks carry the most weighted energy, the voice ahead of the hi-hat', () => {
-    const idx = Array.from({ length: 64 }, (_, i) => i);
-    const equal = fakeLayers(4, (_l, _b, step) => (step % 4 === 0 ? 1 : 0));
-    expect(pickLayer(equal, idx)).toBe('vocals');
-    const drums = fakeLayers(4, (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 1 : 0) : step % 8 === 0 ? 0.6 : 0));
-    expect(pickLayer(drums, idx)).toBe('drums');
-    const bass = fakeLayers(4, (l, _b, step) => (l === 'bass' ? (step % 4 === 0 ? 1 : 0) : step % 8 === 0 ? 0.2 : 0));
-    expect(pickLayer(bass, idx)).toBe('bass');
-  });
+describe('presentLayers', () => {
+  const idx = Array.from({ length: 64 }, (_, i) => i);
 
-  it('ignores a layer that is only separation bleed, however sharp its onsets look', () => {
-    const idx = Array.from({ length: 64 }, (_, i) => i);
+  it('lists the layers that really play, never one that is only separation bleed, however sharp its onsets look', () => {
     const sharpBleed = fakeLayers(
       4,
       (l, _b, step) => (l === 'vocals' ? (step % 2 === 0 ? 1 : 0) : step % 4 === 0 ? 1 : 0),
       (l) => (l === 'vocals' ? 0.01 : l === 'drums' ? 1 : 0.5),
     );
-    expect(pickLayer(sharpBleed, idx)).not.toBe('vocals');
-    // A soft but present singer (15 % of the loudest stem) still wins.
+    const present = presentLayers(sharpBleed, idx);
+    expect(present.has('vocals')).toBe(false);
+    expect(present.has('drums') && present.has('bass') && present.has('other')).toBe(true);
+    // A soft but present singer (15 % of the loudest stem) still counts.
     const softSinger = fakeLayers(
       4,
       (_l, _b, step) => (step % 4 === 0 ? 1 : 0),
       (l) => (l === 'vocals' ? 0.2 : 1),
     );
-    expect(pickLayer(softSinger, idx)).toBe('vocals');
+    expect(presentLayers(softSinger, idx).has('vocals')).toBe(true);
   });
 
-  it('judges by the clearest hits, not by busyness, and takes turns between close instruments', () => {
-    const idx = Array.from({ length: 64 }, (_, i) => i);
-    // A hi-hat on every eighth at 0.7 against a melody with two clean hits per bar at 1.0: the melody leads.
-    const busyHats = fakeLayers(
-      4,
-      (l, _b, step) => (l === 'drums' ? (step % 2 === 0 ? 0.7 : 0) : l === 'other' ? (step % 8 === 0 ? 1 : 0) : 0),
-      (l) => (l === 'drums' || l === 'other' ? 1 : 0.01),
-    );
-    expect(pickLayer(busyHats, idx)).toBe('other');
-    // Voice and bass equally clear: the voice wins fresh and keeps the next phrase; after two phrases the bass gets its turn.
-    const duet = fakeLayers(
-      4,
-      (l, _b, step) => (l === 'vocals' || l === 'bass' ? (step % 4 === 0 ? 1 : 0) : 0),
-      (l) => (l === 'vocals' || l === 'bass' ? 1 : 0.01),
-    );
-    expect(pickLayer(duet, idx)).toBe('vocals');
-    expect(pickLayer(duet, idx, 'vocals', 1)).toBe('vocals');
-    expect(pickLayer(duet, idx, 'vocals', 2)).toBe('bass');
-    expect(pickLayer(duet, idx, 'bass', 2)).toBe('vocals');
-  });
-
-  it('returns null when nothing audible plays', () => {
-    const quiet = fakeLayers(4, () => 0.1);
+  it('returns nothing when nothing plays', () => {
     expect(
-      pickLayer(
-        quiet,
-        Array.from({ length: 64 }, (_, i) => i),
-      ),
-    ).toBeNull();
+      presentLayers(
+        fakeLayers(
+          4,
+          () => 0,
+          () => 0,
+        ),
+        idx,
+      ).size,
+    ).toBe(0);
+  });
+});
+
+describe('ringAt', () => {
+  it('rings while the energy keeps half the onset level and a fifth of the loud level, whatever the onsets do', () => {
+    // A pad struck at slot 0 that decays over 6 slots, restruck at 8 with a flat tail to the bar end.
+    const layers = fakeLayers(
+      1,
+      (l, _b, step) => (l === 'other' ? (step === 0 || step === 8 || step === 10 || step === 12 ? 1 : 0) : 0),
+      (l, _b, step) => (l === 'other' ? (step <= 6 ? 1 - step * 0.1 : step >= 8 ? 1 : 0.05) : 0.02),
+    );
+    const p90 = layerP90(layers);
+    expect(ringAt(layers, 'other', 0, p90)).toBe(5); // slot 6 is below half of the onset's energy
+    expect(ringAt(layers, 'other', 8, p90)).toBe(7); // the repeated notes at 10 and 12 do not end the ring
+    expect(ringAt(layers, 'drums', 0, p90)).toBe(0);
+    // A tail below a fifth of the layer's loud level is not a note, however slowly it fades.
+    const faint = fakeLayers(
+      2,
+      (l, _b, step) => (l === 'bass' && step === 0 ? 1 : 0),
+      (l, bar, step) => (l === 'bass' ? (bar === 0 ? (step === 0 ? 1 : 0.9) : 0.15) : 0.02),
+    );
+    expect(ringAt(faint, 'bass', 16, layerP90(faint))).toBe(0);
   });
 });
 
@@ -163,10 +160,17 @@ describe('composeChart with layers', () => {
     expect(withVoice.notes.length).toBeGreaterThan(bars);
   });
 
-  it('reports the layer of every phrase', () => {
-    let seen: (Layer | null)[] = [];
-    composeChart(analysis, { layers: vocal, onLayers: (l) => (seen = l) });
-    expect(seen).toEqual(['vocals', 'vocals', 'vocals', 'vocals']);
+  it('reports what it decided: the target, a level and a figure per phrase, the check', () => {
+    let trace: ComposeTrace | undefined;
+    const c = composeChart(analysis, { layers: vocal, targetStars: 4, onTrace: (t) => (trace = t) });
+    expect(trace!.target).toBe(4);
+    expect(trace!.levels).toHaveLength(bars / 4);
+    expect(trace!.figures).toHaveLength(bars / 4);
+    for (const f of trace!.figures) expect(f).toEqual([...f].sort((a, b) => a - b));
+    // The chart carries the ★ it was composed under when it fits that budget; the check may read lower.
+    expect(trace!.fails).toEqual([]);
+    expect(c.stars).toBe(4);
+    expect(trace!.stars).toBeLessThanOrEqual(c.stars);
   });
 
   it('makes holds only from a ringing melodic instrument: drums alone never hold', () => {
@@ -191,15 +195,16 @@ describe('composeChart with layers', () => {
     const sustained = fakeAnalysis(48, (b, s) => ({ ...drumMix(b, s), sustain: s % 4 === 0 ? 6 : 0, low: 0.2, mid: 0.7 }));
     const follow = (layer: Layer) => fakeLayers(48, (l, bar, step) => (l === layer ? (step % (bar % 8 < 4 ? 2 : 4) === 0 ? 1 : 0.1) : 0.05));
     for (const layer of ['vocals', 'drums', 'bass', 'other'] as const) {
-      const c = composeChart(sustained, { layers: follow(layer) });
+      const c = composeChart(sustained, { layers: follow(layer), targetStars: 5 });
       expect(c.notes.length).toBeGreaterThan(48);
       expect(maxFingers(c.notes)).toBeLessThanOrEqual(2);
       expect(thumbViolations(c.notes, c.sections!)).toEqual([]);
+      expect(() => assertPlayable(c, 0.125)).not.toThrow();
     }
   });
 
-  it('reads every bar on its own: a tile for each audible hit of the song, none where it is silent', () => {
-    // The song hits a different figure in every bar — no 4-bar average could reproduce it.
+  it('reads every bar on its own: one figure per phrase, a tile only where the bar sounds it, nothing invented', () => {
+    // The song hits a different figure in every bar — the phrase figure is their union, thinned to the budget.
     const figure = (bar: number): number[] =>
       [
         [0, 6, 10],
@@ -208,34 +213,39 @@ describe('composeChart with layers', () => {
         [3, 9, 14],
       ][bar % 4];
     const song = fakeAnalysis(bars, (bar, step) => ({ strength: figure(bar).includes(step) ? 1 : 0.02 }));
-    const c = composeChart(song, { laneVariation: false });
+    const c = composeChart(song, { targetStars: 5 });
     const lane = (notes: readonly NoteTuple[]) => notes.filter((n) => !n[3] || n[3] === 'slide' || n[3] === 'circle');
     const byBar = stepsByBar(song, lane(c.notes));
-    let matched = 0;
+    const union = new Set<number>();
+    let played = 0;
     for (let b = 0; b < bars; b++) {
       const got = byBar.get(b) ?? [];
-      // Circle windows and the lane-change gap may drop a hit; nothing may be invented.
+      // Nothing may be invented: every tile is one of this bar's hits.
       for (const s of got) expect(figure(b), `bar ${b} step ${s}`).toContain(s);
-      if (got.length === figure(b).length) matched++;
+      for (const s of got) union.add(s);
+      if (got.length) played++;
     }
-    expect(matched).toBeGreaterThanOrEqual(bars * 0.5);
-    // With stems, every note is a tile too: a singer on 5 and 13 adds those hits, and nothing else moves.
+    expect(played).toBeGreaterThanOrEqual(bars / 2);
+    expect(union.size).toBeLessThanOrEqual(6);
+    // No odd sixteenth right beside an even step: sixteenth pairs do not exist.
+    for (const s of union) if (s % 2 === 1) expect(union.has(s - 1) || union.has(s + 1)).toBe(false);
+    // With stems, a present singer's own notes are hits too: tiles land on 5 and 13 as well, and nothing else moves.
     const sung = fakeLayers(
       bars,
       (l, _b, step) => (l === 'vocals' ? (step === 5 || step === 13 ? 1 : 0) : 0.05),
       (l) => (l === 'vocals' ? 1 : 0.02),
     );
-    const withSinger = lane(composeChart(song, { laneVariation: false, layers: sung }).notes);
+    const withSinger = lane(composeChart(song, { targetStars: 5, layers: sung }).notes);
     let sungTiles = 0;
     for (const n of withSinger) {
       const slot = song.slots.find((s) => Math.abs(s.time - n[0]) < 1e-6)!;
       if (slot.step === 5 || slot.step === 13) sungTiles++;
       else expect(figure(slot.bar), `bar ${slot.bar} step ${slot.step}`).toContain(slot.step);
     }
-    expect(sungTiles).toBeGreaterThan(bars);
+    expect(sungTiles).toBeGreaterThan(0);
   });
 
-  it('holds only where an instrument rings for a beat or more, and never across another audible hit', () => {
+  it('holds where an instrument rings for a beat or more: the ring is energy only, and the other thumb keeps tapping under it', () => {
     // Hits on beats 1 and 3; in even bars the lead rings from beat 1 for six slots, in odd bars it is a short stab.
     const song = fakeAnalysis(bars, (_b, s) => ({ strength: s % 8 === 0 ? 1 : 0.02, sustain: 0 }));
     const ringing = (bar: number, step: number) => bar % 2 === 0 && step <= 6;
@@ -244,58 +254,87 @@ describe('composeChart with layers', () => {
       (l, _b, step) => (l === 'other' ? (step === 0 || step === 8 ? 1 : 0) : 0.05),
       (l, bar, step) => (l === 'other' ? (ringing(bar, step) || step === 8 ? 1 : 0.05) : 0.02),
     );
-    const c = composeChart(song, { layers: lead, laneVariation: false });
-    const holds = c.notes.filter((n) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin' && n[3] !== 'roll');
+    const isHold = (n: NoteTuple) => n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin' && n[3] !== 'roll';
+    const c = composeChart(song, { layers: lead });
+    const holds = c.notes.filter(isHold);
     expect(holds.length).toBeGreaterThanOrEqual(bars / 4);
     for (const h of holds) {
       const slot = song.slots.find((s) => Math.abs(s.time - h[0]) < 1e-6)!;
       expect(slot.step).toBe(0);
       expect(slot.bar % 2).toBe(0);
       expect(h[2]).toBeGreaterThanOrEqual(0.5);
-      expect(h[2]).toBeLessThanOrEqual(0.75 + 1e-6);
+      expect(h[2]).toBeLessThanOrEqual(0.75 + 1e-6); // the energy drops below half at slot 7
     }
-    // The same ringing lead over a kick on every beat: "tu-DUN-dun-dun" — the kicks are taps, the hold stops at the next kick.
+    // The same lead over a kick on every beat: the hold goes on under the kick (one tap a beat on the other thumb) and the kicks stay taps.
     const kicks = fakeAnalysis(bars, (_b, s) => ({ strength: s % 4 === 0 ? 1 : 0.02, sustain: 0 }));
-    const c2 = composeChart(kicks, { layers: lead, laneVariation: false });
-    for (const n of c2.notes) if (n.length >= 3 && (n[2] as number) > 0 && n[3] !== 'spin') expect(n[2]).toBeLessThanOrEqual(0.5 + 1e-6);
-    const beats = c2.notes.filter((n) => !n[3]).map((n) => stepOf(kicks, n[0]));
+    const c2 = composeChart(kicks, { layers: lead });
+    const holds2 = c2.notes.filter(isHold);
+    expect(holds2.length).toBeGreaterThanOrEqual(bars / 4);
+    for (const h of holds2) expect(h[2]).toBeGreaterThanOrEqual(0.5);
+    const beats = c2.notes.filter((n) => !n[3] && !isHold(n)).map((n) => stepOf(kicks, n[0]));
     expect(beats.filter((s) => s === 4 || s === 12).length).toBeGreaterThan(bars);
+    // A flat tail with restrikes in it is one long note: the ring does not break on a new onset, only on an energy drop.
+    const flat = fakeLayers(
+      bars,
+      (l, _b, step) => (l === 'other' ? (step === 0 || step === 8 ? 1 : 0) : 0.05),
+      (l, bar) => (l === 'other' ? (bar % 2 === 0 ? 1 : 0.05) : 0.02),
+    );
+    const c3 = composeChart(song, { layers: flat });
+    const long = c3.notes.filter(isHold);
+    expect(long.length).toBeGreaterThanOrEqual(bars / 4);
+    expect(Math.max(...long.map((n) => n[2] as number))).toBeGreaterThanOrEqual(1.5);
+    expect(thumbViolations(c3.notes, c3.sections!)).toEqual([]);
   });
 
-  it('makes a chord where two instruments hit together on the accent', () => {
+  it('makes a chord only at ★5+, on a beat where two present instruments hit, with air around it, never in the first phrase', () => {
     const together = fakeLayers(
       bars,
       (l, _b, step) => (l === 'vocals' ? (step === 0 ? 1 : step === 4 || step === 8 || step === 12 ? 0.5 : 0) : l === 'drums' ? (step === 0 ? 1 : 0) : 0),
-      (l) => (l === 'vocals' || l === 'drums' ? 1 : 0.02),
+      (l, _b, step) => (l === 'vocals' || l === 'drums' ? (step === 0 ? 1 : step % 4 === 0 ? 0.5 : 0.05) : 0.02), // short notes: nothing rings into a hold
     );
-    const c = composeChart(analysis, { layers: together });
-    const times = c.notes.map((n) => n[0]);
-    const chords = times.filter((x, i) => times.indexOf(x) !== i);
+    // A mix of beats (the eighths are too soft for the figure): four tiles a bar leave room in the windows for a chord.
+    const beats = fakeAnalysis(bars, (_b, step) => ({ strength: step % 4 === 0 ? 1 : 0.3, low: 0.6, mid: 0.3, high: 0.4 }));
+    const c = composeChart(beats, { layers: together, targetStars: 5 });
+    const chords = [...new Set(c.notes.map((n) => n[0]).filter((x, i, all) => all.indexOf(x) !== i))];
     expect(chords.length).toBeGreaterThan(0);
-    for (const x of chords) expect(analysis.slots.find((s) => Math.abs(s.time - x) < 1e-6)!.step).toBe(0);
+    expect(chords.length).toBeLessThanOrEqual(bars - 4);
+    for (const x of chords) {
+      const slot = beats.slots.find((s) => Math.abs(s.time - x) < 1e-6)!;
+      expect(slot.step).toBe(0);
+      expect(slot.bar).toBeGreaterThanOrEqual(4);
+      const neighbours = c.notes.filter((n) => n[0] !== x && Math.abs(n[0] - x) < 0.25 - 1e-6);
+      expect(neighbours).toEqual([]);
+    }
     expect(twoAtOnce(c.notes)).toBe(true);
-    // The same singer alone (no second instrument) gets no chords.
+    // Below ★5 the same music has no chords; nor does the singer alone (no second instrument).
+    expect(twoAtOnce(composeChart(beats, { layers: together, targetStars: 4 }).notes)).toBe(false);
     const alone = fakeLayers(bars, (l, _b, step) => (l === 'vocals' ? (step === 0 ? 1 : step % 4 === 0 ? 0.5 : 0) : 0.05));
-    const t2 = composeChart(analysis, { layers: alone }).notes.map((n) => n[0]);
-    expect(t2.filter((x, i) => t2.indexOf(x) !== i)).toEqual([]);
+    expect(twoAtOnce(composeChart(beats, { layers: alone, targetStars: 5 }).notes)).toBe(false);
   });
 
-  it('changes the lane count only where the music changes', () => {
+  it('changes the lane count only where a drop opens, in 8-bar blocks of at least 16 bars', () => {
     const long = 64;
-    const steady = fakeAnalysis(long, drumMix);
     const oneVoice = fakeLayers(long, (l, _b, step) => (l === 'vocals' ? (step % 4 === 0 ? 1 : 0) : 0.05));
-    const c1 = composeChart(steady, { layers: oneVoice });
-    // Nothing changes in the music: only the every-16-bars fallback may switch lanes.
-    for (const [time] of c1.sections!.slice(1)) expect(Math.round(time / 2) % 16).toBe(0);
-    // The drums take over at bar 12 (phrase 3): the lane count changes right there.
-    const handOver = fakeLayers(long, (l, bar, step) =>
-      bar >= 12 && bar < 28 ? (l === 'drums' ? (step % 2 === 0 ? 1 : 0) : 0.05) : l === 'vocals' ? (step % 4 === 0 ? 1 : 0) : 0.05,
-    );
-    const c2 = composeChart(steady, { layers: handOver, seed: 3 });
-    expect(c2.sections!.some(([time]) => Math.abs(time - 24) < 1e-6)).toBe(true);
-    // Every other boundary is a music change (bars 12, 28) or the fallback 16 bars after the previous one.
+    // Nothing changes in the music: one section.
+    const steady = fakeAnalysis(long, drumMix);
+    expect(composeChart(steady, { layers: oneVoice, targetStars: 5 }).sections).toEqual([[0, 5]]);
+    // A quiet intro, the drop at bar 16, a quiet verse in bars 32–47, the drop again: the field opens to five
+    // lanes at the drop and keeps them — a verse never re-shapes the field, so the whole song is two sections.
+    const verse = fakeAnalysis(long, (bar, step) => {
+      const s = drumMix(bar, step);
+      return bar < 16 || (bar >= 32 && bar < 48) ? { ...s, strength: (s.strength ?? 0) * 0.3 } : s;
+    });
+    let trace: ComposeTrace | undefined;
+    const c2 = composeChart(verse, { layers: oneVoice, targetStars: 5, seed: 3, onTrace: (t) => (trace = t) });
     const barsAt = c2.sections!.map(([time]) => Math.round(time / 2));
-    for (let i = 1; i < barsAt.length; i++) expect([12, 28].includes(barsAt[i]) || barsAt[i] === barsAt[i - 1] + 16, `boundary at bar ${barsAt[i]}`).toBe(true);
+    expect(barsAt).toEqual([0, 16]);
+    expect(c2.sections!.map(([, lanes]) => lanes)).toEqual([4, 5]);
+    expect(trace!.levels.slice(0, 4).every((l) => l < 2)).toBe(true);
+    expect(trace!.levels.slice(8, 12).every((l) => l < 2)).toBe(true);
+    for (let i = 1; i < barsAt.length; i++) {
+      expect(barsAt[i] % 8).toBe(0);
+      expect(barsAt[i] - barsAt[i - 1]).toBeGreaterThanOrEqual(16);
+    }
   });
 
   it('is deterministic and still on the grid', () => {
