@@ -1,47 +1,11 @@
 [
   {
-    "id": "midnight-drive",
-    "title": "Midnight Drive",
-    "artist": "congusbongus",
-    "genre": "synthwave",
-    "raw": "midnight-drive.ogg",
-    "sourceUrl": "https://opengameart.org/content/midnight-drive",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "neon-hyperdrive",
-    "title": "Neon Hyperdrive",
-    "artist": "adiutorium",
-    "genre": "techno",
-    "raw": "neon-hyperdrive.mp3",
-    "sourceUrl": "https://opengameart.org/content/neon-hyperdrive",
-    "license": "CC0 1.0"
-  },
-  {
     "id": "robotic-city",
     "title": "Robotic City",
     "artist": "Section31",
     "genre": "techno",
     "raw": "robotic-city.ogg",
     "sourceUrl": "https://opengameart.org/content/robotic-city",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "night-prowler",
-    "title": "Night Prowler",
-    "artist": "Section31",
-    "genre": "techno",
-    "raw": "night-prowler.ogg",
-    "sourceUrl": "https://opengameart.org/content/night-prowler",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "black-diamond",
-    "title": "Black Diamond",
-    "artist": "joth",
-    "genre": "dnb",
-    "raw": "black-diamond.mp3",
-    "sourceUrl": "https://opengameart.org/content/black-diamond",
     "license": "CC0 1.0"
   },
   {
@@ -73,24 +37,6 @@
     "license": "CC0 1.0"
   },
   {
-    "id": "mindstream",
-    "title": "MindStream",
-    "artist": "DST",
-    "genre": "ambient",
-    "raw": "mindstream.mp3",
-    "sourceUrl": "https://opengameart.org/content/mindstream",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "lunar-arrow",
-    "title": "Lunar Arrow",
-    "artist": "mmry",
-    "genre": "electronic",
-    "raw": "lunar-arrow.mp3",
-    "sourceUrl": "https://opengameart.org/content/lunar-arrow",
-    "license": "CC0 1.0"
-  },
-  {
     "id": "the-lab",
     "title": "The Lab",
     "artist": "tricksntraps",
@@ -109,57 +55,12 @@
     "license": "CC0 1.0"
   },
   {
-    "id": "achilles",
-    "title": "Achilles",
-    "artist": "zane-little-music",
-    "genre": "rock",
-    "raw": "achilles.mp3",
-    "sourceUrl": "https://opengameart.org/content/achilles",
-    "license": "CC0 1.0"
-  },
-  {
     "id": "silver-bullet",
     "title": "Silver Bullet",
     "artist": "vitalezzz",
     "genre": "rock",
     "raw": "silver-bullet.mp3",
     "sourceUrl": "https://opengameart.org/content/silver-bullet",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "apparatus-overlord",
-    "title": "Apparatus Overlord",
-    "artist": "vitalezzz",
-    "genre": "electronic",
-    "raw": "apparatus-overlord.mp3",
-    "sourceUrl": "https://opengameart.org/content/apparatus-overlord",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "shortcuts",
-    "title": "Shortcuts",
-    "artist": "zane-little-music",
-    "genre": "dnb",
-    "raw": "shortcuts.mp3",
-    "sourceUrl": "https://opengameart.org/content/shortcuts",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "technological-menace",
-    "title": "Technological Menace",
-    "artist": "umplix",
-    "genre": "electronic",
-    "raw": "technological-menace.mp3",
-    "sourceUrl": "https://opengameart.org/content/technological-menace",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "hot-roadway",
-    "title": "Hot Roadway",
-    "artist": "mintodog",
-    "genre": "techno",
-    "raw": "hot-roadway.ogg",
-    "sourceUrl": "https://opengameart.org/content/hot-roadway",
     "license": "CC0 1.0"
   },
   {
@@ -236,15 +137,6 @@
     "license": "CC0 1.0"
   },
   {
-    "id": "final-hour",
-    "title": "Final Hour",
-    "artist": "isaiah658",
-    "genre": "dnb",
-    "raw": "final-hour.mp3",
-    "sourceUrl": "https://opengameart.org/content/final-hour",
-    "license": "CC0 1.0"
-  },
-  {
     "id": "up-in-the-sky",
     "title": "Up in the Sky",
     "artist": "Memoraphile (You're Perfect Studio)",
@@ -260,15 +152,6 @@
     "genre": "acoustic",
     "raw": "wasteland-caravan.mp3",
     "sourceUrl": "https://opengameart.org/content/wasteland-caravan",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "growing-village",
-    "title": "Growing Village",
-    "artist": "earlbeat",
-    "genre": "world",
-    "raw": "growing-village.mp3",
-    "sourceUrl": "https://opengameart.org/content/growing-village",
     "license": "CC0 1.0"
   },
   {
@@ -317,17 +200,6 @@
     "raw": "bouncer.mp3",
     "sourceUrl": "https://opengameart.org/content/bouncer-0",
     "license": "CC0 1.0"
-  },
-  {
-    "id": "funky-house",
-    "loops": 2,
-    "title": "Funky House",
-    "artist": "Of Far Different Nature",
-    "genre": "house",
-    "raw": "funky-house.mp3",
-    "sourceUrl": "https://opengameart.org/content/funky-house",
-    "license": "CC0 1.0",
-    "premium": true
   },
   {
     "id": "vengeance-electro",
@@ -386,24 +258,6 @@
     "license": "CC0 1.0"
   },
   {
-    "id": "delta",
-    "title": "DELTA",
-    "artist": "tomcat",
-    "genre": "breakbeat",
-    "raw": "delta.ogg",
-    "sourceUrl": "https://opengameart.org/content/delta",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "hard-boss-battle-1",
-    "title": "Hard Boss Battle 1",
-    "artist": "MintoDog",
-    "genre": "hardcore",
-    "raw": "hard-boss-battle-1.mp3",
-    "sourceUrl": "https://opengameart.org/content/hard-boss-battle-1",
-    "license": "CC0 1.0"
-  },
-  {
     "id": "hard-boss-battle-2",
     "title": "Hard Boss Battle 2",
     "artist": "MintoDog",
@@ -419,15 +273,6 @@
     "genre": "synthpop",
     "raw": "bright-stars.mp3",
     "sourceUrl": "https://opengameart.org/content/bright-stars",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "happier-tune",
-    "title": "Happier Tune",
-    "artist": "Gena Sealov",
-    "genre": "synthpop",
-    "raw": "happier-tune.mp3",
-    "sourceUrl": "https://opengameart.org/content/happier-tune",
     "license": "CC0 1.0"
   },
   {
@@ -516,15 +361,6 @@
     "genre": "lofi",
     "raw": "chill-lofi-inspired.mp3",
     "sourceUrl": "https://opengameart.org/content/chill-lofi-inspired",
-    "license": "CC0 1.0"
-  },
-  {
-    "id": "slow-stride",
-    "title": "Slow Stride",
-    "artist": "isaiah658",
-    "genre": "lofi",
-    "raw": "slow-stride.ogg",
-    "sourceUrl": "https://opengameart.org/content/slow-stride",
     "license": "CC0 1.0"
   },
   {
