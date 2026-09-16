@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 
 interface Props {
   /** `public/offers/<name>.webp` — the real illustration when it exists. */
-  name: 'crystals' | 'limited' | 'music';
+  name: string;
   /** The procedural placeholder drawn until (and under) the image. */
   placeholder: ReactNode;
 }
