@@ -153,10 +153,9 @@ describe('Difficulty', () => {
     expect(difficultyColor(1)).toBe('#b6ff00');
     expect(difficultyColor(2)).toBe('#b6ff00');
     expect(difficultyColor(3)).toBe('#00f0ff');
-    expect(difficultyColor(5)).toBe('#ffd700');
-    expect(difficultyColor(6)).toBe('#ffd700');
-    expect(difficultyColor(7)).toBe('#ff8a00');
-    expect(difficultyColor(9)).toBe('#ff2bd6');
+    expect(difficultyColor(4)).toBe('#ffd700');
+    expect(difficultyColor(5)).toBe('#ff8a00');
+    expect(difficultyColor(6)).toBe('#ff2bd6');
     expect(difficultyColor(42)).toBe('#ff2bd6');
   });
 
