@@ -12,7 +12,7 @@ import { myDuels } from '@/entities/duel';
 import type { OfferKind } from '@/entities/offers';
 import { TopBar, type CounterTick } from '@/widgets/top-bar';
 import { OfferPopups, type OfferWalletTick } from '@/widgets/offer-popups';
-import { TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, usePlayTrack } from '@/widgets/track-list';
+import { TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, useDeckRadio, usePlayTrack } from '@/widgets/track-list';
 import { GoalsPanel, goalsGotLine } from '@/widgets/goals-panel';
 import { DuelList, useMyDuels } from '@/widgets/duel-list';
 import { HistoryPanel } from '@/widgets/history-panel';
@@ -53,6 +53,8 @@ export function MenuPage() {
   const { busy, play } = usePlayTrack();
   const { track, lock } = focusedTrack(state, index);
   const badge = affordableCount(state);
+  // The radio: the focused song, quietly, while the menu is up and no song is being started.
+  useDeckRadio(track.id, busy === null);
 
   // Offers: an explicit ask from the wallet's «+», and the wallet tick after a purchase (the crystals fly into the chip).
   const [offer, setOffer] = useState<OfferKind | null>(null);
@@ -75,7 +77,8 @@ export function MenuPage() {
     setView(v);
   }, []);
   const back = useCallback(() => setView((v) => (v === 'goals' || v === 'duels' ? 'profile' : 'deck')), []);
-  useSwipeBack(back, view !== 'deck');
+  // Asleep while a dialog is up: its own back gesture closes it, and must not also leave the view.
+  useSwipeBack(back, view !== 'deck' && !askName && !askAvatar && offer === null);
   useEffect(() => {
     if (view === 'deck') return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && back();

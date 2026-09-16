@@ -64,7 +64,7 @@ export function ShopCard({ item, balance, previewing, justBought, onPreview, onO
           {!owned && (
             <span className={short ? 'scard-price scard-price-no' : 'scard-price'}>
               <span className="scard-price-icon">
-                <CrystalIcon size={20} />
+                <CrystalIcon size={16} />
               </span>
               {price}
             </span>
@@ -79,11 +79,11 @@ export function ShopCard({ item, balance, previewing, justBought, onPreview, onO
         aria-pressed={previewing}
       >
         {previewing ? (
-          <RingCountdown size={40} seconds={PREVIEW_SEC} stroke={2} track={false}>
-            <Icon name="stop" size={16} />
+          <RingCountdown size={32} seconds={PREVIEW_SEC} stroke={2} track={false}>
+            <Icon name="stop" size={14} />
           </RingCountdown>
         ) : (
-          <Icon name="play" size={24} />
+          <Icon name="play" size={18} />
         )}
       </button>
     </article>

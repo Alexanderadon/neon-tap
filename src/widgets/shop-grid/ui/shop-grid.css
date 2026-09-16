@@ -24,12 +24,12 @@
 }
 
 /* ---- sub-header: the «МАГАЗИН» tag + one 13 px grey line; centred variant «Funky House · Премиум» ---- */
-/* ---- list: cards with an 8 px step; the last 28 px fade out (the peeking card is the «scroll» hint) ---- */
+/* ---- list: cards with a 6 px step; the last 28 px fade out (the peeking card is the «scroll» hint) ---- */
 .shop-list {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
   min-height: 0;
   margin-top: 32px;
@@ -59,12 +59,12 @@
   color: var(--w80);
 }
 
-/* ---- ShopCard 335 × 96, r 24: the deck card on its side ---- */
+/* ---- ShopCard 335 × 72, r 18: the deck card on its side, compact (the owner: smaller type, tighter) ---- */
 .scard {
   position: relative;
   flex: none;
-  height: 96px;
-  border-radius: var(--r-24);
+  height: 72px;
+  border-radius: 18px;
   overflow: hidden;
   background: var(--panel);
   box-shadow:
@@ -74,13 +74,13 @@
     box-shadow 0.3s ease,
     opacity 0.3s ease;
 }
-/* The cover 192 (slice), raised 48 so its middle shows, pinned to the left edge. */
+/* The cover 144 (slice), raised 36 so its middle shows, pinned to the left edge. */
 .scard-art {
   position: absolute;
-  top: -48px;
+  top: -36px;
   left: 0;
-  width: 192px;
-  height: 192px;
+  width: 144px;
+  height: 144px;
 }
 .scard-art > svg {
   display: block;
@@ -92,7 +92,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(5, 6, 10, 0) 40px, rgba(5, 6, 10, 0.85) 96px, var(--panel) 168px);
+  background: linear-gradient(90deg, rgba(5, 6, 10, 0) 30px, rgba(5, 6, 10, 0.85) 72px, var(--panel) 126px);
   pointer-events: none;
   z-index: 1;
 }
@@ -105,7 +105,7 @@
     0 4px 0 #000,
     0 0 32px rgba(0, 240, 255, 0.25);
 }
-/* The whole card is the tap (buy / open); the text block starts at x 72, 16 from the top. */
+/* The whole card is the tap (buy / open); the text block starts at x 60, 10 from the top. */
 .scard-body {
   position: absolute;
   inset: 0;
@@ -113,7 +113,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 16px 8px 0 72px;
+  padding: 10px 8px 0 60px;
   margin: 0;
   border: 0;
   background: none;
@@ -123,7 +123,7 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  border-radius: var(--r-24);
+  border-radius: 18px;
 }
 .scard-body:focus-visible {
   outline: 2px solid var(--cyan);
@@ -131,31 +131,42 @@
 }
 .scard-title {
   display: block;
-  height: 24px;
-  margin: 0 0 8px;
+  height: 20px;
+  margin: 0 0 4px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font: var(--t-20);
+  font: 700 15px/20px var(--font);
   letter-spacing: var(--track-title);
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
 }
 .scard-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 32px;
+  gap: 6px;
+  height: 26px;
+}
+/* Chips shrink with the card: 26 tall, 13 type, icon 14. */
+.scard-meta .chip {
+  height: 26px;
+  padding: 0 9px;
+  gap: 5px;
+  font: 700 13px/16px var(--font);
+}
+.scard-meta .chip > svg {
+  width: 14px;
+  height: 14px;
 }
 .scard-meta > * {
   flex: none;
 }
-/* The price = a coin's value (crystal 20 + 20/700) in the rank letter's slot; magenta when short, the crystal stays cyan. */
+/* The price = a coin's value (crystal 16 + 16/700) in the rank letter's slot; magenta when short, the crystal stays cyan. */
 .scard-price {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 32px;
+  height: 26px;
   margin-left: auto;
-  font: 700 20px/32px var(--font);
+  font: 700 16px/26px var(--font);
   letter-spacing: var(--track-title);
   color: var(--cyan);
   transition: color 0.35s ease;
@@ -168,20 +179,20 @@
   color: var(--cyan);
 }
 .scard-price-icon > svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   overflow: visible;
 }
-/* PreviewDisc 40 — the primary button's disc on the cover (left 24, top 28): triangle 24; playing = stop 16 + the 5-second ring. */
+/* PreviewDisc 32 — the primary button's disc on the cover (left 18, top 20): triangle 18; playing = stop 14 + the 5-second ring. */
 .scard-pv {
   position: absolute;
-  left: 24px;
-  top: 28px;
+  left: 18px;
+  top: 20px;
   z-index: 3;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   margin: 0;
   border: 0;
@@ -203,12 +214,12 @@
   outline-offset: 2px;
 }
 .scard-pv > svg {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 .scard-pv .ring {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
 }
 .scard-pv .ring-center {
   color: var(--cyan);
