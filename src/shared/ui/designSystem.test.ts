@@ -160,10 +160,10 @@ describe('Difficulty', () => {
   });
 
   it('is the dark chip with a coloured flame and the number, without CSS filters', () => {
-    const out = html(createElement(Difficulty, { stars: 7 }));
+    const out = html(createElement(Difficulty, { stars: 5 }));
     expect(out).toContain('class="chip chip-dark chip-flame"');
     expect(out).toContain('color:#ff8a00');
-    expect(out).toContain('<span class="chip-text">7</span>');
+    expect(out).toContain('<span class="chip-text">5</span>');
     expect(out).not.toContain('filter');
   });
 });
