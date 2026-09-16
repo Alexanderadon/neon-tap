@@ -134,6 +134,13 @@
   height: 100%;
   display: block;
 }
+/* A picture cover is made for the card (292 × 420 with blurred margins): edge to edge, nothing cropped. */
+.deck-art-picture {
+  left: 0;
+  right: 0;
+  aspect-ratio: auto;
+  transform: none;
+}
 /* Legibility veil: the lower part darkens under the title; a locked card is dimmer all over (in colour, no grayscale). */
 .deck-card::after {
   content: '';

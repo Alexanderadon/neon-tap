@@ -1,0 +1,10 @@
+/* TrackCover as a picture: fills its box like the SVG does, cropping to the box's shape (square thumbnails
+   show the picture, the portrait deck card shows the picture with its blurred margins). */
+.track-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}

@@ -57,7 +57,8 @@
   overflow: hidden;
   box-shadow: 0 0 0 2px rgba(5, 6, 10, 0.35);
 }
-.duel-thumb > svg {
+.duel-thumb > svg,
+.duel-thumb > img {
   position: absolute;
   inset: 0;
   width: 100%;

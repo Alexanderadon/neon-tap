@@ -3,7 +3,7 @@ import { dict, fmt } from '@/shared/i18n';
 import { sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
-import { CATALOG, TrackCover, chapterAt, chapterTitle, coverSpec, type TrackMeta } from '@/entities/track';
+import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, coverSpec, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { writeDeckIndex } from '../model/deckPosition';
@@ -243,7 +243,7 @@ function DeckCard({ track, mount, current, lock, daily, best, rank, details, onT
   // Position, scale and opacity are written by the motion loop (see paint in TrackDeck).
   return (
     <article ref={mount} className={cls} style={style} aria-hidden={current ? undefined : true} onClick={onTap}>
-      <div className="deck-art" aria-hidden="true">
+      <div className={coverImage(track.id) ? 'deck-art deck-art-picture' : 'deck-art'} aria-hidden="true">
         <TrackCover id={track.id} genre={track.genre} />
       </div>
       <div className="deck-tags" aria-hidden={details ? undefined : true}>

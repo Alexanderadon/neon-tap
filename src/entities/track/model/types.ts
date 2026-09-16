@@ -12,6 +12,8 @@ export interface TrackMeta {
   premium?: boolean;
   /** Named pack (`rock`) — a chapter of its own after the numbered ones; absent for the main catalog. */
   pack?: string;
+  /** Picture cover, a path under `public/` (`covers/<id>.webp`); absent → procedural art. */
+  cover?: string;
   bpm: number;
   duration: number;
   /** Difficulty of the song's chart, 1–10. */

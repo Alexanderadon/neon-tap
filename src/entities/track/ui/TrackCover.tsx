@@ -1,6 +1,7 @@
 import { createElement, useMemo, type CSSProperties, type ReactElement } from 'react';
 import type { Genre } from '@/shared/types/chart';
-import { coverSpec, type CoverShape } from '../model/cover';
+import { coverImage, coverSpec, type CoverShape } from '../model/cover';
+import './track-cover.css';
 
 export interface TrackCoverProps {
   /** Track id — seeds the deterministic art. */
@@ -13,13 +14,30 @@ export interface TrackCoverProps {
 }
 
 /**
- * Procedural 1:1 cover — inline SVG, no assets. Same `id` + `genre` → identical markup,
- * so it can be shown on the track card and on the result screen. Renders fine from 48 px to 240 px.
+ * The track's cover. With a picture in the catalog (`cover`, made by `npm run assets:covers`) it is
+ * that picture, cropped to the box (`object-fit: cover`: a square box shows the picture, the portrait
+ * deck card shows it with its blurred margins). Otherwise procedural 1:1 art — inline SVG, no assets:
+ * same `id` + `genre` → identical markup, so it can be shown on the track card and on the result
+ * screen. Renders fine from 48 px to 240 px.
  */
 export function TrackCover({ id, genre, size, title, className }: TrackCoverProps): ReactElement {
   const spec = useMemo(() => coverSpec(id, genre), [id, genre]);
   const gid = `cg-${spec.seed.toString(36)}`;
   const style: CSSProperties | undefined = size !== undefined ? { width: size, height: size } : undefined;
+  const picture = coverImage(id);
+  if (picture) {
+    return (
+      <img
+        src={picture}
+        alt={title ?? id}
+        className={className ? `track-cover track-cover-img ${className}` : 'track-cover track-cover-img'}
+        style={style}
+        data-genre={spec.genre}
+        draggable={false}
+        decoding="async"
+      />
+    );
+  }
   return (
     <svg
       viewBox="0 0 100 100"
@@ -52,6 +70,16 @@ function shapeElement(s: CoverShape, key: number): ReactElement {
     case 'path':
       return createElement('path', { key, d: s.d, fill: s.fill, stroke: s.stroke, strokeWidth: s.strokeWidth, opacity: s.opacity, strokeLinejoin: 'round' });
     case 'line':
-      return createElement('line', { key, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, stroke: s.stroke, strokeWidth: s.strokeWidth, opacity: s.opacity, strokeLinecap: 'round' });
+      return createElement('line', {
+        key,
+        x1: s.x1,
+        y1: s.y1,
+        x2: s.x2,
+        y2: s.y2,
+        stroke: s.stroke,
+        strokeWidth: s.strokeWidth,
+        opacity: s.opacity,
+        strokeLinecap: 'round',
+      });
   }
 }
