@@ -141,6 +141,42 @@
   aspect-ratio: auto;
   transform: none;
 }
+/* The radio's light on the centre card: a soft diagonal gleam drifting across the art, its strength
+   (`--radio`, set per frame from the music's bass) pulsing with the song; invisible while silent. */
+.deck-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(var(--radio, 0) * 0.55);
+  transition: opacity 0.18s ease-out;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(115deg, rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0.22) 46%, rgba(255, 255, 255, 0.06) 52%, rgba(255, 255, 255, 0) 66%);
+  background-size:
+    100% 100%,
+    260% 100%;
+  background-position:
+    0 0,
+    0% 0;
+  animation: deck-sheen-drift 7s ease-in-out infinite alternate;
+}
+@keyframes deck-sheen-drift {
+  from {
+    background-position:
+      0 0,
+      0% 0;
+  }
+  to {
+    background-position:
+      0 0,
+      100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-sheen {
+    animation: none;
+  }
+}
 /* Legibility veil: the lower part darkens under the title; a locked card is dimmer all over (in colour, no grayscale). */
 .deck-card::after {
   content: '';

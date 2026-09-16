@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { dict, fmt } from '@/shared/i18n';
-import { sfxSwipe, sfxUi } from '@/shared/lib/audio';
+import { audioEngine, sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
 import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, coverSpec, type TrackMeta } from '@/entities/track';
@@ -106,6 +106,23 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   const lock = useMemo(() => lockFor(state, track.id, track.stars), [state, track]);
 
   const go = useCallback((to: number) => flyTo(Math.max(0, Math.min(n - 1, to))), [flyTo, n]);
+
+  // The sheen on the centre card breathes with the radio: `--radio` = 0 (silent) … 1 (a kick).
+  useEffect(() => {
+    let raf = 0;
+    let last = 0;
+    const tick = (t: number) => {
+      raf = requestAnimationFrame(tick);
+      if (t - last < 33) return;
+      last = t;
+      const el = cards.current.get(indexRef.current);
+      if (!el) return;
+      const level = audioEngine.isAmbient ? 0.4 + audioEngine.bassLevel() * 0.6 : 0;
+      el.style.setProperty('--radio', level.toFixed(2));
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   /** Card width in px — converts a finger drag into a fraction of a card. */
   const cardPx = () => {
@@ -246,6 +263,7 @@ function DeckCard({ track, mount, current, lock, daily, best, rank, details, onT
       <div className={coverImage(track.id) ? 'deck-art deck-art-picture' : 'deck-art'} aria-hidden="true">
         <TrackCover id={track.id} genre={track.genre} />
       </div>
+      {current && <span className="deck-sheen" aria-hidden="true" />}
       <div className="deck-tags" aria-hidden={details ? undefined : true}>
         {daily && (
           <Tag shape="flush" icon={<Icon name="sun" />}>

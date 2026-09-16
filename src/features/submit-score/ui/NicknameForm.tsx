@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { dict } from '@/shared/i18n';
 import { Avatar, Disc, Icon, Line, PrimaryAction, TextField } from '@/shared/ui';
-import { NICKNAME_MAX, isValidNickname, sanitizeNickname, updateSettings, useSettings } from '@/entities/settings';
+import { NICKNAME_MAX, getSettings, isValidNickname, sanitizeNickname, updateSettings, useSettings } from '@/entities/settings';
 import { avatarArtOf } from '@/entities/avatar';
 import './nickname.css';
 
@@ -28,7 +28,7 @@ interface Props {
  * «СОХРАНИТЬ» (dark and still while the field is empty, cyan and breathing once a name is in).
  */
 export function NicknameForm({ onSaved, secondary, autoFocus = true, hint = dict.nicknameHint, avatar: showAvatar = false, title, titleId }: Props) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(() => getSettings().nickname ?? '');
   const avatar = useSettings((s) => s.avatar);
   const clean = sanitizeNickname(value);
   const valid = isValidNickname(clean);

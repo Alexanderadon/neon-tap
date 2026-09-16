@@ -18,6 +18,9 @@ export interface Volumes {
 
 /** Fade in / out of a shop preview clip, seconds. */
 const PREVIEW_FADE = 0.25;
+/** The menu radio: fade in / out, seconds. */
+const AMBIENT_FADE_IN = 0.9;
+const AMBIENT_FADE_OUT = 0.35;
 /** Where a fade starts or ends: -40 dB, quiet enough to read as silence, high enough for an exponential ramp. */
 const FADE_FLOOR = 0.01;
 const LOWPASS_OPEN_HZ = 20000;
@@ -35,6 +38,8 @@ export class AudioEngine {
   private analyser: AnalyserNode | null = null;
   private spectrumBins: Uint8Array<ArrayBuffer> | null = null;
   private source: AudioBufferSourceNode | null = null;
+  /** The menu radio's fade node — ramped down by `stopAmbient`, so the song does not cut. */
+  private ambientFade: GainNode | null = null;
   private startTime = 0;
   private pausePosition: number | null = null;
   private volumes: Volumes = { master: 1, music: 0.9, sfx: 0.8, voice: 1 };
@@ -208,6 +213,60 @@ export class AudioEngine {
     this.pausePosition = null;
   }
 
+  /**
+   * The menu radio: `buffer` loops from `from` to its end at `level` of the music volume, fading in.
+   * Stops whatever was playing; `stopAmbient()` fades it out, any `play()` / `preview()` cuts it.
+   */
+  ambient(buffer: AudioBuffer, from: number, level: number): void {
+    const ctx = this.ctx;
+    if (!ctx) throw new Error('AudioContext not initialised');
+    this.stop();
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    src.loopStart = Math.max(0, Math.min(from, buffer.duration - 1));
+    src.loopEnd = buffer.duration;
+    const fade = ctx.createGain();
+    const t = ctx.currentTime;
+    fade.gain.setValueAtTime(FADE_FLOOR * level, t);
+    fade.gain.exponentialRampToValueAtTime(level, t + AMBIENT_FADE_IN);
+    src.connect(fade);
+    fade.connect(this.lowpass);
+    src.start(t, src.loopStart);
+    src.onended = () => {
+      if (this.source === src) this.source = null;
+    };
+    this.onEnded = null;
+    this.ambientFade = fade;
+    this.source = src;
+    this.startTime = t - src.loopStart;
+    this.pausePosition = null;
+  }
+
+  /** Fade the radio out and stop it (no-op when nothing ambient plays). */
+  stopAmbient(): void {
+    const ctx = this.ctx;
+    const fade = this.ambientFade;
+    const src = this.source;
+    if (!ctx || !fade || !src) {
+      this.ambientFade = null;
+      return;
+    }
+    this.ambientFade = null;
+    this.source = null;
+    src.onended = null;
+    const t = ctx.currentTime;
+    fade.gain.cancelScheduledValues(t);
+    fade.gain.setValueAtTime(Math.max(FADE_FLOOR, fade.gain.value), t);
+    fade.gain.exponentialRampToValueAtTime(FADE_FLOOR, t + AMBIENT_FADE_OUT);
+    src.stop(t + AMBIENT_FADE_OUT);
+  }
+
+  /** Is the menu radio the thing playing? */
+  get isAmbient(): boolean {
+    return this.ambientFade !== null && this.source !== null;
+  }
+
   /** Current song position according to the audio clock. */
   position(): number {
     if (this.pausePosition !== null) return this.pausePosition;
@@ -225,6 +284,7 @@ export class AudioEngine {
   }
 
   stop(): void {
+    this.ambientFade = null;
     if (this.source) {
       const src = this.source;
       this.source = null;
