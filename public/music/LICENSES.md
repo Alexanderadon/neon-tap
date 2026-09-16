@@ -2,9 +2,10 @@
 
 ## Music
 
-Every built-in track is released under **CC0 1.0 (public domain dedication)** by its author on OpenGameArt.org.
-Files were trimmed to ≤ 150 s and loudness-normalised for the game (short loops repeated to reach 90–150 s); no other changes.
-Attribution is not required for CC0 — it is listed here out of respect for the authors.
+Built-in tracks come from OpenGameArt.org (**CC0 1.0**, public domain dedication) and the Free Music Archive (**CC BY 4.0**).
+Files were trimmed to ≤ 150 s and loudness-normalised for the game (short loops repeated to reach 90–150 s); in play the song
+may run up to 1.2× faster on the later levels. Attribution is required by CC BY and given here (the author is also named on the
+track card); for CC0 it is listed out of respect for the authors.
 
 | File | Title | Author | Source | License |
 |---|---|---|---|---|
@@ -67,6 +68,9 @@ Attribution is not required for CC0 — it is listed here out of respect for the
 | `slow-stride.mp3` | Slow Stride | isaiah658 | [OpenGameArt](https://opengameart.org/content/slow-stride) | CC0 1.0 |
 | `november-snow.mp3` | November Snow | cynicmusic | [OpenGameArt](https://opengameart.org/content/november-snow) | CC0 1.0 |
 | `red-moon.mp3` | Red Moon | Pro Sensory | [OpenGameArt](https://opengameart.org/content/red-moon) | CC0 1.0 |
+| `call-of-the-north.mp3` | Call of the North | Mr Smith | [Free Music Archive](https://freemusicarchive.org/music/mr-smith/synchromatic/call-of-the-north/) | CC BY 4.0 |
+| `naomi.mp3` | Naomi | Mr Smith | [Free Music Archive](https://freemusicarchive.org/music/mr-smith/synchromatic/naomi/) | CC BY 4.0 |
+| `grunge-nostalgia.mp3` | Grunge Nostalgia | Alex Morgan | [Free Music Archive](https://freemusicarchive.org/music/alex-morgan/emotional-piano-vol-2/grunge-nostalgia-with-distant-guitars/) | CC BY 4.0 |
 
 ## Sound effects
 

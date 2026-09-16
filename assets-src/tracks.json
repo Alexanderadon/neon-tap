@@ -544,5 +544,35 @@
     "raw": "red-moon.mp3",
     "sourceUrl": "https://opengameart.org/content/red-moon",
     "license": "CC0 1.0"
+  },
+  {
+    "id": "call-of-the-north",
+    "title": "Call of the North",
+    "artist": "Mr Smith",
+    "genre": "rock",
+    "pack": "rock",
+    "raw": "call-of-the-north.mp3",
+    "sourceUrl": "https://freemusicarchive.org/music/mr-smith/synchromatic/call-of-the-north/",
+    "license": "CC BY 4.0"
+  },
+  {
+    "id": "naomi",
+    "title": "Naomi",
+    "artist": "Mr Smith",
+    "genre": "rock",
+    "pack": "rock",
+    "raw": "naomi.mp3",
+    "sourceUrl": "https://freemusicarchive.org/music/mr-smith/synchromatic/naomi/",
+    "license": "CC BY 4.0"
+  },
+  {
+    "id": "grunge-nostalgia",
+    "title": "Grunge Nostalgia",
+    "artist": "Alex Morgan",
+    "genre": "rock",
+    "pack": "rock",
+    "raw": "grunge-nostalgia.mp3",
+    "sourceUrl": "https://freemusicarchive.org/music/alex-morgan/emotional-piano-vol-2/grunge-nostalgia-with-distant-guitars/",
+    "license": "CC BY 4.0"
   }
 ]

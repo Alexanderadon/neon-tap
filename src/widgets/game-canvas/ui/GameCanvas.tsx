@@ -53,7 +53,8 @@ interface Props {
   /** The top bar for the pause / loading / error overlays — the page passes `<TopBar />` (widgets never import widgets). */
   header?: ReactNode;
   /** Chapter of a catalog track for the «Metal Song · Глава 1» line; custom songs show «Своя музыка». */
-  chapter?: number;
+  /** «Глава 1» / «Рок-пак» — the catalog chapter's title for the pause menu; omitted for custom songs. */
+  chapter?: string;
   /** HUD-level chrome of the host page (the tutorial caption card): lives over the field, hidden with the HUD under the pause / fail frames. */
   overlay?: ReactNode;
 }
@@ -290,7 +291,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   }, [revive.phase, declineRevive]);
 
   // «Metal Song · Глава 1» / «my-song · Своя музыка»; the tutorial has neither a chapter nor a file — its title stands alone.
-  const subTail = chapter !== undefined ? fmt(dict.deckChapter, { n: chapter }) : mode === 'tutorial' ? null : dict.customSong;
+  const subTail = chapter !== undefined ? chapter : mode === 'tutorial' ? null : dict.customSong;
   const subLine = (
     <div className="game-sub">
       <b>{chart.title}</b>

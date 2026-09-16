@@ -1,5 +1,7 @@
 export { CATALOG, TRACK_IDS, PREMIUM_IDS, findTrack } from './model/catalog';
 export type { TrackMeta } from './model/types';
+export { CHAPTERS, CHAPTER_SIZE, chapterAt, chapterTitle, chaptersOf } from './model/chapters';
+export type { Chapter } from './model/chapters';
 export { loadChart } from './api/loadChart';
 export { TrackCover } from './ui/TrackCover';
 export type { TrackCoverProps } from './ui/TrackCover';

@@ -17,6 +17,7 @@ interface SfxRegistry {
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const sourceName = (url: string): string => (url.includes('freemusicarchive.org') ? 'Free Music Archive' : 'OpenGameArt');
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
 const sfx = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'sfx.json'), 'utf8')) as SfxRegistry;
 
@@ -25,13 +26,14 @@ const md: string[] = [
   '',
   '## Music',
   '',
-  'Every built-in track is released under **CC0 1.0 (public domain dedication)** by its author on OpenGameArt.org.',
-  'Files were trimmed to ≤ 150 s and loudness-normalised for the game (short loops repeated to reach 90–150 s); no other changes.',
-  'Attribution is not required for CC0 — it is listed here out of respect for the authors.',
+  'Built-in tracks come from OpenGameArt.org (**CC0 1.0**, public domain dedication) and the Free Music Archive (**CC BY 4.0**).',
+  'Files were trimmed to ≤ 150 s and loudness-normalised for the game (short loops repeated to reach 90–150 s); in play the song',
+  'may run up to 1.2× faster on the later levels. Attribution is required by CC BY and given here (the author is also named on the',
+  'track card); for CC0 it is listed out of respect for the authors.',
   '',
   '| File | Title | Author | Source | License |',
   '|---|---|---|---|---|',
-  ...tracks.map((t) => `| \`${t.id}.mp3\` | ${t.title} | ${t.artist} | [OpenGameArt](${t.sourceUrl}) | ${t.license} |`),
+  ...tracks.map((t) => `| \`${t.id}.mp3\` | ${t.title} | ${t.artist} | [${sourceName(t.sourceUrl)}](${t.sourceUrl}) | ${t.license} |`),
   '',
   '## Sound effects',
   '',

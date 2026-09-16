@@ -47,8 +47,8 @@ interface Props {
   result: PlayResult;
   meta: PlaySession['resultMeta'];
   title: string;
-  /** Catalog chapter (1-based); omitted for custom songs. */
-  chapter?: number;
+  /** Catalog chapter title («Глава 1» / «Рок-пак»); omitted for custom songs. */
+  chapter?: string;
   onRetry: () => void;
   /** "Next" — the following playable track; the primary becomes «ЕЩЁ РАЗ» without it or after a fail. */
   onNext?: () => void;
@@ -178,7 +178,7 @@ export function ResultBreakdown({
         {chapter !== undefined && (
           <>
             <span className="result-sub-dot">·</span>
-            <span>{fmt(dict.deckChapter, { n: chapter })}</span>
+            <span>{chapter}</span>
           </>
         )}
       </div>

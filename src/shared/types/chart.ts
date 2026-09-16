@@ -69,6 +69,8 @@ export interface ChartFile {
   genre?: Genre;
   /** Premium track: never opens by stars, only bought with crystals in the shop. */
   premium?: boolean;
+  /** Named pack (`rock`): its tracks sit together after the numbered chapters and share one cover. */
+  pack?: string;
   audio: string;
   bpm: number;
   /** Seconds to the first downbeat. */
