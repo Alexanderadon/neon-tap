@@ -61,6 +61,8 @@ export interface SessionOptions {
   autoOffset: boolean;
   /** Dev/demo flag (`?nofail=1`): hearts still drain but the run never fails. */
   noFail?: boolean;
+  /** Dev/review flag (`?auto=1`): the session hits every tile itself — watch and listen to a chart without playing it. */
+  autoplay?: boolean;
   /** Tutorial: no hearts drawn, no heart-loss effects (implies no fail). */
   hideHearts?: boolean;
   /** Offer a rewarded revive when the hearts run out (default on; off in the tutorial / no-fail runs). */
@@ -179,6 +181,9 @@ export class GameSession {
   private spinBonusAt = -1;
   /** The running spinner has started counting (the wheel was zeroed at its first frame). */
   private spinStarted = false;
+  /** Autoplay: the next parsed note to hit, and the releases / roll taps still due (song time). */
+  private autoNext = 0;
+  private autoDue: { bucket: number; at: number; press: boolean }[] = [];
   /** When each section's lane count takes over: as soon as the previous section's last note is gone, but no later than one approach before the section starts. */
   private readonly switchTimes: number[];
   private readonly deltas: number[] = [];
@@ -349,6 +354,8 @@ export class GameSession {
     this.spinBonus = 0;
     this.spinBonusAt = -1;
     this.spinStarted = false;
+    this.autoNext = 0;
+    this.autoDue = [];
     this.rollGems();
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
@@ -444,6 +451,47 @@ export class GameSession {
     this.reviveUsed = true;
     this.paused = false;
     this.fail();
+  }
+
+  /**
+   * Autoplay: hit every note on its time through the ordinary press / release path (judged like a
+   * player's tap), release holds at their end, tap rolls evenly, land slides in their end lane, tap
+   * circles, and turn a running spinner. Nothing else in the session knows it is not a finger.
+   */
+  private autoplay(songTime: number): void {
+    const notes = this.parsed;
+    while (this.autoNext < notes.length && notes[this.autoNext].time <= songTime) {
+      const n = notes[this.autoNext++];
+      if (n.kind === 'spin') continue;
+      const bucket = n.kind === 'circle' ? CIRCLE_BUCKET : n.lane;
+      if (n.kind === 'roll') {
+        const taps = Math.max(1, n.extra);
+        for (let k = 0; k < taps; k++) {
+          const at = n.time + (n.duration * k) / taps;
+          this.autoDue.push({ bucket, at, press: true }, { bucket, at: at + 0.04, press: false });
+        }
+        continue;
+      }
+      this.notes.press(bucket, n.time);
+      if (bucket < MAX_LANES) this.renderer.pressFeedback(bucket);
+      const end = n.time + Math.max(n.duration, 0.05);
+      if (n.kind === 'slide') this.autoDue.push({ bucket: n.extra, at: end - 0.03, press: true }, { bucket: n.extra, at: end + 0.05, press: false });
+      this.autoDue.push({ bucket, at: end, press: false });
+    }
+    if (this.autoDue.length) {
+      this.autoDue.sort((a, b) => a.at - b.at);
+      while (this.autoDue.length && this.autoDue[0].at <= songTime) {
+        const d = this.autoDue.shift()!;
+        if (d.press) {
+          this.notes.press(d.bucket, d.at);
+          if (d.bucket < MAX_LANES) this.renderer.pressFeedback(d.bucket);
+        } else this.notes.release(d.bucket, d.at);
+      }
+    }
+    if (this.spinStarted) {
+      this.spin.tap(songTime);
+      this.syncSpin(songTime);
+    }
   }
 
   /** Dev (no-fail sessions, `window.__neon.seek(sec)`): jump the song; notes before the point are auto-missed. */
@@ -723,6 +771,7 @@ export class GameSession {
     if (!this.paused && !this.finished && this.started && !this.heartsOut && !this.reviving && audioEngine.context && audioEngine.context.state !== 'running')
       this.pause();
     const songTime = this.clock.songTime();
+    if (this.opts.autoplay && !this.paused && !this.finished) this.autoplay(songTime);
     if (!this.paused && !this.finished) {
       const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
       const lanes = this.sections[si].lanes;

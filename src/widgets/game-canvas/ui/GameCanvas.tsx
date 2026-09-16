@@ -165,7 +165,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         voice.setVoice(settings.voice);
         const [buffer] = await Promise.all([audioBuffer ?? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`), preloadSfx(), voice.preload()]);
         if (cancelled || !canvasRef.current) return;
-        const noFailFlag = new URLSearchParams(window.location.search).has('nofail');
+        const params = new URLSearchParams(window.location.search);
+        const autoFlag = params.has('auto');
+        const noFailFlag = params.has('nofail') || autoFlag;
         session = new GameSession({
           chart,
           audioBuffer: buffer,
@@ -175,6 +177,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           touchAssist: true,
           autoOffset: !tutorial,
           noFail: noFailFlag || tutorial,
+          autoplay: autoFlag && !tutorial,
           hideHearts: tutorial,
           gems: !tutorial,
           levels: !tutorial,
