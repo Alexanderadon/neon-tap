@@ -49,8 +49,9 @@ export type AnalysisStage = 'onsets' | 'beats' | 'grid';
  * sixteenth grid with per-slot onset strength, band colour and sustain. Everything downstream
  * (chart composition) works on this grid, which is why every note lands exactly on the beat.
  */
-/** Tempos the composer plays well; an octave outside needs OCTAVE_OUTSIDE_RATIO× the score of one inside. */
-const OCTAVE_BAND: readonly [number, number] = [85, 175];
+/** Tempos above this are read at half speed (their half must be at least OCTAVE_MIN_HALF); a faster octave needs OCTAVE_OUTSIDE_RATIO× the score to win. */
+const OCTAVE_MAX = 175;
+const OCTAVE_MIN_HALF = 85;
 const OCTAVE_OUTSIDE_RATIO = 1.5;
 /** Between two candidates in the same band the estimator's own tempo wins unless the other is this much better. */
 const OCTAVE_TIE_RATIO = 1.1;
@@ -63,9 +64,11 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
 
   // Tempo octave check: the autocorrelation may lock onto half/double tempo. Track beats for
   // bpm, 2·bpm and bpm/2 and keep the grid whose beats sit on hits AND cover the strong onsets.
-  // The playable band (85–175 BPM) is preferred: a double-tempo reading of a 100 BPM song turns
-  // its eighths into "sixteenths" for the composer, so an octave outside the band must be clearly
-  // better (OCTAVE_OUTSIDE_RATIO) to win; inside the band the estimator's own tempo wins ties.
+  // Tempos up to OCTAVE_MAX are preferred: a double-tempo reading of a 100 BPM song turns its
+  // eighths into "sixteenths" for the composer, so a faster octave must be clearly better
+  // (OCTAVE_OUTSIDE_RATIO) to win. A slow song is never doubled just to look "normal" — a 70 BPM
+  // ballad read at 140 gets its beats charted as eighths — so below the ceiling the estimator's
+  // own tempo wins ties.
   let maxFlux = 0;
   for (let i = 0; i < det.frameCount; i++) if (det.flux[i] > maxFlux) maxFlux = det.flux[i];
   const strongOnsets = det.onsets.filter((o) => o.strength >= 0.5).map((o) => o.time);
@@ -94,10 +97,10 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
       beatFrames = frames;
       continue;
     }
-    const inBand = candidate >= OCTAVE_BAND[0] && candidate <= OCTAVE_BAND[1];
-    const bestInBand = bpm >= OCTAVE_BAND[0] && bpm <= OCTAVE_BAND[1];
-    // Same band: the estimator's own tempo wins ties. Into the band: the outsider must have been
-    // clearly better to stay. Out of the band: the candidate must be clearly better to replace.
+    const inBand = candidate <= OCTAVE_MAX;
+    const bestInBand = bpm <= OCTAVE_MAX;
+    // Both under the ceiling: the estimator's own tempo wins ties. Coming under it: the fast reading
+    // must have been clearly better to stay. Going over it: the candidate must be clearly better.
     const needed = inBand === bestInBand ? OCTAVE_TIE_RATIO : inBand ? 1 / OCTAVE_OUTSIDE_RATIO : OCTAVE_OUTSIDE_RATIO;
     if (score > bestScore * needed) {
       bestScore = score;
@@ -105,9 +108,9 @@ export function analyzeSong(samples: Float32Array, sampleRate: number, onProgres
       beatFrames = frames;
     }
   }
-  // Above the band the half tempo is taken whenever it tracks at all: a 200 BPM reading makes the
-  // composer see real quarter notes as "eighths" and it charts twice too fast. Slow songs are left alone.
-  if (bpm > OCTAVE_BAND[1] && bpm / 2 >= OCTAVE_BAND[0]) {
+  // Above the ceiling the half tempo is taken whenever it tracks at all: a 200 BPM reading makes the
+  // composer see real quarter notes as "eighths" and it charts twice too fast.
+  if (bpm > OCTAVE_MAX && bpm / 2 >= OCTAVE_MIN_HALF) {
     const frames = trackBeats(det.flux, det.hopSeconds, bpm / 2);
     if (frames.length >= 4) {
       bpm /= 2;

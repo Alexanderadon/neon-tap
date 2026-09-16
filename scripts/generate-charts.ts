@@ -105,22 +105,25 @@ for (const t of tracks) {
 
 // The published order is the players' order (chapters and unlocks go by position), so it is kept:
 // a track already in catalog.json keeps its place and its chapter; only new tracks are rated in
-// and sorted after the known ones. Delete catalog.json to re-rank everything from scratch — a
-// first-time catalog is ordered by song energy, the measure the composer's target ★ comes from.
-const published: string[] = existsSync(CATALOG)
-  ? (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map((t) => t.id).filter((id) => tracks.some((t) => t.id === id)) // deleted tracks drop out, the rest close ranks
-  : [];
-const energyOf = (a: Analysed): number => {
+// and sorted after the known ones. `--rerank` (or no catalog.json) orders everything from scratch:
+// by the ★ a song gets as a normal track, then by its energy, easiest first.
+const rerank = process.argv.includes('--rerank');
+const published: string[] =
+  existsSync(CATALOG) && !rerank
+    ? (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map((t) => t.id).filter((id) => tracks.some((t) => t.id === id)) // deleted tracks drop out, the rest close ranks
+    : [];
+/** How hard the song is on its own: its ★ and energy read as a normal track. */
+const naturalOf = (a: Analysed): { stars: number; energy: number } => {
   let trace: ComposeTrace | undefined;
-  composeChart(a.analysis, { seed: hash(a.t.id), layers: a.layers, onTrace: (tr) => (trace = tr) });
-  return songEnergy(trace!.energy);
+  const chart = composeChart(a.analysis, { seed: hash(a.t.id), layers: a.layers, onTrace: (tr) => (trace = tr) });
+  return { stars: chart.stars, energy: songEnergy(trace!.energy) };
 };
 const order = published.length
   ? published
   : [...analysed]
       .filter((a) => !a.t.premium && !a.t.pack)
-      .map((a) => ({ id: a.t.id, energy: energyOf(a) }))
-      .sort((a, b) => a.energy - b.energy || a.id.localeCompare(b.id))
+      .map((a) => ({ id: a.t.id, ...naturalOf(a) }))
+      .sort((a, b) => a.stars - b.stars || a.energy - b.energy || a.id.localeCompare(b.id))
       .map((a) => a.id);
 const chapters = new Map<string, Chapter>();
 order.slice(0, BEGINNER_TRACKS).forEach((id) => chapters.set(id, 'easy'));
@@ -170,8 +173,8 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
 }
 
 const rank = (c: ChartFile): number => {
-  const i = published.indexOf(c.id);
-  return i < 0 ? published.length : i;
+  const i = order.indexOf(c.id);
+  return i < 0 ? order.length : i;
 };
 // Packs go after the main catalog, one after another in order of first appearance, each in its own published order.
 const packs = [...new Set(tracks.map((t) => t.pack).filter((p): p is string => !!p))];

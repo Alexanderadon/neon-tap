@@ -88,7 +88,7 @@ describe('analyzeSong', () => {
   const { times, signal } = clickTrack();
   const analysis = analyzeSong(signal, SR);
 
-  it('resolves the tempo octave: 64 BPM clicks stay at 64, not 128', () => {
+  it('resolves the tempo octave: 64 BPM clicks stay at 64, not 128 (a slow song is never doubled)', () => {
     const slowBeat = 60 / 64;
     const truth = Array.from({ length: 40 }, (_, i) => 0.5 + i * slowBeat);
     const a = analyzeSong(synthesizeClicks(truth, 40, SR), SR);
