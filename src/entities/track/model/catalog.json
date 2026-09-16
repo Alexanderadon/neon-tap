@@ -9,15 +9,15 @@
     "cover": "covers/metal-song-energetic.webp",
     "bpm": 135,
     "duration": 98.56,
-    "stars": 1,
-    "notes": 116,
+    "stars": 2,
+    "notes": 91,
     "features": {
-      "circles": 7,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 14,
-      "laneChanges": 1
+      "holds": 31,
+      "laneChanges": 0
     }
   },
   {
@@ -28,16 +28,16 @@
     "sourceUrl": "https://opengameart.org/content/hard-boss-battle-2",
     "genre": "hardcore",
     "cover": "covers/hard-boss-battle-2.webp",
-    "bpm": 69.9,
+    "bpm": 139.8,
     "duration": 112.04,
-    "stars": 1,
-    "notes": 142,
+    "stars": 2,
+    "notes": 145,
     "features": {
-      "circles": 4,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 16,
+      "holds": 28,
       "laneChanges": 0
     }
   },
@@ -52,14 +52,14 @@
     "bpm": 119.7,
     "duration": 116.06,
     "stars": 1,
-    "notes": 140,
+    "notes": 74,
     "features": {
-      "circles": 4,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 31,
-      "laneChanges": 5
+      "holds": 32,
+      "laneChanges": 1
     }
   },
   {
@@ -70,17 +70,17 @@
     "sourceUrl": "https://opengameart.org/content/chill-lofi-inspired",
     "genre": "lofi",
     "cover": "covers/chill-lofi-inspired.webp",
-    "bpm": 79.6,
+    "bpm": 159.1,
     "duration": 123.19,
-    "stars": 1,
-    "notes": 154,
+    "stars": 2,
+    "notes": 134,
     "features": {
-      "circles": 4,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 16,
-      "laneChanges": 3
+      "holds": 49,
+      "laneChanges": 0
     }
   },
   {
@@ -91,17 +91,17 @@
     "sourceUrl": "https://opengameart.org/content/sky-trance",
     "genre": "trance",
     "cover": "covers/sky-trance.webp",
-    "bpm": 69.9,
+    "bpm": 139.8,
     "duration": 116.58,
-    "stars": 1,
-    "notes": 149,
+    "stars": 2,
+    "notes": 143,
     "features": {
-      "circles": 4,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 9,
-      "laneChanges": 3
+      "holds": 51,
+      "laneChanges": 0
     }
   },
   {
@@ -112,17 +112,17 @@
     "sourceUrl": "https://opengameart.org/content/fight-for-better-future-rockmetal",
     "genre": "metal",
     "cover": "covers/fight-for-better-future.webp",
-    "bpm": 76.6,
+    "bpm": 153.1,
     "duration": 136.25,
-    "stars": 1,
-    "notes": 231,
+    "stars": 2,
+    "notes": 170,
     "features": {
-      "circles": 4,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 23,
-      "laneChanges": 2
+      "holds": 66,
+      "laneChanges": 0
     }
   },
   {
@@ -135,15 +135,15 @@
     "cover": "covers/bouncer.webp",
     "bpm": 128.9,
     "duration": 93.81,
-    "stars": 3,
-    "notes": 207,
+    "stars": 2,
+    "notes": 117,
     "features": {
-      "circles": 4,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 9,
-      "laneChanges": 4
+      "holds": 14,
+      "laneChanges": 0
     }
   },
   {
@@ -157,14 +157,14 @@
     "bpm": 129.4,
     "duration": 150.05,
     "stars": 2,
-    "notes": 209,
+    "notes": 144,
     "features": {
-      "circles": 8,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 26,
-      "laneChanges": 5
+      "holds": 69,
+      "laneChanges": 0
     }
   },
   {
@@ -178,14 +178,14 @@
     "bpm": 120.1,
     "duration": 138,
     "stars": 2,
-    "notes": 294,
+    "notes": 155,
     "features": {
       "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 38,
-      "laneChanges": 7
+      "holds": 44,
+      "laneChanges": 0
     }
   },
   {
@@ -199,14 +199,14 @@
     "bpm": 160.9,
     "duration": 150.05,
     "stars": 2,
-    "notes": 301,
+    "notes": 155,
     "features": {
-      "circles": 8,
+      "circles": 0,
       "spins": 0,
       "rolls": 0,
       "slides": 0,
-      "holds": 59,
-      "laneChanges": 9
+      "holds": 68,
+      "laneChanges": 0
     }
   },
   {
@@ -220,14 +220,14 @@
     "bpm": 113.2,
     "duration": 150.05,
     "stars": 4,
-    "notes": 415,
+    "notes": 264,
     "features": {
-      "circles": 18,
+      "circles": 0,
       "spins": 1,
-      "rolls": 0,
-      "slides": 1,
-      "holds": 22,
-      "laneChanges": 12
+      "rolls": 7,
+      "slides": 14,
+      "holds": 41,
+      "laneChanges": 0
     }
   },
   {
@@ -241,14 +241,14 @@
     "bpm": 123.5,
     "duration": 150.05,
     "stars": 4,
-    "notes": 394,
+    "notes": 223,
     "features": {
-      "circles": 18,
+      "circles": 12,
       "spins": 1,
-      "rolls": 0,
-      "slides": 1,
-      "holds": 35,
-      "laneChanges": 7
+      "rolls": 5,
+      "slides": 2,
+      "holds": 36,
+      "laneChanges": 0
     }
   },
   {
@@ -261,15 +261,15 @@
     "cover": "covers/space-cadet-training-montage.webp",
     "bpm": 129.6,
     "duration": 145.97,
-    "stars": 4,
-    "notes": 389,
+    "stars": 3,
+    "notes": 231,
     "features": {
-      "circles": 18,
+      "circles": 0,
       "spins": 1,
       "rolls": 0,
-      "slides": 8,
-      "holds": 44,
-      "laneChanges": 15
+      "slides": 5,
+      "holds": 35,
+      "laneChanges": 0
     }
   },
   {
@@ -283,14 +283,14 @@
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 4,
-    "notes": 430,
+    "notes": 252,
     "features": {
-      "circles": 12,
+      "circles": 16,
       "spins": 1,
-      "rolls": 0,
-      "slides": 1,
-      "holds": 34,
-      "laneChanges": 6
+      "rolls": 2,
+      "slides": 8,
+      "holds": 41,
+      "laneChanges": 0
     }
   },
   {
@@ -303,15 +303,15 @@
     "cover": "covers/up-in-the-sky.webp",
     "bpm": 136,
     "duration": 150.05,
-    "stars": 3,
-    "notes": 347,
+    "stars": 4,
+    "notes": 170,
     "features": {
-      "circles": 6,
+      "circles": 7,
       "spins": 1,
       "rolls": 0,
       "slides": 4,
-      "holds": 34,
-      "laneChanges": 6
+      "holds": 45,
+      "laneChanges": 0
     }
   },
   {
@@ -325,14 +325,14 @@
     "bpm": 123.9,
     "duration": 150.05,
     "stars": 4,
-    "notes": 447,
+    "notes": 209,
     "features": {
-      "circles": 6,
+      "circles": 8,
       "spins": 0,
-      "rolls": 0,
-      "slides": 1,
-      "holds": 26,
-      "laneChanges": 7
+      "rolls": 4,
+      "slides": 10,
+      "holds": 48,
+      "laneChanges": 0
     }
   },
   {
@@ -345,15 +345,15 @@
     "cover": "covers/hardstyler.webp",
     "bpm": 139.8,
     "duration": 112.9,
-    "stars": 5,
-    "notes": 311,
+    "stars": 4,
+    "notes": 170,
     "features": {
-      "circles": 10,
+      "circles": 20,
       "spins": 1,
       "rolls": 0,
-      "slides": 1,
-      "holds": 29,
-      "laneChanges": 8
+      "slides": 5,
+      "holds": 12,
+      "laneChanges": 0
     }
   },
   {
@@ -364,17 +364,17 @@
     "sourceUrl": "https://opengameart.org/content/all-night-road",
     "genre": "synthpop",
     "cover": "covers/all-night-road.webp",
-    "bpm": 207,
+    "bpm": 103.5,
     "duration": 150.05,
-    "stars": 4,
-    "notes": 374,
+    "stars": 3,
+    "notes": 158,
     "features": {
-      "circles": 18,
-      "spins": 1,
+      "circles": 0,
+      "spins": 0,
       "rolls": 0,
-      "slides": 12,
-      "holds": 37,
-      "laneChanges": 11
+      "slides": 3,
+      "holds": 49,
+      "laneChanges": 0
     }
   },
   {
@@ -388,14 +388,14 @@
     "bpm": 172.1,
     "duration": 150.05,
     "stars": 4,
-    "notes": 369,
+    "notes": 274,
     "features": {
-      "circles": 12,
+      "circles": 0,
       "spins": 1,
       "rolls": 0,
       "slides": 8,
-      "holds": 58,
-      "laneChanges": 12
+      "holds": 74,
+      "laneChanges": 0
     }
   },
   {
@@ -409,14 +409,14 @@
     "bpm": 113.4,
     "duration": 138.92,
     "stars": 4,
-    "notes": 420,
+    "notes": 259,
     "features": {
-      "circles": 18,
+      "circles": 6,
       "spins": 1,
       "rolls": 0,
-      "slides": 0,
-      "holds": 72,
-      "laneChanges": 12
+      "slides": 5,
+      "holds": 34,
+      "laneChanges": 0
     }
   },
   {
@@ -429,14 +429,14 @@
     "bpm": 128.8,
     "duration": 150.05,
     "stars": 5,
-    "notes": 532,
+    "notes": 275,
     "features": {
-      "circles": 26,
+      "circles": 8,
       "spins": 2,
-      "rolls": 0,
-      "slides": 0,
-      "holds": 12,
-      "laneChanges": 8
+      "rolls": 1,
+      "slides": 5,
+      "holds": 36,
+      "laneChanges": 1
     }
   },
   {
@@ -448,15 +448,15 @@
     "genre": "chiptune",
     "bpm": 128.7,
     "duration": 106.84,
-    "stars": 6,
-    "notes": 327,
+    "stars": 4,
+    "notes": 166,
     "features": {
-      "circles": 31,
+      "circles": 0,
       "spins": 1,
-      "rolls": 4,
-      "slides": 3,
-      "holds": 20,
-      "laneChanges": 5
+      "rolls": 3,
+      "slides": 5,
+      "holds": 33,
+      "laneChanges": 0
     }
   },
   {
@@ -469,15 +469,15 @@
     "premium": true,
     "bpm": 143.9,
     "duration": 106.53,
-    "stars": 6,
-    "notes": 369,
+    "stars": 5,
+    "notes": 203,
     "features": {
-      "circles": 26,
+      "circles": 0,
       "spins": 0,
-      "rolls": 14,
-      "slides": 5,
-      "holds": 12,
-      "laneChanges": 11
+      "rolls": 6,
+      "slides": 7,
+      "holds": 37,
+      "laneChanges": 1
     }
   },
   {
@@ -488,17 +488,17 @@
     "sourceUrl": "https://opengameart.org/content/ciptuned-rock-tune",
     "genre": "chiptune",
     "premium": true,
-    "bpm": 216.6,
+    "bpm": 108.3,
     "duration": 137.48,
-    "stars": 5,
-    "notes": 394,
+    "stars": 3,
+    "notes": 151,
     "features": {
-      "circles": 20,
-      "spins": 2,
+      "circles": 11,
+      "spins": 1,
       "rolls": 0,
-      "slides": 3,
-      "holds": 11,
-      "laneChanges": 22
+      "slides": 1,
+      "holds": 33,
+      "laneChanges": 0
     }
   },
   {
@@ -510,15 +510,15 @@
     "genre": "electronic",
     "bpm": 143.6,
     "duration": 150.05,
-    "stars": 6,
-    "notes": 467,
+    "stars": 4,
+    "notes": 229,
     "features": {
-      "circles": 24,
+      "circles": 14,
       "spins": 1,
-      "rolls": 7,
-      "slides": 6,
-      "holds": 27,
-      "laneChanges": 17
+      "rolls": 2,
+      "slides": 11,
+      "holds": 40,
+      "laneChanges": 0
     }
   },
   {
@@ -530,15 +530,15 @@
     "genre": "breakbeat",
     "bpm": 151.3,
     "duration": 135.24,
-    "stars": 6,
-    "notes": 518,
+    "stars": 5,
+    "notes": 228,
     "features": {
-      "circles": 44,
+      "circles": 14,
       "spins": 2,
-      "rolls": 3,
-      "slides": 0,
-      "holds": 21,
-      "laneChanges": 16
+      "rolls": 23,
+      "slides": 6,
+      "holds": 32,
+      "laneChanges": 1
     }
   },
   {
@@ -550,15 +550,15 @@
     "genre": "techno",
     "bpm": 143.4,
     "duration": 150.05,
-    "stars": 6,
-    "notes": 544,
+    "stars": 5,
+    "notes": 230,
     "features": {
-      "circles": 54,
+      "circles": 7,
       "spins": 2,
-      "rolls": 4,
-      "slides": 3,
-      "holds": 19,
-      "laneChanges": 15
+      "rolls": 11,
+      "slides": 9,
+      "holds": 37,
+      "laneChanges": 0
     }
   },
   {
@@ -570,15 +570,15 @@
     "genre": "jazz",
     "bpm": 139.8,
     "duration": 150.05,
-    "stars": 6,
-    "notes": 567,
+    "stars": 5,
+    "notes": 303,
     "features": {
-      "circles": 46,
-      "spins": 1,
-      "rolls": 2,
-      "slides": 5,
-      "holds": 38,
-      "laneChanges": 17
+      "circles": 16,
+      "spins": 0,
+      "rolls": 16,
+      "slides": 9,
+      "holds": 45,
+      "laneChanges": 1
     }
   },
   {
@@ -590,15 +590,15 @@
     "genre": "metal",
     "bpm": 160.9,
     "duration": 83.88,
-    "stars": 7,
-    "notes": 369,
+    "stars": 6,
+    "notes": 203,
     "features": {
-      "circles": 16,
-      "spins": 1,
-      "rolls": 2,
-      "slides": 7,
-      "holds": 19,
-      "laneChanges": 3
+      "circles": 0,
+      "spins": 0,
+      "rolls": 4,
+      "slides": 6,
+      "holds": 26,
+      "laneChanges": 1
     }
   },
   {
@@ -610,15 +610,15 @@
     "genre": "trance",
     "bpm": 151.5,
     "duration": 102.43,
-    "stars": 7,
-    "notes": 420,
+    "stars": 5,
+    "notes": 192,
     "features": {
-      "circles": 23,
+      "circles": 0,
       "spins": 1,
-      "rolls": 5,
-      "slides": 0,
-      "holds": 6,
-      "laneChanges": 11
+      "rolls": 13,
+      "slides": 3,
+      "holds": 25,
+      "laneChanges": 1
     }
   },
   {
@@ -631,15 +631,15 @@
     "premium": true,
     "bpm": 163.2,
     "duration": 125.13,
-    "stars": 7,
-    "notes": 446,
+    "stars": 5,
+    "notes": 261,
     "features": {
-      "circles": 43,
+      "circles": 14,
       "spins": 0,
-      "rolls": 16,
-      "slides": 2,
-      "holds": 23,
-      "laneChanges": 14
+      "rolls": 17,
+      "slides": 7,
+      "holds": 33,
+      "laneChanges": 1
     }
   },
   {
@@ -651,15 +651,15 @@
     "genre": "metal",
     "bpm": 151.7,
     "duration": 127.43,
-    "stars": 8,
-    "notes": 537,
+    "stars": 6,
+    "notes": 263,
     "features": {
-      "circles": 38,
+      "circles": 12,
       "spins": 0,
-      "rolls": 1,
-      "slides": 4,
-      "holds": 32,
-      "laneChanges": 15
+      "rolls": 6,
+      "slides": 12,
+      "holds": 47,
+      "laneChanges": 1
     }
   },
   {
@@ -671,15 +671,15 @@
     "genre": "synthwave",
     "bpm": 161.1,
     "duration": 150.05,
-    "stars": 8,
-    "notes": 596,
+    "stars": 5,
+    "notes": 249,
     "features": {
-      "circles": 58,
+      "circles": 22,
       "spins": 1,
-      "rolls": 4,
-      "slides": 18,
-      "holds": 42,
-      "laneChanges": 19
+      "rolls": 2,
+      "slides": 5,
+      "holds": 55,
+      "laneChanges": 1
     }
   },
   {
@@ -691,15 +691,15 @@
     "genre": "electronic",
     "bpm": 172.8,
     "duration": 150.05,
-    "stars": 7,
-    "notes": 607,
+    "stars": 5,
+    "notes": 317,
     "features": {
-      "circles": 48,
+      "circles": 24,
       "spins": 1,
       "rolls": 0,
-      "slides": 2,
-      "holds": 29,
-      "laneChanges": 10
+      "slides": 3,
+      "holds": 75,
+      "laneChanges": 1
     }
   },
   {
@@ -711,15 +711,15 @@
     "genre": "eurobeat",
     "bpm": 142.9,
     "duration": 141.98,
-    "stars": 7,
-    "notes": 632,
+    "stars": 5,
+    "notes": 310,
     "features": {
-      "circles": 28,
-      "spins": 1,
-      "rolls": 7,
-      "slides": 3,
-      "holds": 30,
-      "laneChanges": 19
+      "circles": 8,
+      "spins": 0,
+      "rolls": 16,
+      "slides": 6,
+      "holds": 27,
+      "laneChanges": 1
     }
   },
   {
@@ -731,15 +731,15 @@
     "genre": "chiptune",
     "bpm": 117.5,
     "duration": 150.05,
-    "stars": 7,
-    "notes": 631,
+    "stars": 5,
+    "notes": 286,
     "features": {
-      "circles": 57,
+      "circles": 15,
       "spins": 0,
-      "rolls": 11,
-      "slides": 1,
-      "holds": 16,
-      "laneChanges": 13
+      "rolls": 21,
+      "slides": 5,
+      "holds": 38,
+      "laneChanges": 1
     }
   },
   {
@@ -751,15 +751,15 @@
     "genre": "techno",
     "bpm": 129.5,
     "duration": 150.05,
-    "stars": 7,
-    "notes": 668,
+    "stars": 5,
+    "notes": 316,
     "features": {
-      "circles": 58,
-      "spins": 1,
-      "rolls": 12,
+      "circles": 0,
+      "spins": 0,
+      "rolls": 22,
       "slides": 0,
-      "holds": 10,
-      "laneChanges": 14
+      "holds": 18,
+      "laneChanges": 1
     }
   },
   {
@@ -771,15 +771,15 @@
     "genre": "house",
     "bpm": 152,
     "duration": 150.05,
-    "stars": 8,
-    "notes": 661,
+    "stars": 5,
+    "notes": 269,
     "features": {
-      "circles": 56,
-      "spins": 0,
-      "rolls": 3,
-      "slides": 3,
-      "holds": 32,
-      "laneChanges": 16
+      "circles": 6,
+      "spins": 1,
+      "rolls": 9,
+      "slides": 9,
+      "holds": 42,
+      "laneChanges": 1
     }
   },
   {
@@ -792,15 +792,15 @@
     "premium": true,
     "bpm": 139.8,
     "duration": 150.05,
-    "stars": 9,
-    "notes": 738,
+    "stars": 5,
+    "notes": 291,
     "features": {
-      "circles": 58,
-      "spins": 1,
-      "rolls": 9,
-      "slides": 2,
-      "holds": 14,
-      "laneChanges": 14
+      "circles": 0,
+      "spins": 0,
+      "rolls": 24,
+      "slides": 8,
+      "holds": 26,
+      "laneChanges": 0
     }
   },
   {
@@ -813,15 +813,15 @@
     "premium": true,
     "bpm": 163,
     "duration": 85.81,
-    "stars": 9,
-    "notes": 485,
+    "stars": 6,
+    "notes": 214,
     "features": {
-      "circles": 42,
+      "circles": 8,
       "spins": 0,
-      "rolls": 3,
-      "slides": 1,
-      "holds": 8,
-      "laneChanges": 9
+      "rolls": 11,
+      "slides": 8,
+      "holds": 29,
+      "laneChanges": 0
     }
   },
   {
@@ -831,17 +831,17 @@
     "license": "CC0 1.0",
     "sourceUrl": "https://opengameart.org/content/dance-field",
     "genre": "chiptune",
-    "bpm": 185,
+    "bpm": 92.5,
     "duration": 109.77,
-    "stars": 9,
-    "notes": 577,
+    "stars": 4,
+    "notes": 148,
     "features": {
-      "circles": 48,
+      "circles": 0,
       "spins": 0,
-      "rolls": 2,
-      "slides": 1,
-      "holds": 43,
-      "laneChanges": 14
+      "rolls": 0,
+      "slides": 3,
+      "holds": 23,
+      "laneChanges": 0
     }
   },
   {
@@ -855,14 +855,14 @@
     "bpm": 107.3,
     "duration": 137.93,
     "stars": 4,
-    "notes": 458,
+    "notes": 215,
     "features": {
-      "circles": 16,
+      "circles": 19,
       "spins": 0,
-      "rolls": 2,
-      "slides": 5,
-      "holds": 25,
-      "laneChanges": 12
+      "rolls": 7,
+      "slides": 8,
+      "holds": 43,
+      "laneChanges": 0
     }
   },
   {
@@ -875,15 +875,15 @@
     "pack": "rock",
     "bpm": 95.2,
     "duration": 94.38,
-    "stars": 5,
-    "notes": 259,
+    "stars": 4,
+    "notes": 147,
     "features": {
-      "circles": 19,
+      "circles": 0,
       "spins": 0,
-      "rolls": 2,
-      "slides": 1,
-      "holds": 29,
-      "laneChanges": 7
+      "rolls": 5,
+      "slides": 6,
+      "holds": 22,
+      "laneChanges": 0
     }
   },
   {
@@ -894,17 +894,17 @@
     "sourceUrl": "https://freemusicarchive.org/music/mr-smith/synchromatic/naomi/",
     "genre": "rock",
     "pack": "rock",
-    "bpm": 183.4,
+    "bpm": 91.7,
     "duration": 82.49,
-    "stars": 5,
-    "notes": 283,
+    "stars": 4,
+    "notes": 109,
     "features": {
-      "circles": 9,
+      "circles": 0,
       "spins": 1,
-      "rolls": 0,
-      "slides": 14,
-      "holds": 40,
-      "laneChanges": 6
+      "rolls": 4,
+      "slides": 3,
+      "holds": 12,
+      "laneChanges": 0
     }
   }
 ]

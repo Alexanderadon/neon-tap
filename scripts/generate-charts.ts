@@ -18,9 +18,9 @@ import { decodePcm, probeDuration } from './ffmpeg';
 import {
   LAYERS,
   MAX_STARS,
-  STEPS_PER_BAR,
   analyzeSong,
   assertPlayable,
+  chartBarTimes,
   chartFeatures,
   composeChart,
   layerEnergy,
@@ -207,8 +207,7 @@ function checkGates(id: string, chart: ChartFile['chart'], analysis: ReturnType<
   const slots = analysis.slots;
   const last = slots[slots.length - 1];
   const slotSec = slots.length > 1 ? (last.time - slots[0].time) / (slots.length - 1) : 15 / analysis.bpm;
-  const barTimes = slots.filter((s) => s.step === 0).map((s) => s.time);
-  barTimes.push(last.time + slotSec * (STEPS_PER_BAR - last.step));
+  const barTimes = chartBarTimes(analysis);
   const problems: string[] = [];
   try {
     assertPlayable(chart, slotSec);
