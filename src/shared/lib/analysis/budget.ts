@@ -96,7 +96,7 @@ export const BUDGETS: Record<1 | 2 | 3 | 4 | 5 | 6, Budget> = {
     peak4s: 2.5,
     peak8s: 2.3,
     meanNps: 1.8,
-    lanes: [[3], [4], [4]],
+    lanes: [[3], [4], [4, 5]],
     holdsPerPhrase: 3,
     slidesPerPhrase: 1,
     rollsPerPhrase: 0,
@@ -116,7 +116,7 @@ export const BUDGETS: Record<1 | 2 | 3 | 4 | 5 | 6, Budget> = {
     peak4s: 2.8,
     peak8s: 2.6,
     meanNps: 2.1,
-    lanes: [[3], [4], [4, 5]],
+    lanes: [[3], [4], [5]],
     holdsPerPhrase: 4,
     slidesPerPhrase: 1,
     rollsPerPhrase: 1,
@@ -136,7 +136,7 @@ export const BUDGETS: Record<1 | 2 | 3 | 4 | 5 | 6, Budget> = {
     peak4s: 3.2,
     peak8s: 3,
     meanNps: 2.5,
-    lanes: [[4], [4, 5], [5]],
+    lanes: [[3, 4], [4], [5]],
     holdsPerPhrase: 6,
     slidesPerPhrase: 1,
     rollsPerPhrase: 2,
@@ -156,7 +156,7 @@ export const BUDGETS: Record<1 | 2 | 3 | 4 | 5 | 6, Budget> = {
     peak4s: 3.6,
     peak8s: 3.3,
     meanNps: 2.8,
-    lanes: [[4], [4, 5], [5]],
+    lanes: [[3, 4], [4], [5]],
     holdsPerPhrase: 8,
     slidesPerPhrase: 2,
     rollsPerPhrase: 2,
@@ -175,7 +175,7 @@ export function budgetOf(stars: number): Budget {
 
 /** Chapter caps: chapter one ★1–2, chapter two ★3–4, the rest (and the rock pack) ★2–6. */
 export type Chapter = 'easy' | 'medium' | 'normal';
-export const CHAPTER_RANGE: Record<Chapter, readonly [number, number]> = { easy: [1, 2], medium: [3, 4], normal: [2, 6] };
+export const CHAPTER_RANGE: Record<Chapter, readonly [number, number]> = { easy: [2, 3], medium: [3, 5], normal: [2, 6] };
 
 /**
  * The figure's grid gap in sixteenth slots: the smallest EVEN number of slots that is at least
@@ -221,7 +221,7 @@ export function songEnergy(e: SongEnergy): number {
 export function targetStars(e: SongEnergy, chapter: Chapter, override?: number): number {
   if (override !== undefined) return Math.max(1, Math.min(MAX_STARS, Math.round(override)));
   const energy = songEnergy(e);
-  if (chapter === 'easy') return energy < 0.3 ? 1 : 2;
+  if (chapter === 'easy') return energy < 0.3 ? 2 : 3;
   const raw = Math.floor(2 + 4.5 * energy + 0.4);
   const [lo, hi] = CHAPTER_RANGE[chapter];
   return Math.max(lo, Math.min(hi, raw));
@@ -245,6 +245,8 @@ export interface BudgetFeatures {
   sixteenthShare: number;
   /** Most events in one bar (a chord is one event); 0 without bar times. */
   maxPerBar: number;
+  /** Mean bar length in song seconds (4 beats without bar times). */
+  barSec: number;
   maxLanes: number;
   /** Chords in the busiest bar / 4-bar phrase; 0 without bar times. */
   chordsPerBarMax: number;
@@ -313,6 +315,7 @@ function barAt(barTimes: readonly number[], t: number): number {
 
 const EMPTY_FEATURES: BudgetFeatures = {
   meanNps: 0,
+  barSec: 2,
   peak1s: 0,
   peak4s: 0,
   peak8s: 0,
@@ -423,6 +426,7 @@ export function budgetFeatures(
 
   return {
     meanNps: total / span,
+    barSec,
     peak1s: windowPeak(ev, 1),
     peak4s: windowPeak(ev, 4),
     peak8s: windowPeak(ev, 8),
@@ -450,9 +454,20 @@ export function budgetFeatures(
  * rolls, slides, spinners — a chart with rolls is never a ★3). Mean nps and the same-lane gap are
  * not judged here: the first is a soft target, the second a hands rule (`assertPlayable`).
  */
+/**
+ * A slow song's bar is long: its per-bar caps grow with it — ×1 at a 2-second bar (120 BPM), up to ×2 —
+ * while the per-second windows still bound the density. Used by the composer and the rating alike.
+ */
+export function slowBarScale(barSec: number): number {
+  return Math.max(1, Math.min(SLOW_BAR_SCALE_MAX, barSec / SLOW_BAR_SEC));
+}
+const SLOW_BAR_SEC = 2;
+const SLOW_BAR_SCALE_MAX = 2;
+
 export function failsAt(f: BudgetFeatures, s: number): string[] {
   const b = budgetOf(s);
   const fails: string[] = [];
+  const perBarCap = Math.round(b.maxPerBar[2] * slowBarScale(f.barSec));
   const minGap = b.pairMinSec || b.minGapSec;
   if (f.peak8s > b.peak8s + 1e-9) fails.push(`peak8s ${f.peak8s.toFixed(2)}>${b.peak8s}`);
   if (f.peak4s > b.peak4s + 1e-9) fails.push(`peak4s ${f.peak4s.toFixed(2)}>${b.peak4s}`);
@@ -462,7 +477,7 @@ export function failsAt(f: BudgetFeatures, s: number): string[] {
     const runs = closeRuns(f.gaps, b.minGapSec);
     if (runs > 0) fails.push(`close runs ${runs} (gaps <${b.minGapSec} not isolated)`);
   }
-  if (f.maxPerBar > b.maxPerBar[2]) fails.push(`perBar ${f.maxPerBar}>${b.maxPerBar[2]}`);
+  if (f.maxPerBar > perBarCap) fails.push(`perBar ${f.maxPerBar}>${perBarCap}`);
   if (f.maxLanes > Math.max(...b.lanes[2])) fails.push(`lanes ${f.maxLanes}>${Math.max(...b.lanes[2])}`);
   if (f.chordsPerBarMax > b.chordsPerBar) fails.push(`chords/bar ${f.chordsPerBarMax}>${b.chordsPerBar}`);
   if (f.chordsPerPhraseMax > b.chordsPerPhrase) fails.push(`chords/phrase ${f.chordsPerPhraseMax}>${b.chordsPerPhrase}`);

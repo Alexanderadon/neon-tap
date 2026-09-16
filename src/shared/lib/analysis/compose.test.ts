@@ -120,7 +120,7 @@ function expectFits(chart: ChartLevel, trace: ComposeTrace, target: Stars, bars:
   for (const n of circleBars.values()) expect(n).toBeLessThanOrEqual(b.circlesPerBar);
   const firstDrop = trace.levels.findIndex((l, p) => p > 0 && l === 2 && trace.levels[p - 1] < 2);
   if (firstDrop > 0) for (const c of circles) expect(barOf(c[0], bpm) >> 2, `circle at ${c[0]} on the first drop`).not.toBe(firstDrop);
-  // Sections: 3–5 lanes, 8-bar blocks, at least 16 bars each.
+  // Sections: 3–5 lanes, 8-bar blocks, at least 8 bars each.
   const sections = chart.sections!;
   expect(sections[0][0]).toBe(0);
   for (let i = 0; i < sections.length; i++) {
@@ -129,7 +129,7 @@ function expectFits(chart: ChartLevel, trace: ComposeTrace, target: Stars, bars:
     if (i === 0) continue;
     const bar = Math.round((sections[i][0] * bpm) / 240);
     expect(bar % 8).toBe(0);
-    expect(bar - Math.round((sections[i - 1][0] * bpm) / 240)).toBeGreaterThanOrEqual(16);
+    expect(bar - Math.round((sections[i - 1][0] * bpm) / 240)).toBeGreaterThanOrEqual(8);
   }
 }
 
@@ -159,9 +159,10 @@ describe('composeChart under every budget', () => {
       composeChart(analysis, { chapter, layers, targetStars: override, onTrace: (t) => (trace = t) });
       return trace!.target;
     };
-    expect(stars('easy')).toBeLessThanOrEqual(2);
+    expect(stars('easy')).toBeGreaterThanOrEqual(2);
+    expect(stars('easy')).toBeLessThanOrEqual(3);
     expect(stars('medium')).toBeGreaterThanOrEqual(3);
-    expect(stars('medium')).toBeLessThanOrEqual(4);
+    expect(stars('medium')).toBeLessThanOrEqual(5);
     expect(stars('normal')).toBeGreaterThanOrEqual(2);
     expect(stars('normal', 3)).toBe(3);
     expect(stars('easy', 9)).toBe(6);
@@ -264,12 +265,14 @@ describe('synthetic stab-kick', () => {
       // Four beats a bar at 140 BPM is 2.33/s: over the ★3 8-s window (chapter two reads three), inside ★4+.
       const expected = chapter === 'easy' ? 2 : chapter === 'medium' ? 3 : 4;
       for (let b = 1; b < bars - 1; b++) expect(perBar.get(b) ?? 0, `${chapter}: bar ${b}`).toBeGreaterThanOrEqual(expected);
-      // Fixed lanes: within a lane-count section the same step always lands in the same lane.
+      // Fixed lanes: within a lane-count section the same step always lands in the same lane (on a
+      // 3-lane field the middle lane belongs to either thumb, so the alternation may move a step there).
       const sections = chart.sections!;
       const sectionAt = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).length;
+      const lanesOfSection = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).pop()![1];
       const laneOf = new Map<string, number>();
       for (const n of lane) {
-        if (n[3]) continue;
+        if (n[3] || lanesOfSection(n[0]) < 4) continue;
         const key = `${sectionAt(n[0])}:${stepOf(n[0], bpm)}`;
         if (laneOf.has(key)) expect(laneOf.get(key), `${chapter}: ${key}`).toBe(n[1]);
         else laneOf.set(key, n[1]);

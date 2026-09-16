@@ -24,7 +24,7 @@ import {
 } from '@/shared/ui';
 import type { ChartFile } from '@/shared/types/chart';
 import { getSettings, updateSettings } from '@/entities/settings';
-import { CoverScene, TrackCover } from '@/entities/track';
+import { CoverScene, TrackCover, trackTint } from '@/entities/track';
 import { GameSession, LEVELS, REFILL_AT, REVIVE_IDLE, REVIVE_OFFER_SEC, reviveReducer, type SessionEvent } from '@/features/play-chart';
 import { saveResult } from '@/features/save-result';
 import { trackSpell } from '@/features/track-progress';
@@ -306,6 +306,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       )}
     </div>
   );
+  // The overlays' primary buttons wear the playing track's accent (custom songs keep the cyan).
+  const tint = source === 'catalog' ? trackTint(chart.id, chart.genre) : undefined;
   const cover = (
     <div className="game-cover120" aria-hidden="true">
       <TrackCover id={chart.id} genre={chart.genre} />
@@ -376,6 +378,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
                 </Disc>
               }
               label={dict.retry}
+              tint={tint}
               sub={chart.title}
               beat
               onClick={() => setAttempt((n) => n + 1)}
@@ -430,6 +433,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
                 </Disc>
               }
               label={dict.resume}
+              tint={tint}
               sub={chart.title}
               beat
               autoFocus
@@ -440,7 +444,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
       {fail !== null && <FailFrame stars={fail.stars} />}
 
-      {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} title={chart.title} onAccept={acceptRevive} onDecline={declineRevive} />}
+      {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} title={chart.title} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
     </div>
   );
 }
@@ -467,6 +471,8 @@ function FailFrame({ stars }: { stars: number }) {
 interface ReviveProps {
   phase: 'offer' | 'ad' | 'refill';
   title: string;
+  /** The playing track's accent for «ПРОДОЛЖИТЬ». */
+  tint?: string;
   onAccept: () => void;
   onDecline: () => void;
 }
@@ -477,7 +483,7 @@ interface ReviveProps {
  * with its own ring; after the reward (frame 21) the hearts pop back with sparks and the canvas
  * counts «3 / 2 / 1» under a light veil.
  */
-function ReviveFrame({ phase, title, onAccept, onDecline }: ReviveProps) {
+function ReviveFrame({ phase, title, tint, onAccept, onDecline }: ReviveProps) {
   const [left, setLeft] = useState(REVIVE_OFFER_SEC);
   const [ad, setAd] = useState({ progress: 0, remaining: 0 });
   useEffect(() => {
@@ -555,6 +561,7 @@ function ReviveFrame({ phase, title, onAccept, onDecline }: ReviveProps) {
                   </Disc>
                 }
                 label={dict.continue}
+                tint={tint}
                 sub={dict.reviveSub}
                 beat
                 autoFocus

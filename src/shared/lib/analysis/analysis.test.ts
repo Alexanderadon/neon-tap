@@ -198,13 +198,13 @@ describe('composeChart', () => {
     }
   });
 
-  it('draws lane counts from the budget pools (3–5, intro on 4), in sections of at least 16 bars on 8-bar boundaries', () => {
+  it('draws lane counts from the budget pools (3–5, intro on 4), in sections of at least 8 bars on 8-bar boundaries', () => {
     const sections = chart.sections!;
     expect(sections[0]).toEqual([0, 4]);
     for (const [, c] of sections) expect(c >= 3 && c <= 5).toBe(true);
     for (let i = 1; i < sections.length; i++) {
       expect(sections[i][0] % 16).toBeCloseTo(0, 6);
-      expect(sections[i][0] - sections[i - 1][0]).toBeGreaterThanOrEqual(32);
+      expect(sections[i][0] - sections[i - 1][0]).toBeGreaterThanOrEqual(16);
     }
     const lanesAt = (t: number) => sections.filter((s) => s[0] <= t + 1e-9).pop()![1];
     for (const n of chart.notes) expect(n[1]).toBeLessThan(lanesAt(n[0]));
@@ -388,14 +388,15 @@ describe('composeChart', () => {
     ).toBe(false);
   });
 
-  it('reads the same song for beginners: ★1–2, a beat and a third between tiles, no mechanics, 3–4 lanes', () => {
+  it('reads the same song for beginners: ★2–3, at least a third of a second between tiles, no rolls / slides / spinners / chords, 3–4 lanes', () => {
     const easy = composeChart(analysis, { chapter: 'easy' });
     const hard = composeChart(analysis);
-    expect(easy.stars).toBeLessThanOrEqual(2);
+    expect(easy.stars).toBeGreaterThanOrEqual(2);
+    expect(easy.stars).toBeLessThanOrEqual(3);
     expect(easy.stars).toBeLessThanOrEqual(hard.stars);
     expect(easy.notes.length).toBeGreaterThan(40);
     expect(easy.notes.length).toBeLessThanOrEqual(hard.notes.length);
-    expect(minEventGap(easy.notes)).toBeGreaterThanOrEqual(0.36 - 1e-9);
+    expect(minEventGap(easy.notes)).toBeGreaterThanOrEqual(0.3 - 1e-9);
     expect(easy.notes.some((n) => n[3] === 'roll' || n[3] === 'slide' || n[3] === 'spin' || n[3] === 'slow')).toBe(false);
     expect(easy.notes.some((n) => n[3] === 'heart')).toBe(true);
     expect(easy.notes.some((n) => isChord(easy.notes, n))).toBe(false);
@@ -428,7 +429,7 @@ describe('composeChart', () => {
     }
     expect(thumbViolations(c.notes, c.sections!)).toEqual([]);
     expect(composeChart(song, { chapter: 'easy' }).notes.some((n) => n[3] === 'spin')).toBe(false);
-    expect(composeChart(song, { chapter: 'medium' }).notes.filter((n) => n[3] === 'spin').length).toBe(1);
+    expect(composeChart(song, { chapter: 'medium' }).notes.filter((n) => n[3] === 'spin').length).toBeLessThanOrEqual(2);
     // A quiet stretch whose energy does not really drop (a wash at 0.48 against a 0.75 median), and a song
     // without a breakdown, get no spinner.
     const shallow = fakeAnalysis(48, (bar, step) => ((bar >= 8 && bar < 11) || (bar >= 40 && bar < 43) ? { strength: 0.48 } : breakdown(bar, step)));

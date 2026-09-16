@@ -88,6 +88,11 @@ export function coverImage(id: string): string | null {
   return cover ? `/${cover}` : null;
 }
 
+/** The track's accent colour for the play button: the picture's tint, else the procedural palette's accent. */
+export function trackTint(id: string, genre: Genre | undefined): string {
+  return findTrack(id)?.tint ?? coverSpec(id, genre).palette.accent;
+}
+
 export function coverSpec(id: string, genre: Genre | undefined): CoverSpec {
   const g = genre && isGenre(genre) ? genre : DEFAULT_GENRE;
   // A pack's tracks share one cover: the art is seeded by the pack, not the track.

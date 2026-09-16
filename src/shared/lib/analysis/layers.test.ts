@@ -312,14 +312,17 @@ describe('composeChart with layers', () => {
     expect(twoAtOnce(composeChart(beats, { layers: alone, targetStars: 5 }).notes)).toBe(false);
   });
 
-  it('changes the lane count only where a drop opens, in 8-bar blocks of at least 16 bars', () => {
+  it('changes the lane count where the music changes level, in 8-bar blocks of at least 8 bars', () => {
     const long = 64;
     const oneVoice = fakeLayers(long, (l, _b, step) => (l === 'vocals' ? (step % 4 === 0 ? 1 : 0) : 0.05));
-    // Nothing changes in the music: one section.
+    // Nothing changes in the music: the field opens for the loud song and re-shapes only by the occasional 16-bar chance.
     const steady = fakeAnalysis(long, drumMix);
-    expect(composeChart(steady, { layers: oneVoice, targetStars: 5 }).sections).toEqual([[0, 5]]);
+    const flat = composeChart(steady, { layers: oneVoice, targetStars: 5 }).sections!;
+    expect(flat[0][0]).toBe(0);
+    expect([4, 5]).toContain(flat[0][1]);
+    expect(flat.length).toBeLessThanOrEqual(3);
     // A quiet intro, the drop at bar 16, a quiet verse in bars 32–47, the drop again: the field opens to five
-    // lanes at the drop and keeps them — a verse never re-shapes the field, so the whole song is two sections.
+    // lanes at the drop, may close for the verse and opens again — every change on a level change, on an 8-bar edge.
     const verse = fakeAnalysis(long, (bar, step) => {
       const s = drumMix(bar, step);
       return bar < 16 || (bar >= 32 && bar < 48) ? { ...s, strength: (s.strength ?? 0) * 0.3 } : s;
@@ -327,13 +330,16 @@ describe('composeChart with layers', () => {
     let trace: ComposeTrace | undefined;
     const c2 = composeChart(verse, { layers: oneVoice, targetStars: 5, seed: 3, onTrace: (t) => (trace = t) });
     const barsAt = c2.sections!.map(([time]) => Math.round(time / 2));
-    expect(barsAt).toEqual([0, 16]);
-    expect(c2.sections!.map(([, lanes]) => lanes)).toEqual([4, 5]);
+    expect(barsAt[0]).toBe(0);
+    expect(barsAt).toContain(16);
+    expect(c2.sections![0][1]).toBe(4);
+    expect(c2.sections![barsAt.indexOf(16)][1]).toBe(5);
+    for (const [, lanes] of c2.sections!) expect(lanes >= 3 && lanes <= 5).toBe(true);
     expect(trace!.levels.slice(0, 4).every((l) => l < 2)).toBe(true);
     expect(trace!.levels.slice(8, 12).every((l) => l < 2)).toBe(true);
     for (let i = 1; i < barsAt.length; i++) {
       expect(barsAt[i] % 8).toBe(0);
-      expect(barsAt[i] - barsAt[i - 1]).toBeGreaterThanOrEqual(16);
+      expect(barsAt[i] - barsAt[i - 1]).toBeGreaterThanOrEqual(8);
     }
   });
 

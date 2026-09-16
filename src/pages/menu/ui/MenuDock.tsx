@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { ActionZone, CrystalIcon, Disc, Icon, ObjButton, PrimaryAction, Trio } from '@/shared/ui';
-import type { TrackMeta } from '@/entities/track';
+import { trackTint, type TrackMeta } from '@/entities/track';
 import type { LockState } from '@/widgets/track-list';
 
 /** One of the three doors in the bottom row; the door the player stands in becomes «В меню». */
@@ -81,6 +81,7 @@ export function MenuDock({ doors, track, lock, stars, busy, onPlay }: Props) {
         }
         label={dict.play}
         sub={track.title}
+        tint={trackTint(track.id, track.genre)}
         beat={!busy}
         disabled={busy}
         onClick={onPlay}

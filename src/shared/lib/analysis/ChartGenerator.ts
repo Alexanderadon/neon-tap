@@ -11,6 +11,7 @@ import {
   foldBpm,
   gapSlots,
   rateStarsBudget,
+  slowBarScale,
   targetStars,
   windowPeak,
   type Budget,
@@ -69,6 +70,8 @@ const HOLD_MIX_SUSTAIN = 6;
 const HOLD_MIX_LOW = 0.55;
 /** The other thumb taps at most this many figure tiles per beat under a hold. */
 const HOLD_TAPS_PER_BEAT = 1;
+/** Taps of the free thumb under a hold are at least this far apart (it may own a single lane). */
+const HOLD_TAP_GAP_SEC = 0.3;
 /** A hold swallows only figure steps quieter than this share of the profile max. */
 const HOLD_SWALLOW_REL = 0.5;
 /** Legato phrases (this share of the figure rings ≥ a beat): long tiles are the honest reading — a third of the figure stays taps, 3 holds per bar. */
@@ -104,8 +107,14 @@ const SPIN_COOLDOWN_BARS = 24;
 const SPIN_ENERGY_REL = 0.6;
 const SPIN_AUDIBLE = 0.1;
 /** Lane-count sections: 8-bar blocks, at least 16 bars each, an empty 0.6 s (≥ a beat) before a change — the field morph plus a hit window must fit. */
+/** The field re-shapes only on 8-bar block edges; a section lasts at least a block. */
 const SECTION_BARS = 8;
-const SECTION_MIN_BARS = 16;
+const SECTION_MIN_BARS = 8;
+/** On a level change a pool that still holds the current count keeps it this often. */
+const SECTION_KEEP_CHANCE = 0.5;
+/** A section of one level this long may re-shape by chance, so a flat song is not one static field. */
+const SECTION_RESHAPE_BARS = 16;
+const SECTION_RESHAPE_CHANCE = 0.6;
 const SECTION_GAP_SEC = 0.6;
 /** A spell note every this many bars, starting at bar 4 (after the intro); slow-motion only on the hardest charts. */
 const SPELL_EVERY_BARS = 8;
@@ -285,11 +294,16 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       }
     return prof.map((v, k) => (cnt[k] ? v / cnt[k] : 0));
   });
+  // A slow song's bar is long: the per-bar caps grow with it (up to ×2 at 60 BPM), the per-second
+  // windows still bound the density — otherwise a 70 BPM ballad gets two tiles per 3.4 s and feels empty.
+  const slowScale = slowBarScale(slotSec * STEPS_PER_BAR);
+  const stepsAt = (level: 0 | 1 | 2): number => Math.round(B.steps[level] * slowScale);
+  const capAt = (level: 0 | 1 | 2): number => Math.round(B.maxPerBar[level] * slowScale);
   const figures: Figure[] = [];
   const figuresOf = (): void => {
     for (let p = 0; p < phrases.length; p++) {
       const prev = p > 0 && levels[p - 1] === levels[p] ? figures[p - 1] : undefined;
-      figures.push(figureOf(profiles[p], B.steps[levels[p]], gapFor(levels[p]), pair, prev));
+      figures.push(figureOf(profiles[p], stepsAt(levels[p]), gapFor(levels[p]), pair, prev));
     }
   };
   figuresOf();
@@ -319,7 +333,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
     for (const bar of bars) {
       const p = phraseOf(bar);
       const fig = figures[p];
-      const cap = B.maxPerBar[levels[p]];
+      const cap = capAt(levels[p]);
       const pr = pairOf(fig);
       const isPair = (a: number, b: number): boolean => !!pr && pr.includes(a) && pr.includes(b);
       const minGap = (a: number, b: number): number => (isPair(a, b) ? B.pairMinSec : B.minGapSec);
@@ -402,7 +416,9 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   };
   shrink();
 
-  // ---- Pass 7: sections — a lane count per 8-bar block from the budget's pools, at least 16 bars per section ----
+  // ---- Pass 7: sections — the field follows the music: a lane count per 8-bar block from the
+  //      budget's pool for the block's level (quiet 3 · medium 4 · loud 5 from ★4), a section at least
+  //      8 bars long; a long flat stretch still re-shapes every 16 bars by seeded chance. Never 6. ----
   const sections: SectionTuple[] = [];
   const lastBarOfSection = new Set<number>();
   const sectionsOf = (): void => {
@@ -410,29 +426,30 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       const ps = [Math.floor(b0 / PHRASE_BARS), Math.floor((b0 + PHRASE_BARS) / PHRASE_BARS)].filter((p) => p < levels.length);
       return Math.round(ps.reduce((a, p) => a + levels[p], 0) / Math.max(1, ps.length)) as 0 | 1 | 2;
     };
-    // Quiet and medium blocks share one pool: a verse never re-shapes the field, only a drop does (and the
-    // way back out of it), so the whole song is two or three sections, not one per level change.
-    const calm = [...new Set([...B.lanes[0], ...B.lanes[1]])];
-    const poolOf = (level: 0 | 1 | 2): readonly number[] => (level === 2 ? B.lanes[2] : calm);
+    const pick = (pool: readonly number[], avoid: number): number => {
+      const other = pool.filter((n) => n !== avoid);
+      const from = other.length ? other : pool;
+      return from[Math.floor(random() * from.length)];
+    };
     let prevLanes = LANE_COUNT;
     let sectionLevel: 0 | 1 | 2 = blockLevel(0);
     let sectionStart = 0;
     for (let b0 = 0; b0 < bars.length; b0 += SECTION_BARS) {
       const block = bars.slice(b0, b0 + SECTION_BARS);
       const level = blockLevel(b0);
-      const pool = poolOf(level);
+      // Chapter one never opens a fifth lane, whatever its ★ allows.
+      const wide = B.lanes[level];
+      const pool = chapter === 'easy' && wide.some((n) => n <= 4) ? wide.filter((n) => n <= 4) : wide;
       let lanes = prevLanes;
+      const full = block.length === SECTION_BARS && bars.length - b0 >= SECTION_BARS;
       if (b0 === 0) lanes = pool.includes(LANE_COUNT) ? LANE_COUNT : pool[Math.floor(random() * pool.length)];
-      // A new section needs a level change the current count cannot serve, a full block, a section
-      // at least 16 bars old — and at least 16 bars left to play it.
-      else if (
-        level !== sectionLevel &&
-        !pool.includes(prevLanes) &&
-        block.length === SECTION_BARS &&
-        b0 - sectionStart >= SECTION_MIN_BARS &&
-        bars.length - b0 >= SECTION_MIN_BARS
-      )
-        lanes = pool[Math.floor(random() * pool.length)];
+      else if (full && b0 - sectionStart >= SECTION_MIN_BARS) {
+        // The music changed level: the field takes the new level's shape (a pool that still holds the
+        // current count keeps it half the time, so a verse → chorus is not always a morph).
+        if (level !== sectionLevel) lanes = pool.includes(prevLanes) && random() < SECTION_KEEP_CHANCE ? prevLanes : pick(pool, prevLanes);
+        // Same level for a long time: re-shape now and then so a flat song is not one static field.
+        else if (b0 - sectionStart >= SECTION_RESHAPE_BARS && pool.length > 1 && random() < SECTION_RESHAPE_CHANCE) lanes = pick(pool, prevLanes);
+      }
       if (b0 === 0 || lanes !== prevLanes) {
         sectionStart = b0;
         sectionLevel = level;
@@ -485,7 +502,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   //     Rolls go first: they claim their half-bars, and the holds are then placed around them (a hold placed
   //     first would only be cut or dropped by the roll, together with the holds it had kept out).
   const rolls = (): void => {
-    const perPhrase = rollPolicy === 'none' ? 0 : L ? B.rollsPerPhrase : Math.min(1, B.rollsPerPhrase);
+    const perPhrase = rollPolicy === 'none' || chapter === 'easy' ? 0 : L ? B.rollsPerPhrase : Math.min(1, B.rollsPerPhrase);
     if (perPhrase <= 0) return;
     const used = new Map<number, number>();
     const STREAM = [8, 10, 12, 14];
@@ -601,9 +618,15 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
       if (lastBarOfSection.has(ev.bar.index)) dur = Math.min(dur, barEnd(ev.bar) - sectionGapSlots - ev.si);
       else if (lastBarOfSection.has(ev.bar.index + 1)) dur = Math.min(dur, barEnd(ev.bar) + STEPS_PER_BAR - sectionGapSlots - ev.si);
       // One long note at a time: the hold ends a release before the next long note, chord or circle.
-      for (let j = i + 1; j < events.length && events[j].si < ev.si + dur + releaseSlots; j++)
-        if (isLong(events[j]) || events[j].size > 1 || events[j].kind === 'circle' || events[j].kind === 'spin')
+      for (let j = i + 1; j < events.length && events[j].si < ev.si + dur + releaseSlots; j++) {
+        const fastPair = j + 1 < events.length && slots[events[j + 1].si].time - slots[events[j].si].time < HOLD_TAP_GAP_SEC - EPS;
+        // …and before a fast pair: the free thumb may own a single lane and cannot play two tiles on it that close.
+        if (isLong(events[j]) || events[j].size > 1 || events[j].kind === 'circle' || events[j].kind === 'spin' || fastPair) {
           dur = Math.min(dur, events[j].si - releaseSlots - ev.si);
+          // The release is real seconds; the tracked grid jitters, so the slot count alone can fall short of it.
+          while (dur > 0 && slots[events[j].si].time - timeAt(ev.si + dur) < RELEASE_SEC - EPS) dur--;
+        }
+      }
       // The other thumb keeps at most one figure tap per beat under the hold; weak steps of this bar are swallowed
       // while at least half the figure (a third in legato phrases) stays taps. Shorten by beats until that holds.
       let eat: Event[] = [];
@@ -617,7 +640,11 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
           eat.push(e);
           taps--;
         }
-        if (under.length - eat.length <= Math.floor(dur / 4) * HOLD_TAPS_PER_BEAT) break;
+        const kept = under.filter((e) => !eat.includes(e));
+        // The free thumb may have a single lane (a held middle lane on 3 lanes): its taps under the hold stay
+        // at least HOLD_TAP_GAP_SEC apart, or the same lane would be hit twice inside one judgement span.
+        const spaced = kept.every((e, k) => k === 0 || slots[e.si].time - slots[kept[k - 1].si].time >= HOLD_TAP_GAP_SEC - EPS);
+        if (kept.length <= Math.floor(dur / 4) * HOLD_TAPS_PER_BEAT && spaced) break;
       }
       if (dur < HOLD_MIN_SLOTS) continue;
       for (const e of eat) swallowed.add(e);
@@ -660,7 +687,8 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   //     long notes a release away and admits at most one other-thumb tap per beat under it, which a slide
   //     (the same thumb, a neighbour lane) carries just as well.
   const slides = (): void => {
-    if (B.slidesPerPhrase <= 0) return;
+    // Chapter one plays plain tiles and holds only, whatever its ★ allows.
+    if (B.slidesPerPhrase <= 0 || chapter === 'easy') return;
     const used = new Map<number, number>();
     for (const ev of events) {
       if (!isLong(ev) || ev.kind || ev.hold < SLIDE_SLOTS || ev.bar.lanes < 3) continue;
@@ -741,7 +769,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
   // 8f. Spinners (★3+): a breakdown — a quiet run after louder bars whose energy really drops, still audible — or the ending.
   const spinners = (): void => {
-    if (B.spinners <= 0) return;
+    if (B.spinners <= 0 || chapter === 'easy') return;
     const medianEnergy = percentile(
       bars.map((b) => b.energy),
       0.5,
@@ -776,12 +804,13 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
   };
   spinners();
 
-  // 8g. Spells: the first plain tap of bars 4, 12, 20 … carries a heart; the hardest charts alternate with slow-motion.
+  // 8g. Spells: the first plain tap from bars 4, 12, 20 … carries a heart; the hardest charts alternate with slow-motion.
   const spells = (): void => {
     const kinds: readonly SpellKind[] = target >= SLOW_FROM_STARS ? ['slow', 'heart'] : ['heart'];
     let n = 0;
     for (let b = 4; b < bars.length; b += SPELL_EVERY_BARS) {
-      const ev = events.find((e) => (e.bar.index === b || e.bar.index === b + 1) && !e.kind && !isLong(e) && e.size === 1);
+      // The first plain tap of the phrase (a phrase of holds only carries no spell).
+      const ev = events.find((e) => e.bar.index >= b && e.bar.index < b + PHRASE_BARS && !e.kind && !isLong(e) && e.size === 1);
       if (ev) ev.kind = kinds[n++ % kinds.length];
     }
   };

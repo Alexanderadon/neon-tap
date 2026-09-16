@@ -59,7 +59,7 @@ def make(src: Path, out: Path) -> None:
         card = fill(src_im)
         out.parent.mkdir(parents=True, exist_ok=True)
         card.save(out, "WEBP", quality=82, method=6)
-        print(f"{out} ({out.stat().st_size // 1024} KB, portrait)")
+        print(f"{out} ({out.stat().st_size // 1024} KB, portrait) tint {tint(src_im)}")
         return
     pic = square(src_im)
     pad = (H - W) // 2
@@ -74,7 +74,38 @@ def make(src: Path, out: Path) -> None:
     card.paste(pic, (0, pad), alpha)
     out.parent.mkdir(parents=True, exist_ok=True)
     card.save(out, "WEBP", quality=82, method=6)
-    print(f"{out} ({out.stat().st_size // 1024} KB)")
+    print(f"{out} ({out.stat().st_size // 1024} KB) tint {tint(src_im)}")
+
+
+
+
+
+def tint(im: Image.Image) -> str:
+    """
+    The picture's accent for the game's buttons: the most common clearly saturated, mid-light colour
+    of the middle square (posters are dark, so the accent is the neon that stands out), lifted to a
+    lightness the dark button text reads on. Falls back to the mean colour when nothing is saturated.
+    """
+    from colorsys import hls_to_rgb, rgb_to_hls
+
+    small = square(im).resize((64, 64), Image.BILINEAR).quantize(24, method=Image.Quantize.MEDIANCUT).convert("RGB")
+    counts: dict[tuple[int, int, int], int] = {}
+    for px in small.getdata():
+        counts[px] = counts.get(px, 0) + 1
+    best: tuple[int, int, int] | None = None
+    score = 0.0
+    for (r, g, b), n in counts.items():
+        h, l, s = rgb_to_hls(r / 255, g / 255, b / 255)
+        if s < 0.45 or l < 0.2 or l > 0.8:
+            continue
+        v = n * (0.5 + s)
+        if v > score:
+            score, best = v, (r, g, b)
+    if best is None:
+        best = tuple(int(c) for c in small.resize((1, 1), Image.BILINEAR).getpixel((0, 0)))  # type: ignore[assignment]
+    h, l, s = rgb_to_hls(best[0] / 255, best[1] / 255, best[2] / 255)
+    r, g, b = hls_to_rgb(h, min(0.72, max(0.55, l)), max(0.6, s))
+    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
 
 
 if __name__ == "__main__":

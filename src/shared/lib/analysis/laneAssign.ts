@@ -124,16 +124,19 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
    */
   let busy: { hand: 0 | 1; until: number } | null = null;
   /**
-   * The figure's lanes, remembered per figure and step: the same "tu-DUN-dun" lands in the same
-   * lanes bar after bar, so the hands learn the pattern instead of chasing a new layout every bar.
+   * The figure's lanes, remembered per step within a field: the same "tu-DUN-dun" lands in the same
+   * lanes bar after bar, so the hands learn the pattern instead of chasing a new layout every bar —
+   * and a step keeps its lane even when the figure around it changes.
    */
-  const figureLane = new Map<string, number>();
+  const figureLane = new Map<number, number>();
 
   for (const composed of events) {
     const slot = slots[composed.si];
     const n = composed.bar.lanes;
     if (n !== lastLanes) {
       heldUntil.fill(-1);
+      // A new field is a new layout: the figure learns its lanes afresh (a lane 3 memory means nothing on 3 lanes).
+      figureLane.clear();
       lastLanes = n;
     }
     if (busy && busy.until <= composed.si) busy = null;
@@ -166,8 +169,7 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       motion = new Motion(kinds[Math.floor(random() * kinds.length)], n, random);
     }
 
-    let candidates = free.filter((l) => laneRun[l] < 2);
-    if (!candidates.length) candidates = free;
+    let candidates = free;
     // Two thumbs, not one: a tile closer than FAST_SEC to the last one (or a long note starting within an
     // eighth of it) is played by the OTHER hand — one thumb cannot hop lanes that fast. The middle lane of
     // an odd field belongs to either hand, so it never forces a hop.
@@ -181,6 +183,9 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       const fresh = candidates.filter((l) => !lastEventLanes.includes(l));
       if (fresh.length) candidates = fresh;
     }
+    // Not three in a row in one lane — when the hands rules above leave a choice.
+    const rested = candidates.filter((l) => laneRun[l] < 2);
+    if (rested.length) candidates = rested;
 
     let lanes: number[];
     if (ev.size >= 2 && !busy) {
@@ -201,9 +206,9 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
       lanes = [spread[(circleOffset + circleIdx) % spread.length]];
     } else {
       let lane: number;
-      const memory = figureLane.get(`${ev.figure}:${ev.step}`);
+      const memory = figureLane.get(ev.step);
       // A step without a lane yet prefers one no other step of its figure has taken, so the figure spreads over the field.
-      const taken = new Set([...figureLane].filter(([key]) => key.startsWith(`${ev.figure}:`)).map(([, l]) => l));
+      const taken = new Set(figureLane.values());
       const untaken = candidates.filter((l) => !taken.has(l));
       if (memory === undefined && untaken.length) candidates = untaken;
       if (memory !== undefined && candidates.includes(memory) && gap > 1) {
@@ -228,7 +233,7 @@ export function assignLanes(events: readonly Event[], slots: readonly Slot[], ra
         lane = choose[Math.floor(random() * choose.length)];
       }
       lanes = [lane];
-      if (ev.hold === 0 && !ev.kind) figureLane.set(`${ev.figure}:${ev.step}`, lane);
+      if (ev.hold === 0 && !ev.kind) figureLane.set(ev.step, lane);
     }
 
     const time = round3(slot.time);
