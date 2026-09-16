@@ -10,6 +10,8 @@ import { OfferHero } from './OfferHero';
 interface Props {
   kind: OfferKind;
   sku: Sku;
+  /** Illustration name when it differs from the kind — the crystals popup shows the chosen pack. */
+  hero?: string;
   /** The procedural placeholder of the hero slot (the image, when present, lies over it). */
   placeholder: ReactNode;
   /** The gold headline tag(s). */
@@ -34,7 +36,7 @@ interface Props {
  * [note] · «Не сейчас» · «КУПИТЬ · 249 ₽». The primary turns into a dark «ОПЛАТА…» while the
  * store processes; «Не сейчас», the veil, Escape and the back swipe close it (and cancel the stub).
  */
-export function OfferSheet({ kind, sku, placeholder, tags, benefit, coins, note, title, onClose, onResult, primaryRef }: Props) {
+export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins, note, title, onClose, onResult, primaryRef }: Props) {
   const titleId = useId();
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
@@ -77,7 +79,7 @@ export function OfferSheet({ kind, sku, placeholder, tags, benefit, coins, note,
       <h2 id={titleId} className="offer-title">
         {title}
       </h2>
-      <OfferHero name={kind} placeholder={placeholder} />
+      <OfferHero name={hero ?? kind} placeholder={placeholder} />
       <div className="offer-tags">{tags}</div>
       <div className="offer-benefit">{benefit}</div>
       <div className="offer-coins">{coins}</div>
