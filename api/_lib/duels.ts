@@ -10,6 +10,8 @@ export const MAX_SCORE = 100_000_000;
 /** One run in a duel: who, how much. */
 export interface DuelRun {
   name: string;
+  /** The runner's chosen avatar id (lowercase letters), when they sent one. */
+  avatar?: string;
   score: number;
   accuracy: number;
   rank: Rank;
@@ -55,10 +57,25 @@ export function validateRun(body: unknown, now: Date = new Date()): Validation<D
   if (!isFiniteNumber(b.score) || b.score < 0 || b.score > MAX_SCORE) return { ok: false, error: 'score' };
   if (!isFiniteNumber(b.accuracy) || b.accuracy < 0 || b.accuracy > 1) return { ok: false, error: 'accuracy' };
   if (typeof b.rank !== 'string' || !(RANKS as readonly string[]).includes(b.rank)) return { ok: false, error: 'rank' };
+  const avatar = sanitizeAvatar(b.avatar);
   return {
     ok: true,
-    value: { name, score: Math.round(b.score), accuracy: Math.round(b.accuracy * 10_000) / 10_000, rank: b.rank as Rank, at: now.toISOString() },
+    value: {
+      name,
+      ...(avatar ? { avatar } : {}),
+      score: Math.round(b.score),
+      accuracy: Math.round(b.accuracy * 10_000) / 10_000,
+      rank: b.rank as Rank,
+      at: now.toISOString(),
+    },
   };
+}
+
+const AVATAR_SLUG = /^[a-z]{1,16}$/;
+
+/** An avatar id as sent by the client: lowercase letters only, else dropped (the client maps unknown ids to the letter avatar). */
+export function sanitizeAvatar(x: unknown): string {
+  return typeof x === 'string' && AVATAR_SLUG.test(x) ? x : '';
 }
 
 /** Validate a new duel: a track plus the host's run. */

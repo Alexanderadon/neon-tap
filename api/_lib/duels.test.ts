@@ -26,6 +26,16 @@ describe('duels', () => {
     expect(validateRun({ name: 'x', score: 1, accuracy: 0.5, rank: 'Z' }).ok).toBe(false);
   });
 
+  it('carries a lowercase avatar id through and drops anything else', () => {
+    const at = new Date('2026-09-14T00:00:00Z');
+    const withAvatar = validateRun({ name: 'x', score: 1, accuracy: 0.5, rank: 'A', avatar: 'fox' }, at);
+    expect(withAvatar.ok && withAvatar.value.avatar).toBe('fox');
+    const bad = validateRun({ name: 'x', score: 1, accuracy: 0.5, rank: 'A', avatar: '../x' }, at);
+    expect(bad.ok && 'avatar' in bad.value).toBe(false);
+    const none = validateRun({ name: 'x', score: 1, accuracy: 0.5, rank: 'A' }, at);
+    expect(none.ok && 'avatar' in none.value).toBe(false);
+  });
+
   it('keeps the best reply per name, best first, and ignores the host answering themselves', () => {
     let d = addReply(duel, run('Петя', 50_000));
     d = addReply(d, run('петя', 61_000));
