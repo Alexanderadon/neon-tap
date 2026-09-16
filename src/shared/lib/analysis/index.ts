@@ -6,7 +6,7 @@ export type { BpmEstimate } from './BpmEstimator';
 export { trackBeats, estimateDownbeatPhase } from './BeatTracker';
 export { analyzeSong, STEPS_PER_BAR, STEPS_PER_BEAT, BEATS_PER_BAR } from './SongAnalyzer';
 export type { Slot, SongAnalysis, AnalysisStage } from './SongAnalyzer';
-export { composeChart } from './ChartGenerator';
+export { composeChart, chartBarTimes } from './ChartGenerator';
 export type { ComposeOptions, ComposeTrace, RollPolicy } from './ChartGenerator';
 export { salience, PHRASE_BARS } from './bars';
 export { figureOf } from './figure';

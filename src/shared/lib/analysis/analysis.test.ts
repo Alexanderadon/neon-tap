@@ -96,6 +96,14 @@ describe('analyzeSong', () => {
     expect(a.beatConfidence).toBeGreaterThan(0.8);
   });
 
+  it('folds a double-tempo reading into the playable band: 207 BPM clicks read as 103.5', () => {
+    const fast = 60 / 207;
+    const truth = Array.from({ length: 120 }, (_, i) => 0.5 + i * fast);
+    const gains = truth.map((_, i) => (i % 2 === 0 ? 1 : 0.55));
+    const a = analyzeSong(synthesizeClicks(truth, 40, SR, 42, gains), SR);
+    expect(Math.abs(a.bpm - 103.5)).toBeLessThanOrEqual(2);
+  });
+
   it('builds a 16-step grid per bar, starting on a downbeat, covering the track', () => {
     expect(analysis.beats[0]).toBeLessThanOrEqual(times[0] + 0.03);
     expect(analysis.beats[analysis.beats.length - 1]).toBeGreaterThanOrEqual(times[times.length - 1] - 0.03);

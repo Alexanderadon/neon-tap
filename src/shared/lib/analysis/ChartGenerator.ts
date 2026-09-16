@@ -144,6 +144,22 @@ export interface ComposeTrace {
   fails: string[];
 }
 
+/**
+ * The bar grid a chart is rated on — every grouped bar's first slot (a partial first bar included)
+ * and the end of the last bar. The composer's check and `generate-charts`' gate must use the same
+ * grid, or a chart can pass one and fail the other by a bar's shift of its phrases.
+ */
+export function chartBarTimes(analysis: SongAnalysis): number[] {
+  const slots = analysis.slots;
+  const bars = groupBars(slots);
+  const last = slots.length - 1;
+  const slotSec = slots.length > 1 ? (slots[last].time - slots[0].time) / last : 15 / analysis.bpm;
+  const times = bars.map((b) => round3(b.slots[0].time));
+  const endSlot = bars[bars.length - 1].start + bars[bars.length - 1].slots.length;
+  times.push(round3(endSlot <= last ? slots[endSlot].time : slots[last].time + (endSlot - last) * slotSec));
+  return times;
+}
+
 export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}): ChartLevel {
   const seed = opts.seed ?? 1337;
   const chapter = opts.chapter ?? 'normal';
@@ -776,8 +792,7 @@ export function composeChart(analysis: SongAnalysis, opts: ComposeOptions = {}):
 
   // ---- Pass 10: the rating is a check. When a mechanic pushed a feature over the target, the least
   //      audible plain tap in the offending stretch goes, until the chart fits. ----
-  const barTimes = bars.map((b) => round3(b.slots[0].time));
-  barTimes.push(round3(timeAt(barEnd(bars[bars.length - 1]))));
+  const barTimes = chartBarTimes(analysis);
   const audAt = new Map<number, number>();
   for (let gi = 0; gi < slots.length; gi++) audAt.set(round3(slots[gi].time), aud[gi]);
   let rating = rateStarsBudget(notes, analysis.bpm, sections, barTimes);
