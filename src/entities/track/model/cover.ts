@@ -1,4 +1,5 @@
 import { GENRES, type Genre } from '@/shared/types/chart';
+import { findTrack } from './catalog';
 
 /**
  * Procedural cover art — a deterministic list of SVG primitives built from the track id hash
@@ -83,7 +84,8 @@ const r1 = (v: number) => Math.round(v * 10) / 10;
 /** Build the full cover description. Same `id` + `genre` → identical output. */
 export function coverSpec(id: string, genre: Genre | undefined): CoverSpec {
   const g = genre && isGenre(genre) ? genre : DEFAULT_GENRE;
-  const seed = hashId(`${id}|${g}`);
+  // A pack's tracks share one cover: the art is seeded by the pack, not the track.
+  const seed = hashId(`${findTrack(id)?.pack ?? id}|${g}`);
   const palette = COVER_PALETTES[g];
   const rnd = seededRandom(seed);
   const shapes = MOTIFS[g](rnd, palette);

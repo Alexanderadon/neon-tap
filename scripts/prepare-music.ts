@@ -1,6 +1,8 @@
 /**
  * assets-src/music-raw/* → public/music/<id>.mp3
  * Trims to ≤ 150 s (GDD: 90–150 s sessions), normalises loudness, fades the cut, encodes MP3 VBR -q:a 1 (~225 kbps: 128 kbps hissed on hi-hats in headphones).
+ * Usage: npm run assets:music            # every registry track
+ *        npm run assets:music -- id1 id2  # only these (new tracks)
  * Licenses report: `npm run assets:licenses`.
  */
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -24,7 +26,8 @@ const RAW_DIR = join(ROOT, 'assets-src', 'music-raw');
 const OUT_DIR = join(ROOT, 'public', 'music');
 const MAX_SEC = 150;
 
-const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
+const only = new Set(process.argv.slice(2));
+const tracks = (JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[]).filter((t) => only.size === 0 || only.has(t.id));
 mkdirSync(OUT_DIR, { recursive: true });
 
 for (const t of tracks) {

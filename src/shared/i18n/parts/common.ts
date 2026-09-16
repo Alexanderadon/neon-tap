@@ -229,6 +229,8 @@ export const common = {
   // --- deck ---
   deckAria: 'Колода треков',
   deckChapter: 'Глава {n}',
+  /** Named packs — chapters of their own after the numbered ones (keys = `pack` in the catalog). */
+  packNames: { rock: 'Рок-пак' } as Record<string, string>,
   deckNextChapter: 'Следующая глава',
   deckChapterProgress: 'пройдено {done} из {total}',
   deckDetails: 'Подробнее',

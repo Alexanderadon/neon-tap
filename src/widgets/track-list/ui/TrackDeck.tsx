@@ -3,7 +3,7 @@ import { dict, fmt } from '@/shared/i18n';
 import { sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
-import { CATALOG, TrackCover, coverSpec, type TrackMeta } from '@/entities/track';
+import { CATALOG, TrackCover, chapterAt, chapterTitle, coverSpec, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { writeDeckIndex } from '../model/deckPosition';
@@ -15,9 +15,6 @@ export interface TrackRef {
   id: string;
   title: string;
 }
-
-/** Tracks per chapter — the progress segments above the deck. */
-export const CHAPTER = 10;
 
 interface Props {
   /** The centre card (controlled: the page keeps it so the primary button and the records screen follow it). */
@@ -32,7 +29,7 @@ const storage = (): Storage | null => (typeof localStorage === 'undefined' ? nul
 /**
  * The deck: one card per track — cover art edge to edge, title, three stars, the flame and the
  * rank — with the neighbours peeking at the sides. Above it the chapter row: a gold «ГЛАВА N»
- * tag and one segment per track. Swipe (or tap the edge, or use the arrow keys) to flip; tapping
+ * (or «РОК-ПАК») tag and one segment per track of the chapter. Swipe (or tap the edge, or use the arrow keys) to flip; tapping
  * the centre card shows what the track is made of. Playing lives in the page's primary button.
  */
 export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
@@ -147,8 +144,8 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
     e.preventDefault();
   };
 
-  const chapter = Math.floor(index / CHAPTER);
-  const chapterTracks = CATALOG.slice(chapter * CHAPTER, chapter * CHAPTER + CHAPTER);
+  const chapter = chapterAt(index) ?? { start: 0, end: n, number: 1 };
+  const chapterTracks = CATALOG.slice(chapter.start, chapter.end);
   const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
 
   return (
@@ -159,18 +156,18 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
           className="deck-chapter"
           onClick={() => {
             sfxUi();
-            go(((chapter + 1) * CHAPTER) % n);
+            go(chapter.end % n);
           }}
           aria-label={dict.deckNextChapter}
         >
-          <Tag>{fmt(dict.deckChapter, { n: chapter + 1 })}</Tag>
+          <Tag>{chapterTitle(chapter)}</Tag>
         </button>
         <Segments
           states={chapterTracks.map<SegmentState>((t, i) =>
-            chapter * CHAPTER + i === index ? 'current' : starsForTrack(state.save.tracks[t.id]) > 0 ? 'done' : 'rest',
+            chapter.start + i === index ? 'current' : starsForTrack(state.save.tracks[t.id]) > 0 ? 'done' : 'rest',
           )}
           labels={chapterTracks.map((t) => fmt(dict.deckSegmentAria, { title: t.title }))}
-          onSelect={(i) => go(chapter * CHAPTER + i)}
+          onSelect={(i) => go(chapter.start + i)}
           aria-label={fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}
         />
       </header>

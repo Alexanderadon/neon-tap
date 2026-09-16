@@ -4,7 +4,7 @@ import { navigate, useRouteParams } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
 import { store } from '@/shared/lib/iap';
 import { Avatar, Chip, FrameBody, Icon, ObjButton, Panel, Screen, Stars, SubHeader, Tag, useSwipeBack } from '@/shared/ui';
-import { CATALOG, CoverScene } from '@/entities/track';
+import { CATALOG, CoverScene, chapterAt, chapterTitle } from '@/entities/track';
 import { GOALS, rankIndex, starsForTrack } from '@/entities/progress';
 import { useSettings } from '@/entities/settings';
 import { avatarArtOf } from '@/entities/avatar';
@@ -12,7 +12,7 @@ import { myDuels } from '@/entities/duel';
 import type { OfferKind } from '@/entities/offers';
 import { TopBar, type CounterTick } from '@/widgets/top-bar';
 import { OfferPopups, type OfferWalletTick } from '@/widgets/offer-popups';
-import { CHAPTER, TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, usePlayTrack } from '@/widgets/track-list';
+import { TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, usePlayTrack } from '@/widgets/track-list';
 import { GoalsPanel, goalsGotLine } from '@/widgets/goals-panel';
 import { DuelList, useMyDuels } from '@/widgets/duel-list';
 import { HistoryPanel } from '@/widgets/history-panel';
@@ -107,10 +107,10 @@ export function MenuPage() {
     duels: [shopDoor, { key: 'menu', onTap: () => goTo('deck') }, { key: 'profile', onTap: () => goTo('profile') }],
   };
 
-  const chapter = Math.floor(index / CHAPTER);
-  const chapterTracks = CATALOG.slice(chapter * CHAPTER, chapter * CHAPTER + CHAPTER);
+  const chapter = chapterAt(index) ?? { start: 0, end: CATALOG.length, number: 1 };
+  const chapterTracks = CATALOG.slice(chapter.start, chapter.end);
   const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
-  const chapterLine = `${fmt(dict.deckChapter, { n: chapter + 1 })} · ${fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}`;
+  const chapterLine = `${chapterTitle(chapter)} · ${fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}`;
 
   return (
     <Screen frame className="menu">
@@ -139,7 +139,7 @@ export function MenuPage() {
           <SubHeader center>
             <b>{track.title}</b>
             <span>·</span>
-            {fmt(dict.deckChapter, { n: chapter + 1 })}
+            {chapterTitle(chapter)}
           </SubHeader>
           <FrameBody scroll>
             <HistoryPanel trackId={track.id} />

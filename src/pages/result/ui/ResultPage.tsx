@@ -3,7 +3,7 @@ import { navigate } from '@/shared/lib/router';
 import { Icon, ObjButton, Screen } from '@/shared/ui';
 import { dict } from '@/shared/i18n';
 import { startSession, useSession } from '@/entities/play-session';
-import { CATALOG, CoverScene, TRACK_IDS, findTrack, loadChart } from '@/entities/track';
+import { CATALOG, CoverScene, TRACK_IDS, chapterAt, chapterTitle, findTrack, loadChart } from '@/entities/track';
 import { grandTotalStars, findGoal, nextUnlock, useProgress } from '@/entities/progress';
 import { attemptsOf, useHistory } from '@/entities/history';
 import {
@@ -29,8 +29,6 @@ import { AttemptLine } from '@/widgets/history-panel';
 import { OnlineLeaderboard } from '@/widgets/online-leaderboard';
 import './result-page.css';
 
-/** Tracks per chapter (the deck's «Глава N»). */
-const CHAPTER = 10;
 const NO_GOALS: readonly string[] = [];
 
 /**
@@ -98,7 +96,8 @@ export function ResultPage() {
   if (!chart || !result) return null;
 
   const isCatalog = source === 'catalog';
-  const chapter = isCatalog && trackIndex >= 0 ? Math.floor(trackIndex / CHAPTER) + 1 : undefined;
+  const chapterOfTrack = isCatalog && trackIndex >= 0 ? chapterAt(trackIndex) : undefined;
+  const chapter = chapterOfTrack ? chapterTitle(chapterOfTrack) : undefined;
 
   const record: RecordInfo | undefined = isCatalog
     ? {

@@ -34,6 +34,8 @@ interface RawTrack {
   genre: Genre;
   /** Premium track (shop item, paid with crystals) — copied into the chart file and the catalog. */
   premium?: boolean;
+  /** Named pack (`rock`): its tracks sit together after the main catalog as a chapter of their own. */
+  pack?: string;
   raw: string;
   sourceUrl: string;
   license: string;
@@ -120,6 +122,7 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
     sourceUrl: t.sourceUrl,
     genre: t.genre,
     ...(t.premium ? { premium: true } : {}),
+    ...(t.pack ? { pack: t.pack } : {}),
     audio: `music/${t.id}.mp3`,
     bpm: analysis.bpm,
     offset: analysis.beats[0] ?? 0,
@@ -141,7 +144,12 @@ const rank = (c: ChartFile): number => {
   const i = published.indexOf(c.id);
   return i < 0 ? published.length : i;
 };
-built.sort((a, b) => rank(a) - rank(b) || a.chart.stars - b.chart.stars || a.chart.notes.length - b.chart.notes.length || a.bpm - b.bpm);
+// Packs go after the main catalog, one after another in order of first appearance, each in its own published order.
+const packs = [...new Set(tracks.map((t) => t.pack).filter((p): p is string => !!p))];
+const packRank = (c: ChartFile): number => (c.pack ? 1 + packs.indexOf(c.pack) : 0);
+built.sort(
+  (a, b) => packRank(a) - packRank(b) || rank(a) - rank(b) || a.chart.stars - b.chart.stars || a.chart.notes.length - b.chart.notes.length || a.bpm - b.bpm,
+);
 const catalog = built.map((c) => ({
   id: c.id,
   title: c.title,
@@ -150,6 +158,7 @@ const catalog = built.map((c) => ({
   sourceUrl: c.sourceUrl,
   genre: c.genre,
   ...(c.premium ? { premium: true } : {}),
+  ...(c.pack ? { pack: c.pack } : {}),
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,

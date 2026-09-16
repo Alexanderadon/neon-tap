@@ -1,4 +1,4 @@
-export { TrackDeck, CHAPTER } from './ui/TrackDeck';
+export { TrackDeck } from './ui/TrackDeck';
 export type { TrackRef } from './ui/TrackDeck';
 export { useCatalogState, lockFor } from './model/useCatalogState';
 export type { CatalogState, LockState } from './model/useCatalogState';

@@ -1184,5 +1184,68 @@
       "holds": 24,
       "laneChanges": 26
     }
+  },
+  {
+    "id": "grunge-nostalgia",
+    "title": "Grunge Nostalgia",
+    "artist": "Alex Morgan",
+    "license": "CC BY 4.0",
+    "sourceUrl": "https://freemusicarchive.org/music/alex-morgan/emotional-piano-vol-2/grunge-nostalgia-with-distant-guitars/",
+    "genre": "rock",
+    "pack": "rock",
+    "bpm": 107.3,
+    "duration": 137.93,
+    "stars": 4,
+    "notes": 458,
+    "features": {
+      "circles": 16,
+      "spins": 0,
+      "rolls": 2,
+      "slides": 5,
+      "holds": 25,
+      "laneChanges": 12
+    }
+  },
+  {
+    "id": "call-of-the-north",
+    "title": "Call of the North",
+    "artist": "Mr Smith",
+    "license": "CC BY 4.0",
+    "sourceUrl": "https://freemusicarchive.org/music/mr-smith/synchromatic/call-of-the-north/",
+    "genre": "rock",
+    "pack": "rock",
+    "bpm": 95.2,
+    "duration": 94.38,
+    "stars": 5,
+    "notes": 259,
+    "features": {
+      "circles": 19,
+      "spins": 0,
+      "rolls": 2,
+      "slides": 1,
+      "holds": 29,
+      "laneChanges": 7
+    }
+  },
+  {
+    "id": "naomi",
+    "title": "Naomi",
+    "artist": "Mr Smith",
+    "license": "CC BY 4.0",
+    "sourceUrl": "https://freemusicarchive.org/music/mr-smith/synchromatic/naomi/",
+    "genre": "rock",
+    "pack": "rock",
+    "bpm": 183.4,
+    "duration": 82.49,
+    "stars": 5,
+    "notes": 283,
+    "features": {
+      "circles": 9,
+      "spins": 1,
+      "rolls": 0,
+      "slides": 14,
+      "holds": 40,
+      "laneChanges": 6
+    }
   }
 ]

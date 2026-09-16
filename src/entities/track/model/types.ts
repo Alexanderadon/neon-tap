@@ -10,6 +10,8 @@ export interface TrackMeta {
   genre: Genre;
   /** Premium track — sold in the shop for crystals; absent for the free catalog. */
   premium?: boolean;
+  /** Named pack (`rock`) — a chapter of its own after the numbered ones; absent for the main catalog. */
+  pack?: string;
   bpm: number;
   duration: number;
   /** Difficulty of the song's chart, 1–10. */
