@@ -34,6 +34,7 @@ export function CrystalsOffer({ onClose, onResult, primaryRef }: Props) {
     <OfferSheet
       kind="crystals"
       sku={sku}
+      hero={sku}
       title={dict.offerCrystalsTag}
       placeholder={<HeroPiles />}
       tags={<Tag>{dict.offerCrystalsTag}</Tag>}
