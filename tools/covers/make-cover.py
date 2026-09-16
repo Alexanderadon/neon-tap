@@ -1,10 +1,11 @@
 """
 Card cover from a square picture: public/covers/<id>.webp, 730 x 1050 (the deck card's 292 x 420).
 
-The picture sits in the middle at full width; the space above and below is the picture's own edge
-reflected and blurred, darkening towards the card's edge, with the picture feathered into it, so
-the card reads as one image in the same colours. Square places (shop, result, duel) crop the middle
-back out with object-fit: cover.
+A square (or landscape) picture sits in the middle at full width; the space above and below is the
+picture's own edge reflected and blurred, darkening towards the card's edge, with the picture
+feathered into it, so the card reads as one image in the same colours. A portrait picture (a poster,
+aspect below 0.8) simply fills the card, cropped to its shape. Square places (shop, result, duel)
+crop the middle back out with object-fit: cover.
 
   python tools/covers/make-cover.py <picture> <track id> [--out public/covers]
 Run through `npm run assets:covers` (assets-src/covers-raw/<id>.png|jpg|webp -> public/covers/<id>.webp).
@@ -44,8 +45,23 @@ def extension(strip: Image.Image, seam_at_bottom: bool) -> Image.Image:
     return Image.composite(ext, dark, lit)
 
 
+def fill(im: Image.Image) -> Image.Image:
+    """Scale to cover the card and crop the middle."""
+    k = max(W / im.width, H / im.height)
+    im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
+    x, y = (im.width - W) // 2, (im.height - H) // 2
+    return im.crop((x, y, x + W, y + H))
+
+
 def make(src: Path, out: Path) -> None:
-    pic = square(Image.open(src).convert("RGB"))
+    src_im = Image.open(src).convert("RGB")
+    if src_im.width / src_im.height < 0.8:
+        card = fill(src_im)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        card.save(out, "WEBP", quality=82, method=6)
+        print(f"{out} ({out.stat().st_size // 1024} KB, portrait)")
+        return
+    pic = square(src_im)
     pad = (H - W) // 2
     card = Image.new("RGB", (W, H))
     card.paste(extension(pic.crop((0, 0, W, pad)), True), (0, 0))
