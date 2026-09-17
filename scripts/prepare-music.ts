@@ -4,6 +4,8 @@
  * Usage: npm run assets:music            # every registry track
  *        npm run assets:music -- id1 id2  # only these (new tracks)
  * Licenses report: `npm run assets:licenses`.
+ * NOTE: shipped files are cache-first in the service worker under the same URL — after re-encoding, bump
+ * MEDIA_CACHE in public/sw.js or phones keep playing the old files from their cache.
  */
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
