@@ -278,26 +278,6 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank
             {dict.dailyTrack}
           </Tag>
         )}
-        {best >= 3 && !lock.locked && (
-          <button
-            type="button"
-            className={endless ? 'deck-endless is-on' : 'deck-endless'}
-            // The stage captures the pointer on pointerdown (the swipe); the switch keeps its own tap.
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              sfxUi();
-              toggleEndless();
-            }}
-            aria-pressed={endless}
-            aria-label={dict.endlessTag}
-            title={dict.endlessHint}
-          >
-            <Tag variant={endless ? 'gold' : 'dark'} shape="flush" icon={<Icon name="infinity" />}>
-              {dict.endless}
-            </Tag>
-          </button>
-        )}
         {details && (
           <div className="deck-details" role="region" aria-label={dict.deckDetails}>
             {shown.map((tag) => (
@@ -328,6 +308,24 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank
           <Stars value={best} crowns={Math.min(3, crowns)} size="md" />
           {crowns >= 3 && loop > 0 && <span className="deck-loop">{fmt(dict.loopOf, { n: loop })}</span>}
           <Difficulty stars={track.stars} />
+          {best >= 3 && !lock.locked && (
+            <button
+              type="button"
+              className={endless ? 'deck-endless is-on' : 'deck-endless'}
+              // The stage captures the pointer on pointerdown (the swipe); the switch keeps its own tap.
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                sfxUi();
+                toggleEndless();
+              }}
+              aria-pressed={endless}
+              aria-label={dict.endlessTag}
+              title={dict.endlessHint}
+            >
+              <Chip variant={endless ? 'gd' : 'dark'} icon={<Icon name="infinity" />} iconOnly />
+            </button>
+          )}
           {rank && <span className={gold ? 'deck-rank deck-rank-gold' : 'deck-rank'}>{rank}</span>}
         </div>
       </div>
