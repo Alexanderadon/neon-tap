@@ -69,8 +69,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 /* The 24 px tags that are buttons get an invisible 44 px tall tap target. */
-.deck-chapter::after,
-.deck-endless::after {
+.deck-chapter::after {
   content: '';
   position: absolute;
   inset: -10px 0;
@@ -198,35 +197,6 @@
 }
 .deck-card.is-locked::after {
   background: linear-gradient(to top, rgba(5, 6, 10, 0.92) 0%, rgba(5, 6, 10, 0.7) 40%, rgba(5, 6, 10, 0.6) 100%);
-}
-/* The ∞ switch on a three-star card: an icon-only chip in the meta row (no words over the poster); gold while endless mode is on. */
-.deck-endless {
-  position: relative;
-  display: inline-flex;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s ease;
-}
-.deck-endless:active {
-  transform: translateY(1px);
-}
-.deck-endless:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 2px;
-  border-radius: var(--r-999);
-}
-/* Before the three stars the chip is dim: the mode is there, not yet open. */
-.deck-endless.is-locked .chip {
-  color: var(--w30);
-}
-/* Its 32 px chip sits in the 32 px meta row: 6 px more on each side make the 44 px target. */
-.deck-endless::after {
-  inset: -6px 0;
 }
 /* Tags glued to the left edge at y 24 (under the corner radius): «ТРЕК ДНЯ», then the details on tap. */
 .deck-tags {

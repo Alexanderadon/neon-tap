@@ -1,3 +1,4 @@
+import { devFlagValue } from '@/shared/config/devFlags';
 import { NBSP } from '@/shared/lib/format';
 import type { BuyOutcome, Sku, Store } from './types';
 
@@ -31,12 +32,7 @@ const realClock: StoreClock = {
 
 /** `?iap=off` in the page URL makes the stub unavailable (the popups are then never offered). Safe outside the browser. */
 export function iapOffFlag(): boolean {
-  if (typeof window === 'undefined' || !window.location) return false;
-  try {
-    return new URLSearchParams(window.location.search).get('iap') === 'off';
-  } catch {
-    return false;
-  }
+  return devFlagValue('iap') === 'off';
 }
 
 /**

@@ -1,3 +1,4 @@
+import { devFlagValue } from '@/shared/config/devFlags';
 import type { AdOutcome, AdPlacement, RewardedAd } from './types';
 
 /** How long the stub "ad" runs (seconds), and the short form for development (`?ads=fast`). */
@@ -19,12 +20,7 @@ const realClock: AdClock = {
 
 /** `?ads=fast` in the page URL shortens the stub to three seconds. Safe outside the browser. */
 export function adsFastFlag(): boolean {
-  if (typeof window === 'undefined' || !window.location) return false;
-  try {
-    return new URLSearchParams(window.location.search).get('ads') === 'fast';
-  } catch {
-    return false;
-  }
+  return devFlagValue('ads') === 'fast';
 }
 
 /**

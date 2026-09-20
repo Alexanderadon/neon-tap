@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { ActionZone, CrystalIcon, Disc, Icon, ObjButton, PrimaryAction, Trio } from '@/shared/ui';
 import { trackTint, type TrackMeta } from '@/entities/track';
-import { useEndless, type LockState } from '@/widgets/track-list';
+import type { LockState } from '@/widgets/track-list';
 
 /** One of the three doors in the bottom row; the door the player stands in becomes «В меню». */
 export interface Door {
@@ -35,7 +35,6 @@ const DOOR_LABEL: Record<Door['key'], string> = { shop: dict.shop, records: dict
  * focused track is closed (a premium track leads to the shop instead).
  */
 export function MenuDock({ doors, track, lock, stars, busy, onPlay }: Props) {
-  const endless = useEndless();
   let primary: ReactNode;
   if (lock.locked && lock.premium) {
     primary = (
@@ -81,7 +80,7 @@ export function MenuDock({ doors, track, lock, stars, busy, onPlay }: Props) {
           </Disc>
         }
         label={dict.play}
-        sub={endless && stars >= 3 ? `${dict.endless} · ${track.title}` : track.title}
+        sub={track.title}
         tint={trackTint(track.id, track.genre)}
         beat={!busy}
         disabled={busy}

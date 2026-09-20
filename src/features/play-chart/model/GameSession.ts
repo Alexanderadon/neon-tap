@@ -899,21 +899,25 @@ export class GameSession {
     return this.opts.endless === true && this.levelCount > 1;
   }
 
-  /** Ends an endless run from the pause panel: the loops played so far are banked, the frame is the finale. */
+  /**
+   * Ends the run from the pause panel once it has something to keep (a level finished): the stars,
+   * crowns and score so far are banked as if the hearts had run out — leaving must never cost them.
+   */
   stop(): void {
-    if (this.finished || !this.paused || !this.endless || this.level <= LEVELS) return;
+    if (this.finished || !this.paused || this.level <= 1) return;
     this.paused = false;
-    this.fail();
+    this.fail(true);
   }
 
-  private fail(): void {
+  private fail(quiet = false): void {
     if (this.finished) return;
     this.failed = true;
     // Out of hearts past the first level: the run stops, but the stars stay («СТОП»); before it — «ПРОВАЛ».
-    // In endless loops the end is the finale of a run that has already won everything: no miss sting.
+    // In endless loops the end is the finale of a run that has already won everything: no miss sting;
+    // `quiet` is a voluntary stop from the pause panel — no sting either.
     const finale = this.endless && this.level > LEVELS;
     if (finale) sfxRank();
-    else audioEngine.missEffect();
+    else if (!quiet) audioEngine.missEffect();
     const lost = levelOutcome(this.level, true, this.endless);
     this.opts.onEvent({ type: 'fail', stars: lost.stars, crowns: lost.crowns, finale });
     this.failTimer = window.setTimeout(() => this.finish(), FAIL_SHOW_SEC * 1000);
@@ -939,11 +943,8 @@ export class GameSession {
     this.pauseWanted = false;
     audioEngine.fadeOut(FADE_OUT_SEC);
     sfxRank();
-    this.renderer.starEarned(
-      crowns > 0 ? { crown: crowns, loop: next } : { star: stars, loop: next > LEVELS ? next : undefined },
-      levelRate(next),
-      STAR_SHOW_SEC,
-    );
+    // The third star opens the endless loops: the show says so instead of naming a level.
+    this.renderer.starEarned(crowns > 0 ? { crown: crowns, loop: next } : { star: stars, opens: next > LEVELS }, levelRate(next), STAR_SHOW_SEC);
     this.opts.onEvent({ type: 'star', stars, crowns, next });
     this.levelTimer = window.setTimeout(() => this.startLevel(next), STAR_SHOW_SEC * 1000);
   }

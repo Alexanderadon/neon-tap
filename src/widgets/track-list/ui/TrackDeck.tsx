@@ -6,7 +6,6 @@ import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type Segment
 import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, trackTint, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
-import { toggleEndless, useEndless } from '../model/endless';
 import { writeDeckIndex } from '../model/deckPosition';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
 import { cardGlow } from '../lib/coverGlow';
@@ -251,16 +250,6 @@ interface CardProps {
 }
 
 function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank, details, onTap }: CardProps) {
-  // The dim ∞ chip's answer: a tag over the art for a couple of seconds.
-  const [hint, setHint] = useState(false);
-  const hintTimer = useRef(0);
-  useEffect(() => () => window.clearTimeout(hintTimer.current), []);
-  const showHint = () => {
-    setHint(true);
-    window.clearTimeout(hintTimer.current);
-    hintTimer.current = window.setTimeout(() => setHint(false), 2200);
-  };
-  const endless = useEndless();
   const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
   // The centre card glows in its cover's accent — the picture's tint (spec §2.5); the neighbours only drop a shadow.
   const style: CSSProperties | undefined = current ? { boxShadow: cardGlow(trackTint(track.id, track.genre)) } : undefined;
@@ -285,11 +274,6 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank
         {daily && (
           <Tag shape="flush" icon={<Icon name="sun" />}>
             {dict.dailyTrack}
-          </Tag>
-        )}
-        {hint && (
-          <Tag variant="dark" shape="flush" icon={<Icon name="infinity" />}>
-            {dict.endlessLocked}
           </Tag>
         )}
         {details && (
@@ -322,26 +306,6 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank
           <Stars value={best} crowns={Math.min(3, crowns)} size="md" />
           {crowns >= 3 && loop > 0 && <span className="deck-loop">{fmt(dict.loopOf, { n: loop })}</span>}
           <Difficulty stars={track.stars} />
-          {!lock.locked && (
-            // The ∞ switch on every open card, so the mode is there to be found: live from three stars, dim before that (a tap says when).
-            <button
-              type="button"
-              className={best < 3 ? 'deck-endless is-locked' : endless ? 'deck-endless is-on' : 'deck-endless'}
-              // The stage captures the pointer on pointerdown (the swipe); the switch keeps its own tap.
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                sfxUi();
-                if (best >= 3) toggleEndless();
-                else showHint();
-              }}
-              aria-pressed={best >= 3 ? endless : undefined}
-              aria-label={best >= 3 ? dict.endlessTag : `${dict.endlessTag}: ${dict.endlessLocked}`}
-              title={best >= 3 ? dict.endlessHint : `${dict.endlessTag}: ${dict.endlessLocked}`}
-            >
-              <Chip variant={best >= 3 && endless ? 'gd' : 'dark'} icon={<Icon name="infinity" />} iconOnly />
-            </button>
-          )}
           {rank && <span className={gold ? 'deck-rank deck-rank-gold' : 'deck-rank'}>{rank}</span>}
         </div>
       </div>
