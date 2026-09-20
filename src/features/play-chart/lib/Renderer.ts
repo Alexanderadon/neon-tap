@@ -1827,9 +1827,8 @@ export class Renderer {
   }
 
   /**
-   * The song map (row 0): the song's phrases as a strip at the safe top — quiet ones thin and dark,
-   * the drop thick and in the theme's accent — filled up to where the song is, with a glowing head
-   * that burns brighter in the loud parts. In endless mode the strip makes room for the loop's
+   * The song map (row 0): one thin bar at the safe top with the song's drop phrases lighter on it,
+   * lit up to where the song is, a small dot for the head that burns brighter in the loud parts. In endless mode the strip makes room for the loop's
    * number on the right. Nothing else in the HUD moves.
    */
   private drawSongMap(s: FrameState, colX: number, colW: number, top: number): void {
@@ -1847,50 +1846,51 @@ export class Renderer {
       w = colW - ctx.measureText(label).width - 10;
     }
     const accent = this.theme.accent;
-    const heightOf = (level: number): number => (level >= 2 ? 6 : level === 1 ? 4 : 2);
+    const y = top + 1;
     const x0 = (i: number): number => colX + w * map[i].from;
     const x1 = (i: number): number => (i + 1 < map.length ? colX + w * map[i + 1].from : colX + w);
-    // The whole song, unplayed.
+    // One thin bar for the whole song; the drop phrases sit lighter on it (a drop two beats ahead breathes with the beat).
+    roundRect(ctx, colX, y, w, 4, 2);
+    ctx.fillStyle = HUD.w10;
+    ctx.fill();
     for (let i = 0; i < map.length; i++) {
-      const h = heightOf(map[i].level);
-      const gap = i + 1 < map.length ? 1 : 0;
-      const wx = Math.max(0, x1(i) - x0(i) - gap);
-      if (wx <= 0) continue;
-      roundRect(ctx, x0(i), top + 3 - h / 2, wx, h, h / 2);
-      // A drop two beats ahead breathes with the beat: the cue to get ready.
-      const soon = map[i].level >= 2 && map[i].from > s.progress && map[i].from - s.progress < 2 * this.songBeat;
-      ctx.fillStyle = map[i].level >= 2 ? hexToRgba(accent, soon ? 0.28 + 0.32 * s.pulse : 0.28) : map[i].level === 1 ? 'rgba(255,255,255,0.2)' : HUD.w10;
-      ctx.fill();
+      if (map[i].level < 2) continue;
+      const soon = map[i].from > s.progress && map[i].from - s.progress < 2 * this.songBeat;
+      ctx.fillStyle = hexToRgba(accent, soon ? 0.3 + 0.3 * s.pulse : 0.3);
+      ctx.fillRect(x0(i), y, x1(i) - x0(i), 4);
     }
-    // The played part: the same segments, lit, clipped at the head.
+    // The played part: the same bar lit up to the head, the drops in the full accent.
     const headX = colX + w * s.progress;
     if (s.progress > 0) {
       ctx.save();
       ctx.beginPath();
       ctx.rect(colX, top - 4, Math.max(0, headX - colX), 14);
       ctx.clip();
+      roundRect(ctx, colX, y, w, 4, 2);
+      ctx.fillStyle = hexToRgba(accent, 0.65);
+      ctx.fill();
       for (let i = 0; i < map.length; i++) {
-        if (x0(i) > headX) break;
-        const h = heightOf(map[i].level);
-        const gap = i + 1 < map.length ? 1 : 0;
-        const wx = Math.max(0, x1(i) - x0(i) - gap);
-        if (wx <= 0) continue;
-        roundRect(ctx, x0(i), top + 3 - h / 2, wx, h, h / 2);
-        ctx.fillStyle = map[i].level >= 2 ? accent : hexToRgba(accent, map[i].level === 1 ? 0.75 : 0.5);
-        ctx.fill();
+        if (map[i].level < 2 || x0(i) > headX) continue;
+        ctx.fillStyle = accent;
+        ctx.fillRect(x0(i), y, x1(i) - x0(i), 4);
       }
       ctx.restore();
-      // The head: a spark on the strip, brighter in the loud parts and on the beat.
+      // The head: a small white dot in a soft halo, a touch brighter in the loud parts and on the beat.
       let level = 0;
       for (let i = 0; i < map.length; i++) if (map[i].from <= s.progress) level = map[i].level;
-      const heat = 0.55 + 0.25 * level + 0.2 * s.pulse;
-      const r = 5 + level * 1.5;
+      const heat = 0.7 + 0.15 * level + 0.15 * s.pulse;
+      const r = 7;
       const g = ctx.createRadialGradient(headX, top + 3, 0, headX, top + 3, r);
-      g.addColorStop(0, hexToRgba('#ffffff', 0.9 * heat));
-      g.addColorStop(0.4, hexToRgba(accent, 0.7 * heat));
+      g.addColorStop(0, hexToRgba(accent, 0.6 * heat));
       g.addColorStop(1, hexToRgba(accent, 0));
       ctx.fillStyle = g;
       ctx.fillRect(headX - r, top + 3 - r, r * 2, r * 2);
+      ctx.beginPath();
+      ctx.arc(headX, top + 3, 3, 0, Math.PI * 2);
+      ctx.globalAlpha = heat;
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
   }
 
