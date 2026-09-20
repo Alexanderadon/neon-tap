@@ -15,7 +15,7 @@ import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
-import { beatSeconds, songMap } from './songMap';
+import { songMap } from './songMap';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
@@ -237,7 +237,7 @@ export class GameSession {
       theme,
     );
     this.renderer.setLanes(this.sections[0].lanes, true);
-    this.renderer.setSongMap(songMap(opts.chart, this.endTime), beatSeconds(opts.chart) / this.endTime);
+    this.renderer.setSongMap(songMap(opts.chart, this.endTime));
     this.beatCursor = new BeatCursor(opts.chart.beats, opts.chart.bpm, opts.chart.offset, opts.chart.duration);
     if (opts.fxMode === 'on') this.renderer.setFxLevel('low');
     this.input = new Input({
