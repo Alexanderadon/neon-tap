@@ -278,7 +278,8 @@ export class Renderer {
   private chipAcc!: NoteSprite;
   private readonly tags = new Map<string, NoteSprite>();
   /** The star show between levels: which star, the next level's speed, its length in seconds; `starAge` runs 0..seconds. */
-  private starShow: { slot: number; crown: boolean; loop: number; rate: number; seconds: number; landed: boolean; sparked: boolean } | null = null;
+  private starShow: { slot: number; crown: boolean; opens: boolean; loop: number; rate: number; seconds: number; landed: boolean; sparked: boolean } | null =
+    null;
   /** The song map: phrase segments of the run's song (from 0..1 of its length, loudness level). */
   private songMap: readonly SongMapSegment[] = [{ from: 0, level: 1 }];
   /** One beat as a fraction of the song map — the cue before a drop is two beats long. */
@@ -781,12 +782,21 @@ export class Renderer {
    * flies to its HUD slot — all within `seconds`, which is how long the session waits before the
    * next count-in.
    */
-  starEarned(earned: { star: number; loop?: number } | { crown: number; loop: number }, nextRate: number, seconds: number): void {
+  starEarned(earned: { star: number; opens?: boolean } | { crown: number; loop: number }, nextRate: number, seconds: number): void {
     const crown = 'crown' in earned;
     // A crown past the third takes the last slot again (the row shows at most three).
     const slot = crown ? Math.min(earned.crown, 3) - 1 : earned.star - 1;
-    // `loop` names what comes next when that is an endless loop (the third star in endless mode opens loop four).
-    this.starShow = { slot, crown, loop: earned.loop ?? 0, rate: nextRate, seconds, landed: false, sparked: false };
+    // `opens` = this star opens the endless loops (the show says «Бесконечный режим»); a crown names its loop.
+    this.starShow = {
+      slot,
+      crown,
+      opens: !crown && earned.opens === true,
+      loop: crown ? earned.loop : 0,
+      rate: nextRate,
+      seconds,
+      landed: false,
+      sparked: false,
+    };
     this.starAge = 0;
     this.shake.trigger(3);
   }
@@ -1252,11 +1262,13 @@ export class Renderer {
     if (t >= at(SHOW_TAGS) && wordsOut > 0) {
       const u = easeOut(Math.min(1, (t - at(SHOW_TAGS)) / 0.4));
       const left = this.tag(fmt(dict.levelFaster, { n: Math.round((show.rate - 1) * 100) }), 'gold', 'left');
-      const right = this.tag(
-        show.loop > 0 ? fmt(dict.loopOf, { n: show.loop }) : fmt(dict.levelOf, { n: Math.min(show.slot + 2, s.levels), m: s.levels }),
-        'dark',
-        'right',
-      );
+      const right = show.opens
+        ? this.tag(dict.endlessMode, 'gold', 'right')
+        : this.tag(
+            show.loop > 0 ? fmt(dict.loopOf, { n: show.loop }) : fmt(dict.levelOf, { n: Math.min(show.slot + 2, s.levels), m: s.levels }),
+            'dark',
+            'right',
+          );
       const total = left.width + right.width;
       const ty = this.safeTop + HUD_TAGS_TOP + (1 - u) * 8;
       ctx.globalAlpha = u * wordsOut;

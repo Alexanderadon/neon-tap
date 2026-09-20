@@ -13,13 +13,12 @@ export const game = {
   plusCrown: '+1 корона',
   /** The frame when an endless run ends past the third star: a finale, not a fail. */
   finale: 'Финиш',
-  /** The pause panel of an endless loop: end the run now, the crowns stay. */
+  /** The pause panel once a level is won: end the run now, what was won stays. */
   finishRun: 'Завершить',
-  endless: 'Бесконечно',
-  endlessTag: 'Бесконечный режим',
-  endlessHint: 'после трёх звёзд — быстрее с каждым кругом, корона за круг',
-  /** The dim ∞ chip on a card without three stars, tapped. */
-  endlessLocked: 'После трёх звёзд',
+  /** The third star's show: from here the song loops on, faster every loop. */
+  endlessMode: 'Бесконечный режим',
+  /** The pause panel while the review autoplayer (`?auto=1`) is playing. */
+  autoTag: 'Автопрогон',
   heartsOut: 'Сердца кончились',
   loadFailed: 'Не удалось загрузить',
   checkConnection: 'проверь связь и попробуй ещё раз',

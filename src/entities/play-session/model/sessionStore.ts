@@ -24,8 +24,6 @@ export interface ResultMeta {
 
 export interface PlaySession {
   chart: ChartFile | null;
-  /** Endless mode: after three stars the song keeps looping, faster every loop, a crown per loop. */
-  endless: boolean;
   /** Decoded audio for custom songs (built-in tracks are streamed by URL). */
   audioBuffer: AudioBuffer | null;
   source: ChartSource;
@@ -36,15 +34,14 @@ export interface PlaySession {
 
 export const sessionStore = createStore<PlaySession>({
   chart: null,
-  endless: false,
   audioBuffer: null,
   source: 'catalog',
   result: null,
   resultMeta: null,
 });
 
-export function startSession(chart: ChartFile, source: ChartSource, audioBuffer: AudioBuffer | null = null, endless = false): void {
-  sessionStore.set({ chart, source, audioBuffer, endless, result: null, resultMeta: null });
+export function startSession(chart: ChartFile, source: ChartSource, audioBuffer: AudioBuffer | null = null): void {
+  sessionStore.set({ chart, source, audioBuffer, result: null, resultMeta: null });
 }
 
 export function setSessionResult(result: PlayResult, meta: PlaySession['resultMeta']): void {

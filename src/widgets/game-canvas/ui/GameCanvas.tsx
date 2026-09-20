@@ -5,6 +5,7 @@ import { ads, stubAds } from '@/shared/lib/ads';
 import { navigate } from '@/shared/lib/router';
 import { needsRotateHint } from '@/shared/lib/viewport';
 import { dict, fmt } from '@/shared/i18n';
+import { hasDevFlag } from '@/shared/config/devFlags';
 import {
   ActionZone,
   Chip,
@@ -29,7 +30,7 @@ import { GameSession, LEVELS, REFILL_AT, REVIVE_IDLE, REVIVE_OFFER_SEC, reviveRe
 import { saveResult } from '@/features/save-result';
 import { trackSpell } from '@/features/track-progress';
 import { voice, praise } from '@/features/voice-feedback';
-import { useSession, type ChartSource } from '@/entities/play-session';
+import type { ChartSource } from '@/entities/play-session';
 import './game-canvas.css';
 
 export type GameCanvasMode = 'play' | 'tutorial';
@@ -73,7 +74,6 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
  * menu, loading / error, the fail frame, and the revive offer for a rewarded ad (spec: screens-game.html).
  */
 export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
-  const endless = useSession((s) => s.endless);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -86,6 +86,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   const hostRef = useRef({ onEvent, onTime, onExit });
   hostRef.current = { onEvent, onTime, onExit };
   const tutorial = mode === 'tutorial';
+  // The review autoplayer (`?auto=1` on this page load): named in the pause panel so nobody wonders who is playing.
+  const autoRun = hasDevFlag('auto');
 
   useEffect(() => {
     let cancelled = false;
@@ -166,9 +168,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         voice.setVoice(settings.voice);
         const [buffer] = await Promise.all([audioBuffer ?? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`), preloadSfx(), voice.preload()]);
         if (cancelled || !canvasRef.current) return;
-        const params = new URLSearchParams(window.location.search);
-        const autoFlag = params.has('auto');
-        const noFailFlag = params.has('nofail') || autoFlag;
+        const autoFlag = hasDevFlag('auto');
+        const noFailFlag = hasDevFlag('nofail') || autoFlag;
         session = new GameSession({
           chart,
           audioBuffer: buffer,
@@ -182,7 +183,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           hideHearts: tutorial,
           gems: !tutorial,
           levels: !tutorial,
-          endless: endless && !tutorial,
+          endless: !tutorial,
           revive: !tutorial && !noFailFlag && ads.available(),
           fxMode: settings.fxMode,
           debug: settings.debugOverlay,
@@ -256,7 +257,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       session?.destroy();
       sessionRef.current = null;
     };
-  }, [chart, source, audioBuffer, mode, tutorial, attempt, endless]);
+  }, [chart, source, audioBuffer, mode, tutorial, attempt]);
 
   const exit = useCallback(() => (hostRef.current.onExit ? hostRef.current.onExit() : navigate('menu')), []);
 
@@ -413,6 +414,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
                     {dict.loopWord} <b>{paused.level}</b>
                   </span>
                 )}
+                {autoRun && !tutorial && <span>{dict.autoTag}</span>}
               </div>
             </Panel>
           </>,
@@ -429,8 +431,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
               <ObjButton icon={<Icon name="sound" />} label={dict.soundToggle} className={muted ? 'game-muted' : undefined} onClick={toggleSound} />
               {tutorial ? (
                 <ObjButton icon={<Icon name="chevron" />} label={dict.tutorialSkip} onClick={exit} />
-              ) : paused.level > LEVELS ? (
-                // An endless loop: leaving would throw the crowns away, so the way out is to end the run and bank them.
+              ) : paused.level > 1 ? (
+                // A level is already won: leaving must not throw it away, so the way out ends the run and banks it.
                 <ObjButton
                   icon={<Icon name="stop" />}
                   label={dict.finishRun}
