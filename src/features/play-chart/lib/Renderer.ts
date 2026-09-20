@@ -301,8 +301,6 @@ export class Renderer {
     null;
   /** The song map: phrase segments of the run's song (from 0..1 of its length, loudness level). */
   private songMap: readonly SongMapSegment[] = [{ from: 0, level: 1 }];
-  /** One beat as a fraction of the song map — the next drop's heat breathes for a bar before it. */
-  private songBeat = 0;
   private starAge = 0;
   private starLandedAge = 1;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
@@ -820,10 +818,9 @@ export class Renderer {
     this.shake.trigger(3);
   }
 
-  /** The song map for this run (set once per session); `beat` = one beat as a fraction of the strip. */
-  setSongMap(segments: readonly SongMapSegment[], beat = 0): void {
+  /** The song map for this run (set once per session). */
+  setSongMap(segments: readonly SongMapSegment[]): void {
     this.songMap = segments.length ? segments : [{ from: 0, level: 1 }];
-    this.songBeat = beat;
   }
 
   /** Star show moments scaled to its length (2.4 s by design). */
