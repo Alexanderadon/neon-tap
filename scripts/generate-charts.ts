@@ -34,7 +34,6 @@ import {
   type StemLayers,
 } from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
-import type { TrackPalette } from '../src/shared/lib/render/themes';
 
 interface RawTrack {
   id: string;
@@ -55,11 +54,9 @@ interface RawTrack {
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 /** Picture cover made by `npm run assets:covers` — recorded in the catalog so the app knows to show it. */
 const coverFile = (id: string): string | undefined => (existsSync(join(ROOT, 'public', 'covers', `${id}.webp`)) ? `covers/${id}.webp` : undefined);
-/** The picture's accent colour and level palette (`assets:covers` keeps them in assets-src/covers-raw/covers.json). */
+/** The picture's accent colour (`assets:covers` keeps them in assets-src/covers-raw/covers.json). */
 const COVERS = join(ROOT, 'assets-src', 'covers-raw', 'covers.json');
-const colors: Record<string, { tint: string; palette: TrackPalette }> = existsSync(COVERS)
-  ? (JSON.parse(readFileSync(COVERS, 'utf8')) as Record<string, { tint: string; palette: TrackPalette }>)
-  : {};
+const colors: Record<string, { tint: string }> = existsSync(COVERS) ? (JSON.parse(readFileSync(COVERS, 'utf8')) as Record<string, { tint: string }>) : {};
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
@@ -195,7 +192,7 @@ const catalog = built.map((c) => ({
   ...(c.premium ? { premium: true } : {}),
   ...(c.pack ? { pack: c.pack } : {}),
   ...(coverFile(c.id) ? { cover: coverFile(c.id) } : {}),
-  ...(coverFile(c.id) && colors[c.id] ? { tint: colors[c.id].tint, palette: colors[c.id].palette } : {}),
+  ...(coverFile(c.id) && colors[c.id] ? { tint: colors[c.id].tint } : {}),
   bpm: c.bpm,
   duration: c.duration,
   stars: c.chart.stars,
