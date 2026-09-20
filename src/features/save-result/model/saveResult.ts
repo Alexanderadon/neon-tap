@@ -74,6 +74,7 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
       playedAt: now.toISOString(),
       stars: result.stars,
       crowns: result.crowns,
+      loop: result.endless ? result.level : 0,
     });
     const after = progressStore.get().tracks[result.trackId];
     const starsAfter = starsForTrack(after);

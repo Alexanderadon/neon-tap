@@ -12,6 +12,8 @@ export interface BestResult {
   stars?: number;
   /** Most endless loops finished past the third level in one run, a crown each; absent before endless mode. */
   crowns?: number;
+  /** The farthest endless loop reached in one run (4 and up; 0 = none); absent before endless mode. */
+  loop?: number;
 }
 
 export interface SaveDataV2 {
@@ -248,15 +250,16 @@ export function totalStars(save: SaveData, trackIds?: readonly string[]): number
   return sum;
 }
 
-/** Merge a new result; returns whether it beat the stored best score. Stars, rank and full combo never go down. */
+/** Merge a new result; returns whether it beat the stored best score. Stars, crowns, the loop, rank and full combo never go down. */
 export function mergeResult(save: SaveData, trackId: string, result: BestResult): { save: SaveData; newRecord: boolean } {
   const prev = save.tracks[trackId];
   const newRecord = !prev || result.score > prev.score;
   const stars = Math.max(starsForTrack(prev), starsForTrack(result));
   const crowns = Math.max(prev?.crowns ?? 0, result.crowns ?? 0);
+  const loop = Math.max(prev?.loop ?? 0, result.loop ?? 0);
   const merged: BestResult = newRecord
-    ? { ...result, stars, crowns, fullCombo: result.fullCombo || (prev?.fullCombo ?? false) }
-    : { ...prev, stars, crowns, fullCombo: prev.fullCombo || result.fullCombo, rank: RANK_ORDER[Math.max(rankIndex(prev.rank), rankIndex(result.rank))] };
+    ? { ...result, stars, crowns, loop, fullCombo: result.fullCombo || (prev?.fullCombo ?? false) }
+    : { ...prev, stars, crowns, loop, fullCombo: prev.fullCombo || result.fullCombo, rank: RANK_ORDER[Math.max(rankIndex(prev.rank), rankIndex(result.rank))] };
   return { save: { ...save, plays: save.plays + 1, tracks: { ...save.tracks, [trackId]: merged } }, newRecord };
 }
 

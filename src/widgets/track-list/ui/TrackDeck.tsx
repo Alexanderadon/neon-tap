@@ -212,6 +212,7 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
               daily={t.id === state.dailyId}
               best={starsForTrack(state.save.tracks[t.id])}
               crowns={state.save.tracks[t.id]?.crowns ?? 0}
+              loop={state.save.tracks[t.id]?.loop ?? 0}
               rank={state.save.tracks[t.id]?.rank}
               details={current && details}
               onTap={() => (current ? setDetails((d) => !d) : go(i))}
@@ -238,6 +239,8 @@ interface CardProps {
   current: boolean;
   /** Crowns on the card (endless loops past three stars, three at most). */
   crowns: number;
+  /** The farthest endless loop reached (shown once the three crown slots are full). */
+  loop: number;
   lock: LockState;
   daily: boolean;
   best: number;
@@ -247,7 +250,7 @@ interface CardProps {
   onTap: () => void;
 }
 
-function DeckCard({ track, mount, current, lock, daily, best, crowns, rank, details, onTap }: CardProps) {
+function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank, details, onTap }: CardProps) {
   const endless = useEndless();
   const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
   // The centre card glows in its cover's accent — the picture's tint (spec §2.5); the neighbours only drop a shadow.
@@ -323,7 +326,7 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, rank, deta
         <h1 className="deck-title">{track.title}</h1>
         <div className="deck-meta">
           <Stars value={best} crowns={Math.min(3, crowns)} size="md" />
-          {crowns > 3 && <span className="deck-crowns">×{crowns}</span>}
+          {crowns >= 3 && loop > 0 && <span className="deck-loop">{fmt(dict.loopOf, { n: loop })}</span>}
           <Difficulty stars={track.stars} />
           {rank && <span className={gold ? 'deck-rank deck-rank-gold' : 'deck-rank'}>{rank}</span>}
         </div>
