@@ -81,7 +81,7 @@ export function MenuDock({ doors, track, lock, stars, busy, onPlay }: Props) {
           </Disc>
         }
         label={dict.play}
-        sub={endless ? `${dict.endless} · ${track.title}` : track.title}
+        sub={endless && stars >= 3 ? `${dict.endless} · ${track.title}` : track.title}
         tint={trackTint(track.id, track.genre)}
         beat={!busy}
         disabled={busy}
