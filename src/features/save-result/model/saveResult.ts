@@ -72,6 +72,7 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
       fullCombo: result.fullCombo,
       playedAt: now.toISOString(),
       stars: result.stars,
+      crowns: result.crowns,
     });
     const starsAfter = starsForTrack(progressStore.get().tracks[result.trackId]);
     const date = localDateString(now);

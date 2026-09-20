@@ -59,12 +59,12 @@
   color: var(--w80);
 }
 
-/* ---- ShopCard 335 × 72, r 18: the deck card on its side, compact (the owner: smaller type, tighter) ---- */
+/* ---- ShopCard 335 × 72, r 16: the deck card on its side, compact (the owner: smaller type, tighter) ---- */
 .scard {
   position: relative;
   flex: none;
   height: 72px;
-  border-radius: 18px;
+  border-radius: var(--r-16);
   overflow: hidden;
   background: var(--panel);
   box-shadow:
@@ -123,7 +123,7 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  border-radius: 18px;
+  border-radius: var(--r-16);
 }
 .scard-body:focus-visible {
   outline: 2px solid var(--cyan);

@@ -188,7 +188,7 @@ export function ResultBreakdown({
       {extraTop}
 
       <div className="result-hero">
-        <Stars value={failed ? 0 : result.stars} size="hero" animate />
+        <Stars value={failed ? 0 : result.stars} crowns={failed ? 0 : Math.min(3, result.crowns)} size="hero" animate />
         {!failed && result.stars > 0 && <Confetti />}
       </div>
 

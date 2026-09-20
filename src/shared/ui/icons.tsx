@@ -9,6 +9,7 @@ export type IconName =
   | 'chevron'
   | 'lock'
   | 'sun'
+  | 'infinity'
   | 'bag'
   | 'trophy'
   | 'user'
@@ -48,6 +49,7 @@ const PATHS: Record<IconName, string> = {
   chevron: 'M9 6l6 6-6 6',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1',
+  infinity: 'M12 12c-1.8-2.6-3.4-4-5.5-4A4 4 0 0 0 6.5 16c2.1 0 3.7-1.4 5.5-4 1.8 2.6 3.4 4 5.5 4a4 4 0 0 0 0-8c-2.1 0-3.7 1.4-5.5 4z',
   bag: 'M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2',
   trophy: 'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8',
   user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21a8 8 0 0 1 16 0',

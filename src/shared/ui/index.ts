@@ -1,4 +1,4 @@
-export { Stars, Star } from './Stars';
+export { Stars, Star, Crown } from './Stars';
 export type { StarsSize } from './Stars';
 export { Difficulty, FlameIcon } from './Difficulty';
 export { difficultyColor } from './difficultyColor';

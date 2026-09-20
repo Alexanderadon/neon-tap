@@ -15,6 +15,8 @@ const result = (over: Partial<PlayResult> = {}): PlayResult => ({
   notesToS: 3,
   failed: false,
   stars: 3,
+  crowns: 0,
+  endless: false,
   level: 3,
   hearts: 4,
   timeline: { t: [], j: [], combo: [] },

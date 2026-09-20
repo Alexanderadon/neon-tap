@@ -7,6 +7,13 @@ export const game = {
   levelOf: 'Уровень {n} / {m}',
   levelWord: 'Уровень',
   plusStar: '+1 звезда',
+  /** Endless mode: the loop number in the star show and the pause panel, the crown just earned, the mode's name. */
+  loopOf: 'Круг {n}',
+  loopWord: 'Круг',
+  plusCrown: '+1 корона',
+  endless: 'Бесконечно',
+  endlessTag: 'Бесконечный режим',
+  endlessHint: 'после трёх звёзд — быстрее с каждым кругом, корона за круг',
   heartsOut: 'Сердца кончились',
   loadFailed: 'Не удалось загрузить',
   checkConnection: 'проверь связь и попробуй ещё раз',

@@ -16,7 +16,7 @@ import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
-import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
+import { Renderer, circlePos, circleRadius, spinGeometry, type SongMapSegment, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
 export type SessionEvent =
@@ -32,11 +32,11 @@ export type SessionEvent =
   | { type: 'gem'; value: number; total: number }
   | { type: 'lanes'; lanes: number }
   /** A level was finished: the star earned and the level that follows (null when the run is over). */
-  | { type: 'star'; stars: number; next: number | null }
+  | { type: 'star'; stars: number; crowns: number; next: number | null }
   /** The next level's count-in has begun (level 2 and up; the first level is `start`). */
   | { type: 'level'; level: number }
   /** Out of hearts and the run cannot be revived: the fail frame shows `stars` kept (0 = «ПРОВАЛ», else «СТОП»). */
-  | { type: 'fail'; stars: number }
+  | { type: 'fail'; stars: number; crowns: number }
   | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
   /** Paused (the host draws the pause overlay from this snapshot). */
   | { type: 'pause'; score: number; accuracy: number; level: number }
@@ -72,6 +72,8 @@ export interface SessionOptions {
   gems?: boolean;
   /** Levels: the song is played up to three times in a row, faster each time, a star per level (default on; the tutorial plays once). */
   levels?: boolean;
+  /** Endless mode: after the third level the song keeps looping, faster every loop, hearts not refilled, a crown per loop. */
+  endless?: boolean;
   /** Fixed seed for the gem picks (tests / demos); by default every run rolls its own. */
   gemSeed?: number;
   /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
@@ -172,6 +174,8 @@ export class GameSession {
   /** Level being played (1-based), the stars earned so far and the level's playback rate (the slow spell scales it). */
   private level = 1;
   private starsEarned = 0;
+  /** Endless loops finished past the third level (a crown each). */
+  private crownsEarned = 0;
   private baseRate = 1;
   /** The star show is on (the next level's count-in is scheduled); a pause asked for now takes effect when it starts. */
   private betweenLevels = false;
@@ -230,6 +234,7 @@ export class GameSession {
       theme,
     );
     this.renderer.setLanes(this.sections[0].lanes, true);
+    this.renderer.setSongMap(songMap(opts.chart));
     this.beatCursor = new BeatCursor(opts.chart.beats, opts.chart.bpm, opts.chart.offset, opts.chart.duration);
     if (opts.fxMode === 'on') this.renderer.setFxLevel('low');
     this.input = new Input({
@@ -326,6 +331,7 @@ export class GameSession {
     this.perfectStreak = 0;
     this.crystals = 0;
     this.starsEarned = 0;
+    this.crownsEarned = 0;
     this.startLevel(1);
   }
 
@@ -340,7 +346,7 @@ export class GameSession {
     this.betweenLevels = false;
     this.audioEnded = false;
     this.notes.reset();
-    this.lives.refill();
+    if (level <= LEVELS) this.lives.refill(); // an endless loop plays on with the hearts that are left
     this.finished = false;
     this.failed = false;
     this.paused = false;
@@ -861,6 +867,8 @@ export class GameSession {
       levels: this.levelCount > 1 ? this.levelCount : 0,
       level: this.level,
       stars: this.starsEarned,
+      crowns: this.crownsEarned,
+      endless: this.opts.endless === true,
       revive: this.reviving ? this.reviveAge : -1,
       debug: this.opts.debug
         ? {
@@ -887,7 +895,8 @@ export class GameSession {
     this.failed = true;
     audioEngine.missEffect();
     // Out of hearts past the first level: the run stops, but the stars stay («СТОП»); before it — «ПРОВАЛ».
-    this.opts.onEvent({ type: 'fail', stars: levelOutcome(this.level, true).stars });
+    const lost = levelOutcome(this.level, true, this.opts.endless);
+    this.opts.onEvent({ type: 'fail', stars: lost.stars, crowns: lost.crowns });
     this.failTimer = window.setTimeout(() => this.finish(), FAIL_SHOW_SEC * 1000);
     this.finished = true;
     audioEngine.stop();
@@ -898,9 +907,10 @@ export class GameSession {
    * out under the star show and comes back faster; after the last one the run is over.
    */
   private levelDone(): void {
-    const { stars, next } = levelOutcome(this.level, false);
+    const { stars, crowns, next } = levelOutcome(this.level, false, this.opts.endless && this.levelCount > 1);
     this.starsEarned = stars;
-    if (next === null || next > this.levelCount) {
+    this.crownsEarned = crowns;
+    if (next === null || (next > this.levelCount && !this.opts.endless)) {
       this.finish();
       return;
     }
@@ -909,8 +919,8 @@ export class GameSession {
     this.pauseWanted = false;
     audioEngine.fadeOut(FADE_OUT_SEC);
     sfxRank();
-    this.renderer.starEarned(stars, levelRate(next), STAR_SHOW_SEC);
-    this.opts.onEvent({ type: 'star', stars, next });
+    this.renderer.starEarned(crowns > 0 ? { crown: crowns, loop: next } : { star: stars }, levelRate(next), STAR_SHOW_SEC);
+    this.opts.onEvent({ type: 'star', stars, crowns, next });
     this.levelTimer = window.setTimeout(() => this.startLevel(next), STAR_SHOW_SEC * 1000);
   }
 
@@ -921,8 +931,9 @@ export class GameSession {
     if (!this.failed) this.notes.update(Number.POSITIVE_INFINITY, () => false);
     const s = this.scoring;
     // Stars are levels finished; a fail past the first level keeps them, and the run counts.
-    const { stars } = levelOutcome(this.level, this.failed);
+    const { stars, crowns } = levelOutcome(this.level, this.failed, this.opts.endless);
     this.starsEarned = stars;
+    this.crownsEarned = crowns;
     const failed = this.failed && stars === 0;
     const result: PlayResult = {
       trackId: this.opts.chart.id,
@@ -936,6 +947,8 @@ export class GameSession {
       notesToS: notesToReach(s.counts, 0.95),
       failed,
       stars,
+      crowns,
+      endless: this.opts.endless === true,
       level: this.level,
       hearts: this.lives.hearts,
       timeline: this.timeline.toResult(),
@@ -951,3 +964,21 @@ export class GameSession {
     this.opts.onEvent({ type: 'finish', result, autoOffsetMs });
   }
 }
+
+/**
+ * The HUD's song map: the chart's phrase levels as segments of the song (0..1 of its length, the
+ * song's first phrase starts at beat 0). A chart without phrases (custom songs) gets one flat segment.
+ */
+function songMap(chart: ChartFile): SongMapSegment[] {
+  const beats = chart.beats ?? [];
+  const phrases = chart.phrases ?? [];
+  if (!phrases.length || beats.length < 2 || chart.duration <= 0) return [{ from: 0, level: 1 }];
+  const beatSec = (beats[beats.length - 1] - beats[0]) / (beats.length - 1);
+  return phrases.map((level, p) => {
+    const beat = p * BEATS_PER_PHRASE;
+    const t = beat < beats.length ? beats[beat] : beats[beats.length - 1] + (beat - beats.length + 1) * beatSec;
+    return { from: Math.max(0, Math.min(1, t / chart.duration)), level: Math.max(0, Math.min(2, level)) as 0 | 1 | 2 };
+  });
+}
+/** Beats in a phrase: four bars of four. */
+const BEATS_PER_PHRASE = 16;

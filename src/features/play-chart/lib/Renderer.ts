@@ -23,6 +23,7 @@ import { heartsRefilled, REFILL_AT, reviveCountdown, reviveDigitProgress, REVIVE
 import {
   CHIP_H,
   COL_W,
+  crownSprite,
   EMBOSS_COMBO_GOLD,
   EMBOSS_GOLD,
   GUTTER,
@@ -55,6 +56,12 @@ export interface SpinFrame {
   rate: number;
   /** 1 while the wheel is up; falls to 0 over the fade after its verdict. */
   fade: number;
+}
+
+/** One phrase of the song map: where it starts (0..1 of the song) and how loud it is (0 quiet · 1 · 2 the drop). */
+export interface SongMapSegment {
+  from: number;
+  level: 0 | 1 | 2;
 }
 
 export interface FrameState {
@@ -94,6 +101,9 @@ export interface FrameState {
   levels: number;
   level: number;
   stars: number;
+  /** Endless mode: crowns earned (a loop past the third level each) and whether the run is endless at all. */
+  crowns: number;
+  endless: boolean;
   /** Seconds since a revive was granted (hearts pop back, then the count-in), or -1. */
   revive: number;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
@@ -258,11 +268,15 @@ export class Renderer {
   private starOn!: NoteSprite;
   private starOff!: NoteSprite;
   private starBig!: NoteSprite;
+  private crownOn!: NoteSprite;
+  private crownBig!: NoteSprite;
   private chipScore!: NoteSprite;
   private chipAcc!: NoteSprite;
   private readonly tags = new Map<string, NoteSprite>();
   /** The star show between levels: which star, the next level's speed, its length in seconds; `starAge` runs 0..seconds. */
-  private starShow: { stars: number; rate: number; seconds: number; landed: boolean; sparked: boolean } | null = null;
+  private starShow: { slot: number; crown: boolean; loop: number; rate: number; seconds: number; landed: boolean; sparked: boolean } | null = null;
+  /** The song map: phrase segments of the run's song (from 0..1 of its length, loudness level). */
+  private songMap: readonly SongMapSegment[] = [{ from: 0, level: 1 }];
   private starAge = 0;
   private starLandedAge = 1;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
@@ -435,6 +449,8 @@ export class Renderer {
     this.starOn = starSprite(true, STAR_PX, this.dpr);
     this.starOff = starSprite(false, STAR_PX, this.dpr);
     this.starBig = starSprite(true, STAR_BIG_PX, this.dpr, true);
+    this.crownOn = crownSprite(true, STAR_PX, this.dpr);
+    this.crownBig = crownSprite(true, STAR_BIG_PX, this.dpr, true);
     this.hudGem = crystalSprite(16, this.dpr);
     this.heartOn = heartSprite('on', HEART_PX, this.dpr);
     this.heartOff = heartSprite('off', HEART_PX, this.dpr);
@@ -759,10 +775,18 @@ export class Renderer {
    * flies to its HUD slot — all within `seconds`, which is how long the session waits before the
    * next count-in.
    */
-  starEarned(stars: number, nextRate: number, seconds: number): void {
-    this.starShow = { stars, rate: nextRate, seconds, landed: false, sparked: false };
+  starEarned(earned: { star: number } | { crown: number; loop: number }, nextRate: number, seconds: number): void {
+    const crown = 'crown' in earned;
+    // A crown past the third takes the last slot again (the row shows at most three).
+    const slot = crown ? Math.min(earned.crown, 3) - 1 : earned.star - 1;
+    this.starShow = { slot, crown, loop: crown ? earned.loop : 0, rate: nextRate, seconds, landed: false, sparked: false };
     this.starAge = 0;
     this.shake.trigger(3);
+  }
+
+  /** The song map for this run (set once per session). */
+  setSongMap(segments: readonly SongMapSegment[]): void {
+    this.songMap = segments.length ? segments : [{ from: 0, level: 1 }];
   }
 
   /** Star show moments scaled to its length (2.4 s by design). */
@@ -826,7 +850,7 @@ export class Renderer {
         // The star lands in its slot: the slot pops and sparks off.
         show.landed = true;
         this.starLandedAge = 0;
-        const { x, y } = this.starPos(show.stars - 1, Math.max(show.stars, 3));
+        const { x, y } = this.starPos(show.slot, 3);
         this.particles.emit(x, y, 14, STAR_DOT, 180, 3, 0.45);
       }
       if (this.starAge >= show.seconds) this.starShow = null;
@@ -1179,8 +1203,8 @@ export class Renderer {
     ctx.fillStyle = `rgba(5,6,10,${(0.4 * veil).toFixed(3)})`;
     ctx.fillRect(0, 0, width, height);
 
-    // The star: pops at 0.3 s, breathes, flies to its slot from 1.8 s.
-    const sp = this.starBig;
+    // The star (or crown): pops at 0.3 s, breathes, flies to its slot from 1.8 s.
+    const sp = show.crown ? this.crownBig : this.starBig;
     let x = cx;
     let y = cy;
     let k = 0;
@@ -1190,7 +1214,7 @@ export class Renderer {
     }
     if (flyT > 0) {
       const e = flyT * flyT * (3 - 2 * flyT);
-      const target = this.starPos(show.stars - 1, Math.max(show.stars, s.levels));
+      const target = this.starPos(show.slot, Math.max(show.slot + 1, s.levels));
       x = cx + (target.x - cx) * e;
       y = cy + (target.y - cy) * e;
       k = 1 + (STAR_PX / STAR_BIG_PX - 1) * e;
@@ -1212,13 +1236,17 @@ export class Renderer {
       ctx.globalAlpha = Math.min(1, u * 3) * wordsOut;
       ctx.translate(cx, this.safeTop + HUD_VERDICT_CENTER);
       ctx.scale(kv, kv);
-      embossText(ctx, dict.plusStar.toUpperCase(), 0, 0, 28, EMBOSS_GOLD, 28 * 0.04);
+      embossText(ctx, (show.crown ? dict.plusCrown : dict.plusStar).toUpperCase(), 0, 0, 28, EMBOSS_GOLD, 28 * 0.04);
       ctx.restore();
     }
     if (t >= at(SHOW_TAGS) && wordsOut > 0) {
       const u = easeOut(Math.min(1, (t - at(SHOW_TAGS)) / 0.4));
       const left = this.tag(fmt(dict.levelFaster, { n: Math.round((show.rate - 1) * 100) }), 'gold', 'left');
-      const right = this.tag(fmt(dict.levelOf, { n: Math.min(show.stars + 1, s.levels), m: s.levels }), 'dark', 'right');
+      const right = this.tag(
+        show.crown ? fmt(dict.loopOf, { n: show.loop }) : fmt(dict.levelOf, { n: Math.min(show.slot + 2, s.levels), m: s.levels }),
+        'dark',
+        'right',
+      );
       const total = left.width + right.width;
       const ty = this.safeTop + HUD_TAGS_TOP + (1 - u) * 8;
       ctx.globalAlpha = u * wordsOut;
@@ -1777,7 +1805,73 @@ export class Renderer {
   }
 
   /**
-   * The HUD (screens-game.html, frames 1–5): track progress 4 px at the safe top; row 1 — the score
+   * The song map (row 0): the song's phrases as a strip at the safe top — quiet ones thin and dark,
+   * the drop thick and in the theme's accent — filled up to where the song is, with a glowing head
+   * that burns brighter in the loud parts. In endless mode the strip makes room for the loop's
+   * number on the right. Nothing else in the HUD moves.
+   */
+  private drawSongMap(s: FrameState, colX: number, colW: number, top: number): void {
+    const ctx = this.ctx;
+    const map = this.songMap;
+    const loop = s.endless && s.level > s.levels ? s.level : 0;
+    let w = colW;
+    if (loop > 0) {
+      ctx.font = `700 11px ${FONT}`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      const label = fmt(dict.loopOf, { n: loop }).toUpperCase();
+      ctx.fillStyle = HUD.gold;
+      ctx.fillText(label, colX + colW, top + 3);
+      w = colW - ctx.measureText(label).width - 10;
+    }
+    const accent = this.theme.accent;
+    const heightOf = (level: number): number => (level >= 2 ? 6 : level === 1 ? 4 : 2);
+    const x0 = (i: number): number => colX + w * map[i].from;
+    const x1 = (i: number): number => (i + 1 < map.length ? colX + w * map[i + 1].from : colX + w);
+    // The whole song, unplayed.
+    for (let i = 0; i < map.length; i++) {
+      const h = heightOf(map[i].level);
+      const gap = i + 1 < map.length ? 1 : 0;
+      const wx = Math.max(0, x1(i) - x0(i) - gap);
+      if (wx <= 0) continue;
+      roundRect(ctx, x0(i), top + 3 - h / 2, wx, h, h / 2);
+      ctx.fillStyle = map[i].level >= 2 ? hexToRgba(accent, 0.28) : map[i].level === 1 ? 'rgba(255,255,255,0.2)' : HUD.w10;
+      ctx.fill();
+    }
+    // The played part: the same segments, lit, clipped at the head.
+    const headX = colX + w * s.progress;
+    if (s.progress > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(colX, top - 4, Math.max(0, headX - colX), 14);
+      ctx.clip();
+      for (let i = 0; i < map.length; i++) {
+        if (x0(i) > headX) break;
+        const h = heightOf(map[i].level);
+        const gap = i + 1 < map.length ? 1 : 0;
+        const wx = Math.max(0, x1(i) - x0(i) - gap);
+        if (wx <= 0) continue;
+        roundRect(ctx, x0(i), top + 3 - h / 2, wx, h, h / 2);
+        ctx.fillStyle = map[i].level >= 2 ? accent : hexToRgba(accent, map[i].level === 1 ? 0.75 : 0.5);
+        ctx.fill();
+      }
+      ctx.restore();
+      // The head: a spark on the strip, brighter in the loud parts and on the beat.
+      let level = 0;
+      for (let i = 0; i < map.length; i++) if (map[i].from <= s.progress) level = map[i].level;
+      const heat = 0.55 + 0.25 * level + 0.2 * s.pulse;
+      const r = 5 + level * 1.5;
+      const g = ctx.createRadialGradient(headX, top + 3, 0, headX, top + 3, r);
+      g.addColorStop(0, hexToRgba('#ffffff', 0.9 * heat));
+      g.addColorStop(0.4, hexToRgba(accent, 0.7 * heat));
+      g.addColorStop(1, hexToRgba(accent, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(headX - r, top + 3 - r, r * 2, r * 2);
+    }
+  }
+
+  /**
+   * The HUD (screens-game.html, frames 1–5): the song map 6 px at the safe top; row 1 — the score
    * chip 112 and the accuracy chip 96 (the pause chip between them is a DOM button); row 2 — five
    * hearts, three level stars, the crystal count; the slow bar; the combo in the verdict material
    * with its «КОМБО» caption; the judgement popup under the hit line; the milestone and lane tags.
@@ -1793,15 +1887,8 @@ export class Renderer {
     if (s.songTime >= 0) this.countdownMax = 0;
     ctx.textBaseline = 'middle';
 
-    // Row 0: track progress.
-    roundRect(ctx, colX, top, colW, 4, 2);
-    ctx.fillStyle = HUD.w10;
-    ctx.fill();
-    if (s.progress > 0) {
-      roundRect(ctx, colX, top, Math.max(4, colW * s.progress), 4, 2);
-      ctx.fillStyle = HUD.cyan;
-      ctx.fill();
-    }
+    // Row 0: the song map.
+    this.drawSongMap(s, colX, colW, top);
 
     // Row 1: score chip (left) and accuracy chip (right); the pause chip in the middle is DOM.
     const chipY = top + HUD_CHIP_TOP;
@@ -1839,14 +1926,19 @@ export class Renderer {
 
     if (s.levels > 0) {
       const show = this.starShow;
-      const flying = show && !show.landed ? show.stars - 1 : -1; // its slot stays dark until the show's star lands
+      const flying = show && !show.landed ? show.slot : -1; // its slot keeps its old glyph until the show's glyph lands
       for (let i = 0; i < s.levels; i++) {
         const { x, y } = this.starPos(i, s.levels);
-        const lit = i < s.stars && i !== flying;
-        const sp = lit ? this.starOn : this.starOff;
+        // Crowns take the slots from the left; a crown in flight leaves its star in the slot until it lands.
+        const crown = i < s.crowns && i !== flying;
+        // A crown in flight lands on an earned star: that slot keeps its star until the crown arrives.
+        const lit = i < s.stars && (i !== flying || show?.crown === true);
+        const sp = crown ? this.crownOn : lit ? this.starOn : this.starOff;
         let k = 1;
-        if (lit && i === s.stars - 1 && this.starLandedAge < 1) k = 1 + 0.5 * (1 - popEase(this.starLandedAge));
+        const landedHere = crown ? i === Math.min(s.crowns, 3) - 1 : i === s.stars - 1;
+        if (lit && landedHere && this.starLandedAge < 1) k = 1 + 0.5 * (1 - popEase(this.starLandedAge));
         if (!lit && i === s.level - 1) ctx.globalAlpha = 0.725 + 0.175 * Math.sin(performance.now() / 510);
+        if (crown && s.crowns > 3 && i === 2) ctx.globalAlpha = 1;
         ctx.drawImage(sp.canvas, x - (sp.width * k) / 2, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
         ctx.globalAlpha = 1;
       }

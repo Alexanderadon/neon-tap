@@ -156,6 +156,7 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
     offset: analysis.beats[0] ?? 0,
     duration: Math.round(duration * 100) / 100,
     beats: analysis.beats,
+    phrases: trace!.levels,
     chart,
   };
   if (!DRY) writeFileSync(join(CHART_DIR, `${t.id}.json`), JSON.stringify(file2));

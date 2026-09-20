@@ -23,20 +23,32 @@ import { Trio } from './ActionZone';
 const html = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 
 describe('Stars', () => {
-  it('draws max stars, the earned ones with a gold gradient and a rim, the rest in grey', () => {
-    const out = html(createElement(Stars, { value: 2, max: 3 }));
-    expect(out.match(/<svg/g)?.length).toBe(3);
-    expect(out.match(/stopColor|stop-color="#fff3a0"/g)?.length).toBe(2);
-    expect(out.match(/stop-color="#3a3d4c"/g)?.length).toBe(1);
-    expect(out).toContain('stroke="#8a4500"');
+  it('draws max stars: small ones as one smooth face, hero ones as ten-facet gems; earned gold with a rim, the rest grey', () => {
+    const small = html(createElement(Stars, { value: 2, max: 3 }));
+    expect(small.match(/<svg/g)?.length).toBe(3);
+    expect(small.match(/<polygon/g)?.length).toBe(3); // one smooth face per star at chip size
+    const out = html(createElement(Stars, { value: 2, max: 3, size: 'hero' }));
+    expect(out.match(/<polygon/g)?.length).toBe(33); // 10 facets + the outline, per star
+    expect(out.match(/stroke="#8a4500"/g)?.length).toBe(2); // the gold rim of the earned ones
+    expect(out.match(/stroke="rgba\(0,0,0,0\.6\)"/g)?.length).toBe(1); // the dark rim of the unearned one
+    expect(out.match(/<ellipse/g)?.length).toBe(2); // the specular spot only on earned hero stars
+    expect(out).toContain('fill="#fff'); // the lit facet is pale gold
     expect(out).not.toContain('filter');
   });
 
+  it('turns the first slots into crowns', () => {
+    const out = html(createElement(Stars, { value: 3, crowns: 2 }));
+    expect(out.match(/class="star crown star-on"/g)?.length).toBe(2);
+    expect(out.match(/class="star star-on"/g)?.length).toBe(1);
+  });
+
   it('gives every gradient a unique id so several Stars on one page do not share defs', () => {
-    const out = html(createElement('div', null, createElement(Stars, { value: 3 }), createElement(Stars, { value: 3 })));
+    const out = html(
+      createElement('div', null, createElement(Stars, { value: 3, crowns: 3, size: 'hero' }), createElement(Stars, { value: 3, crowns: 3, size: 'hero' })),
+    );
     const ids = out.match(/id="[^"]+"/g) ?? [];
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBe(6);
+    expect(ids.length).toBe(24); // halo, band, pearl, gem — per crown, per Stars
   });
 
   it('hero size adds the SVG halo, raises the middle star and bursts sparks when animated', () => {
