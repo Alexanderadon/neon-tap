@@ -225,29 +225,42 @@ export function themeFor(genre: string | undefined | null, id: string): Theme {
   return themeForGenre(genre) ?? THEMES[hashId(id) % THEMES.length];
 }
 
-/** The level's colours taken from the track's picture (`assets:covers`): five lane colours, the background pair, the glow. */
-export interface TrackPalette {
-  /** Background gradient [top, bottom] (the JSON catalog carries a plain two-string array). */
-  bg: readonly string[];
-  lanes: readonly string[];
-  glow: string;
-}
-
-/** What the music is like, for the ambient motif: tempo and the chart's difficulty stand in for its energy. */
-export interface MusicCharacter {
-  bpm: number;
-  stars: number;
-}
+/** Genres whose songs are calm: a warm poster glows as lo-fi rather than burning as rock, a blue one ices over. */
+const CALM_GENRES = new Set(['lofi', 'ambient', 'jazz', 'acoustic', 'orchestral']);
+/** A poster whose accent is paler than this has no colour identity to speak of: the genre theme decides. */
+const MOOD_MIN_SATURATION = 0.5;
 
 /**
- * The level wears its poster: lanes / tiles, background and glow from the picture's palette, the
- * accent from the first lane colour; the ambient motif from the music — a calm song hazes, chiptune
- * bars, a fast song grids, the rest ring. The genre theme fills whatever the palette lacks.
+ * The theme for a track with a picture: chosen by the poster's MOOD — the hue family of its accent
+ * (`tint`) — from the hand-designed themes above, so the level keeps a designed neon look that
+ * matches the poster instead of colours sampled off it. Warm posters (red, orange) burn as rock —
+ * or glow as lo-fi / jazz when the genre is calm; gold → orchestral; green → chiptune; teal →
+ * ambient; blue → techno, or orchestral's ice when calm; pink, magenta and violet → synthwave.
+ * Chiptune keeps its pixel bars whatever the poster; a pale accent leaves the genre theme in charge.
  */
-export function themeFromPalette(base: Theme, palette: TrackPalette, music: MusicCharacter, genre: string | undefined | null): Theme {
-  const lanes = [...palette.lanes, ...base.laneColors].slice(0, Math.max(PALETTE_SIZE, base.laneColors.length)) as unknown as LanePalette;
+export function themeForMood(tint: string, genre: string | undefined | null, id: string): Theme {
+  const n = parseInt(tint.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  const l = (max + min) / 2;
+  const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
   const key = normaliseGenre(genre ?? '');
-  const motif: Motif = key.includes('chip') || key.includes('8bit') ? 'bars' : music.stars <= 3 ? 'haze' : music.bpm >= 150 ? 'grid' : 'rings';
-  const bg: readonly [string, string] = [palette.bg[0] ?? base.bg[0], palette.bg[1] ?? palette.bg[0] ?? base.bg[1]];
-  return { id: `${base.id}-cover`, name: base.name, bg, laneColors: lanes, accent: lanes[0], glow: palette.glow, motif };
+  if (sat < MOOD_MIN_SATURATION || key.includes('chip') || key.includes('8bit')) return themeFor(genre, id);
+  let hue = 0;
+  if (max === r) hue = ((g - b) / d + 6) % 6;
+  else if (max === g) hue = (b - r) / d + 2;
+  else hue = (r - g) / d + 4;
+  hue *= 60;
+  const calm = CALM_GENRES.has(key);
+  const pick = (themeId: string): Theme => themeById(themeId) ?? SYNTHWAVE;
+  if (hue < 45 || hue >= 345) return pick(key === 'jazz' ? 'jazz' : calm ? 'lofi' : 'rock');
+  if (hue < 55) return pick('orchestral');
+  if (hue < 165) return pick('chiptune');
+  if (hue < 195) return pick('ambient');
+  if (hue < 262) return pick(calm ? 'orchestral' : 'techno');
+  return pick('synthwave');
 }
