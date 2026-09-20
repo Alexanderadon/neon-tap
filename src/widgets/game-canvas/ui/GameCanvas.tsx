@@ -79,7 +79,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [attempt, setAttempt] = useState(0);
   const [paused, setPaused] = useState<Snapshot | null>(null);
-  const [fail, setFail] = useState<{ stars: number; crowns: number } | null>(null);
+  const [fail, setFail] = useState<{ stars: number; crowns: number; finale: boolean } | null>(null);
   const [revive, dispatch] = useReducer(reviveReducer, REVIVE_IDLE);
   const [muted, setMuted] = useState(false);
   // Latest host callbacks without re-creating the session when the parent re-renders.
@@ -139,7 +139,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         case 'fail':
           setPaused(null);
           dispatch({ type: 'decline' });
-          setFail({ stars: e.stars, crowns: e.crowns });
+          setFail({ stars: e.stars, crowns: e.crowns, finale: e.finale });
           break;
         case 'pause':
           setPaused({ score: e.score, accuracy: e.accuracy, level: e.level });
@@ -429,6 +429,16 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
               <ObjButton icon={<Icon name="sound" />} label={dict.soundToggle} className={muted ? 'game-muted' : undefined} onClick={toggleSound} />
               {tutorial ? (
                 <ObjButton icon={<Icon name="chevron" />} label={dict.tutorialSkip} onClick={exit} />
+              ) : paused.level > LEVELS ? (
+                // An endless loop: leaving would throw the crowns away, so the way out is to end the run and bank them.
+                <ObjButton
+                  icon={<Icon name="stop" />}
+                  label={dict.finishRun}
+                  onClick={() => {
+                    sfxUi();
+                    sessionRef.current?.stop();
+                  }}
+                />
               ) : (
                 <ObjButton icon={<Icon name="home" />} label={dict.exit} onClick={exit} />
               )}
@@ -449,15 +459,18 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           </>,
         )}
 
-      {fail !== null && <FailFrame stars={fail.stars} crowns={fail.crowns} />}
+      {fail !== null && <FailFrame stars={fail.stars} crowns={fail.crowns} finale={fail.finale} />}
 
       {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} title={chart.title} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
     </div>
   );
 }
 
-/** «ПРОВАЛ» (no stars) or «СТОП — звёзд заработано: N»: a ≤ 1.5 s frame over the frozen field before the result. */
-function FailFrame({ stars, crowns }: { stars: number; crowns: number }) {
+/**
+ * «ПРОВАЛ» (no stars), «СТОП — звёзд заработано: N» or, past the third star of an endless run,
+ * «ФИНИШ — корон заработано: N»: a ≤ 1.5 s frame over the frozen field before the result.
+ */
+function FailFrame({ stars, crowns, finale }: { stars: number; crowns: number; finale: boolean }) {
   return (
     <div className="game-shade game-fail" aria-live="polite">
       <div className="game-col">
@@ -465,7 +478,7 @@ function FailFrame({ stars, crowns }: { stars: number; crowns: number }) {
           <Stars value={stars} crowns={Math.min(3, crowns)} size="hero" animate />
         </div>
         <Headline as="div" pop tone={stars > 0 ? 'gold' : 'mag'} className="game-verdict game-verdict-late">
-          {stars > 0 ? dict.levelStop : dict.failed}
+          {finale ? dict.finale : stars > 0 ? dict.levelStop : dict.failed}
         </Headline>
         <div className="game-tabline game-tabline-late">
           {crowns > 0 ? (

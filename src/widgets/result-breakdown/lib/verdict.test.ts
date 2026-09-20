@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { starsGained, verdictOf } from './verdict';
 
-const run = (o: Partial<{ failed: boolean; stars: number; fullCombo: boolean }> = {}) => ({ failed: false, stars: 2, fullCombo: false, ...o });
+const run = (o: Partial<{ failed: boolean; stars: number; fullCombo: boolean; crowns: number; level: number }> = {}) => ({
+  failed: false,
+  stars: 2,
+  fullCombo: false,
+  ...o,
+});
 const meta = (starsBefore: number, starsAfter: number, newRecord = false) => ({ newRecord, starsBefore, starsAfter });
 
 describe('verdictOf', () => {
@@ -27,6 +32,13 @@ describe('verdictOf', () => {
 
   it('custom songs (no meta) fall back to the level reached', () => {
     expect(verdictOf(run({ stars: 3 }), null).text).toBe('Все три звезды');
+  });
+
+  it('endless runs: crowns added to the record, otherwise the loop reached', () => {
+    const endless = run({ stars: 3, crowns: 2, level: 6 });
+    expect(verdictOf(endless, { ...meta(3, 3), crownsBefore: 0, crownsAfter: 2 })).toEqual({ kind: 'crowns', text: '+2 короны' });
+    expect(verdictOf(endless, { ...meta(3, 3), crownsBefore: 5, crownsAfter: 5 })).toEqual({ kind: 'loop', text: 'Круг 6' });
+    expect(verdictOf(endless, null).text).toBe('+2 короны');
   });
 
   it('never exceeds 14 characters (28/900 in 335 px)', () => {

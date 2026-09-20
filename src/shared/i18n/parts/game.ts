@@ -11,6 +11,10 @@ export const game = {
   loopOf: 'Круг {n}',
   loopWord: 'Круг',
   plusCrown: '+1 корона',
+  /** The frame when an endless run ends past the third star: a finale, not a fail. */
+  finale: 'Финиш',
+  /** The pause panel of an endless loop: end the run now, the crowns stay. */
+  finishRun: 'Завершить',
   endless: 'Бесконечно',
   endlessTag: 'Бесконечный режим',
   endlessHint: 'после трёх звёзд — быстрее с каждым кругом, корона за круг',

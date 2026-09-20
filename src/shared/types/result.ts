@@ -37,6 +37,8 @@ export interface PlayResult {
   crowns: number;
   /** The run was endless: the song looped past three stars, faster every loop. */
   endless: boolean;
+  /** Endless runs only: the score of the whole run, loops included (`score` stops at the third star so records compare like with like). */
+  endlessScore?: number;
   /** The level the run ended on (1-based; endless loops count on from 4). */
   level: number;
   /** Hearts left at the end. */

@@ -202,7 +202,7 @@ export const common = {
   levelStop: 'СТОП',
   levelKept: 'звёзд заработано: {n}',
   crownsKept: 'корон заработано: {n}',
-  loopsShort: 'Кругов',
+  crownsShort: 'Корон',
   tutorialLaneSteps: {
     intro: { title: 'Поехали', desktop: 'Клавиши {keys}', touch: 'Тапай в нижней половине' },
     tap: { title: 'Тапни', desktop: 'Когда нота на линии — {keys}', touch: 'Когда нота на линии' },

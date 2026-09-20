@@ -87,7 +87,7 @@
 .profile-foot {
   display: block;
   height: 16px;
-  margin-top: 4px;
+  margin-top: 8px; /* 16 (column gap) + 8 = 24 between content blocks (spec §1.4) */
   font: var(--t-11);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
@@ -105,4 +105,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+/* The chevron is not a direct child of .obj-end, so it takes the row's 20 px here (unsized it collapses to 0 × 0). */
+.profile-ava-end > svg {
+  width: 20px;
+  height: 20px;
 }

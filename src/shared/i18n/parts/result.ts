@@ -18,6 +18,9 @@ export const result = {
   tagNewRecord: 'Новый рекорд',
   tagWas: 'было {score}',
   tagRecord: 'рекорд {score}',
+  /** An endless run: the loop it ended on and the score of the whole run (the panel shows the score at the third star). */
+  tagLoop: 'круг {n}',
+  tagTotal: 'всего {score}',
   tagFailedHearts: 'сердца кончились',
   /** The grey stats line under the score: «Точность 98,6 %  Комбо 136  Ранг S». */
   statCombo: 'Комбо',

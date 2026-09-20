@@ -9,6 +9,9 @@ export interface ResultMeta {
   newRecord: boolean;
   starsBefore: number;
   starsAfter: number;
+  /** Crowns on the track's record before and after this run (endless mode; absent for custom songs). */
+  crownsBefore?: number;
+  crownsAfter?: number;
   /** This run completed today's daily track for the first time (+1 bonus star). */
   dailyBonus?: boolean;
   /** Goal ids completed (and claimed) by this run. */

@@ -213,6 +213,7 @@
 }
 /* The header's «48 Ч» tag as a button (the Tag is a span). */
 .offer-tagbtn {
+  position: relative;
   display: inline-flex;
   padding: 0;
   margin: 0;
@@ -225,6 +226,12 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   flex: none;
+}
+/* An invisible 44 px tall tap target around the 24 px tag. */
+.offer-tagbtn::after {
+  content: '';
+  position: absolute;
+  inset: -10px 0;
 }
 .offer-tagbtn:focus-visible {
   outline: 2px solid var(--cyan);

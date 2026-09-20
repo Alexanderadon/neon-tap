@@ -99,7 +99,7 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
               </span>
               {crowns > 0 && (
                 <span>
-                  {dict.loopsShort} <b>{crowns}</b>
+                  {dict.crownsShort} <b>{crowns}</b>
                 </span>
               )}
             </div>

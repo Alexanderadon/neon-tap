@@ -41,10 +41,17 @@
   display: inline-block;
 }
 .chip-btn {
+  position: relative;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+}
+/* An invisible 44 px tap target around the 32 px face (the top bar's row is 44 tall): 30 inside the 1 px border + 2 × 7. */
+.chip-btn::before {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
 }
 .chip-btn:active {
   transform: translateY(1px);

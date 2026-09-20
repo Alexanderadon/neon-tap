@@ -4,7 +4,7 @@ import { audioEngine, sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
 import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, trackTint, type TrackMeta } from '@/entities/track';
-import { crownsForTrack, starsForTrack } from '@/entities/progress';
+import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { toggleEndless, useEndless } from '../model/endless';
 import { writeDeckIndex } from '../model/deckPosition';
@@ -211,7 +211,7 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
               lock={current ? lock : lockFor(state, t.id, t.stars)}
               daily={t.id === state.dailyId}
               best={starsForTrack(state.save.tracks[t.id])}
-              crowns={crownsForTrack(state.save.tracks[t.id])}
+              crowns={state.save.tracks[t.id]?.crowns ?? 0}
               rank={state.save.tracks[t.id]?.rank}
               details={current && details}
               onTap={() => (current ? setDetails((d) => !d) : go(i))}
@@ -322,7 +322,8 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, rank, deta
       <div className="deck-text">
         <h1 className="deck-title">{track.title}</h1>
         <div className="deck-meta">
-          <Stars value={best} crowns={crowns} size="md" />
+          <Stars value={best} crowns={Math.min(3, crowns)} size="md" />
+          {crowns > 3 && <span className="deck-crowns">×{crowns}</span>}
           <Difficulty stars={track.stars} />
           {rank && <span className={gold ? 'deck-rank deck-rank-gold' : 'deck-rank'}>{rank}</span>}
         </div>
