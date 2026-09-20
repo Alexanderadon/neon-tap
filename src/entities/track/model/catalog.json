@@ -8,6 +8,20 @@
     "genre": "orchestral",
     "cover": "covers/battle-theme.webp",
     "tint": "#f4e17c",
+    "palette": {
+      "bg": [
+        "#06080e",
+        "#09111b"
+      ],
+      "lanes": [
+        "#f3df72",
+        "#3791e2",
+        "#b2f372",
+        "#f38a72",
+        "#72f388"
+      ],
+      "glow": "#3791e2"
+    },
     "bpm": 119.7,
     "duration": 116.06,
     "stars": 2,
@@ -30,6 +44,20 @@
     "genre": "lofi",
     "cover": "covers/chill-lofi-inspired.webp",
     "tint": "#5eddf2",
+    "palette": {
+      "bg": [
+        "#18101d",
+        "#0a0b19"
+      ],
+      "lanes": [
+        "#5eddf2",
+        "#f8cf6d",
+        "#3c58dd",
+        "#5e7bf2",
+        "#5ef2a5"
+      ],
+      "glow": "#f8cf6d"
+    },
     "bpm": 79.6,
     "duration": 123.19,
     "stars": 2,
@@ -52,6 +80,20 @@
     "genre": "synthpop",
     "cover": "covers/all-night-road.webp",
     "tint": "#dc3dad",
+    "palette": {
+      "bg": [
+        "#0b0c21",
+        "#0f122d"
+      ],
+      "lanes": [
+        "#dd3cad",
+        "#923cdd",
+        "#3c4bdd",
+        "#dd3c43",
+        "#a23cdd"
+      ],
+      "glow": "#923cdd"
+    },
     "bpm": 103.5,
     "duration": 150.05,
     "stars": 2,
@@ -74,6 +116,20 @@
     "genre": "rock",
     "cover": "covers/metal-song-energetic.webp",
     "tint": "#e4343c",
+    "palette": {
+      "bg": [
+        "#0a0808",
+        "#171113"
+      ],
+      "lanes": [
+        "#e4343c",
+        "#e4a034",
+        "#e434b0",
+        "#b4e434",
+        "#a434e4"
+      ],
+      "glow": "#e4a034"
+    },
     "bpm": 135,
     "duration": 98.56,
     "stars": 3,
@@ -96,6 +152,20 @@
     "genre": "metal",
     "cover": "covers/fight-for-better-future.webp",
     "tint": "#e0393c",
+    "palette": {
+      "bg": [
+        "#0c0b0c",
+        "#0b0b0c"
+      ],
+      "lanes": [
+        "#e0393c",
+        "#e0a439",
+        "#e039aa",
+        "#ade039",
+        "#a739e0"
+      ],
+      "glow": "#e0a439"
+    },
     "bpm": 76.6,
     "duration": 136.25,
     "stars": 3,
@@ -118,6 +188,20 @@
     "genre": "electronic",
     "cover": "covers/the-rift.webp",
     "tint": "#3945e0",
+    "palette": {
+      "bg": [
+        "#060813",
+        "#070914"
+      ],
+      "lanes": [
+        "#3945e0",
+        "#9b39e0",
+        "#39b3e0",
+        "#e039b6",
+        "#39e09e"
+      ],
+      "glow": "#9b39e0"
+    },
     "bpm": 129.4,
     "duration": 150.05,
     "stars": 3,
@@ -140,6 +224,20 @@
     "genre": "hardstyle",
     "cover": "covers/hardstyler.webp",
     "tint": "#ec372c",
+    "palette": {
+      "bg": [
+        "#0b0404",
+        "#240d0c"
+      ],
+      "lanes": [
+        "#ec372c",
+        "#ecb62c",
+        "#ec2ca0",
+        "#a4ec2c",
+        "#ba2cec"
+      ],
+      "glow": "#ecb62c"
+    },
     "bpm": 139.8,
     "duration": 112.9,
     "stars": 3,
@@ -162,6 +260,20 @@
     "genre": "acoustic",
     "cover": "covers/wasteland-caravan.webp",
     "tint": "#d97e3f",
+    "palette": {
+      "bg": [
+        "#1b0f09",
+        "#2e190f"
+      ],
+      "lanes": [
+        "#dd7e3c",
+        "#d2dd3c",
+        "#dd3c64",
+        "#67dd3c",
+        "#dd3cce"
+      ],
+      "glow": "#d2dd3c"
+    },
     "bpm": 172.1,
     "duration": 150.05,
     "stars": 3,
@@ -184,6 +296,20 @@
     "genre": "chiptune",
     "cover": "covers/dance-field.webp",
     "tint": "#1a9aff",
+    "palette": {
+      "bg": [
+        "#071215",
+        "#0d2628"
+      ],
+      "lanes": [
+        "#1a9aff",
+        "#c1f836",
+        "#35e3c3",
+        "#4bdd3c",
+        "#311aff"
+      ],
+      "glow": "#c1f836"
+    },
     "bpm": 92.5,
     "duration": 109.77,
     "stars": 3,
@@ -206,6 +332,20 @@
     "genre": "ambient",
     "cover": "covers/up-in-the-sky.webp",
     "tint": "#4779d1",
+    "palette": {
+      "bg": [
+        "#0b1221",
+        "#0f1a2e"
+      ],
+      "lanes": [
+        "#3c76dd",
+        "#e87d8b",
+        "#6c3cdd",
+        "#3cddda",
+        "#d63cdd"
+      ],
+      "glow": "#e87d8b"
+    },
     "bpm": 136,
     "duration": 150.05,
     "stars": 3,
@@ -228,6 +368,20 @@
     "genre": "chiptune",
     "cover": "covers/hardcore-chiptune-theme.webp",
     "tint": "#abf723",
+    "palette": {
+      "bg": [
+        "#040d0d",
+        "#132111"
+      ],
+      "lanes": [
+        "#abf723",
+        "#33e5ac",
+        "#3cdd4d",
+        "#23f727",
+        "#f7b723"
+      ],
+      "glow": "#33e5ac"
+    },
     "bpm": 128.7,
     "duration": 106.84,
     "stars": 4,
@@ -250,6 +404,20 @@
     "genre": "hardcore",
     "cover": "covers/hard-boss-battle-2.webp",
     "tint": "#fc772f",
+    "palette": {
+      "bg": [
+        "#10060a",
+        "#0b060f"
+      ],
+      "lanes": [
+        "#fc772f",
+        "#ed2bcd",
+        "#fafc2f",
+        "#fc2f6e",
+        "#72fc2f"
+      ],
+      "glow": "#ed2bcd"
+    },
     "bpm": 69.9,
     "duration": 112.04,
     "stars": 4,
@@ -272,6 +440,20 @@
     "genre": "ambient",
     "cover": "covers/november-snow.webp",
     "tint": "#7292ca",
+    "palette": {
+      "bg": [
+        "#11161d",
+        "#0d0e14"
+      ],
+      "lanes": [
+        "#3c77dd",
+        "#6b3cdd",
+        "#3cddd8",
+        "#d53cdd",
+        "#3cdd6e"
+      ],
+      "glow": "#6b3cdd"
+    },
     "bpm": 123.9,
     "duration": 150.05,
     "stars": 4,
@@ -294,6 +476,20 @@
     "genre": "trance",
     "cover": "covers/sky-trance.webp",
     "tint": "#1a81ff",
+    "palette": {
+      "bg": [
+        "#0b1622",
+        "#0c1725"
+      ],
+      "lanes": [
+        "#1a81ff",
+        "#f8dd6d",
+        "#4a1aff",
+        "#1affe6",
+        "#e11aff"
+      ],
+      "glow": "#f8dd6d"
+    },
     "bpm": 69.9,
     "duration": 116.58,
     "stars": 4,
@@ -316,6 +512,20 @@
     "genre": "rock",
     "cover": "covers/silver-bullet.webp",
     "tint": "#e43d35",
+    "palette": {
+      "bg": [
+        "#090708",
+        "#1f0b0b"
+      ],
+      "lanes": [
+        "#e43d35",
+        "#e4b135",
+        "#e435a0",
+        "#a3e435",
+        "#b535e4"
+      ],
+      "glow": "#e4b135"
+    },
     "bpm": 113.2,
     "duration": 150.05,
     "stars": 4,
@@ -338,6 +548,20 @@
     "genre": "jazz",
     "cover": "covers/red-moon.webp",
     "tint": "#d16747",
+    "palette": {
+      "bg": [
+        "#180b08",
+        "#240f0c"
+      ],
+      "lanes": [
+        "#dd603c",
+        "#ddca3c",
+        "#dd3c81",
+        "#85dd3c",
+        "#ce3cdd"
+      ],
+      "glow": "#ddca3c"
+    },
     "bpm": 120.1,
     "duration": 138,
     "stars": 4,
@@ -360,6 +584,20 @@
     "genre": "synthpop",
     "cover": "covers/bright-stars.webp",
     "tint": "#e05dbf",
+    "palette": {
+      "bg": [
+        "#0c0b22",
+        "#120f2d"
+      ],
+      "lanes": [
+        "#e25bc0",
+        "#3f3cdd",
+        "#b23cdd",
+        "#e25b67",
+        "#ab5be2"
+      ],
+      "glow": "#3f3cdd"
+    },
     "bpm": 123.5,
     "duration": 150.05,
     "stars": 4,
@@ -382,6 +620,20 @@
     "genre": "chiptune",
     "cover": "covers/space-cadet-training-montage.webp",
     "tint": "#22a1f7",
+    "palette": {
+      "bg": [
+        "#04070c",
+        "#0b1722"
+      ],
+      "lanes": [
+        "#22a1f7",
+        "#7de8a1",
+        "#2f22f7",
+        "#22f7c0",
+        "#bc22f7"
+      ],
+      "glow": "#7de8a1"
+    },
     "bpm": 129.6,
     "duration": 145.97,
     "stars": 3,
@@ -404,6 +656,20 @@
     "genre": "electronic",
     "cover": "covers/the-lab.webp",
     "tint": "#40a7d8",
+    "palette": {
+      "bg": [
+        "#0b1022",
+        "#0a0d1f"
+      ],
+      "lanes": [
+        "#3ca9dd",
+        "#3c53dd",
+        "#3c3fdd",
+        "#3cdda7",
+        "#a33cdd"
+      ],
+      "glow": "#3c53dd"
+    },
     "bpm": 143.6,
     "duration": 150.05,
     "stars": 4,
@@ -426,6 +692,20 @@
     "genre": "hardstyle",
     "cover": "covers/bouncer.webp",
     "tint": "#fc1c41",
+    "palette": {
+      "bg": [
+        "#220b0f",
+        "#0c0909"
+      ],
+      "lanes": [
+        "#fc1c41",
+        "#fc8b1c",
+        "#fc1cd5",
+        "#d9fc1c",
+        "#901cfc"
+      ],
+      "glow": "#fc8b1c"
+    },
     "bpm": 128.9,
     "duration": 93.81,
     "stars": 4,
@@ -448,6 +728,20 @@
     "genre": "lofi",
     "cover": "covers/since-2-am.webp",
     "tint": "#d14759",
+    "palette": {
+      "bg": [
+        "#0b0508",
+        "#1f1524"
+      ],
+      "lanes": [
+        "#dd3c50",
+        "#dd923c",
+        "#dd3cba",
+        "#bddd3c",
+        "#953cdd"
+      ],
+      "glow": "#dd923c"
+    },
     "bpm": 160.9,
     "duration": 150.05,
     "stars": 4,
@@ -470,6 +764,20 @@
     "genre": "techno",
     "cover": "covers/chase.webp",
     "tint": "#b9ee2b",
+    "palette": {
+      "bg": [
+        "#090806",
+        "#0b0c08"
+      ],
+      "lanes": [
+        "#b9ee2b",
+        "#dda13c",
+        "#38ee2b",
+        "#eea22b",
+        "#2bee9e"
+      ],
+      "glow": "#dda13c"
+    },
     "bpm": 143.4,
     "duration": 150.05,
     "stars": 5,
@@ -492,6 +800,20 @@
     "genre": "electronic",
     "cover": "covers/elevate-instrument-tracks.webp",
     "tint": "#77cff8",
+    "palette": {
+      "bg": [
+        "#0b0f21",
+        "#070814"
+      ],
+      "lanes": [
+        "#6dcbf8",
+        "#3c50dd",
+        "#6d70f8",
+        "#6df8c9",
+        "#c66df8"
+      ],
+      "glow": "#3c50dd"
+    },
     "bpm": 172.8,
     "duration": 150.05,
     "stars": 5,
@@ -514,6 +836,20 @@
     "genre": "rock",
     "cover": "covers/action-track.webp",
     "tint": "#ec2c2c",
+    "palette": {
+      "bg": [
+        "#110806",
+        "#220f0b"
+      ],
+      "lanes": [
+        "#ec2c2c",
+        "#e8ba7d",
+        "#ecab2c",
+        "#ec2cab",
+        "#afec2c"
+      ],
+      "glow": "#e8ba7d"
+    },
     "bpm": 113.4,
     "duration": 138.92,
     "stars": 5,
@@ -536,6 +872,20 @@
     "genre": "chiptune",
     "cover": "covers/8-bit-mechanical-complex.webp",
     "tint": "#90e336",
+    "palette": {
+      "bg": [
+        "#040b0b",
+        "#061211"
+      ],
+      "lanes": [
+        "#90e336",
+        "#30e8b0",
+        "#36e34e",
+        "#e3c436",
+        "#36e3c0"
+      ],
+      "glow": "#30e8b0"
+    },
     "bpm": 117.5,
     "duration": 150.05,
     "stars": 5,
@@ -558,6 +908,20 @@
     "genre": "house",
     "cover": "covers/vengeance-electro.webp",
     "tint": "#e53634",
+    "palette": {
+      "bg": [
+        "#220c0b",
+        "#1b0a09"
+      ],
+      "lanes": [
+        "#e53634",
+        "#e5ab34",
+        "#e534a6",
+        "#a9e534",
+        "#af34e5"
+      ],
+      "glow": "#e5ab34"
+    },
     "bpm": 128.8,
     "duration": 150.05,
     "stars": 5,
@@ -580,6 +944,20 @@
     "genre": "electronic",
     "cover": "covers/espelhar.webp",
     "tint": "#849de0",
+    "palette": {
+      "bg": [
+        "#0b1020",
+        "#090c1a"
+      ],
+      "lanes": [
+        "#7c99e8",
+        "#a67ce8",
+        "#7ce1e8",
+        "#e87ce3",
+        "#7ce8a8"
+      ],
+      "glow": "#a67ce8"
+    },
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 5,
@@ -602,6 +980,20 @@
     "genre": "techno",
     "cover": "covers/robotic-city.webp",
     "tint": "#cfe788",
+    "palette": {
+      "bg": [
+        "#121211",
+        "#0b0b0a"
+      ],
+      "lanes": [
+        "#cce87d",
+        "#85e87d",
+        "#e8bd7d",
+        "#7de8bb",
+        "#e87d83"
+      ],
+      "glow": "#85e87d"
+    },
     "bpm": 129.5,
     "duration": 150.05,
     "stars": 5,
@@ -624,6 +1016,20 @@
     "genre": "synthwave",
     "cover": "covers/virtual-rush.webp",
     "tint": "#fa27b7",
+    "palette": {
+      "bg": [
+        "#150b22",
+        "#0c091a"
+      ],
+      "lanes": [
+        "#fa27b7",
+        "#a836e3",
+        "#fa272c",
+        "#b227fa",
+        "#faae27"
+      ],
+      "glow": "#a836e3"
+    },
     "bpm": 161.1,
     "duration": 150.05,
     "stars": 5,
@@ -646,6 +1052,20 @@
     "genre": "jazz",
     "cover": "covers/wednesday-night.webp",
     "tint": "#d87640",
+    "palette": {
+      "bg": [
+        "#140907",
+        "#0d0707"
+      ],
+      "lanes": [
+        "#dd743c",
+        "#dbdd3c",
+        "#dd3c6d",
+        "#71dd3c",
+        "#dd3cd7"
+      ],
+      "glow": "#dbdd3c"
+    },
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 5,
@@ -668,6 +1088,20 @@
     "genre": "breakbeat",
     "cover": "covers/lucid-trigger.webp",
     "tint": "#dde181",
+    "palette": {
+      "bg": [
+        "#080707",
+        "#0b0b09"
+      ],
+      "lanes": [
+        "#e3e87a",
+        "#9be87a",
+        "#e8a47a",
+        "#7ae8a2",
+        "#e87a99"
+      ],
+      "glow": "#9be87a"
+    },
     "bpm": 151.3,
     "duration": 135.24,
     "stars": 5,
@@ -690,6 +1124,20 @@
     "genre": "eurobeat",
     "cover": "covers/technomania101.webp",
     "tint": "#3068e8",
+    "palette": {
+      "bg": [
+        "#0e080e",
+        "#0d1528"
+      ],
+      "lanes": [
+        "#3068e8",
+        "#e87dbe",
+        "#7230e8",
+        "#30e1e8",
+        "#e830e5"
+      ],
+      "glow": "#e87dbe"
+    },
     "bpm": 142.9,
     "duration": 141.98,
     "stars": 5,
@@ -712,6 +1160,20 @@
     "genre": "house",
     "cover": "covers/slampe.webp",
     "tint": "#ef4b41",
+    "palette": {
+      "bg": [
+        "#210d1e",
+        "#200d20"
+      ],
+      "lanes": [
+        "#ef4b41",
+        "#dd3c94",
+        "#973cdd",
+        "#efbe41",
+        "#ef41aa"
+      ],
+      "glow": "#dd3c94"
+    },
     "bpm": 152,
     "duration": 150.05,
     "stars": 5,
@@ -734,6 +1196,20 @@
     "genre": "trance",
     "cover": "covers/trance-boss-battle.webp",
     "tint": "#7eb6f1",
+    "palette": {
+      "bg": [
+        "#0b1322",
+        "#060912"
+      ],
+      "lanes": [
+        "#75b0f0",
+        "#8b75f0",
+        "#75f0df",
+        "#dc75f0",
+        "#75f08d"
+      ],
+      "glow": "#8b75f0"
+    },
     "bpm": 151.5,
     "duration": 102.43,
     "stars": 5,
@@ -756,6 +1232,20 @@
     "genre": "metal",
     "cover": "covers/boss-battle-9-metal.webp",
     "tint": "#d14b47",
+    "palette": {
+      "bg": [
+        "#090606",
+        "#0e0b0b"
+      ],
+      "lanes": [
+        "#dd413c",
+        "#ddab3c",
+        "#dd3ca1",
+        "#a5dd3c",
+        "#ae3cdd"
+      ],
+      "glow": "#ddab3c"
+    },
     "bpm": 151.7,
     "duration": 127.43,
     "stars": 6,
@@ -778,6 +1268,20 @@
     "genre": "metal",
     "cover": "covers/race-of-the-wasp.webp",
     "tint": "#d1aa47",
+    "palette": {
+      "bg": [
+        "#0a0a05",
+        "#1f1c17"
+      ],
+      "lanes": [
+        "#ddaf3c",
+        "#a0dd3c",
+        "#dd453c",
+        "#3cdd42",
+        "#dd3c9d"
+      ],
+      "glow": "#a0dd3c"
+    },
     "bpm": 160.9,
     "duration": 83.88,
     "stars": 6,
@@ -801,6 +1305,20 @@
     "premium": true,
     "cover": "covers/chiptuned-rock.webp",
     "tint": "#dc3c46",
+    "palette": {
+      "bg": [
+        "#080808",
+        "#0a0a0a"
+      ],
+      "lanes": [
+        "#dd3c45",
+        "#e8b27d",
+        "#dd9d3c",
+        "#dd3caf",
+        "#b2dd3c"
+      ],
+      "glow": "#e8b27d"
+    },
     "bpm": 108.3,
     "duration": 137.48,
     "stars": 3,
@@ -824,6 +1342,20 @@
     "premium": true,
     "cover": "covers/polygons-n-light.webp",
     "tint": "#e2b58d",
+    "palette": {
+      "bg": [
+        "#0f0f0f",
+        "#211f1c"
+      ],
+      "lanes": [
+        "#e8af7d",
+        "#dae87d",
+        "#e87d91",
+        "#93e87d",
+        "#e87dd8"
+      ],
+      "glow": "#dae87d"
+    },
     "bpm": 143.9,
     "duration": 106.53,
     "stars": 5,
@@ -847,6 +1379,20 @@
     "premium": true,
     "cover": "covers/tech-rave.webp",
     "tint": "#caa272",
+    "palette": {
+      "bg": [
+        "#080807",
+        "#0b0a09"
+      ],
+      "lanes": [
+        "#dd943c",
+        "#bcdd3c",
+        "#dd3c4e",
+        "#52dd3c",
+        "#dd3cb8"
+      ],
+      "glow": "#bcdd3c"
+    },
     "bpm": 163.2,
     "duration": 125.13,
     "stars": 5,
@@ -870,6 +1416,20 @@
     "premium": true,
     "cover": "covers/trance-battle.webp",
     "tint": "#caa472",
+    "palette": {
+      "bg": [
+        "#0a0a05",
+        "#0a0a0a"
+      ],
+      "lanes": [
+        "#dd983c",
+        "#b7dd3c",
+        "#dd3c4a",
+        "#4ddd3c",
+        "#dd3cb4"
+      ],
+      "glow": "#b7dd3c"
+    },
     "bpm": 139.8,
     "duration": 150.05,
     "stars": 5,
@@ -893,6 +1453,20 @@
     "premium": true,
     "cover": "covers/fever-stadium.webp",
     "tint": "#e2b28d",
+    "palette": {
+      "bg": [
+        "#0b111f",
+        "#12192c"
+      ],
+      "lanes": [
+        "#e8ac7d",
+        "#3c69dd",
+        "#dde87d",
+        "#e87d95",
+        "#97e87d"
+      ],
+      "glow": "#3c69dd"
+    },
     "bpm": 163,
     "duration": 85.81,
     "stars": 6,
@@ -916,6 +1490,20 @@
     "pack": "rock",
     "cover": "covers/naomi.webp",
     "tint": "#ca8772",
+    "palette": {
+      "bg": [
+        "#0c0a0a",
+        "#1f1714"
+      ],
+      "lanes": [
+        "#dd623c",
+        "#ddcc3c",
+        "#dd3c80",
+        "#83dd3c",
+        "#cf3cdd"
+      ],
+      "glow": "#ddcc3c"
+    },
     "bpm": 91.7,
     "duration": 82.49,
     "stars": 4,
@@ -939,6 +1527,20 @@
     "pack": "rock",
     "cover": "covers/call-of-the-north.webp",
     "tint": "#caca72",
+    "palette": {
+      "bg": [
+        "#12161a",
+        "#0c0908"
+      ],
+      "lanes": [
+        "#dddd3c",
+        "#73dd3c",
+        "#dd733c",
+        "#3cdd6f",
+        "#dd3c6f"
+      ],
+      "glow": "#73dd3c"
+    },
     "bpm": 95.2,
     "duration": 94.38,
     "stars": 4,
@@ -962,6 +1564,20 @@
     "pack": "rock",
     "cover": "covers/grunge-nostalgia.webp",
     "tint": "#da996d",
+    "palette": {
+      "bg": [
+        "#191615",
+        "#110c0a"
+      ],
+      "lanes": [
+        "#e49763",
+        "#dbe463",
+        "#e46384",
+        "#87e463",
+        "#e463d9"
+      ],
+      "glow": "#dbe463"
+    },
     "bpm": 107.3,
     "duration": 137.93,
     "stars": 4,

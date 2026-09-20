@@ -10,6 +10,7 @@ crop the middle back out with object-fit: cover.
   python tools/covers/make-cover.py <picture> <track id> [--out public/covers]
 Run through `npm run assets:covers` (assets-src/covers-raw/<id>.png|jpg|webp -> public/covers/<id>.webp).
 """
+import json
 import sys
 from pathlib import Path
 
@@ -59,7 +60,7 @@ def make(src: Path, out: Path) -> None:
         card = fill(src_im)
         out.parent.mkdir(parents=True, exist_ok=True)
         card.save(out, "WEBP", quality=82, method=6)
-        print(f"{out} ({out.stat().st_size // 1024} KB, portrait) tint {tint(src_im)}")
+        print(f"{out} ({out.stat().st_size // 1024} KB, portrait) tint {tint(src_im)} palette {json.dumps(palette(src_im))}")
         return
     pic = square(src_im)
     pad = (H - W) // 2
@@ -74,7 +75,7 @@ def make(src: Path, out: Path) -> None:
     card.paste(pic, (0, pad), alpha)
     out.parent.mkdir(parents=True, exist_ok=True)
     card.save(out, "WEBP", quality=82, method=6)
-    print(f"{out} ({out.stat().st_size // 1024} KB) tint {tint(src_im)}")
+    print(f"{out} ({out.stat().st_size // 1024} KB) tint {tint(src_im)} palette {json.dumps(palette(src_im))}")
 
 
 
@@ -110,6 +111,57 @@ def tint(im: Image.Image) -> str:
     h, l, s = rgb_to_hls(best[0] / 255, best[1] / 255, best[2] / 255)
     r, g, b = hls_to_rgb(h, min(0.72, max(0.55, l)), max(0.6, s))
     return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+
+
+
+
+
+def palette(im: Image.Image) -> dict:
+    """
+    The level's colours from the poster: five vivid lane colours with distinct hues (the poster's own
+    neon first; a one-colour poster fills the set by turning its hue), the two darkest common tones as
+    the background gradient, the accent (see tint) and the second vivid colour as the glow. Lanes are
+    lifted to a lightness / saturation that reads as a tile on the dark field.
+    """
+    from colorsys import hls_to_rgb, rgb_to_hls
+
+    small = square(im).resize((96, 96), Image.BILINEAR).quantize(32, method=Image.Quantize.MEDIANCUT).convert("RGB")
+    counts: dict[tuple[int, int, int], int] = {}
+    for px in small.getdata():
+        counts[px] = counts.get(px, 0) + 1
+    hexs = lambda r, g, b: "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))  # noqa: E731
+    vivid = []
+    darks = []
+    for (r, g, b), n in counts.items():
+        h, l, s = rgb_to_hls(r / 255, g / 255, b / 255)
+        if l < 0.22:
+            darks.append((n, h, l, s))
+        if s >= 0.35 and 0.18 <= l <= 0.85:
+            vivid.append(((n**0.5) * (s**2), h, l, s))
+    vivid.sort(reverse=True)
+    lanes: list[tuple[float, float, float]] = []
+    for _, h, l, s in vivid:
+        if all(min(abs(h - h2), 1 - abs(h - h2)) >= 0.085 for h2, _, _ in lanes):
+            lanes.append((h, l, s))
+        if len(lanes) == 5:
+            break
+    if not lanes:
+        mean = small.resize((1, 1), Image.BILINEAR).getpixel((0, 0))
+        h, l, s = rgb_to_hls(mean[0] / 255, mean[1] / 255, mean[2] / 255)
+        lanes.append((h, l, max(0.45, s)))
+    # A poster with fewer than five hues: turn the main hue in steps, alternating sides, so the family stays.
+    base_h = lanes[0][0]
+    step = 0
+    while len(lanes) < 5:
+        step += 1
+        h = (base_h + (0.11 * ((step + 1) // 2)) * (1 if step % 2 else -1)) % 1
+        lanes.append((h, lanes[0][1], lanes[0][2]))
+    lane_hex = [hexs(*hls_to_rgb(h, min(0.7, max(0.55, l)), max(0.7, s))) for h, l, s in lanes]
+    darks.sort(reverse=True)
+    top = darks[0] if darks else (0, 0.66, 0.05, 0.2)
+    bottom = darks[1] if len(darks) > 1 else top
+    bg = [hexs(*hls_to_rgb(top[1], min(0.09, max(0.03, top[2] * 0.5)), min(0.5, top[3]))), hexs(*hls_to_rgb(bottom[1], min(0.12, max(0.04, bottom[2] * 0.6)), min(0.5, bottom[3])))]
+    return {"bg": bg, "lanes": lane_hex, "glow": lane_hex[1]}
 
 
 if __name__ == "__main__":
