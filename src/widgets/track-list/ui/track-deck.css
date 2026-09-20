@@ -85,7 +85,10 @@
   width: 100%;
   min-height: 0;
   max-height: 560px;
+  /* The neighbours are clipped at the sides only: the centre card's glow must run past the stage's top and bottom, not stop dead at them. */
   overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;

@@ -224,3 +224,30 @@ export function themeForGenre(genre: string | undefined | null): Theme | undefin
 export function themeFor(genre: string | undefined | null, id: string): Theme {
   return themeForGenre(genre) ?? THEMES[hashId(id) % THEMES.length];
 }
+
+/** The level's colours taken from the track's picture (`assets:covers`): five lane colours, the background pair, the glow. */
+export interface TrackPalette {
+  /** Background gradient [top, bottom] (the JSON catalog carries a plain two-string array). */
+  bg: readonly string[];
+  lanes: readonly string[];
+  glow: string;
+}
+
+/** What the music is like, for the ambient motif: tempo and the chart's difficulty stand in for its energy. */
+export interface MusicCharacter {
+  bpm: number;
+  stars: number;
+}
+
+/**
+ * The level wears its poster: lanes / tiles, background and glow from the picture's palette, the
+ * accent from the first lane colour; the ambient motif from the music — a calm song hazes, chiptune
+ * bars, a fast song grids, the rest ring. The genre theme fills whatever the palette lacks.
+ */
+export function themeFromPalette(base: Theme, palette: TrackPalette, music: MusicCharacter, genre: string | undefined | null): Theme {
+  const lanes = [...palette.lanes, ...base.laneColors].slice(0, Math.max(PALETTE_SIZE, base.laneColors.length)) as unknown as LanePalette;
+  const key = normaliseGenre(genre ?? '');
+  const motif: Motif = key.includes('chip') || key.includes('8bit') ? 'bars' : music.stars <= 3 ? 'haze' : music.bpm >= 150 ? 'grid' : 'rings';
+  const bg: readonly [string, string] = [palette.bg[0] ?? base.bg[0], palette.bg[1] ?? palette.bg[0] ?? base.bg[1]];
+  return { id: `${base.id}-cover`, name: base.name, bg, laneColors: lanes, accent: lanes[0], glow: palette.glow, motif };
+}

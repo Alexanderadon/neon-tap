@@ -2,11 +2,12 @@ import { CIRCLE_BUCKET, CIRCLE_KEY, HIT_WINDOWS, KEY_LAYOUTS, MAX_LANES, SPIN_BO
 import { audioEngine, BeatCursor, Clock, SPECTRUM_BANDS, sfxComboBreak, sfxGem, sfxHit, sfxLanes, sfxMilestone, sfxMiss, sfxRank } from '@/shared/lib/audio';
 import { Input } from '@/shared/lib/input/Input';
 import { clamp, lowerBound, median } from '@/shared/lib/math';
-import { FpsMeter, LowFpsDetector, themeFor } from '@/shared/lib/render';
+import { FpsMeter, LowFpsDetector, themeFor, themeFromPalette } from '@/shared/lib/render';
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type ParsedNote, type Section, type SpellKind } from '@/entities/chart';
 import type { FxMode } from '@/entities/settings';
+import { findTrack } from '@/entities/track';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import { NoteManager, NoteState, type JudgeEvent, type PooledNote } from './NoteManager';
 import { SpinTracker } from './SpinTracker';
@@ -218,7 +219,10 @@ export class GameSession {
     this.timeline = new JudgementTimeline(judgements);
     this.endTime = Math.min(opts.audioBuffer.duration, this.notes.lastTime + 1.5);
     // Per-track look: by genre when the chart carries one, otherwise deterministic from the id.
-    const theme = themeFor(opts.chart.genre, opts.chart.id);
+    const meta = findTrack(opts.chart.id);
+    const base = themeFor(opts.chart.genre, opts.chart.id);
+    // A catalog track with a picture plays in its poster's colours; custom songs keep the genre theme.
+    const theme = meta?.palette ? themeFromPalette(base, meta.palette, { bpm: opts.chart.bpm, stars: meta.stars }, opts.chart.genre) : base;
     this.renderer = new Renderer(
       opts.canvas,
       opts.touch,
