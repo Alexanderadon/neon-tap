@@ -12,7 +12,19 @@ export {
   hexToRgba,
 } from './neon';
 export type { NoteSprite } from './neon';
-export { THEMES, DEFAULT_THEME, SYNTHWAVE, PALETTE_SIZE, themeFor, themeFromPalette, themeForGenre, themeById, hashId, goodJudgementColor, isNearWhite } from './themes';
+export {
+  THEMES,
+  DEFAULT_THEME,
+  SYNTHWAVE,
+  PALETTE_SIZE,
+  themeFor,
+  themeFromPalette,
+  themeForGenre,
+  themeById,
+  hashId,
+  goodJudgementColor,
+  isNearWhite,
+} from './themes';
 export type { TrackPalette, MusicCharacter } from './themes';
 export type { Theme, Motif, LanePalette } from './themes';
 export { ParticlePool } from './Particles';
