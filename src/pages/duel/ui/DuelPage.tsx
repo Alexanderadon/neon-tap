@@ -6,7 +6,7 @@ import { ActionZone, Avatar, Difficulty, Disc, Icon, ObjButton, PrimaryAction, S
 import { formatScore } from '@/shared/lib/format';
 import { duels, duelIdFromUrl, type Duel } from '@/shared/api/duels';
 import { hexToRgba } from '@/shared/lib/render';
-import { CATALOG, CoverScene, TrackCover, coverSpec, loadChart, type TrackMeta } from '@/entities/track';
+import { CATALOG, CoverScene, TrackCover, trackTint, loadChart, type TrackMeta } from '@/entities/track';
 import { startSession } from '@/entities/play-session';
 import { starsForTrack, useProgress } from '@/entities/progress';
 import { acceptDuel, setPendingDuel, usePendingDuel } from '@/entities/duel';
@@ -161,7 +161,7 @@ function DuelCard({ track, duel }: { track?: TrackMeta; duel: Duel | null }) {
   const rank = best?.rank;
   const gold = rank === 'S' || rank === 'SS';
   // The centre card glows in its cover's accent, as on the deck.
-  const glow = track ? { boxShadow: `var(--sh-card), 0 0 48px ${hexToRgba(coverSpec(track.id, track.genre).palette.accent, 0.3)}` } : undefined;
+  const glow = track ? { boxShadow: `var(--sh-card), 0 0 48px ${hexToRgba(trackTint(track.id, track.genre), 0.3)}` } : undefined;
   return (
     <article className={track ? 'duelp-card' : 'duelp-card duelp-card-plain'} style={glow}>
       <div className="duelp-art" aria-hidden="true">
