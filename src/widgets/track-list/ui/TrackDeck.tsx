@@ -3,7 +3,7 @@ import { dict, fmt } from '@/shared/i18n';
 import { audioEngine, sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
-import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, coverSpec, type TrackMeta } from '@/entities/track';
+import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, trackTint, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { writeDeckIndex } from '../model/deckPosition';
@@ -245,8 +245,8 @@ interface CardProps {
 
 function DeckCard({ track, mount, current, lock, daily, best, rank, details, onTap }: CardProps) {
   const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
-  // The centre card glows in its cover's accent (spec §2.5); the neighbours only drop a shadow.
-  const style: CSSProperties | undefined = current ? { boxShadow: cardGlow(coverSpec(track.id, track.genre).palette.accent) } : undefined;
+  // The centre card glows in its cover's accent — the picture's tint (spec §2.5); the neighbours only drop a shadow.
+  const style: CSSProperties | undefined = current ? { boxShadow: cardGlow(trackTint(track.id, track.genre)) } : undefined;
   const tags: (string | false)[] = [
     track.features.laneChanges > 0 && dict.tagLanes,
     track.features.circles > 0 && dict.tagCircles,

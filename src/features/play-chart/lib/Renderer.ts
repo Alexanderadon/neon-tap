@@ -106,6 +106,19 @@ export interface FrameState {
 export type FxLevel = 'full' | 'low';
 
 const FONT = HUD_FONT;
+/** Combo fire: from this combo the number burns; the heat tier grows every hundred (capped). */
+const COMBO_FIRE_FROM = 100;
+const COMBO_HEAT_TIERS = 4;
+const EMBER_POOL = 64;
+/** Embers per second per heat tier. */
+const EMBER_RATE = 9;
+/** Ember colour by heat tier: gold → orange → red → white-hot with magenta. */
+const EMBER_COLORS: readonly (readonly string[])[] = [
+  ['#ffd700', '#ffe98a', '#ffb300'],
+  ['#ff8a00', '#ffb347', '#ffd700'],
+  ['#ff3b3b', '#ff8a00', '#ff6a2a'],
+  ['#ffffff', '#ff2bd6', '#ff8a00'],
+];
 const TRANSITION_SEC = 0.35; // a beat of empty field is all the generator leaves: the morph must be done before the next tile lands
 const RING_POOL = 16;
 const PRESS_BOUNCE_SEC = 0.12;
@@ -290,6 +303,23 @@ export class Renderer {
   private countdownMax = 0;
   private sparkTimer = 0;
   readonly particles = new ParticlePool(300);
+  /** The combo's fire (from COMBO_FIRE_FROM): embers rising off the digits — a fixed pool, no allocations. */
+  private readonly ember = {
+    x: new Float32Array(EMBER_POOL),
+    y: new Float32Array(EMBER_POOL),
+    vx: new Float32Array(EMBER_POOL),
+    vy: new Float32Array(EMBER_POOL),
+    life: new Float32Array(EMBER_POOL),
+    max: new Float32Array(EMBER_POOL),
+    size: new Float32Array(EMBER_POOL),
+    heat: new Uint8Array(EMBER_POOL),
+  };
+  private emberCursor = 0;
+  private emberDue = 0;
+  /** The last update() step — the ember stream is spawned at draw time from it. */
+  private frameDt = 0;
+  /** Seconds since the last combo milestone (the number's leap), ≥ 1 when settled. */
+  private milestoneAge = 1;
   readonly shake = new ScreenShake();
   readonly flash = new LaneFlash(MAX_LANES);
   visibleNotes = 0;
@@ -703,6 +733,9 @@ export class Renderer {
 
   comboMilestone(combo: number): void {
     this.shake.trigger(2.5);
+    this.milestoneAge = 0;
+    const cx = this.colX + this.colW / 2;
+    for (let i = 0; i < 28; i++) this.spawnEmber(cx + (Math.random() - 0.5) * 120, this.comboAnchorY, this.heatTier(combo), 1);
     if (this.fxLevel === 'full') this.shockAge = 0;
     this.banner = this.tag(fmt(dict.comboMilestone, { n: combo }), 'gold');
     this.bannerAge = 0;
@@ -751,6 +784,17 @@ export class Renderer {
 
   update(dt: number): void {
     this.particles.update(dt);
+    this.frameDt = dt;
+    if (this.milestoneAge < 1) this.milestoneAge += dt / 0.55;
+    const e = this.ember;
+    for (let i = 0; i < EMBER_POOL; i++) {
+      if (e.life[i] <= 0) continue;
+      e.life[i] -= dt;
+      e.x[i] += e.vx[i] * dt;
+      e.y[i] += e.vy[i] * dt;
+      e.vy[i] -= 60 * dt; // embers accelerate upward as they burn out
+      e.vx[i] += (Math.random() - 0.5) * 120 * dt; // flicker
+    }
     this.shake.update(dt);
     this.flash.update(dt);
     for (let i = 0; i < RING_POOL; i++) if (this.ringAge[i] < 1) this.ringAge[i] += dt / 0.35;
@@ -794,6 +838,63 @@ export class Renderer {
     }
     this.sparkTimer += dt;
     this.ambientTime += dt;
+  }
+
+  /** Heat tier of a combo: 0 below COMBO_FIRE_FROM, then one per hundred up to COMBO_HEAT_TIERS. */
+  private heatTier(combo: number): number {
+    return combo < COMBO_FIRE_FROM ? 0 : Math.min(COMBO_HEAT_TIERS, Math.floor(combo / 100));
+  }
+
+  /** One ember at (x, y): rises 40–110 px/s with a sideways drift, burns 0.45–0.9 s; `burst` = a milestone's faster, larger sparks. */
+  private spawnEmber(x: number, y: number, tier: number, burst = 0): void {
+    const e = this.ember;
+    const i = this.emberCursor;
+    this.emberCursor = (this.emberCursor + 1) % EMBER_POOL;
+    e.x[i] = x;
+    e.y[i] = y;
+    e.vx[i] = (Math.random() - 0.5) * (30 + burst * 220);
+    e.vy[i] = -(40 + Math.random() * 70) - burst * 120 * Math.random();
+    e.life[i] = e.max[i] = 0.45 + Math.random() * 0.45;
+    e.size[i] = 2 + Math.random() * 2.5 + burst;
+    e.heat[i] = Math.max(0, Math.min(COMBO_HEAT_TIERS - 1, tier - 1));
+  }
+
+  /**
+   * The combo's fire: a warm halo behind the digits (hotter and larger per tier), a steady stream of
+   * embers off the digits' top edge while the combo holds, and the burst of a milestone. Drawn under
+   * the number; nothing here touches the field.
+   */
+  private drawComboFire(ctx: CanvasRenderingContext2D, cx: number, cy: number, combo: number): void {
+    const tier = this.heatTier(combo);
+    const e = this.ember;
+    if (tier > 0) {
+      ctx.font = `900 44px ${FONT}`;
+      const half = ctx.measureText(String(combo)).width / 2 + 4;
+      this.emberDue += this.frameDt * EMBER_RATE * tier * (this.fxLevel === 'full' ? 1 : 0.5);
+      while (this.emberDue >= 1) {
+        this.emberDue--;
+        this.spawnEmber(cx + (Math.random() * 2 - 1) * half, cy - 14 + Math.random() * 10, tier);
+      }
+      // The halo: a soft radial wash in the tier's colour, breathing with the beat of the hits.
+      const halo = 34 + tier * 10;
+      const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, halo);
+      const c = EMBER_COLORS[tier - 1][0];
+      g.addColorStop(0, c + '55');
+      g.addColorStop(1, c + '00');
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - halo, cy - halo, halo * 2, halo * 2);
+    }
+    for (let i = 0; i < EMBER_POOL; i++) {
+      if (e.life[i] <= 0) continue;
+      const k = e.life[i] / e.max[i];
+      const palette = EMBER_COLORS[e.heat[i]];
+      ctx.globalAlpha = k * k;
+      ctx.fillStyle = palette[i % palette.length];
+      ctx.beginPath();
+      ctx.arc(e.x[i], e.y[i], e.size[i] * (0.5 + 0.5 * k), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Top of the 64 px combo block: under the state row (or, in the tutorial, under the caption card). */
@@ -1789,7 +1890,10 @@ export class Renderer {
     const comboTop = this.comboTop(tutorial);
     if (s.combo >= 2 && !this.starShow) {
       const pop = s.comboAge < 0.35 ? Math.sin((Math.PI * s.comboAge) / 0.35) : 0;
-      const k = 1 + 0.1 * pop;
+      // A milestone: the number leaps to 1.6× and settles with a bounce.
+      const leap = this.milestoneAge < 1 ? 0.6 * (1 - this.milestoneAge) * Math.cos(this.milestoneAge * Math.PI * 1.5) : 0;
+      const k = 1 + 0.1 * pop + Math.max(0, leap);
+      this.drawComboFire(ctx, cx, comboTop + 24, s.combo);
       ctx.save();
       ctx.translate(cx, comboTop + 24);
       ctx.scale(k, k);

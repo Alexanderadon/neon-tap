@@ -82,13 +82,14 @@ def make(src: Path, out: Path) -> None:
 
 def tint(im: Image.Image) -> str:
     """
-    The picture's accent for the game's buttons: the most common clearly saturated, mid-light colour
-    of the middle square (posters are dark, so the accent is the neon that stands out), lifted to a
-    lightness the dark button text reads on. Falls back to the mean colour when nothing is saturated.
+    The picture's accent for the game's buttons and glows: the most VIVID colour of the middle square,
+    weighted by the square root of its area — so a poster's neon title beats its big dark sky — lifted
+    to a lightness the button text reads on. A picture with nothing saturated (a snowscape) gets its
+    mean colour with the saturation raised, never grey.
     """
     from colorsys import hls_to_rgb, rgb_to_hls
 
-    small = square(im).resize((64, 64), Image.BILINEAR).quantize(24, method=Image.Quantize.MEDIANCUT).convert("RGB")
+    small = square(im).resize((96, 96), Image.BILINEAR).quantize(32, method=Image.Quantize.MEDIANCUT).convert("RGB")
     counts: dict[tuple[int, int, int], int] = {}
     for px in small.getdata():
         counts[px] = counts.get(px, 0) + 1
@@ -96,13 +97,16 @@ def tint(im: Image.Image) -> str:
     score = 0.0
     for (r, g, b), n in counts.items():
         h, l, s = rgb_to_hls(r / 255, g / 255, b / 255)
-        if s < 0.45 or l < 0.2 or l > 0.8:
+        if s < 0.35 or l < 0.18 or l > 0.85:
             continue
-        v = n * (0.5 + s)
+        v = (n ** 0.5) * (s ** 2)
         if v > score:
             score, best = v, (r, g, b)
     if best is None:
-        best = tuple(int(c) for c in small.resize((1, 1), Image.BILINEAR).getpixel((0, 0)))  # type: ignore[assignment]
+        mean = small.resize((1, 1), Image.BILINEAR).getpixel((0, 0))
+        h, l, s = rgb_to_hls(mean[0] / 255, mean[1] / 255, mean[2] / 255)
+        r, g, b = hls_to_rgb(h, 0.62, max(0.45, s))
+        return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
     h, l, s = rgb_to_hls(best[0] / 255, best[1] / 255, best[2] / 255)
     r, g, b = hls_to_rgb(h, min(0.72, max(0.55, l)), max(0.6, s))
     return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))

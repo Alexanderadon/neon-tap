@@ -93,7 +93,8 @@ const FADE_OUT_SEC = 1.8;
 const FADE_IN_SEC = 2.0;
 /** The spinner's wheel fades out this long after its verdict. */
 const SPIN_FADE_SEC = 0.35;
-const MILESTONES = [50, 100, 250, 500, 1000];
+/** A combo milestone every this many hits: the number leaps, the field shakes, embers burst (and from COMBO_FIRE_FROM the number burns). */
+const MILESTONE_EVERY = 50;
 /** Touch assist: a tap this early (beyond the Good window) arms the note to fire on its own moment — a bit of slack for touch latency, not a whole beat. */
 const ASSIST_WINDOW = 0.2;
 export const MAX_HEARTS = 5;
@@ -701,7 +702,7 @@ export class GameSession {
       this.opts.onEvent({ type: 'gem', value: note.gem, total: this.crystals });
     }
     const combo = this.scoring.combo;
-    if (MILESTONES.includes(combo)) {
+    if (combo > 0 && combo % MILESTONE_EVERY === 0) {
       sfxMilestone();
       this.renderer.comboMilestone(combo);
       this.opts.onEvent({ type: 'combo-milestone', combo });
