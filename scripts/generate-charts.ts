@@ -57,7 +57,9 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const coverFile = (id: string): string | undefined => (existsSync(join(ROOT, 'public', 'covers', `${id}.webp`)) ? `covers/${id}.webp` : undefined);
 /** The picture's accent colour and level palette (`assets:covers` keeps them in assets-src/covers-raw/covers.json). */
 const COVERS = join(ROOT, 'assets-src', 'covers-raw', 'covers.json');
-const colors: Record<string, { tint: string; palette: TrackPalette }> = existsSync(COVERS) ? (JSON.parse(readFileSync(COVERS, 'utf8')) as Record<string, { tint: string; palette: TrackPalette }>) : {};
+const colors: Record<string, { tint: string; palette: TrackPalette }> = existsSync(COVERS)
+  ? (JSON.parse(readFileSync(COVERS, 'utf8')) as Record<string, { tint: string; palette: TrackPalette }>)
+  : {};
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');

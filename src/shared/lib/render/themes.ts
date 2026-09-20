@@ -182,7 +182,7 @@ export function isNearWhite(hex: string): boolean {
   const m = /^#([0-9a-f]{6})$/i.exec(hex);
   if (!m) return false;
   const v = parseInt(m[1], 16);
-  return (v >> 16) >= 0xd0 && ((v >> 8) & 0xff) >= 0xd0 && (v & 0xff) >= 0xd0;
+  return v >> 16 >= 0xd0 && ((v >> 8) & 0xff) >= 0xd0 && (v & 0xff) >= 0xd0;
 }
 
 /** Index of the lane colour to prefer for the GOOD judgement (lime in the original synthwave look). */
