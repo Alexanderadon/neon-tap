@@ -135,7 +135,8 @@
   margin: 0 0 4px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font: 700 15px/20px var(--font);
+  font: var(--t-15);
+  line-height: 20px;
   letter-spacing: var(--track-title);
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
 }
@@ -145,12 +146,12 @@
   gap: 6px;
   height: 26px;
 }
-/* Chips shrink with the card: 26 tall, 13 type, icon 14. */
+/* Chips shrink with the card: 26 tall, 13/700, icon 14, padding 8 and gap 4 (the 4-step inside a component). */
 .scard-meta .chip {
   height: 26px;
-  padding: 0 9px;
-  gap: 5px;
-  font: 700 13px/16px var(--font);
+  padding: 0 8px;
+  gap: 4px;
+  font: var(--t-13b);
 }
 .scard-meta .chip > svg {
   width: 14px;
@@ -159,14 +160,15 @@
 .scard-meta > * {
   flex: none;
 }
-/* The price = a coin's value (crystal 16 + 16/700) in the rank letter's slot; magenta when short, the crystal stays cyan. */
+/* The price = a compact coin value (crystal 16 + 15/700, the chip number's size) in the rank letter's slot; magenta when short, the crystal stays cyan. */
 .scard-price {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   height: 26px;
   margin-left: auto;
-  font: 700 16px/26px var(--font);
+  font: var(--t-15);
+  line-height: 26px;
   letter-spacing: var(--track-title);
   color: var(--cyan);
   transition: color 0.35s ease;

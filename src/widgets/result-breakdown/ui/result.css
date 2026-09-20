@@ -355,15 +355,21 @@
   pointer-events: none;
   transform: translateX(-0.5px);
 }
+/* The time under the finger: the dark 24 px tag (the chip face, 11/700 caps) riding 4 px above the strip. */
 .result-strip-time {
   position: absolute;
-  top: -22px;
+  top: -28px;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 12px;
   transform: translateX(-50%);
-  padding: 1px 6px;
   border-radius: var(--r-999);
-  background: var(--panel);
-  border: 1px solid var(--w30);
+  border: 1px solid var(--w10);
+  background: var(--dark-face);
+  box-shadow: var(--sh-chip);
   font: var(--t-11);
+  letter-spacing: var(--track-caps);
   color: #fff;
   pointer-events: none;
   white-space: nowrap;
@@ -389,12 +395,13 @@
   height: auto;
   overflow: visible;
 }
+/* Axis and legend: 13 in the 400-unit viewBox ≈ 11 px on the 335 column — the smallest size of the scale (9 rendered at 7.5 px). */
 .result-chart-axis {
-  font-size: 9px;
+  font-size: 13px;
   fill: var(--w55);
 }
 .result-chart-legend {
-  font-size: 9px;
+  font-size: 13px;
   fill: var(--w55);
 }
 .result-chart-legend-combo {
@@ -409,16 +416,17 @@
   flex-direction: column;
   gap: 8px;
 }
+/* A block, not a flex row: `text-overflow` only clips inline text in a block, so a long line ends in an ellipsis instead of a hard cut. */
 .result-highlights li {
+  display: block;
   height: 32px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
+  padding: 8px 12px;
   border-left: 3px solid var(--w30);
   border-radius: var(--r-16);
   background: var(--w10);
   font: var(--t-13);
   color: var(--w80);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }

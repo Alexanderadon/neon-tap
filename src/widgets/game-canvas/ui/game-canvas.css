@@ -44,6 +44,10 @@
 .game-pause-chip.chip-btn:active {
   transform: translateX(-50%) translateY(1px);
 }
+/* The only control during play: a 48 × 48 tap target around the 32 px chip (30 inside the border + 2 × 9) — the HUD line, well above the touch zones. */
+.game-pause-chip.chip-btn::before {
+  inset: -9px;
+}
 
 /* Full-screen frames over the frozen field. `.game-shade` = the .8 veil; the scene canvas sits under the content (z −1) but over the veil. */
 .game-frame {

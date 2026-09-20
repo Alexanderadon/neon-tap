@@ -55,6 +55,7 @@
   flex: none;
 }
 .deck-chapter {
+  position: relative;
   display: inline-flex;
   flex: none;
   padding: 0;
@@ -66,6 +67,13 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+/* The 24 px tags that are buttons get an invisible 44 px tall tap target. */
+.deck-chapter::after,
+.deck-endless::after {
+  content: '';
+  position: absolute;
+  inset: -10px 0;
 }
 .deck-chapter:active .tag {
   transform: translateY(1px);
@@ -193,6 +201,7 @@
 }
 /* The ∞ switch on a three-star card: a flush tag that is a button; gold while endless mode is on. */
 .deck-endless {
+  position: relative;
   display: block;
   padding: 0;
   margin: 0;
@@ -265,6 +274,13 @@
   align-items: center;
   gap: 12px;
   height: 32px;
+}
+/* Crowns past the three shown: the count in gold caps right after the row. */
+.deck-crowns {
+  margin-left: -4px;
+  font: var(--t-13b);
+  letter-spacing: var(--track-caps);
+  color: var(--gold);
 }
 /* Rank letter 20/900: white with a black underside; S / SS in gold with the dark-orange underside and a soft glow. */
 .deck-rank {

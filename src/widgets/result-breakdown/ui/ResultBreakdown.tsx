@@ -142,7 +142,7 @@ export function ResultBreakdown({
     [failed, loot, coinRefs],
   );
 
-  // The tag riding on the panel: the record, or where the run stopped.
+  // The tag riding on the panel: the record, where an endless run got to, or where the run stopped.
   const timeline = result.timeline;
   const duration = result.duration > 0 ? result.duration : (chart?.duration ?? 0);
   const failedAt = failed && timeline.t.length > 0 ? timeline.t[timeline.t.length - 1] : null;
@@ -167,6 +167,16 @@ export function ResultBreakdown({
       ) : (
         <Tag shine={!settled}>{dict.tagNewRecord}</Tag>
       );
+  } else if (result.endlessScore !== undefined) {
+    // The panel's score stopped at the third star (that is what the record compares); the loops are told here.
+    tag = (
+      <>
+        <Tag shape="left">{fmt(dict.tagLoop, { n: result.level })}</Tag>
+        <Tag variant="dark" shape="right">
+          {fmt(dict.tagTotal, { score: formatScore(result.endlessScore) })}
+        </Tag>
+      </>
+    );
   } else if (record && record.best !== null) {
     tag = <Tag variant="dark">{fmt(dict.tagRecord, { score: formatScore(record.best) })}</Tag>;
   }

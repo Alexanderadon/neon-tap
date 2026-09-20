@@ -116,9 +116,13 @@ export interface FrameState {
 export type FxLevel = 'full' | 'low';
 
 const FONT = HUD_FONT;
-/** Combo fire: from this combo the number burns; the heat tier grows every hundred (capped). */
-const COMBO_FIRE_FROM = 100;
-const COMBO_HEAT_TIERS = 4;
+/**
+ * Combo fire: the number burns from the first threshold, each further one is a hotter tier. Spread so
+ * that a full three-level run of a median chart (~650 hits) reaches the last tier near its end, and
+ * the tiers do not all pass in the second level of a long chart.
+ */
+const COMBO_HEAT_AT = [100, 200, 350, 600] as const;
+const COMBO_HEAT_TIERS = COMBO_HEAT_AT.length;
 const EMBER_POOL = 64;
 /** Embers per second per heat tier. */
 const EMBER_RATE = 9;
@@ -277,6 +281,8 @@ export class Renderer {
   private starShow: { slot: number; crown: boolean; loop: number; rate: number; seconds: number; landed: boolean; sparked: boolean } | null = null;
   /** The song map: phrase segments of the run's song (from 0..1 of its length, loudness level). */
   private songMap: readonly SongMapSegment[] = [{ from: 0, level: 1 }];
+  /** One beat as a fraction of the song map — the cue before a drop is two beats long. */
+  private songBeat = 0;
   private starAge = 0;
   private starLandedAge = 1;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
@@ -317,7 +323,7 @@ export class Renderer {
   private countdownMax = 0;
   private sparkTimer = 0;
   readonly particles = new ParticlePool(300);
-  /** The combo's fire (from COMBO_FIRE_FROM): embers rising off the digits — a fixed pool, no allocations. */
+  /** The combo's fire (from the first COMBO_HEAT_AT): embers rising off the digits — a fixed pool, no allocations. */
   private readonly ember = {
     x: new Float32Array(EMBER_POOL),
     y: new Float32Array(EMBER_POOL),
@@ -775,18 +781,20 @@ export class Renderer {
    * flies to its HUD slot — all within `seconds`, which is how long the session waits before the
    * next count-in.
    */
-  starEarned(earned: { star: number } | { crown: number; loop: number }, nextRate: number, seconds: number): void {
+  starEarned(earned: { star: number; loop?: number } | { crown: number; loop: number }, nextRate: number, seconds: number): void {
     const crown = 'crown' in earned;
     // A crown past the third takes the last slot again (the row shows at most three).
     const slot = crown ? Math.min(earned.crown, 3) - 1 : earned.star - 1;
-    this.starShow = { slot, crown, loop: crown ? earned.loop : 0, rate: nextRate, seconds, landed: false, sparked: false };
+    // `loop` names what comes next when that is an endless loop (the third star in endless mode opens loop four).
+    this.starShow = { slot, crown, loop: earned.loop ?? 0, rate: nextRate, seconds, landed: false, sparked: false };
     this.starAge = 0;
     this.shake.trigger(3);
   }
 
-  /** The song map for this run (set once per session). */
-  setSongMap(segments: readonly SongMapSegment[]): void {
+  /** The song map for this run (set once per session); `beat` = one beat as a fraction of the strip. */
+  setSongMap(segments: readonly SongMapSegment[], beat = 0): void {
     this.songMap = segments.length ? segments : [{ from: 0, level: 1 }];
+    this.songBeat = beat;
   }
 
   /** Star show moments scaled to its length (2.4 s by design). */
@@ -864,9 +872,11 @@ export class Renderer {
     this.ambientTime += dt;
   }
 
-  /** Heat tier of a combo: 0 below COMBO_FIRE_FROM, then one per hundred up to COMBO_HEAT_TIERS. */
+  /** Heat tier of a combo: how many of COMBO_HEAT_AT it has passed (0 = no fire yet). */
   private heatTier(combo: number): number {
-    return combo < COMBO_FIRE_FROM ? 0 : Math.min(COMBO_HEAT_TIERS, Math.floor(combo / 100));
+    let tier = 0;
+    for (const at of COMBO_HEAT_AT) if (combo >= at) tier++;
+    return tier;
   }
 
   /** One ember at (x, y): rises 40–110 px/s with a sideways drift, burns 0.45–0.9 s; `burst` = a milestone's faster, larger sparks. */
@@ -1243,7 +1253,7 @@ export class Renderer {
       const u = easeOut(Math.min(1, (t - at(SHOW_TAGS)) / 0.4));
       const left = this.tag(fmt(dict.levelFaster, { n: Math.round((show.rate - 1) * 100) }), 'gold', 'left');
       const right = this.tag(
-        show.crown ? fmt(dict.loopOf, { n: show.loop }) : fmt(dict.levelOf, { n: Math.min(show.slot + 2, s.levels), m: s.levels }),
+        show.loop > 0 ? fmt(dict.loopOf, { n: show.loop }) : fmt(dict.levelOf, { n: Math.min(show.slot + 2, s.levels), m: s.levels }),
         'dark',
         'right',
       );
@@ -1835,7 +1845,9 @@ export class Renderer {
       const wx = Math.max(0, x1(i) - x0(i) - gap);
       if (wx <= 0) continue;
       roundRect(ctx, x0(i), top + 3 - h / 2, wx, h, h / 2);
-      ctx.fillStyle = map[i].level >= 2 ? hexToRgba(accent, 0.28) : map[i].level === 1 ? 'rgba(255,255,255,0.2)' : HUD.w10;
+      // A drop two beats ahead breathes with the beat: the cue to get ready.
+      const soon = map[i].level >= 2 && map[i].from > s.progress && map[i].from - s.progress < 2 * this.songBeat;
+      ctx.fillStyle = map[i].level >= 2 ? hexToRgba(accent, soon ? 0.28 + 0.32 * s.pulse : 0.28) : map[i].level === 1 ? 'rgba(255,255,255,0.2)' : HUD.w10;
       ctx.fill();
     }
     // The played part: the same segments, lit, clipped at the head.

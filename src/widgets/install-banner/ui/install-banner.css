@@ -78,6 +78,7 @@
 .install-step:first-of-type {
   margin-top: 24px;
 }
+/* The step number: the chip material (dark face, 1 px rim, 2 px underside) like every other 32 px number disc (PlaceChip, goal ring). */
 .install-step-n {
   display: grid;
   place-items: center;
@@ -85,7 +86,9 @@
   height: 32px;
   flex: none;
   border-radius: 50%;
-  background: var(--w10);
+  border: 1px solid var(--w10);
+  background: var(--dark-face);
+  box-shadow: var(--sh-chip);
   font: var(--t-15);
   color: var(--w80);
 }

@@ -62,6 +62,15 @@
   font: var(--t-13);
   color: var(--w55);
 }
+/* The centred line's title is the part that gives way (a long track name on the records screen): ellipsis, the rest keeps its width. */
+.sub-center > b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sub-center > span {
+  flex: none;
+}
 .frame-body {
   display: flex;
   flex-direction: column;

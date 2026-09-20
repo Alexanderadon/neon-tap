@@ -63,6 +63,7 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
   } else {
     const before = progressStore.get().tracks[result.trackId];
     const starsBefore = starsForTrack(before);
+    const crownsBefore = before?.crowns ?? 0;
     const bestBefore = before ? before.score : null;
     const newRecord = recordResult(result.trackId, {
       score: result.score,
@@ -74,11 +75,13 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
       stars: result.stars,
       crowns: result.crowns,
     });
-    const starsAfter = starsForTrack(progressStore.get().tracks[result.trackId]);
+    const after = progressStore.get().tracks[result.trackId];
+    const starsAfter = starsForTrack(after);
+    const crownsAfter = after?.crowns ?? 0;
     const date = localDateString(now);
     const passed = result.stars > 0;
     const dailyBonus = passed && dailyTrackId(date, TRACK_IDS) === result.trackId ? completeDailyToday(date) : false;
-    meta = { newRecord, starsBefore, starsAfter, dailyBonus, bestBefore };
+    meta = { newRecord, starsBefore, starsAfter, crownsBefore, crownsAfter, dailyBonus, bestBefore };
   }
 
   if (result.crystals > 0) {
