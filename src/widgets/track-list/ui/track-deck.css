@@ -275,11 +275,12 @@
   gap: 12px;
   height: 32px;
 }
-/* Crowns past the three shown: the count in gold caps right after the row. */
-.deck-crowns {
+/* Three crowns: the farthest loop the track got to, in gold caps right after the row. */
+.deck-loop {
   margin-left: -4px;
   font: var(--t-13b);
   letter-spacing: var(--track-caps);
+  text-transform: uppercase;
   color: var(--gold);
 }
 /* Rank letter 20/900: white with a black underside; S / SS in gold with the dark-orange underside and a soft glow. */

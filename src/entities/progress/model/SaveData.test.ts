@@ -152,11 +152,16 @@ describe('SaveData', () => {
 });
 
 describe('crowns', () => {
-  it('keeps the most crowns of a track over its runs and shows three at most', () => {
+  it('keeps the most crowns and the farthest loop of a track over its runs; shows three crowns at most', () => {
     const a = mergeResult(emptySave(), 't', { ...res('S'), stars: 3, crowns: 2 }).save;
     expect(a.tracks.t.crowns).toBe(2);
     const b = mergeResult(a, 't', { ...res('A', 5000), stars: 3, crowns: 1 }).save;
     expect(b.tracks.t.crowns).toBe(2);
+    const c = mergeResult(b, 't', { ...res('A', 100), stars: 3, crowns: 0, loop: 5 }).save;
+    expect(c.tracks.t.loop).toBe(5);
+    const d = mergeResult(c, 't', { ...res('S', 9000), stars: 3, crowns: 3, loop: 7 }).save;
+    expect(d.tracks.t.loop).toBe(7);
+    expect(mergeResult(d, 't', { ...res('A', 10), stars: 3, loop: 4 }).save.tracks.t.loop).toBe(7);
     expect(b.tracks.t.score).toBe(5000);
     expect(crownsForTrack({ ...res('S'), crowns: 7 })).toBe(3);
     expect(crownsForTrack(res('S'))).toBe(0);
