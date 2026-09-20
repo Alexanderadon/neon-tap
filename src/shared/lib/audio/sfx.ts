@@ -65,10 +65,10 @@ export function sfxMilestone(): void {
   if (!sfxBank.play('milestone', { gain: 0.9 })) fallbackTone(880, 0.25, 0.15, 'sine');
 }
 
-/** Crystal collected: the milestone chime pitched up (big gems a touch lower and louder) — no extra sample. */
+/** Crystal collected: the milestone chime pitched up, well under the hits — a crystal is a nice touch, not an event (big gems a touch lower and fuller). */
 export function sfxGem(big = false): void {
-  const rate = big ? 1.35 : 1.6;
-  if (!sfxBank.play('milestone', { gain: big ? 1 : 0.8, rate })) fallbackTone(880 * rate, 0.2, 0.15, 'sine');
+  const rate = big ? 1.3 : 1.5;
+  if (!sfxBank.play('milestone', { gain: big ? 0.4 : 0.28, rate })) fallbackTone(880 * rate, 0.2, 0.06, 'sine');
 }
 
 /** Wallet tick (a counter in the top bar lands on its new value): the metronome click, short and dry — crystals a step higher than stars. */
