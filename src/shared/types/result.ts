@@ -33,7 +33,11 @@ export interface PlayResult {
   failed: boolean;
   /** Levels finished (0–3): a star each. */
   stars: number;
-  /** The level the run ended on (1-based). */
+  /** Endless loops finished past the third level: a crown each (0 outside endless mode). */
+  crowns: number;
+  /** The run was endless: the song looped past three stars, faster every loop. */
+  endless: boolean;
+  /** The level the run ended on (1-based; endless loops count on from 4). */
   level: number;
   /** Hearts left at the end. */
   hearts: number;

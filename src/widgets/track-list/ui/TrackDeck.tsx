@@ -4,8 +4,9 @@ import { audioEngine, sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
 import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, trackTint, type TrackMeta } from '@/entities/track';
-import { starsForTrack } from '@/entities/progress';
+import { crownsForTrack, starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
+import { toggleEndless, useEndless } from '../model/endless';
 import { writeDeckIndex } from '../model/deckPosition';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
 import { cardGlow } from '../lib/coverGlow';
@@ -210,6 +211,7 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
               lock={current ? lock : lockFor(state, t.id, t.stars)}
               daily={t.id === state.dailyId}
               best={starsForTrack(state.save.tracks[t.id])}
+              crowns={crownsForTrack(state.save.tracks[t.id])}
               rank={state.save.tracks[t.id]?.rank}
               details={current && details}
               onTap={() => (current ? setDetails((d) => !d) : go(i))}
@@ -234,6 +236,8 @@ interface CardProps {
   mount: (el: HTMLElement | null) => void;
   /** The centre card (the one the primary button refers to). */
   current: boolean;
+  /** Crowns on the card (endless loops past three stars, three at most). */
+  crowns: number;
   lock: LockState;
   daily: boolean;
   best: number;
@@ -243,7 +247,8 @@ interface CardProps {
   onTap: () => void;
 }
 
-function DeckCard({ track, mount, current, lock, daily, best, rank, details, onTap }: CardProps) {
+function DeckCard({ track, mount, current, lock, daily, best, crowns, rank, details, onTap }: CardProps) {
+  const endless = useEndless();
   const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
   // The centre card glows in its cover's accent — the picture's tint (spec §2.5); the neighbours only drop a shadow.
   const style: CSSProperties | undefined = current ? { boxShadow: cardGlow(trackTint(track.id, track.genre)) } : undefined;
@@ -269,6 +274,26 @@ function DeckCard({ track, mount, current, lock, daily, best, rank, details, onT
           <Tag shape="flush" icon={<Icon name="sun" />}>
             {dict.dailyTrack}
           </Tag>
+        )}
+        {best >= 3 && !lock.locked && (
+          <button
+            type="button"
+            className={endless ? 'deck-endless is-on' : 'deck-endless'}
+            // The stage captures the pointer on pointerdown (the swipe); the switch keeps its own tap.
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              sfxUi();
+              toggleEndless();
+            }}
+            aria-pressed={endless}
+            aria-label={dict.endlessTag}
+            title={dict.endlessHint}
+          >
+            <Tag variant={endless ? 'gold' : 'dark'} shape="flush" icon={<Icon name="infinity" />}>
+              {dict.endless}
+            </Tag>
+          </button>
         )}
         {details && (
           <div className="deck-details" role="region" aria-label={dict.deckDetails}>
@@ -297,7 +322,7 @@ function DeckCard({ track, mount, current, lock, daily, best, rank, details, onT
       <div className="deck-text">
         <h1 className="deck-title">{track.title}</h1>
         <div className="deck-meta">
-          <Stars value={best} size="md" halo />
+          <Stars value={best} crowns={crowns} size="md" />
           <Difficulty stars={track.stars} />
           {rank && <span className={gold ? 'deck-rank deck-rank-gold' : 'deck-rank'}>{rank}</span>}
         </div>

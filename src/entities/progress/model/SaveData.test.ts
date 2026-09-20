@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_SAVE, addRun, addSpell, emptySave, mergeResult, migrate, starsForTrack, totalStars, type BestResult } from './SaveData';
+import { EMPTY_SAVE, addRun, addSpell, crownsForTrack, emptySave, mergeResult, migrate, starsForTrack, totalStars, type BestResult } from './SaveData';
 
 const res = (rank: BestResult['rank'], score = 1000, maxCombo = 10): BestResult => ({
   score,
@@ -61,12 +61,29 @@ describe('SaveData', () => {
     };
     const out = migrate(v3);
     expect(out.version).toBe(5);
-    expect(out).toMatchObject({ ...v3, version: 5, counters: { ...v3.counters, genres: [], perfects: 0, customPlays: 0 }, crystals: 0, lifetimeCrystals: 0, purchased: [] });
+    expect(out).toMatchObject({
+      ...v3,
+      version: 5,
+      counters: { ...v3.counters, genres: [], perfects: 0, customPlays: 0 },
+      crystals: 0,
+      lifetimeCrystals: 0,
+      purchased: [],
+    });
     // v2 walks through both steps
     const fromV2 = migrate({ version: 2, tracks: {}, plays: 0 });
     expect(fromV2).toMatchObject({ version: 5, crystals: 0, lifetimeCrystals: 0, purchased: [] });
     // v4 with the new counters already present keeps them (unique genres, numbers sanitised)
-    const v4 = { version: 4, tracks: {}, plays: 0, counters: { spells: {}, genres: ['rock', 'rock', 3], perfects: '9', customPlays: 2 }, daily: {}, goalsClaimed: [], crystals: 5, lifetimeCrystals: 5, purchased: [] };
+    const v4 = {
+      version: 4,
+      tracks: {},
+      plays: 0,
+      counters: { spells: {}, genres: ['rock', 'rock', 3], perfects: '9', customPlays: 2 },
+      daily: {},
+      goalsClaimed: [],
+      crystals: 5,
+      lifetimeCrystals: 5,
+      purchased: [],
+    };
     expect(migrate(v4).counters).toMatchObject({ genres: ['rock'], perfects: 0, customPlays: 2 });
   });
 
@@ -131,5 +148,18 @@ describe('SaveData', () => {
     expect(s2.counters.maxCombo).toBe(80);
     expect(s2.counters.maxTrackStars).toBe(7);
     expect(s1.counters.tracksPlayed).toBe(0);
+  });
+});
+
+describe('crowns', () => {
+  it('keeps the most crowns of a track over its runs and shows three at most', () => {
+    const a = mergeResult(emptySave(), 't', { ...res('S'), stars: 3, crowns: 2 }).save;
+    expect(a.tracks.t.crowns).toBe(2);
+    const b = mergeResult(a, 't', { ...res('A', 5000), stars: 3, crowns: 1 }).save;
+    expect(b.tracks.t.crowns).toBe(2);
+    expect(b.tracks.t.score).toBe(5000);
+    expect(crownsForTrack({ ...res('S'), crowns: 7 })).toBe(3);
+    expect(crownsForTrack(res('S'))).toBe(0);
+    expect(crownsForTrack(undefined)).toBe(0);
   });
 });

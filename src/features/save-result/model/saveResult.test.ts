@@ -27,6 +27,8 @@ const run = (trackId: string, over: Partial<PlayResult> = {}): PlayResult => ({
   notesToS: 3,
   failed: false,
   stars: 3,
+  crowns: 0,
+  endless: false,
   level: 3,
   hearts: 3,
   timeline: { t: [], j: [], combo: [] },

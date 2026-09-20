@@ -6,6 +6,8 @@
 export const result = {
   /** Verdict (28/900): what the run meant, one short line. */
   verdictStars: '+{n} {noun}',
+  verdictCrowns: '+{n} {noun}',
+  crownNoun: ['корона', 'короны', 'корон'] as const,
   verdictAllStars: 'Все три звезды',
   verdictTwoStars: 'Две звезды',
   verdictOneStar: 'Звезда есть',

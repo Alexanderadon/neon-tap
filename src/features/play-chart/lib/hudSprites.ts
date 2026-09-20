@@ -6,6 +6,7 @@
  * Everything here is pre-rendered once (per resize) and blitted per frame.
  */
 import type { NoteSprite } from '@/shared/lib/render';
+import { detailFor, drawCrown, drawStar } from '@/shared/lib/render';
 
 export const HUD_FONT = "'Unbounded', 'Arial Black', 'Segoe UI', system-ui, sans-serif";
 
@@ -34,8 +35,6 @@ export const GUTTER = 20;
 
 const HEART_PATH = 'M12 21.2 4.6 14A5.2 5.2 0 0 1 12 6.6a5.2 5.2 0 0 1 7.4 7.4Z';
 const HEART_SHINE = 'M7.2 9.6a2.6 2.6 0 0 1 3-1.6';
-const STAR_PATH = 'M12 1.5 14.97 8.41 22.46 9.1 16.81 14.06 18.47 21.4 12 17.56 5.53 21.4 7.19 14.06 1.54 9.1 9.03 8.41Z';
-const STAR_FACET = 'M12 4.2 13.6 8 9.9 9.4 5.4 9.8 8.6 12.7Z';
 const CRYSTAL_PATH = 'M12 2 20 9 12 22 4 9Z';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -124,18 +123,19 @@ export function heartSprite(kind: HeartKind, size: number, dpr: number): NoteSpr
   });
 }
 
-/** Level star 20 (HUD) / 120 (star show): glossy gold or dark grey; `withHalo` adds the radial glow. */
+/** Level star 20 (HUD) / 120 (star show): the gem-cut gold star of shared/ui/Stars, or the dark one; `withHalo` adds the radial glow. */
 export function starSprite(on: boolean, size: number, dpr: number, withHalo = false): NoteSprite {
   return glyph(size, Math.round(size * 0.5), dpr, (ctx) => {
     if (withHalo) halo(ctx, 12, 12.5, 17, 'gold');
-    const body = new Path2D(STAR_PATH);
-    ctx.fillStyle = face(ctx, on ? 'gold' : 'off');
-    ctx.fill(body);
-    ctx.lineWidth = 1.3;
-    ctx.strokeStyle = on ? HUD.goldRim : 'rgba(0,0,0,0.6)';
-    ctx.stroke(body);
-    ctx.fillStyle = on ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.06)';
-    ctx.fill(new Path2D(STAR_FACET));
+    drawStar(ctx, on, detailFor(size));
+  });
+}
+
+/** The endless mode's crown, the star's sibling in every size. */
+export function crownSprite(on: boolean, size: number, dpr: number, withHalo = false): NoteSprite {
+  return glyph(size, Math.round(size * 0.5), dpr, (ctx) => {
+    if (withHalo) halo(ctx, 12, 12.5, 17, 'gold');
+    drawCrown(ctx, on, detailFor(size));
   });
 }
 

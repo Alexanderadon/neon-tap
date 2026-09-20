@@ -29,7 +29,7 @@ import { GameSession, LEVELS, REFILL_AT, REVIVE_IDLE, REVIVE_OFFER_SEC, reviveRe
 import { saveResult } from '@/features/save-result';
 import { trackSpell } from '@/features/track-progress';
 import { voice, praise } from '@/features/voice-feedback';
-import type { ChartSource } from '@/entities/play-session';
+import { useSession, type ChartSource } from '@/entities/play-session';
 import './game-canvas.css';
 
 export type GameCanvasMode = 'play' | 'tutorial';
@@ -73,12 +73,13 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
  * menu, loading / error, the fail frame, and the revive offer for a rewarded ad (spec: screens-game.html).
  */
 export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
+  const endless = useSession((s) => s.endless);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [attempt, setAttempt] = useState(0);
   const [paused, setPaused] = useState<Snapshot | null>(null);
-  const [fail, setFail] = useState<{ stars: number } | null>(null);
+  const [fail, setFail] = useState<{ stars: number; crowns: number } | null>(null);
   const [revive, dispatch] = useReducer(reviveReducer, REVIVE_IDLE);
   const [muted, setMuted] = useState(false);
   // Latest host callbacks without re-creating the session when the parent re-renders.
@@ -138,7 +139,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         case 'fail':
           setPaused(null);
           dispatch({ type: 'decline' });
-          setFail({ stars: e.stars });
+          setFail({ stars: e.stars, crowns: e.crowns });
           break;
         case 'pause':
           setPaused({ score: e.score, accuracy: e.accuracy, level: e.level });
@@ -181,6 +182,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           hideHearts: tutorial,
           gems: !tutorial,
           levels: !tutorial,
+          endless: endless && !tutorial,
           revive: !tutorial && !noFailFlag && ads.available(),
           fxMode: settings.fxMode,
           debug: settings.debugOverlay,
@@ -254,7 +256,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       session?.destroy();
       sessionRef.current = null;
     };
-  }, [chart, source, audioBuffer, mode, tutorial, attempt]);
+  }, [chart, source, audioBuffer, mode, tutorial, attempt, endless]);
 
   const exit = useCallback(() => (hostRef.current.onExit ? hostRef.current.onExit() : navigate('menu')), []);
 
@@ -398,12 +400,17 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
                 <span>
                   {dict.accuracy} <b>{formatAccuracy(paused.accuracy)}</b>
                 </span>
-                {!tutorial && (
+                {!tutorial && paused.level <= LEVELS && (
                   <span>
                     {dict.levelWord}{' '}
                     <b>
                       {paused.level} / {LEVELS}
                     </b>
+                  </span>
+                )}
+                {!tutorial && paused.level > LEVELS && (
+                  <span>
+                    {dict.loopWord} <b>{paused.level}</b>
                   </span>
                 )}
               </div>
@@ -442,7 +449,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           </>,
         )}
 
-      {fail !== null && <FailFrame stars={fail.stars} />}
+      {fail !== null && <FailFrame stars={fail.stars} crowns={fail.crowns} />}
 
       {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} title={chart.title} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
     </div>
@@ -450,18 +457,24 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 }
 
 /** «ПРОВАЛ» (no stars) or «СТОП — звёзд заработано: N»: a ≤ 1.5 s frame over the frozen field before the result. */
-function FailFrame({ stars }: { stars: number }) {
+function FailFrame({ stars, crowns }: { stars: number; crowns: number }) {
   return (
     <div className="game-shade game-fail" aria-live="polite">
       <div className="game-col">
         <div className="game-hero">
-          <Stars value={stars} size="hero" animate />
+          <Stars value={stars} crowns={Math.min(3, crowns)} size="hero" animate />
         </div>
         <Headline as="div" pop tone={stars > 0 ? 'gold' : 'mag'} className="game-verdict game-verdict-late">
           {stars > 0 ? dict.levelStop : dict.failed}
         </Headline>
         <div className="game-tabline game-tabline-late">
-          {stars > 0 ? <Tag>{fmt(dict.levelKept, { n: stars })}</Tag> : <Tag variant="dark">{dict.heartsOut}</Tag>}
+          {crowns > 0 ? (
+            <Tag>{fmt(dict.crownsKept, { n: crowns })}</Tag>
+          ) : stars > 0 ? (
+            <Tag>{fmt(dict.levelKept, { n: stars })}</Tag>
+          ) : (
+            <Tag variant="dark">{dict.heartsOut}</Tag>
+          )}
         </div>
       </div>
     </div>

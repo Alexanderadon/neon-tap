@@ -17,11 +17,7 @@ export type SpellKind = 'slow' | 'heart';
  * `[timeSec, lane, durationSec, 'slide', endLane]` slide hold ·
  * `[timeSec, 0, durationSec, 'spin']` spinner (lane is ignored).
  */
-export type NoteTuple =
-  | [number, number]
-  | [number, number, number]
-  | [number, number, number, NoteKind]
-  | [number, number, number, NoteKind, number];
+export type NoteTuple = [number, number] | [number, number, number] | [number, number, number, NoteKind] | [number, number, number, NoteKind, number];
 
 /** `[timeSec, laneCount]` — from this time on the playfield has `laneCount` lanes. */
 export type SectionTuple = [number, number];
@@ -78,6 +74,8 @@ export interface ChartFile {
   duration: number;
   /** Tracked beat times in seconds (starting on a downbeat). */
   beats?: number[];
+  /** Loudness level of every 4-bar phrase (0 quiet · 1 · 2 the drop), phrase p starting on beat 16·p — the HUD's song map. */
+  phrases?: number[];
   /** One chart per song — the music decides how hard it is. */
   chart: ChartLevel;
 }

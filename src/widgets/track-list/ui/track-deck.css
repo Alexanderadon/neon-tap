@@ -191,6 +191,26 @@
 .deck-card.is-locked::after {
   background: linear-gradient(to top, rgba(5, 6, 10, 0.92) 0%, rgba(5, 6, 10, 0.7) 40%, rgba(5, 6, 10, 0.6) 100%);
 }
+/* The ∞ switch on a three-star card: a flush tag that is a button; gold while endless mode is on. */
+.deck-endless {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+.deck-endless:active {
+  transform: translateY(1px);
+}
+.deck-endless:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 0 var(--r-999) var(--r-999) 0;
+}
 /* Tags glued to the left edge at y 24 (under the corner radius): «ТРЕК ДНЯ», then the details on tap. */
 .deck-tags {
   position: absolute;

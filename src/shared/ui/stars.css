@@ -90,7 +90,7 @@
   top: 0;
   width: 3px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--r-999);
   background: #fff;
   transform-origin: 50% 0;
   opacity: 0;

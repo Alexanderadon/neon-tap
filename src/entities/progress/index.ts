@@ -10,7 +10,7 @@ export {
   resetProgress,
   useProgress,
 } from './model/progressStore';
-export { starsForTrack, totalStars, rankIndex } from './model/SaveData';
+export { crownsForTrack, starsForTrack, totalStars, rankIndex } from './model/SaveData';
 export type { BestResult, SaveData, Counters, DailyState } from './model/SaveData';
 export { unlockThreshold, unlockStates, isTrackUnlocked, isOpen, newlyUnlocked, nextUnlock, ALWAYS_OPEN } from './model/unlocks';
 export type { UnlockContext, UnlockInfo, NextUnlock } from './model/unlocks';

@@ -5,6 +5,7 @@ import { Avatar, Icon, ListRow, Panel, PlaceChip, SegmentsPulse, StatePanel, Tag
 import { useSettings } from '@/entities/settings';
 import { avatarArtOf } from '@/entities/avatar';
 import { bestOf, playsOf, useHistory } from '@/entities/history';
+import { useProgress } from '@/entities/progress';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
 import './history.css';
 
@@ -20,6 +21,8 @@ type Online = { status: 'loading' } | { status: 'off' } | { status: 'ready'; top
  */
 export function HistoryPanel({ trackId }: { trackId: string }) {
   const best = useHistory((h) => bestOf(h, trackId));
+  // Crowns live in the save (the best run per track), not in the attempt history.
+  const crowns = useProgress((s) => s.tracks[trackId]?.crowns ?? 0);
   const plays = useHistory((h) => playsOf(h, trackId));
   const nickname = useSettings((s) => s.nickname);
   const avatar = useSettings((s) => s.avatar);
@@ -94,6 +97,11 @@ export function HistoryPanel({ trackId }: { trackId: string }) {
               <span>
                 {dict.rank} <b className="history-rank">{best.rank}</b>
               </span>
+              {crowns > 0 && (
+                <span>
+                  {dict.loopsShort} <b>{crowns}</b>
+                </span>
+              )}
             </div>
           </>
         ) : (

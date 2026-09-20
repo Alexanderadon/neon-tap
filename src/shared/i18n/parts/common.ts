@@ -201,6 +201,8 @@ export const common = {
   /** Out of hearts past the first level: the run stops, the stars stay. */
   levelStop: 'СТОП',
   levelKept: 'звёзд заработано: {n}',
+  crownsKept: 'корон заработано: {n}',
+  loopsShort: 'Кругов',
   tutorialLaneSteps: {
     intro: { title: 'Поехали', desktop: 'Клавиши {keys}', touch: 'Тапай в нижней половине' },
     tap: { title: 'Тапни', desktop: 'Когда нота на линии — {keys}', touch: 'Когда нота на линии' },

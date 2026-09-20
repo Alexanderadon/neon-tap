@@ -10,6 +10,8 @@ export interface BestResult {
   playedAt: string;
   /** Most levels finished in one run (0–3), a star each; absent on saves from before levels (then the rank decides). */
   stars?: number;
+  /** Most endless loops finished past the third level in one run, a crown each; absent before endless mode. */
+  crowns?: number;
 }
 
 export interface SaveDataV2 {
@@ -82,7 +84,15 @@ export type SaveData = SaveDataV5;
 
 export const CURRENT_VERSION = 5;
 
-export const EMPTY_COUNTERS: Counters = { spells: { slow: 0, heart: 0 }, tracksPlayed: 0, maxCombo: 0, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 };
+export const EMPTY_COUNTERS: Counters = {
+  spells: { slow: 0, heart: 0 },
+  tracksPlayed: 0,
+  maxCombo: 0,
+  maxTrackStars: 0,
+  genres: [],
+  perfects: 0,
+  customPlays: 0,
+};
 export const EMPTY_DAILY: DailyState = { date: '', done: false, streak: 0, total: 0 };
 
 export const EMPTY_SAVE: SaveData = {
@@ -225,6 +235,11 @@ export function starsForTrack(best: BestResult | undefined): number {
   return 3;
 }
 
+/** Crowns shown on a track's card: endless loops finished past three stars, three at most. */
+export function crownsForTrack(best: BestResult | undefined): number {
+  return Math.max(0, Math.min(3, best?.crowns ?? 0));
+}
+
 /** Stars earned on tracks only (no bonuses). */
 export function totalStars(save: SaveData, trackIds?: readonly string[]): number {
   const ids = trackIds ?? Object.keys(save.tracks);
@@ -238,9 +253,10 @@ export function mergeResult(save: SaveData, trackId: string, result: BestResult)
   const prev = save.tracks[trackId];
   const newRecord = !prev || result.score > prev.score;
   const stars = Math.max(starsForTrack(prev), starsForTrack(result));
+  const crowns = Math.max(prev?.crowns ?? 0, result.crowns ?? 0);
   const merged: BestResult = newRecord
-    ? { ...result, stars, fullCombo: result.fullCombo || (prev?.fullCombo ?? false) }
-    : { ...prev, stars, fullCombo: prev.fullCombo || result.fullCombo, rank: RANK_ORDER[Math.max(rankIndex(prev.rank), rankIndex(result.rank))] };
+    ? { ...result, stars, crowns, fullCombo: result.fullCombo || (prev?.fullCombo ?? false) }
+    : { ...prev, stars, crowns, fullCombo: prev.fullCombo || result.fullCombo, rank: RANK_ORDER[Math.max(rankIndex(prev.rank), rankIndex(result.rank))] };
   return { save: { ...save, plays: save.plays + 1, tracks: { ...save.tracks, [trackId]: merged } }, newRecord };
 }
 
