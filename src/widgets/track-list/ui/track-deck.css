@@ -220,6 +220,10 @@
   outline-offset: 2px;
   border-radius: var(--r-999);
 }
+/* Before the three stars the chip is dim: the mode is there, not yet open. */
+.deck-endless.is-locked .chip {
+  color: var(--w30);
+}
 /* Its 32 px chip sits in the 32 px meta row: 6 px more on each side make the 44 px target. */
 .deck-endless::after {
   inset: -6px 0;

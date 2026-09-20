@@ -18,6 +18,8 @@ export const game = {
   endless: 'Бесконечно',
   endlessTag: 'Бесконечный режим',
   endlessHint: 'после трёх звёзд — быстрее с каждым кругом, корона за круг',
+  /** The dim ∞ chip on a card without three stars, tapped. */
+  endlessLocked: 'После трёх звёзд',
   heartsOut: 'Сердца кончились',
   loadFailed: 'Не удалось загрузить',
   checkConnection: 'проверь связь и попробуй ещё раз',
