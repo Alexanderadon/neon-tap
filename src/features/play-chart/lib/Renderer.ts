@@ -303,8 +303,6 @@ export class Renderer {
   private songMap: readonly SongMapSegment[] = [{ from: 0, level: 1 }];
   /** One beat as a fraction of the song map — the next drop's heat breathes for a bar before it. */
   private songBeat = 0;
-  /** The drops' heat under the song map, baked once per width and accent (see `heatSprite`). */
-  private heat: { w: number; accent: string; canvas: HTMLCanvasElement } | null = null;
   private starAge = 0;
   private starLandedAge = 1;
   /** Field without dividers / receptors / labels — the canvas for the lane-morph transition. */
@@ -826,7 +824,6 @@ export class Renderer {
   setSongMap(segments: readonly SongMapSegment[], beat = 0): void {
     this.songMap = segments.length ? segments : [{ from: 0, level: 1 }];
     this.songBeat = beat;
-    this.heat = null;
   }
 
   /** Star show moments scaled to its length (2.4 s by design). */
@@ -1849,12 +1846,9 @@ export class Renderer {
   }
 
   /**
-   * The song map (row 0), designed as «жёлоб + жар»: one 6 px neon tube in the chip material — a
-   * sunken w10 groove; the played part an accent pill with a lit face and a hot white cap at the head —
-   * and under the drop phrases a soft accent heat (baked once, nothing blurred per frame), faint ahead,
-   * brighter behind the head, breathing with the beat one bar before the next drop. In endless mode
-   * the tube makes room for «КРУГ N» at the right. Only the cap's and the next heat's alpha move;
-   * nothing changes shape.
+   * The song map (row 0): one 6 px tube in the chip material — a w10 groove, the played part an accent
+   * pill with a lit face and a hot white cap at the head (brighter inside a drop and on the beat). In
+   * endless mode the tube makes room for «КРУГ N» at the right. Only the cap's alpha moves.
    */
   private drawSongMap(s: FrameState, colX: number, colW: number, top: number): void {
     const ctx = this.ctx;
@@ -1871,42 +1865,10 @@ export class Renderer {
     const y = top;
     const headX = colX + w * s.progress;
     const runs = dropRuns(map);
-    // The heat under the drops: faint ahead, brighter behind the head, the next one breathing.
-    if (runs.length) {
-      const heat = this.heatSprite(w, accent, runs);
-      ctx.globalAlpha = 0.14;
-      ctx.drawImage(heat, colX, y - 1, w, 8);
-      if (s.progress > 0) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(colX, y - 1, Math.max(0, headX - colX), 8);
-        ctx.clip();
-        ctx.globalAlpha = 0.32;
-        ctx.drawImage(heat, colX, y - 1, w, 8);
-        ctx.restore();
-      }
-      const next = runs.find((r) => r.from > s.progress && r.from - s.progress < 4 * this.songBeat);
-      if (next) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(colX + w * next.from, y - 1, w * (next.to - next.from), 8);
-        ctx.clip();
-        ctx.globalAlpha = 0.15 * s.pulse;
-        ctx.drawImage(heat, colX, y - 1, w, 8);
-        ctx.restore();
-      }
-      ctx.globalAlpha = 1;
-    }
-    // The groove: the dark track with a 1 px shadow along its top edge.
+    // The groove.
     roundRect(ctx, colX, y, w, 6, 3);
     ctx.fillStyle = HUD.w10;
     ctx.fill();
-    ctx.save();
-    roundRect(ctx, colX, y, w, 6, 3);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(colX, y, w, 1);
-    ctx.restore();
     // The played part: an accent pill with the lit face of the gold chips and the hot cap at its end.
     if (s.progress > 0) {
       const pw = Math.max(6, headX - colX);
@@ -1945,52 +1907,6 @@ export class Renderer {
       ctx.fillText(label, colX + colW, y + 3);
       ctx.letterSpacing = '0px';
     }
-  }
-
-  /**
-   * The drops' heat, baked once per tube width and accent: an 8 px accent band under every run of
-   * drop phrases, soft at the top and bottom, feathered 4 px at both ends (a mask, so no blur filter —
-   * iOS Safari has none).
-   */
-  private heatSprite(w: number, accent: string, runs: readonly DropRun[]): HTMLCanvasElement {
-    const cached = this.heat;
-    if (cached && cached.w === w && cached.accent === accent) return cached.canvas;
-    const dpr = this.dpr;
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(w * dpr));
-    canvas.height = Math.round(8 * dpr);
-    const c = canvas.getContext('2d')!;
-    c.scale(dpr, dpr);
-    const band = c.createLinearGradient(0, 0, 0, 8);
-    band.addColorStop(0, hexToRgba(accent, 0));
-    band.addColorStop(0.5, accent);
-    band.addColorStop(1, hexToRgba(accent, 0));
-    const mask = document.createElement('canvas');
-    mask.width = canvas.width;
-    mask.height = canvas.height;
-    const m = mask.getContext('2d')!;
-    m.scale(dpr, dpr);
-    for (const r of runs) {
-      const x0 = w * r.from;
-      const x1 = w * r.to;
-      const len = x1 - x0;
-      if (len <= 0) continue;
-      c.fillStyle = band;
-      c.fillRect(x0, 0, len, 8);
-      const feather = Math.min(4, len / 2) / len;
-      const g = m.createLinearGradient(x0, 0, x1, 0);
-      g.addColorStop(0, 'rgba(0,0,0,0)');
-      g.addColorStop(feather, '#000');
-      g.addColorStop(1 - feather, '#000');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      m.fillStyle = g;
-      m.fillRect(x0, 0, len, 8);
-    }
-    c.globalCompositeOperation = 'destination-in';
-    c.setTransform(1, 0, 0, 1, 0, 0);
-    c.drawImage(mask, 0, 0);
-    this.heat = { w, accent, canvas };
-    return canvas;
   }
 
   /**
