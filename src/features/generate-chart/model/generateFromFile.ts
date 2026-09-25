@@ -17,8 +17,32 @@ export interface GeneratedSong {
   confidence: number;
 }
 
+/**
+ * The chart generator's version, stored with every saved song. Bump it when the analysis or the
+ * composer changes the charts it makes, so old songs can be told apart (and regenerated later).
+ */
+export const GENERATOR_VERSION = 1;
+
+/** Who the song is: the id (its file's fingerprint, see entities/custom-song) and the names shown. */
+export interface SongIdentity {
+  id: string;
+  title: string;
+  artist: string;
+}
+
 /** Analysis sample rate: enough for onsets up to 11 kHz, 2× faster than 44.1 kHz. */
 const ANALYSIS_RATE = 22050;
+
+/** Beat-tracking confidence below this, or fewer notes per second than `WEAK_DENSITY`, reads as a weak rhythm. */
+const WEAK_CONFIDENCE = 0.1;
+const WEAK_DENSITY = 0.4;
+
+/** The rhythm was hard to find (ambient, speech, a very free tempo): the level may feel loose. The song is still playable and saved. */
+export function isWeakRhythm(song: { confidence: number; chart: ChartFile }): boolean {
+  const duration = song.chart.duration;
+  const density = duration > 0 ? song.chart.chart.notes.length / duration : 0;
+  return song.confidence < WEAK_CONFIDENCE || density < WEAK_DENSITY;
+}
 
 /** Mono mixdown, downsampled by simple decimation with a box filter (good enough for flux). */
 function mixdown(buffer: AudioBuffer): { samples: Float32Array; sampleRate: number } {
@@ -38,16 +62,17 @@ function mixdown(buffer: AudioBuffer): { samples: Float32Array; sampleRate: numb
   return { samples: out, sampleRate: outRate };
 }
 
-/**
- * Decode a user's audio file and build a playable chart entirely in the browser.
- * The file is never uploaded anywhere — decoding happens in the AudioContext, analysis in a Worker.
- */
-export async function generateFromFile(file: File, onProgress: (p: GenerateProgress) => void): Promise<GeneratedSong> {
+/** Decode a user's audio file in the AudioContext (the first stage of `generateFromFile`). */
+export async function decodeSongFile(file: Blob, onProgress: (p: GenerateProgress) => void): Promise<AudioBuffer> {
   onProgress({ stage: 'decode', fraction: 0 });
   const audioBuffer = await audioEngine.decode(await file.arrayBuffer());
   onProgress({ stage: 'decode', fraction: 1 });
-  const { samples, sampleRate } = mixdown(audioBuffer);
+  return audioBuffer;
+}
 
+/** Build a playable chart from decoded audio in a Worker (the analysis stages of `generateFromFile`). */
+export async function chartFromBuffer(audioBuffer: AudioBuffer, song: SongIdentity, onProgress: (p: GenerateProgress) => void): Promise<GeneratedSong> {
+  const { samples, sampleRate } = mixdown(audioBuffer);
   const worker = new Worker(new URL('./analysis.worker.ts', import.meta.url), { type: 'module' });
   try {
     const done = await new Promise<Extract<AnalysisMessage, { type: 'done' }>>((resolve, reject) => {
@@ -61,11 +86,10 @@ export async function generateFromFile(file: File, onProgress: (p: GenerateProgr
       const req: AnalysisRequest = { samples, sampleRate };
       worker.postMessage(req, [samples.buffer]);
     });
-    const title = file.name.replace(/\.[^.]+$/, '');
     const chart: ChartFile = {
-      id: `custom:${title}:${file.size}`,
-      title,
-      artist: '',
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
       license: 'user file (local only)',
       sourceUrl: '',
       audio: '',
@@ -80,4 +104,16 @@ export async function generateFromFile(file: File, onProgress: (p: GenerateProgr
   } finally {
     worker.terminate();
   }
+}
+
+/**
+ * Decode a user's audio file and build a playable chart entirely in the browser.
+ * The file is never uploaded anywhere — decoding happens in the AudioContext, analysis in a Worker.
+ * The id and names come from outside (the song catalog fingerprints the file and reads its tags);
+ * without them the file name is the title and the id is session-only.
+ */
+export async function generateFromFile(file: File, onProgress: (p: GenerateProgress) => void, song?: SongIdentity): Promise<GeneratedSong> {
+  const audioBuffer = await decodeSongFile(file, onProgress);
+  const title = file.name.replace(/\.[^.]+$/, '');
+  return chartFromBuffer(audioBuffer, song ?? { id: `custom:${title}:${file.size}`, title, artist: '' }, onProgress);
 }

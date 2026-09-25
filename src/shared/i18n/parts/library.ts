@@ -18,14 +18,14 @@ export const library = {
   libAdd: 'Добавить',
   /** The «⋯» button: the selected song's details. */
   libMore: 'Ещё',
-  libPickSong: 'выбери песню',
   libFreeHint: 'Выбери песню, которую удалить',
   libIosHint: 'Добавь игру на экран «Домой» — так песни не пропадут',
   libEvicted: 'Браузер очистил сохранённые песни',
   // --- the song's details ---
   libBpm: 'BPM',
   libLength: 'длина',
-  libAdded: 'добавлена',
+  libAddedOn: 'добавлена {date}',
+  libLevel: 'сложность',
   libRename: 'Переименовать',
   libRenameAria: 'Новое название',
   libSave: 'Сохранить',

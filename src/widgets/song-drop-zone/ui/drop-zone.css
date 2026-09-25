@@ -1,6 +1,6 @@
 /*
  * SongDropZone (SongDropZone.tsx): the main screen's skeleton under the top bar — sub row (tag +
- * short text), a stage with one 292 × 420 card, the bottom action zone. One 335 px column. Like the
+ * short text), a stage with one 292 × 420 card, [a note line], the bottom action zone. One 335 px column. Like the
  * deck, the card shrinks (ratio kept) on short viewports so the action zone stays in sight; below
  * the stage's minimum the frame scrolls.
  */
@@ -160,6 +160,11 @@
   border-radius: var(--r-999);
   background: var(--gold-face);
   transition: width 0.2s linear;
+}
+/* One grey line under the card when the song cannot be kept («Места мало…», «Сохранение недоступно»). */
+.dz-note {
+  flex: none;
+  margin-top: 16px;
 }
 /* Bottom action zone: trio 48, gap 16, primary 64, bottom-anchored. */
 .dz-bottom {
