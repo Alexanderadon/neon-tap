@@ -20,7 +20,8 @@ export const library = {
   libAdd: 'Добавить',
   /** The «⋯» button: the selected song's details. */
   libMore: 'Ещё',
-  libFreeHint: 'Выбери песню, которую удалить',
+  /** Delete mode, next to the tag in the sub row (about 20 letters fit there). */
+  libFreeHint: 'Выбери, что удалить',
   libIosHint: 'Добавь игру на экран «Домой» — так песни не пропадут',
   libEvicted: 'Браузер очистил сохранённые песни',
   // --- the song's details ---
@@ -47,8 +48,9 @@ export const library = {
   libLimitFullTitle: 'Все места заняты',
   libLimitOverLine: 'Без NEON PASS мест три — удали лишние',
   libLimitPass: 'С NEON PASS — без лимита (скоро)',
-  libLimitFree: 'Освободить место',
-  libLimitFreeSub: 'выбери песню для удаления',
+  /** The limit sheet's primary button: its 20 px caps label fits about ten letters at 360 px, so «место» goes to the sub line. */
+  libLimitFree: 'Освободить',
+  libLimitFreeSub: 'место для новой песни',
   libLimitLater: 'Не сейчас',
   // --- adding a song ---
   libTooBig: 'файл больше 40 МБ',
