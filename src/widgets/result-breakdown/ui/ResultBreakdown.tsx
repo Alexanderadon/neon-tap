@@ -2,7 +2,7 @@ import { createRef, useEffect, useMemo, useRef, useState, type ReactNode, type R
 import { dict, fmt } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { sfxRank, sfxTick } from '@/shared/lib/audio';
-import { ActionZone, Disc, Headline, Icon, ObjButton, PrimaryAction, ProgressBar, Stars, Tag, Thumb, Trio } from '@/shared/ui';
+import { ActionZone, Disc, Headline, Icon, Line, ObjButton, PrimaryAction, ProgressBar, Stars, Tag, Thumb, Trio } from '@/shared/ui';
 import type { Genre } from '@/shared/types/chart';
 import type { ChartFile } from '@/entities/chart';
 import { formatClock, type PlayResult } from '@/entities/score';
@@ -11,6 +11,7 @@ import { TrackCover, trackTint } from '@/entities/track';
 import { voice } from '@/features/voice-feedback';
 import { formatScore } from '@/shared/lib/format';
 import { flightsOf, type Loot } from '../lib/loot';
+import { economyNotes } from '../lib/notes';
 import { T } from '../lib/timeline';
 import { verdictOf } from '../lib/verdict';
 import { Confetti } from './Confetti';
@@ -104,6 +105,8 @@ export function ResultBreakdown({
   const [details, setDetails] = useState(false);
   const startedAt = useRef(performance.now());
   const verdict = useMemo(() => verdictOf(result, meta), [result, meta]);
+  // The calendar mark and the allowance, as calm lines under the loot (never after a fail).
+  const notes = useMemo(() => (failed ? [] : economyNotes(meta)), [failed, meta]);
 
   // Chimes on the timeline: a star each pop, the wallet ticks when the loot lands. A settle cuts the rest.
   useEffect(() => {
@@ -219,6 +222,14 @@ export function ResultBreakdown({
       />
 
       {!failed && <LootRow loot={loot} coinRefs={coinRefs} />}
+
+      {notes.length > 0 && (
+        <div className="result-notes">
+          {notes.map((n) => (
+            <Line key={n.key}>{n.text}</Line>
+          ))}
+        </div>
+      )}
 
       {unlock && (
         <div className="result-unlock">

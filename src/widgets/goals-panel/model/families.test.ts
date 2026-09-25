@@ -2,16 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { GOALS, type SaveData } from '@/entities/progress';
 import { familyLadders, orderLadders } from './families';
 
-const save = {
+const save: SaveData = {
+  version: 6,
   tracks: {},
   plays: 12,
-  counters: { spells: { slow: 0, heart: 0 }, tracksPlayed: 0, maxCombo: 64, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 },
+  counters: { spells: { slow: 0, heart: 0 }, tracksPlayed: 0, maxCombo: 64, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0, bought: 0 },
   daily: { date: '', done: false, streak: 0, total: 0 },
   goalsClaimed: [],
   crystals: 0,
   lifetimeCrystals: 0,
   purchased: [],
-} as unknown as SaveData;
+  earnings: { date: '', run: 0, custom: 0 },
+  calendar: { count: 0, date: '' },
+};
 
 describe('achievement ladders', () => {
   it('builds one ladder per family with the next tier and its progress', () => {
