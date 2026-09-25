@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { ads, stubAds } from '@/shared/lib/ads';
 import { audioEngine, loadSong, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
@@ -63,8 +63,6 @@ interface Props {
   onProfile: () => void;
   /** A tap on an owned card: open the deck on that track. */
   onTrack: (id: string) => void;
-  /** A second tag after «МАГАЗИН» in the sub-header (the 48-hour deal's «48 ч»). */
-  headerTag?: ReactNode;
   /** «Пополнить» in the not-enough sheet — opens the crystal packs; absent when purchases are unavailable. */
   onTopUp?: () => void;
 }
@@ -102,7 +100,7 @@ const ROAD_TRACKS = CATALOG.filter((t) => t.drop !== true);
  * «Трек открыт!» reward, the gold toast, and the crystals flying into the wallet. The page around it
  * draws the scene and the top bar.
  */
-export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack, headerTag, onTopUp }: Props) {
+export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack, onTopUp }: Props) {
   const save = useProgress((s) => s);
   const stars = grandTotalStars(save, TRACK_IDS);
   /**
@@ -354,15 +352,7 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
           <span>{rewardTrack.drop ? dict.dropTag : rewardTrack.premium ? dict.shopPremium : dict.shopBought}</span>
         </SubHeader>
       ) : (
-        <SubHeader
-          tag={
-            <>
-              <Tag>{dict.shop}</Tag>
-              {headerTag}
-            </>
-          }
-          text={dict.shopEarnHint}
-        />
+        <SubHeader tag={<Tag>{dict.shop}</Tag>} text={dict.shopEarnHint} />
       )}
 
       {view === 'reward' && rewardTrack ? (
