@@ -154,7 +154,9 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
       const outcome = await playCustomSong(state.meta.id);
       if (outcome !== 'ok') {
         setStarting(false);
-        setState({ kind: 'idle', problem: 'format' });
+        // Deleted in another tab meanwhile: the file can simply be added again.
+        if (outcome === 'missing') void refreshSongs();
+        setState(outcome === 'missing' ? { kind: 'idle' } : { kind: 'idle', problem: 'format' });
       }
     }
   };
