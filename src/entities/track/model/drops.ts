@@ -17,7 +17,7 @@ export const DROP_EARLY_MS = 7 * DAY_MS;
 /** A rewarded ad opens a drop during its first 14 days — a week missed does not lose the chance. */
 export const DROP_AD_MS = 14 * DAY_MS;
 
-/** The release plan in the app: the first Monday and the number of weekly slots (`assets-src/drops.json`). */
+/** The release plan in the app: the first Monday and the number of weekly slots (`schedule.json`, generated from `assets-src/drops.json`). */
 export interface DropSchedule {
   start: string;
   weeks: number;

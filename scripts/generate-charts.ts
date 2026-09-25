@@ -1,5 +1,5 @@
 /**
- * public/music/<id>.mp3 → public/charts/<id>.json + src/entities/track/model/catalog.json
+ * public/music/<id>.mp3 → public/charts/<id>.json + src/entities/track/model/catalog.json (+ schedule.json)
  *
  * Runs the exact same analysis pipeline the browser uses for custom songs
  * (src/shared/lib/analysis): onsets → tempo → DP beat tracking → 16th grid → audibility → one
@@ -14,7 +14,9 @@
  * Weekly tracks (`"drop": true`) take their Monday from assets-src/drops.json, which is checked
  * before any audio is read (start on a Monday, known drop ids, no repeats, a week for every drop —
  * `npm run assets:drops` fills it). They are charted like pack tracks (★2–6), written to the catalog
- * with `drop: true` and `release: "YYYY-MM-DD"`, and placed after the packs by release date.
+ * with `drop: true` and `release: "YYYY-MM-DD"`, and placed after the packs by release date. The
+ * app's copy of the plan (`schedule.json`: first Monday, number of weeks) is written in the same run,
+ * so the deck's empty-week card and the release dates never come from two different plans.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -39,7 +41,7 @@ import {
   type StemLayers,
 } from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
-import { releaseDates, validateDrops, type DropsFile } from './lib/drops';
+import { appSchedule, formatAppSchedule, releaseDates, validateDrops, type DropsFile } from './lib/drops';
 
 interface RawTrack {
   id: string;
@@ -68,6 +70,8 @@ const colors: Record<string, { tint: string }> = existsSync(COVERS) ? (JSON.pars
 const MUSIC_DIR = join(ROOT, 'public', 'music');
 const CHART_DIR = join(ROOT, 'public', 'charts');
 const CATALOG = join(ROOT, 'src', 'entities', 'track', 'model', 'catalog.json');
+/** The app's copy of the weekly schedule (the app never reads assets-src). */
+const SCHEDULE = join(ROOT, 'src', 'entities', 'track', 'model', 'schedule.json');
 /** Raw Demucs output (stem-{drums,bass,other,vocals}.mp3): the chart follows these instruments; never shipped. */
 const STEMS_SRC = process.env.STEMS_DIR ?? 'D:/neon-tap-tools/stems';
 const RATE = 22050;
@@ -227,7 +231,8 @@ const catalog = built.map((c) => ({
 if (DRY) console.log(`--dry: ${catalog.length} tracks composed, nothing written`);
 else {
   writeFileSync(CATALOG, JSON.stringify(catalog, null, 2) + '\n');
-  console.log(`catalog.json: ${catalog.length} tracks`);
+  writeFileSync(SCHEDULE, formatAppSchedule(appSchedule(drops)));
+  console.log(`catalog.json: ${catalog.length} tracks, schedule.json: ${drops.slots.length} weeks from ${drops.start}`);
 }
 
 /**

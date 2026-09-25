@@ -18,7 +18,7 @@ export interface TrackMeta {
    * before `release`. Opened by a rewarded ad (its first 14 days), 150 crystals or NEON PASS.
    */
   drop?: boolean;
-  /** A weekly track's release date, `YYYY-MM-DD` — a Monday; it opens at 00:00 Moscow time (from `assets-src/drops.json`). */
+  /** A weekly track's release date, `YYYY-MM-DD` — a Monday; it opens at 00:00 Moscow time (from `assets-src/drops.json` via `generate-charts`). */
   release?: string;
   /** Picture cover, a path under `public/` (`covers/<id>.webp`); absent → procedural art. */
   cover?: string;

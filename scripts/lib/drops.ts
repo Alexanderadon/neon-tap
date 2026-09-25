@@ -122,3 +122,23 @@ export function formatDropsFile(file: DropsFile): string {
   const slots = file.slots.map((s) => `    { "week": ${s.week}, "id": ${JSON.stringify(s.id)} }`).join(',\n');
   return `{\n  "start": ${JSON.stringify(file.start)},\n  "slots": [\n${slots}\n  ]\n}\n`;
 }
+
+/** What the app reads of the schedule: the first Monday and the number of weekly slots. */
+export interface AppSchedule {
+  start: string;
+  weeks: number;
+}
+
+/**
+ * The app's copy of the schedule (`src/entities/track/model/schedule.json`), written by
+ * `generate-charts` next to `catalog.json` in the same run — the slot dates and the tracks' release
+ * dates always come from one plan, and the app never reads `assets-src`.
+ */
+export function appSchedule(file: DropsFile): AppSchedule {
+  return { start: file.start, weeks: file.slots.length };
+}
+
+/** `schedule.json` as it is kept in the repo. */
+export function formatAppSchedule(schedule: AppSchedule): string {
+  return JSON.stringify(schedule, null, 2) + '\n';
+}
