@@ -1,15 +1,22 @@
+import { now as clockNow } from '@/shared/lib/time';
 import {
+  DAILY_TRACK_CRYSTALS,
+  FIRST_CROWN_CRYSTALS,
+  FIRST_STARS_CRYSTALS,
   claimCompletedGoals,
   completeDailyToday,
   dailyTrackId,
   localDateString,
   progressStore,
+  recordCalendarMark,
   recordCrystals,
   recordResult,
   recordRun,
+  recordRunCrystals,
   starsForTrack,
 } from '@/entities/progress';
 import { recordAttempt } from '@/entities/history';
+import { isPassActive } from '@/entities/pass';
 import { TRACK_IDS } from '@/entities/track';
 import { sessionStore, setSessionResult, type ChartSource, type ResultMeta } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
@@ -17,17 +24,24 @@ import { customResultMeta } from './customResult';
 
 const NO_META: ResultMeta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
 
+/** Crystals for reaching three stars and the first crown on a track, once each (the stars and crowns never go down). */
+export function firstClearCrystals(starsBefore: number, starsAfter: number, crownsBefore: number, crownsAfter: number): number {
+  return (starsBefore < 3 && starsAfter >= 3 ? FIRST_STARS_CRYSTALS : 0) + (crownsBefore <= 0 && crownsAfter > 0 ? FIRST_CROWN_CRYSTALS : 0);
+}
+
 /**
  * Persist a finished run and stash result + celebration metadata for the result screen.
  *  - every catalog run (failed too) lands in the local attempt history;
- *  - failed runs never count otherwise (no counters, no bests);
+ *  - failed runs never count otherwise (no counters, no bests, no crystals, no calendar mark);
  *  - custom songs are session-only, but their combo/plays still feed the goals;
- *  - built-in tracks update the best result, the daily bonus (once per local day, rank ≥ C)
- *    and claim any goal the run completed;
- *  - crystals collected in any non-failed run (catalog or custom) go to the wallet.
+ *  - built-in tracks update the best result, the daily bonus (once per local day, a star and
+ *    DAILY_TRACK_CRYSTALS), first-clear crystals (three stars, the first crown) and claim any goal;
+ *  - the run's own crystals go through the daily allowance (NEON PASS × 1.5 up to its larger one;
+ *    own songs under a minute pay nothing and have a daily cap);
+ *  - the day's first passed run makes the login calendar's mark.
  * `now` is injectable so the daily logic is testable.
  */
-export function saveResult(result: PlayResult, source: ChartSource, now: Date = new Date()): ResultMeta {
+export function saveResult(result: PlayResult, source: ChartSource, now: Date = new Date(clockNow())): ResultMeta {
   if (source === 'catalog') {
     recordAttempt(result.trackId, {
       at: now.toISOString(),
@@ -58,9 +72,11 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
     custom: source !== 'catalog',
   });
 
+  const date = localDateString(now);
+  const pass = isPassActive();
   let meta: ResultMeta;
   if (source !== 'catalog') {
-    meta = customResultMeta(result, now.getTime());
+    meta = { ...customResultMeta(result, now.getTime()) };
   } else {
     const before = progressStore.get().tracks[result.trackId];
     const starsBefore = starsForTrack(before);
@@ -80,16 +96,27 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
     const after = progressStore.get().tracks[result.trackId];
     const starsAfter = starsForTrack(after);
     const crownsAfter = after?.crowns ?? 0;
-    const date = localDateString(now);
     const passed = result.stars > 0;
     const dailyBonus = passed && dailyTrackId(date, TRACK_IDS) === result.trackId ? completeDailyToday(date) : false;
     meta = { newRecord, starsBefore, starsAfter, crownsBefore, crownsAfter, dailyBonus, bestBefore };
+    if (dailyBonus) meta.dailyCrystals = DAILY_TRACK_CRYSTALS;
+    const firstClear = firstClearCrystals(starsBefore, starsAfter, crownsBefore, crownsAfter);
+    if (firstClear > 0) meta.firstClear = firstClear;
   }
 
-  if (result.crystals > 0) {
-    recordCrystals(result.crystals);
-    meta.crystals = result.crystals;
-  }
+  // The run's own crystals, through the day's allowance. An own song's length is the run's time over its passes.
+  const songSeconds = result.duration / Math.max(1, result.level);
+  const earned = recordRunCrystals({ raw: result.crystals, date, pass, custom: source !== 'catalog' ? { seconds: songSeconds } : undefined });
+  if (earned.capped) meta.capped = earned.capped;
+
+  const mark = recordCalendarMark(date);
+  if (mark) meta.calendar = mark;
+
+  // Bonuses outside the allowance (the calendar credits its own mark).
+  const bonus = (meta.dailyCrystals ?? 0) + (meta.firstClear ?? 0);
+  recordCrystals(bonus);
+  const total = earned.credited + bonus + (mark?.reward ?? 0);
+  if (total > 0) meta.crystals = total;
 
   const goals = claimCompletedGoals();
   if (goals.length) meta.goalsCompleted = goals.map((g) => g.id);

@@ -16,8 +16,24 @@ export interface ResultMeta {
   dailyBonus?: boolean;
   /** Goal ids completed (and claimed) by this run. */
   goalsCompleted?: string[];
-  /** Crystals credited to the wallet by this run (absent when nothing was collected or the run failed). */
+  /**
+   * Crystals credited to the wallet by this run, all of them: the run's own after the daily allowance,
+   * the daily track, first clears and the calendar mark (badges are counted by `goalsCompleted`);
+   * absent when nothing was credited or the run failed.
+   */
   crystals?: number;
+  /**
+   * Why the run paid fewer crystals than it collected: the day's allowance is full ('day' — from now on
+   * every fifth crystal), today's own-song crystals are all collected ('custom'), the song is shorter than
+   * a minute ('short').
+   */
+  capped?: 'day' | 'custom' | 'short';
+  /** The login calendar's mark this run made (the day's first passed run): its place in the loop (1–7) and its crystals. */
+  calendar?: { day: number; reward: number };
+  /** Crystals for the first three stars and / or the first crown on this track (once each). */
+  firstClear?: number;
+  /** Crystals for today's daily track (with `dailyBonus`). */
+  dailyCrystals?: number;
   /** The standing record score before this run (catalog tracks); `null` when the track had none — the exact «БЫЛО N». */
   bestBefore?: number | null;
 }
