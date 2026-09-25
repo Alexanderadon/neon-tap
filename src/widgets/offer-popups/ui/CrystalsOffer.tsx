@@ -9,6 +9,9 @@ import type { BuyOfferResult } from '@/features/buy-offer';
 import { OfferSheet } from './OfferSheet';
 import { HeroPiles } from './heroes';
 
+/** The pack's picture in `public/offers`: the 4 500 pack has none yet and shows the biggest pile there is (2 000). */
+const heroOf = (sku: CrystalPackSku): string => (sku === 'crystals-xl' ? 'crystals-l' : sku);
+
 interface Props {
   onClose: () => void;
   onResult: (r: BuyOfferResult) => void;
@@ -28,7 +31,7 @@ export function CrystalsOffer({ onClose, onResult, primaryRef }: Props) {
     <OfferSheet
       kind="crystals"
       sku={sku}
-      hero={sku}
+      hero={heroOf(sku)}
       title={dict.offerCrystalsTag}
       placeholder={<HeroPiles />}
       tags={<Tag>{dict.offerCrystalsTag}</Tag>}
