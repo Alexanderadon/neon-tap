@@ -1,7 +1,7 @@
 import { UNLOCK_ALL } from './constants';
 
-/** Review and test switches taken from the page URL: `?auto=1` (the run plays itself), `?nofail=1`, `?unlock=1`, `?ads=fast`, `?iap=off`. */
-const DEV_FLAGS = ['auto', 'nofail', 'unlock', 'ads', 'iap'] as const;
+/** Review and test switches taken from the page URL: `?auto=1` (the run plays itself), `?nofail=1`, `?unlock=1`, `?ads=fast`, `?iap=off`, `?pass=1` (NEON PASS on, before payments exist). */
+const DEV_FLAGS = ['auto', 'nofail', 'unlock', 'ads', 'iap', 'pass'] as const;
 
 /**
  * The dev flags of this page load, read once. They are then removed from the address bar: they hold

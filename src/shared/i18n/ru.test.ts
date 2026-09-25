@@ -7,8 +7,11 @@ import { shop } from './parts/shop';
 import { onboard } from './parts/onboard';
 import { game } from './parts/game';
 import { offers } from './parts/offers';
+import { economy } from './parts/economy';
+import { drops } from './parts/drops';
+import { library } from './parts/library';
 
-const PARTS: Record<string, Record<string, unknown>> = { common, menu, result, shop, onboard, game, offers };
+const PARTS: Record<string, Record<string, unknown>> = { common, menu, result, shop, onboard, game, offers, economy, drops, library };
 
 describe('ru dictionary parts', () => {
   it('have no key collisions (a later spread would silently override an earlier part)', () => {
