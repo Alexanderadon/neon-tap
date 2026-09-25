@@ -1,6 +1,10 @@
 import { UNLOCK_ALL } from './constants';
 
-/** Review and test switches taken from the page URL: `?auto=1` (the run plays itself), `?nofail=1`, `?unlock=1`, `?ads=fast`, `?iap=off`, `?pass=1` (NEON PASS on, before payments exist). */
+/**
+ * Review and test switches taken from the page URL: `?auto=1` (the run plays itself), `?nofail=1`, `?unlock=1`,
+ * `?ads=fast` (the stub ad in a production build), `?iap=stub` (the stub store in a production build), `?iap=off`
+ * (no store even in development), `?pass=1` (NEON PASS on, before payments exist).
+ */
 const DEV_FLAGS = ['auto', 'nofail', 'unlock', 'ads', 'iap', 'pass'] as const;
 
 /**
