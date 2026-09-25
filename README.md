@@ -60,12 +60,12 @@ Audio output latency: desktop 20–60 ms, Android 80–200 ms, Bluetooth up to 3
 ### 5. What v2 added
 
 - **Tutorial** — an interactive first run (opens itself on first launch, once; "Tutorial" in the menu or "Replay the tutorial" in settings): a hand-written chart `public/charts/tutorial.json` (beat plan in `scripts/gen-tutorial.mjs`, `npm run chart:tutorial`) on the beat grid of Apparatus Overlord walks through the lane counts 1 → 2 → 3 → 4 → 5 → 6: taps and holds on a single lane "like Magic Tiles", alternation and slides on two, rolls on three, circles and a spell on four, everything at once on five, a short finale on six; each section opens with the lane morph and a "Lanes: N" caption with key hints; animated SVG step icons, keyboard and finger hints, no hearts and no fail (`features/tutorial`, `widgets/tutorial-overlay`, `pages/tutorial`).
-- **Progression** — the first 5 tracks are unlocked, the rest gated by star thresholds; a **track of the day** (deterministic by date) gives +1 ★ once a day and builds a streak; **8 goals** with ★ rewards (a panel in the menu, a line on the result screen). Save format v3 with migrations (`entities/progress`).
+- **Progression** — the first 5 tracks are unlocked, the rest gated by star thresholds; a **track of the day** (deterministic by date) gives +1 ★ and 10 crystals once a day and builds a streak; **97 badges** in 15 families paying crystals (never stars), a daily crystal allowance and a login calendar with no penalty for a missed day. Save format v6 with migrations (`entities/progress`).
 - **Records** — an attempt history with an accuracy sparkline on every card ("Records"), an optional online leaderboard (see below).
 - **Result screen** — the judgement timeline is written into typed arrays directly in the game loop; from it: a "where the misses are" strip across the whole song, an accuracy/combo graph, best streak and weakest spot, a **replay of the best moment** (a mini playfield on canvas) and a 1080×1350 card for "Share" / copy (`entities/score/lib/resultStats`, `widgets/result-breakdown`).
 - **Mobile** — safe-area (notch and home indicator), touch zones with finger highlight, multitouch via `PointerLanes`, a "rotate your phone" hint with pause, **economy mode** (automatic: FPS < 45 for three seconds → fewer particles and background effects), PWA manifest and icons. Checklist — `docs/mobile-checklist.md`.
-- **App** — a hand-written service worker with no libraries (`public/sw.js`): the shell is precached from a list that `scripts/build-sw.ts` injects after the build, music/charts/sounds are cached on first use with a 200 MB cap, so played tracks work offline; an "Update available" toast on a new version; an "Install the app" banner (Android/desktop: the system dialog, iOS: a "Share → Add to Home Screen" hint); a dark splash before the first frame, no zoom or gestures when installed. PNG icons come from a pure-Node PNG encoder (`npm run assets:icons`). Google Play via Trusted Web Activity — `docs/android-app.md`; privacy policy — `/privacy.html`.
-- **Content** — 59 tracks in 20 genres (6 of them premium, sold in the shop for crystals), genre in the registry and in the chart, **procedural covers** (SVG from the id hash + genre palette/motif, `entities/track/ui/TrackCover`).
+- **App** — a hand-written service worker with no libraries (`public/sw.js`): the shell is precached from a list that `scripts/build-sw.ts` injects after the build, music/charts/sounds/covers are cached on first use with a 260 MB cap, so played tracks work offline; an "Update available" toast on a new version; an "Install the app" banner (Android/desktop: the system dialog, iOS: a "Share → Add to Home Screen" hint); a dark splash before the first frame, no zoom or gestures when installed. PNG icons come from a pure-Node PNG encoder (`npm run assets:icons`). Google Play via Trusted Web Activity — `docs/android-app.md`; privacy policy — `/privacy.html`.
+- **Content** — 44 tracks (5 of them premium, sold in the shop for crystals; from 5 October 2026 a new track every Monday — «Новинка недели»), genre in the registry and in the chart, **procedural covers** (SVG from the id hash + genre palette/motif, `entities/track/ui/TrackCover`).
 - **Feel** — a visual theme per track (by genre or deterministically by id: lane palette, accent, background motif), background synced to the music (pulse on beats from the chart + spectrum from an AnalyserNode, one read per frame), animated menu and cards.
 
 ## Architecture
@@ -89,12 +89,12 @@ api/             scores.ts — Vercel serverless function for the online leaderb
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 226 unit tests (vitest)
+npm test           # unit tests (vitest)
 npm run lint       # eslint + FSD check
 npm run build
 ```
 
-Asset pipeline (only needed to rebuild content): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:charts`, `assets:licenses`. Deploy: `bash scripts/deploy-fresh.sh <project-name>` (local build → new Vercel project → domain transfer).
+Asset pipeline (only needed to rebuild content): `npm run assets:music`, `assets:sfx`, `assets:voice`, `assets:drops` (the weekly schedule in `assets-src/drops.json`), `assets:charts` (also writes the app copy of the schedule), `assets:licenses`. Deploy: `bash scripts/deploy-fresh.sh <project-name>` (local build → new Vercel project → domain transfer).
 
 ### Records and online leaderboard
 
@@ -104,9 +104,9 @@ The attempt history (score, accuracy, rank, trend) is stored locally in `localSt
 
 ## Music licenses
 
-All 59 built-in tracks (synthwave, techno, trance, house, hardstyle, hardcore, breakbeat, eurobeat, synthpop, chiptune, lo-fi, rock, metal, orchestral, jazz-funk, drum & bass, ambient, acoustic, ethnic) are **CC0 1.0** from OpenGameArt.org; authors and links are in [`public/music/LICENSES.md`](public/music/LICENSES.md). Sound effects are CC0 samples from Kenney packs (note hits are round-robin from 5 variations to avoid a "machine gun" effect). Voice-over uses the neural ru-RU Svetlana voice and can be turned off in settings. Source registries are `assets-src/tracks.json` and `assets-src/sfx.json`; both the files and the license report are generated from them by scripts.
+Of the 44 built-in tracks (synthwave, techno, trance, house, hardstyle, hardcore, breakbeat, eurobeat, synthpop, chiptune, lo-fi, rock, metal, orchestral, jazz-funk, drum & bass, ambient, acoustic, ethnic) 41 are **CC0 1.0** from OpenGameArt.org and the three of the rock pack are **CC BY 4.0** from the Free Music Archive; authors and links are in [`public/music/LICENSES.md`](public/music/LICENSES.md). Sound effects are CC0 samples from Kenney packs (note hits are round-robin from 5 variations to avoid a "machine gun" effect). Voice-over uses the neural ru-RU Svetlana voice and can be turned off in settings. Source registries are `assets-src/tracks.json` and `assets-src/sfx.json`; both the files and the license report are generated from them by scripts.
 
-User files for "Custom music" are processed in the browser and never uploaded anywhere.
+Songs in "My music" are processed in the browser and kept only on the device (IndexedDB); nothing is uploaded anywhere.
 
 ## Documents
 
@@ -118,4 +118,4 @@ User files for "Custom music" are processed in the browser and never uploaded an
 ## License
 
 - Code — [MIT](LICENSE).
-- Music and sound effects — CC0 1.0; authors and sources in [`public/music/LICENSES.md`](public/music/LICENSES.md).
+- Music — CC0 1.0 and CC BY 4.0 (the rock pack), sound effects — CC0 1.0; authors and sources in [`public/music/LICENSES.md`](public/music/LICENSES.md).
