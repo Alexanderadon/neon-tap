@@ -97,7 +97,7 @@ export interface FrameState {
   accuracy: number;
   progress: number;
   hearts: number;
-  /** Lives beyond the shown five: that many shown hearts are drawn gold. */
+  /** Lives beyond the shown five: «+N» after the fifth heart. */
   goldHearts: number;
   maxHearts: number;
   /** Seconds since a heart was lost (Infinity when none). */
@@ -212,6 +212,9 @@ const HUD_VERDICT_CENTER = 284;
 const HUD_TAGS_TOP = 316;
 const HEART_PX = 20;
 const HEART_STEP = 24;
+/** Lives past five: «+N» at the fifth heart's shoulder — raised, so a 360 px column still has room before the first level star. */
+const HEART_BONUS_DX = 8;
+const HEART_BONUS_RISE = 8;
 const STAR_PX = 20;
 const STAR_STEP = 28;
 const STAR_BIG_PX = 120;
@@ -300,7 +303,6 @@ export class Renderer {
   // HUD chrome sprites (hudSprites.ts): glossy hearts / stars, the crystal, the chip faces, cached tags.
   private heartOn!: NoteSprite;
   private heartOff!: NoteSprite;
-  private heartGold!: NoteSprite;
   private starOn!: NoteSprite;
   private starOff!: NoteSprite;
   private starBig!: NoteSprite;
@@ -493,7 +495,6 @@ export class Renderer {
     this.hudGem = crystalSprite(16, this.dpr);
     this.heartOn = heartSprite('on', HEART_PX, this.dpr);
     this.heartOff = heartSprite('off', HEART_PX, this.dpr);
-    this.heartGold = heartSprite('gold', HEART_PX, this.dpr);
     this.chipScore = chipSprite(CHIP_SCORE_W, this.dpr);
     this.chipAcc = chipSprite(CHIP_ACC_W, this.dpr);
     this.tags.clear();
@@ -1955,7 +1956,6 @@ export class Renderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
     ctx.fillText(formatScore(s.score), colX + CHIP_SCORE_W / 2, chipY + CHIP_H / 2 + 0.5);
-    ctx.fillStyle = s.accuracy >= 0.95 ? HUD.gold : '#ffffff';
     ctx.fillText(formatAccuracy(s.accuracy), colX + colW - CHIP_ACC_W / 2, chipY + CHIP_H / 2 + 0.5);
 
     // Row 2: hearts · level stars · crystals.
@@ -1967,7 +1967,7 @@ export class Renderer {
       for (let i = 0; i < s.maxHearts; i++) {
         const { x, y } = this.heartPos(i);
         const on = i < shown;
-        const sp = on && i < s.goldHearts ? this.heartGold : on ? this.heartOn : this.heartOff;
+        const sp = on ? this.heartOn : this.heartOff;
         let k = 1;
         if (refilling && on) {
           const age = s.revive - REFILL_AT[i];
@@ -1978,6 +1978,13 @@ export class Renderer {
           }
         }
         ctx.drawImage(sp.canvas, x - (sp.width * k) / 2 + dx, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
+      }
+      if (s.goldHearts > 0) {
+        const { x, y } = this.heartPos(s.maxHearts - 1);
+        ctx.font = `700 11px ${FONT}`;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`+${s.goldHearts}`, x + HEART_BONUS_DX + dx, y - HEART_BONUS_RISE);
       }
     }
 
@@ -2035,7 +2042,7 @@ export class Renderer {
       ctx.fill();
     }
 
-    // Combo: 44/900 in the score material (white to 49, gold from 50), «КОМБО» 11 under it. Pop 1 → 1.1 → 1 on a hit; on a break the number ticks out.
+    // Combo: 44/900 in the score material (white; gold only while it burns, from COMBO_HEAT_AT[0]), «КОМБО» 11 under it. Pop 1 → 1.1 → 1 on a hit; on a break the number ticks out.
     const comboTop = this.comboTop(tutorial);
     if (s.combo >= 2 && !this.starShow) {
       const pop = s.comboAge < 0.35 ? Math.sin((Math.PI * s.comboAge) / 0.35) : 0;
@@ -2046,7 +2053,7 @@ export class Renderer {
       ctx.save();
       ctx.translate(cx, comboTop + 24);
       ctx.scale(k, k);
-      embossText(ctx, String(s.combo), 0, 0, 44, s.combo >= 50 ? EMBOSS_COMBO_GOLD : EMBOSS_GOLD, 44 * 0.02);
+      embossText(ctx, String(s.combo), 0, 0, 44, s.combo >= COMBO_HEAT_AT[0] ? EMBOSS_COMBO_GOLD : EMBOSS_GOLD, 44 * 0.02);
       ctx.restore();
       this.caption(dict.comboWord, cx, comboTop + 56, HUD.w55);
     } else if (s.comboBreakAge >= 0 && s.comboBreakAge < 0.35 && this.brokenCombo > 0) {
@@ -2054,7 +2061,7 @@ export class Renderer {
       ctx.save();
       ctx.globalAlpha = 1 - a * a;
       ctx.translate(cx, comboTop + 24 - 8 * a);
-      embossText(ctx, String(this.brokenCombo), 0, 0, 44, this.brokenCombo >= 50 ? EMBOSS_COMBO_GOLD : EMBOSS_GOLD, 44 * 0.02);
+      embossText(ctx, String(this.brokenCombo), 0, 0, 44, this.brokenCombo >= COMBO_HEAT_AT[0] ? EMBOSS_COMBO_GOLD : EMBOSS_GOLD, 44 * 0.02);
       ctx.restore();
       this.caption(dict.comboWord, cx, comboTop + 56, HUD.w30);
     }
