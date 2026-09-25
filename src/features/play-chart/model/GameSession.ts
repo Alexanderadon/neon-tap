@@ -90,7 +90,7 @@ const TIME_REPORT_MS = 100;
 
 const LEAD_IN = 2.0;
 /** The fail / stop frame (stars, verdict, tag) stays this long before the result. */
-const FAIL_SHOW_SEC = 1.5;
+const FAIL_SHOW_SEC = 2.2;
 /** Between levels: the star show, with the song's tail fading out under it; the next pass fades back in over its count-in. */
 const STAR_SHOW_SEC = 2.4;
 const FADE_OUT_SEC = 1.8;
@@ -874,6 +874,7 @@ export class GameSession {
       crowns: this.crownsEarned,
       endless: this.endless,
       revive: this.reviving ? this.reviveAge : -1,
+      hudHidden: this.failed && !this.reviving && !this.heartsOut,
       debug: this.opts.debug
         ? {
             fps: this.fps.fps,

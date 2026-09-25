@@ -125,7 +125,7 @@
 }
 /* 16-character verdicts («СЕРДЦА КОНЧИЛИСЬ») do not fit at 28: 20/900 in the same material. */
 .game-verdict-sm {
-  font-size: 20px;
+  font: var(--t-20h);
   margin-top: 32px;
 }
 .game-verdict-late.headline-pop {
@@ -168,9 +168,9 @@
   margin-top: 16px;
 }
 
-/* Score panel of the pause menu: 335 × 112, 28 under the verdict. */
+/* Score panel of the pause menu: 335 × 112, 24 under the verdict (the 8-pt grid). */
 .game-panel {
-  margin-top: 28px;
+  margin-top: 24px;
   height: 112px;
   animation: game-rise 0.4s ease-out both;
   animation-delay: 0.3s;

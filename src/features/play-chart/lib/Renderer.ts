@@ -125,6 +125,8 @@ export interface FrameState {
   endless: boolean;
   /** Seconds since a revive was granted (hearts pop back, then the count-in), or -1. */
   revive: number;
+  /** The run has stopped and its DOM frame («ПРОВАЛ», «СТОП», «ФИНИШ») is up: the canvas HUD steps aside. */
+  hudHidden: boolean;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
@@ -1214,7 +1216,7 @@ export class Renderer {
     }
 
     if (tr && trAge < 1) this.drawTransitionFx(tr.from, tr.to, trAge);
-    this.drawHud(s);
+    if (!s.hudHidden) this.drawHud(s);
     if (this.starShow) this.drawStarShow(s);
     if (s.revive >= 0) this.drawRevive(s.revive);
   }

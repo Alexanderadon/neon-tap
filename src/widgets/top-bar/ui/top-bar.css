@@ -44,6 +44,13 @@
   align-items: center;
   gap: 4px;
 }
+/* Where the «+» sits on screens without a top-up: the same 24 px, empty, so the chips never move between screens. */
+.topbar-plus-slot {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
 /* The «+» after the crystal chip: a 24 px cyan disc with a drawn plus (the primary's material, small). */
 .topbar-plus {
   position: relative;
