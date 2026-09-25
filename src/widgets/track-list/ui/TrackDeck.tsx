@@ -362,7 +362,7 @@ interface CardProps {
   daily: boolean;
   best: number;
   rank?: string;
-  /** The page load's clock — a weekly track's «Выйдет через N дн.». */
+  /** The clock of the weekly locks (`CatalogState.nowMs`) — a weekly track's «Выйдет через N дн.». */
   nowMs: number;
   /** Mechanics and genre as a column of dark tags (tap the centre card). */
   details: boolean;

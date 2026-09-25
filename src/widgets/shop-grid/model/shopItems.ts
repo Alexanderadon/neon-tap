@@ -78,7 +78,7 @@ export function dropShopItems({ drops, nowMs, purchased, pass, unlockAll }: Drop
     const drop = dropState(track, { nowMs, owned: bought, pass, unlockAll });
     const info: UnlockInfo = { id: track.id, unlocked: drop.open, need: 0, premium: false, purchased: bought };
     if (bought) owned.push({ track, info, price: drop.price, starsShort: 0, kind: 'owned', drop });
-    else if (!drop.open && !drop.soon) sale.push({ track, info, price: drop.price, starsShort: 0, kind: 'drop', drop });
+    else if (drop.forSale) sale.push({ track, info, price: drop.price, starsShort: 0, kind: 'drop', drop });
   }
   return { sale, owned };
 }
