@@ -4,11 +4,10 @@
  * round cover 120), the fail frame and the revive offer. Geometry from screens-game.html; the
  * mock's y values minus the 44 px status bar become offsets from the safe top.
  */
+/* `inset: 0` is the visible viewport (#root, global.css): the field ends where a browser's toolbar begins. */
 .game-root {
   position: fixed;
   inset: 0;
-  height: 100vh;
-  height: 100dvh;
   background: var(--bg);
   overflow: hidden;
   overscroll-behavior: none;
