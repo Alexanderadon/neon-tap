@@ -1,0 +1,29 @@
+/* QuotaSheet (QuotaSheet.tsx): title · the three saved covers 64 · one line · the PASS tag · «Не сейчас» + primary. */
+.qs-covers {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+.qs-cover {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-16);
+  overflow: hidden;
+  box-shadow:
+    0 4px 0 #000,
+    0 12px 24px rgba(0, 0, 0, 0.45);
+}
+.qs-cover > svg,
+.qs-cover > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.qs-line {
+  margin-top: 24px;
+}
+.qs-pass {
+  margin-top: 16px;
+}
