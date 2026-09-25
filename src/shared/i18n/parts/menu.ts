@@ -1,4 +1,4 @@
-/** Main screen, profile, records, achievements, duels (package A). Keys must not repeat those of other parts (see ru.test.ts). */
+/** Main screen, profile, records, achievements, duels (owned by the weekly-drops package B since the economy plan). Keys must not repeat those of other parts (see ru.test.ts). */
 export const menu = {
   // --- main screen ---
   /** The primary button when the focused track is still closed: «ОТКРЫТЬ / ★ 22 из 25» or «ОТКРЫТЬ / за 120 ◆». */
