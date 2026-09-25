@@ -1,19 +1,30 @@
 import { useCallback, useRef, useState, type DragEvent } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
-import { audioEngine, sfxUi } from '@/shared/lib/audio';
+import { audioEngine, probeDuration, sfxUi } from '@/shared/lib/audio';
 import { readTags } from '@/shared/lib/id3';
 import { now } from '@/shared/lib/time';
 import { ActionZone, Difficulty, Disc, Icon, Line, ObjButton, PrimaryAction, Stars, SubHeader, Tag, Trio } from '@/shared/ui';
 import { CoverScene, TrackCover } from '@/entities/track';
-import { MAX_FILE_BYTES, findSong, newSong, refreshSongs, songIdOf, songLengthProblem, songTitle, useSongs, type SongMeta } from '@/entities/custom-song';
+import {
+  MAX_FILE_BYTES,
+  findSong,
+  newSong,
+  probedTooLong,
+  refreshSongs,
+  songIdOf,
+  songLengthProblem,
+  songTitle,
+  useSongs,
+  type SongMeta,
+} from '@/entities/custom-song';
 import { usePassActive } from '@/entities/pass';
 import { GENERATOR_VERSION, chartFromBuffer, decodeSongFile, isWeakRhythm, type GenerateProgress, type GeneratedSong } from '@/features/generate-chart';
 import { QuotaSheet, checkAddNow, saveSong, type SaveOutcome } from '@/features/song-quota';
 import { playCustomSong, playGeneratedSong, releaseSongBuffer } from '@/features/play-custom';
 import './drop-zone.css';
 
-/** Why a file was refused: unreadable, over 40 MB (before reading), under 30 s or over 12 min (after decoding). */
+/** Why a file was refused: unreadable, over 40 MB (before reading), over 12 min by its header (before decoding), under 30 s or over 12 min (after decoding). */
 type Problem = 'format' | 'big' | 'short' | 'long';
 
 type State =
@@ -83,6 +94,8 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
         if (live()) setState({ kind: 'busy', name, progress });
       };
       onProgress({ stage: 'decode', fraction: 0 });
+      // The header's length, read while the file is fingerprinted: a 40-minute mix is refused before decoding (≈0.9 GB of PCM).
+      const approx = probeDuration(file);
       try {
         await context;
         const id = await songIdOf(file);
@@ -100,6 +113,11 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
           setLimitOpen(true);
           return;
         }
+        if (probedTooLong(await approx)) {
+          if (live()) setState({ kind: 'idle', problem: 'long' });
+          return;
+        }
+        if (!live()) return;
         const tags = readTags(file);
         const buffer = await decodeSongFile(file, onProgress);
         if (!live()) return;

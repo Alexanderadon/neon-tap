@@ -15,8 +15,8 @@ interface PlayDeps {
 }
 
 /**
- * Let go of the decoded song kept for the last run on an own song (≈10 MB per stereo minute): at
- * most one decoded song stays in memory.
+ * Let go of the decoded song kept for the last run on an own song (≈21–23 MB per stereo minute,
+ * up to ≈280 MB for 12 minutes): at most one decoded song stays in memory.
  */
 export function releaseSongBuffer(): void {
   if (sessionStore.get().audioBuffer) sessionStore.set({ audioBuffer: null });
