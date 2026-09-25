@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import type { AdOutcome, AdPlacement } from '@/shared/lib/ads';
-import * as reviveModule from './revive';
+import { StubAds, pickAds, type AdOutcome, type AdPlacement } from '@/shared/lib/ads';
+import { dict } from '@/shared/i18n';
 import {
   REFILL_AT,
   REVIVE_ARM_MS,
@@ -122,9 +123,11 @@ describe('second chance availability', () => {
     expect(canOfferRevive(false, false)).toBe(false);
   });
 
-  it('never costs crystals: no price, no wallet', () => {
-    const names = Object.keys(reviveModule);
-    for (const gone of ['REVIVE_PRICE', 'revivePrice', 'reviveAffordable', 'payForRevive']) expect(names).not.toContain(gone);
+  it('on the web build (NoAds) only NEON PASS opens it; where the stub plays it is there for everyone', () => {
+    const web = pickAds({ dev: false, fast: false }, new StubAds()).available();
+    expect(reviveAvailable(false, web)).toBe(false);
+    expect(reviveAvailable(true, web)).toBe(true);
+    expect(reviveAvailable(false, pickAds({ dev: true, fast: false }, new StubAds()).available())).toBe(true);
   });
 
   it('takes the tap only once the button has risen: a lane tap as the hearts run out starts no ad', () => {
@@ -138,6 +141,26 @@ describe('second chance availability', () => {
   it('the keys wait while the ad plays: R never restarts the run under the ad', () => {
     expect(reviveKeysLocked(run([OUT_FREE, { type: 'accept' }]).phase)).toBe(true);
     for (const state of [REVIVE_IDLE, run([OUT_FREE]), run([OUT_PASS, { type: 'accept' }])]) expect(reviveKeysLocked(state.phase)).toBe(false);
+  });
+});
+
+describe('second chance never costs crystals', () => {
+  const SRC = new URL('../../../', import.meta.url);
+  const ON_ITS_PATH = [
+    'features/play-chart/model/revive.ts',
+    'features/play-chart/model/GameSession.ts',
+    'widgets/game-canvas/ui/GameCanvas.tsx',
+    'widgets/game-canvas/model/reviveButton.ts',
+  ];
+
+  it('nothing on its path reaches the wallet', () => {
+    for (const path of ON_ITS_PATH) expect(readFileSync(new URL(path, SRC), 'utf8'), path).not.toMatch(/from '@\/entities\/progress'/);
+  });
+
+  it('its words name no price', () => {
+    const words = Object.entries(dict).filter(([key]) => key.startsWith('revive'));
+    expect(words.length).toBeGreaterThan(0);
+    for (const [key, text] of words) expect(text, key).not.toMatch(/кристалл|◆/i);
   });
 });
 

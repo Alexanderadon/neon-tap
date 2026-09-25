@@ -1,4 +1,4 @@
-/** Crystal economy: the daily allowance, the login calendar, first clears, the second chance (package A). Keys must not repeat those of other parts (see ru.test.ts). */
+/** Crystal economy: the daily allowance, the login calendar, first clears (package A). Keys must not repeat those of other parts (see ru.test.ts). */
 export const economy = {
   // --- result screen: calm notes under the loot, never a buy button ---
   /** The day's allowance is full: from now on a run pays every fifth crystal. */

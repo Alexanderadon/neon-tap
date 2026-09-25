@@ -231,7 +231,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           gems: !tutorial,
           levels: !tutorial,
           endless: !tutorial,
-          // The second chance: free with NEON PASS, otherwise for a rewarded ad — and not offered at all where no ad can be shown.
+          // The second chance: free with NEON PASS (no ad), otherwise for a rewarded ad; neither PASS nor an ad provider (the web build) — not offered.
           revive: !tutorial && !noFailFlag,
           canRevive: () => reviveAvailable(isPassActive(), ads.available()),
           fxMode: settings.fxMode,
