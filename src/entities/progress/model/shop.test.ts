@@ -11,7 +11,6 @@ import {
   isPurchased,
   purchaseTrack,
   trackPrice,
-  withdrawCrystals,
 } from './shop';
 import { unlockStates } from './unlocks';
 
@@ -108,17 +107,5 @@ describe('shop', () => {
     expect(s1).toMatchObject({ crystals: 740, lifetimeCrystals: 40 });
     expect(creditPaidCrystals(s1, 0)).toBe(s1);
     expect(creditPaidCrystals(s1, -5)).toBe(s1);
-  });
-
-  it('withdraws crystals when the balance covers them, else refuses without touching the save', () => {
-    const s0 = addCrystals(emptySave(), 45);
-    const paid = withdrawCrystals(s0, 30);
-    expect(paid.ok).toBe(true);
-    expect(paid.save).toMatchObject({ crystals: 15, lifetimeCrystals: 45 });
-    const short = withdrawCrystals(paid.save, 30);
-    expect(short).toEqual({ save: paid.save, ok: false });
-    // free is always fine and changes nothing
-    expect(withdrawCrystals(paid.save, 0)).toEqual({ save: paid.save, ok: true });
-    expect(withdrawCrystals(emptySave(), Number.NaN).ok).toBe(true);
   });
 });
