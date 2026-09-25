@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import './obj-button.css';
 
 interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
@@ -23,24 +23,14 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'
 }
 
 /** Object button 105 × 48 (rows of three) or 335 × 48 (wide): dark 3D face, 2 px light, 4 px underside (spec §2.11). */
-export function ObjButton({
-  icon,
-  label,
-  badge,
-  active = false,
-  wide = false,
-  end,
-  danger = false,
-  construction = false,
-  sub,
-  className,
-  type = 'button',
-  ...rest
-}: Props) {
+export const ObjButton = forwardRef<HTMLButtonElement, Props>(function ObjButton(
+  { icon, label, badge, active = false, wide = false, end, danger = false, construction = false, sub, className, type = 'button', ...rest }: Props,
+  ref,
+) {
   const row = wide || construction;
   const cls = ['obj', row && 'obj-wide', construction && 'obj-cons', active && 'obj-on', danger && 'obj-danger', className].filter(Boolean).join(' ');
   return (
-    <button type={type} className={cls} {...rest}>
+    <button ref={ref} type={type} className={cls} {...rest}>
       <span className="obj-icon">{icon}</span>
       <span className="obj-label">
         {construction ? <b className="obj-title">{label}</b> : label}
@@ -50,4 +40,4 @@ export function ObjButton({
       {badge !== undefined && badge !== 0 && badge !== '' && <i className="obj-badge">{badge}</i>}
     </button>
   );
-}
+});
