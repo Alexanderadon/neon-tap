@@ -75,6 +75,17 @@ describe('settingsFromJson', () => {
     expect(settingsFromJson(JSON.stringify({ avatar: 7 })).avatar).toBe('');
   });
 
+  it('gives a new install Svetlana at 0.6 and keeps a saved voice volume', () => {
+    expect(settingsFromJson(null)).toMatchObject({ voice: 'svetlana', voiceVolume: 0.6 });
+    expect(settingsFromJson(JSON.stringify({ voiceVolume: 0.9 })).voiceVolume).toBe(0.9);
+  });
+
+  it('moves the retired Dmitry voice to Svetlana and keeps «off»', () => {
+    expect(settingsFromJson(JSON.stringify({ voice: 'dmitry' })).voice).toBe('svetlana');
+    expect(settingsFromJson(JSON.stringify({ voice: 'off' })).voice).toBe('off');
+    expect(settingsFromJson(JSON.stringify({ voice: 42 })).voice).toBe('svetlana');
+  });
+
   it('falls back to the defaults on garbage', () => {
     expect(settingsFromJson('{not json').avatar).toBe('');
     expect(settingsFromJson(null).nickname).toBe('');

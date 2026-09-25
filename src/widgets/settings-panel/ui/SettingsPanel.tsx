@@ -7,14 +7,14 @@ import { avatarArtOf } from '@/entities/avatar';
 import { voice } from '@/features/voice-feedback';
 import './settings.css';
 
-const VOICE_OPTIONS: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
-const VOICE_ICON: Record<VoiceSetting, IconName> = { dmitry: 'bubble', svetlana: 'bubble', off: 'sound-off' };
+const VOICE_OPTIONS: VoiceSetting[] = ['svetlana', 'off'];
+const VOICE_ICON: Record<VoiceSetting, IconName> = { svetlana: 'bubble', off: 'sound-off' };
 const FX_ICON: Record<FxMode, IconName> = { auto: 'gauge', on: 'battery', off: 'bolt' };
 
 /**
  * The scrolling column of settings panels (screens-onboard C6), gap 8: volumes (three SliderRows —
- * releasing «Эффекты» plays the preview), the narrator voice and the economy mode as rows of three
- * object buttons, the nickname with its avatar letter, the tutorial state, the FPS toggle.
+ * releasing «Эффекты» plays the preview), the narrator voice (two object buttons: Svetlana · off)
+ * and the economy mode (three), the nickname with its avatar letter, the tutorial state, the FPS toggle.
  * Every change applies at once through `updateSettings`; the store keys are untouched.
  */
 export function SettingsPanel() {
@@ -57,7 +57,7 @@ export function SettingsPanel() {
       </Panel>
 
       <Panel label={dict.settingsVoice}>
-        <Trio role="radiogroup" aria-label={dict.settingsVoice}>
+        <Trio role="radiogroup" aria-label={dict.settingsVoice} className="settings-duo">
           {VOICE_OPTIONS.map((id) => (
             <ObjButton
               key={id}

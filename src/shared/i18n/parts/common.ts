@@ -41,7 +41,7 @@ export const common = {
   settingsVolumeVoice: 'Голос',
   settingsVoice: 'Голос диктора',
   settingsVoiceHint: 'нажми, чтобы услышать пример',
-  voices: { dmitry: 'Дмитрий', svetlana: 'Светлана', off: 'Выкл' },
+  voices: { svetlana: 'Светлана', off: 'Выкл' },
   ms: 'мс',
   customTitle: 'Своя музыка',
   customAnalyzing: 'Анализ…',

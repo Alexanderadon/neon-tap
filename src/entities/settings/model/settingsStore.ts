@@ -3,7 +3,8 @@ import { sanitizeAvatar } from '@/shared/config/avatars';
 import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
-export type VoiceSetting = 'dmitry' | 'svetlana' | 'off';
+/** The announcer: the one shipped voice or none. */
+export type VoiceSetting = 'svetlana' | 'off';
 /** "Economy mode": auto = switch to the low FX level when FPS drops below 45 for 3 s; on = always low; off = always full. */
 export type FxMode = 'auto' | 'on' | 'off';
 
@@ -51,8 +52,8 @@ const DEFAULTS: Settings = {
   audioOffsetMs: 0,
   musicVolume: 0.9,
   sfxVolume: 0.7,
-  voiceVolume: 0.9,
-  voice: 'dmitry',
+  voiceVolume: 0.6,
+  voice: 'svetlana',
   calibrated: false,
   calibrationVersion: 0,
   debugOverlay: false,
@@ -62,7 +63,8 @@ const DEFAULTS: Settings = {
   fxMode: 'auto',
 };
 
-const VOICES: VoiceSetting[] = ['dmitry', 'svetlana', 'off'];
+/** Anything else — the retired 'dmitry' included — is sanitised to the default voice. */
+const VOICES: VoiceSetting[] = ['svetlana', 'off'];
 export const FX_MODES: FxMode[] = ['auto', 'on', 'off'];
 
 /** Saved settings from their JSON: missing fields (older builds) take the defaults, bad values are sanitised, garbage is the defaults. */

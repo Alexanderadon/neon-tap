@@ -90,7 +90,7 @@ Samples from the **Kenney** CC0 packs, converted to MP3 and peak-normalised (`sc
 
 ## Voice
 
-Russian voice lines in `public/voice/<voice>/` were synthesised with Microsoft neural TTS voices
-**ru-RU-DmitryNeural** and **ru-RU-SvetlanaNeural** through the open-source `msedge-tts` client (`scripts/generate-voice.ts`),
-then silence-trimmed and loudness-normalised. The voices belong to Microsoft; the generated clips are used here
+Russian voice lines in `public/voice/svetlana/` were synthesised with the Microsoft neural TTS voice
+**ru-RU-SvetlanaNeural** through the open-source `msedge-tts` client (`scripts/generate-voice.ts`),
+then silence-trimmed and loudness-normalised. The voice belongs to Microsoft; the generated clips are used here
 in a non-commercial portfolio project. A Web Speech API fallback is used when the clips cannot be loaded.

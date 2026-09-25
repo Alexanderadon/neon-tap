@@ -7,6 +7,10 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+/* The voice row has two choices (Svetlana · off): two equal cells instead of three. */
+.settings .settings-duo {
+  grid-template-columns: repeat(2, 1fr);
+}
 /* The caption under a row title sits left, not centred. */
 .settings-line-left {
   text-align: left;
