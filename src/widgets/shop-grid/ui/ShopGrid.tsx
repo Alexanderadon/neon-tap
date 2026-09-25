@@ -307,7 +307,7 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
     stopPreview();
     setAdTrack(item.track);
     setView('ad');
-    const { unlocked } = await watchAdAndUnlock(item.track.id);
+    const { unlocked } = await watchAdAndUnlock(item.track.id, item.drop);
     if (!mounted.current) return;
     setAdTrack(null);
     if (unlocked) {

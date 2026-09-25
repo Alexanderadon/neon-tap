@@ -1,5 +1,6 @@
 import { ads } from '@/shared/lib/ads';
 import { buyTrack, type PurchaseFailure } from '@/entities/progress';
+import type { DropState } from '@/entities/track';
 import { watchAdForTrack, type WatchAdResult } from './unlockByAd';
 
 /** Pay crystals for a track (the store deducts the price and appends the id to `purchased[]`). */
@@ -20,7 +21,7 @@ export function grantTracks(trackIds: readonly string[]): string[] {
   return trackIds.filter((id) => buyTrack(id, 0).ok);
 }
 
-/** Show the rewarded ad for a track and unlock it when the ad plays to the end. */
-export function watchAdAndUnlock(trackId: string): Promise<WatchAdResult> {
-  return watchAdForTrack(trackId, { ads, unlock: unlockTrackByAd });
+/** Show the rewarded ad for a weekly track in its ad window (`drop.adEligible`) and unlock it when the ad plays to the end. */
+export function watchAdAndUnlock(trackId: string, drop?: Pick<DropState, 'adEligible'>): Promise<WatchAdResult> {
+  return watchAdForTrack(trackId, { ads, unlock: unlockTrackByAd }, drop);
 }
