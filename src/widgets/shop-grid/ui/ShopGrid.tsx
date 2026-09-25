@@ -3,7 +3,9 @@ import { dict, fmt } from '@/shared/i18n';
 import { ads, stubAds } from '@/shared/lib/ads';
 import { audioEngine, loadSong, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
 import { navigate } from '@/shared/lib/router';
+import { now } from '@/shared/lib/time';
 import { centreOf } from '@/shared/lib/viewport';
+import { unlockAllActive } from '@/shared/config/devFlags';
 import type { Genre } from '@/shared/types/chart';
 import {
   ActionZone,
@@ -23,10 +25,11 @@ import {
 } from '@/shared/ui';
 import { CATALOG, PREMIUM_IDS, TRACK_IDS, TrackCover, findTrack, loadChart, type TrackMeta } from '@/entities/track';
 import { dailyTrackId, grandTotalStars, localDateString, progressStore, useProgress } from '@/entities/progress';
+import { isPassActive } from '@/entities/pass';
 import { startSession } from '@/entities/play-session';
 import { clearActiveDuel } from '@/entities/duel';
 import { buyTrackWithCrystals, purchasePaths, purchasePlan, watchAdAndUnlock } from '@/features/buy-track';
-import { shopItems, stableOrder, type ShopItem } from '../model/shopItems';
+import { dropShopItems, shopItems, shopList, stableOrder, type ShopItem } from '../model/shopItems';
 import { arrivedSince, readSeenCrystals, writeSeenCrystals } from '../model/seenCrystals';
 import { ShopCard, PREVIEW_SEC } from './ShopCard';
 import { PurchaseSheet } from './PurchaseSheet';
@@ -87,16 +90,31 @@ function storage(): Storage | null {
   }
 }
 
+/** The weekly tracks in the deck (the shop's «Новинки» shelf) and the road without them. */
+const DROP_TRACKS = CATALOG.filter((t) => t.drop === true);
+const ROAD_TRACKS = CATALOG.filter((t) => t.drop !== true);
+
 /**
- * The shop (package B): the «МАГАЗИН» sub-header, the list of ShopCards, the bottom action zone,
- * and every state on top of it — the purchase sheet (enough / not enough crystals, with the
- * rewarded ad as the second way), the ad frame, the «Трек открыт!» reward, the gold toast, and the
- * crystals flying into the wallet. The page around it draws the scene and the top bar.
+ * The shop (package B): the «МАГАЗИН» sub-header, the list of ShopCards — the «Новинки» shelf first
+ * (the weekly tracks out now: 150 crystals, or an ad in their first 14 days), then the road and the
+ * premium tracks — the bottom action zone, and every state on top of it: the purchase sheet (enough
+ * / not enough crystals; the rewarded ad is a way only for a weekly track), the stub's ad frame, the
+ * «Трек открыт!» reward, the gold toast, and the crystals flying into the wallet. The page around it
+ * draws the scene and the top bar.
  */
 export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack, headerTag, onTopUp }: Props) {
   const save = useProgress((s) => s);
   const stars = grandTotalStars(save, TRACK_IDS);
-  const live = useMemo(() => shopItems({ catalog: CATALOG, stars, premium: PREMIUM_IDS, purchased: save.purchased }), [stars, save.purchased]);
+  /** The clock of this visit: a weekly track's ad window does not close under the finger. */
+  const [nowMs] = useState(now);
+  const live = useMemo(
+    () =>
+      shopList(
+        shopItems({ catalog: ROAD_TRACKS, stars, premium: PREMIUM_IDS, purchased: save.purchased }),
+        dropShopItems({ drops: DROP_TRACKS, nowMs, purchased: save.purchased, pass: isPassActive(), unlockAll: unlockAllActive() }),
+      ),
+    [stars, save.purchased, nowMs],
+  );
   const orderRef = useRef<string[] | null>(null);
   if (orderRef.current === null) orderRef.current = live.map((i) => i.track.id);
   const order = orderRef.current;
@@ -279,7 +297,8 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
   }, [sheet, save.crystals, launchTick]);
 
   const startAd = useCallback(async () => {
-    if (!sheet) return;
+    // The ad opens the week's new track only (its first 14 days); the sheet shows no ad for anything else.
+    if (!sheet || sheet.drop?.adEligible !== true) return;
     const item = sheet;
     setSheet(null);
     stopPreview();
@@ -310,8 +329,10 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
 
   const balance = heldBalance ?? save.crystals;
   const plan = sheet ? purchasePlan(sheet.price, save.crystals) : null;
-  const paths = plan ? purchasePaths(plan, ads.available()) : null;
+  const paths = plan ? purchasePaths(plan, sheet?.drop?.adEligible === true && ads.available()) : null;
   const empty = items.length === 0;
+  // The «Новинки» shelf: the weekly tracks lead the list (they keep their place when bought during the visit).
+  const shelf = items[0]?.drop !== undefined;
 
   const trio = (
     <Trio>
@@ -327,7 +348,7 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
         <SubHeader center>
           <b>{rewardTrack.title}</b>
           <span>·</span>
-          <span>{rewardTrack.premium ? dict.shopPremium : dict.shopBought}</span>
+          <span>{rewardTrack.drop ? dict.dropTag : rewardTrack.premium ? dict.shopPremium : dict.shopBought}</span>
         </SubHeader>
       ) : (
         <SubHeader
@@ -350,6 +371,11 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
               <Icon name="bag" size={32} />
               <span>{dict.shopEmpty}</span>
             </Panel>
+          )}
+          {shelf && (
+            <div className="shop-shelf" role="heading" aria-level={2}>
+              <Tag>{dict.dropsChapter}</Tag>
+            </div>
           )}
           {items.map((it) => (
             <ShopCard
@@ -432,7 +458,8 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
           primaryRef={sheetPrimaryRef}
         />
       )}
-      {view === 'ad' && adTrack && <AdScreen track={adTrack} onClose={closeAd} />}
+      {/* The stub's own frame; a real network shows its own player. */}
+      {view === 'ad' && adTrack && ads === stubAds && <AdScreen track={adTrack} onClose={closeAd} />}
       {flight && <CrystalFlight path={flight} onDone={endFlight} />}
     </div>
   );

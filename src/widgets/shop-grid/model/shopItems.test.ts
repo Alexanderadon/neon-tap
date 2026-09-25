@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { TrackMeta } from '@/entities/track';
+import { releaseMs, type TrackMeta } from '@/entities/track';
 import { trackPrice, unlockThreshold } from '@/entities/progress';
-import { LOCKED_ON_SALE, shopItems, stableOrder } from './shopItems';
+import { LOCKED_ON_SALE, dropShopItems, shopItems, shopList, stableOrder } from './shopItems';
 
 function track(i: number, extra: Partial<TrackMeta> = {}): TrackMeta {
   return {
@@ -25,21 +25,22 @@ const premium = ['t3', 't15'];
 
 describe('shopItems', () => {
   it('lists star-locked tracks first (the next few on the road), then premium, owned at the bottom', () => {
-    const stars = 3; // t0–t5 open by stars, t6 (needs 4) and up are locked
+    // The road skips the premium t3: t0–t6 (road places 0–5) open with 3 stars, t7 (place 6, needs 4) and up are locked.
+    const stars = 3;
     const items = shopItems({ catalog, stars, premium, purchased: ['t9', 't15'] });
     expect(items.map((i) => i.kind)).toEqual([...Array(LOCKED_ON_SALE).fill('locked'), 'premium', 'owned', 'owned']);
-    expect(items.map((i) => i.track.id)).toEqual(['t6', 't7', 't8', 't10', 't11', 't12', 't3', 't9', 't15']);
+    expect(items.map((i) => i.track.id)).toEqual(['t7', 't8', 't10', 't11', 't12', 't13', 't3', 't9', 't15']);
     // tracks open by stars alone are not for sale
-    expect(items.some((i) => ['t0', 't1', 't2', 't4', 't5'].includes(i.track.id))).toBe(false);
+    expect(items.some((i) => ['t0', 't1', 't2', 't4', 't5', 't6'].includes(i.track.id))).toBe(false);
   });
 
-  it('tells how many stars are still missing on a locked card, and prices premium ×1.5', () => {
+  it('tells how many stars are still missing on a locked card, and prices premium with its multiplier', () => {
     const stars = 3;
     const items = shopItems({ catalog, stars, premium, purchased: [] });
-    const t6 = items.find((i) => i.track.id === 't6')!;
-    expect(t6.starsShort).toBe(unlockThreshold(6, catalog.length) - stars);
-    expect(t6.starsShort).toBeGreaterThan(0);
-    expect(t6.price).toBe(trackPrice(catalog[6].stars));
+    const t7 = items.find((i) => i.track.id === 't7')!;
+    expect(t7.starsShort).toBe(unlockThreshold(6, catalog.length - premium.length) - stars);
+    expect(t7.starsShort).toBeGreaterThan(0);
+    expect(t7.price).toBe(trackPrice(catalog[7].stars));
     const t3 = items.find((i) => i.track.id === 't3')!;
     expect(t3.kind).toBe('premium');
     expect(t3.starsShort).toBe(0);
@@ -66,5 +67,49 @@ describe('shopItems', () => {
   it('is empty when everything is open and nothing premium is left to buy', () => {
     expect(shopItems({ catalog, stars: 999, premium, purchased: ['t3', 't15'] }).map((i) => i.kind)).toEqual(['owned', 'owned']);
     expect(shopItems({ catalog: catalog.filter((t) => !t.premium), stars: 999, premium: [], purchased: [] })).toEqual([]);
+  });
+});
+
+describe('weekly tracks in the shop', () => {
+  const DAY = 86_400_000;
+  const drops = [
+    track(100, { id: 'd0', drop: true, release: '2026-10-05' }),
+    track(101, { id: 'd1', drop: true, release: '2026-10-12' }),
+    track(102, { id: 'd2', drop: true, release: '2026-10-19' }),
+  ];
+  /** Tuesday of week 2: d0 is 8 days out, d1 this week's, d2 next Monday's. */
+  const NOW = releaseMs('2026-10-12') + DAY;
+  const ctx = { drops, nowMs: NOW, purchased: [] as string[], pass: false, unlockAll: false };
+
+  it('are never in shopItems: the road list and its thresholds ignore them', () => {
+    const plain = shopItems({ catalog, stars: 3, premium, purchased: [] });
+    const mixed = shopItems({ catalog: [...catalog, ...drops], stars: 3, premium, purchased: [] });
+    expect(mixed).toEqual(plain);
+    expect(mixed.some((i) => i.track.drop)).toBe(false);
+  });
+
+  it('fill the first shelf: out and not owned, newest first, 150 each; one still to come is not for sale', () => {
+    const { sale, owned } = dropShopItems(ctx);
+    expect(sale.map((i) => [i.track.id, i.kind, i.price])).toEqual([
+      ['d1', 'drop', 150],
+      ['d0', 'drop', 150],
+    ]);
+    expect(sale[0].drop).toMatchObject({ thisWeek: true, adEligible: true });
+    expect(sale[1].drop).toMatchObject({ thisWeek: false, adEligible: true });
+    expect(owned).toEqual([]);
+    // Past the 14 days the ad is gone, the crystals stay.
+    expect(dropShopItems({ ...ctx, nowMs: releaseMs('2026-10-19') + DAY }).sale.find((i) => i.track.id === 'd0')?.drop?.adEligible).toBe(false);
+  });
+
+  it('put owned weekly tracks at the very bottom; PASS or unlock-all leave nothing to sell', () => {
+    const { sale, owned } = dropShopItems({ ...ctx, purchased: ['d1'] });
+    expect(sale.map((i) => i.track.id)).toEqual(['d0']);
+    expect(owned.map((i) => [i.track.id, i.kind])).toEqual([['d1', 'owned']]);
+    const road = shopItems({ catalog, stars: 3, premium, purchased: ['t9'] });
+    const list = shopList(road, { sale, owned });
+    expect(list[0].track.id).toBe('d0');
+    expect(list.slice(-2).map((i) => i.track.id)).toEqual(['t9', 'd1']);
+    expect(dropShopItems({ ...ctx, pass: true }).sale).toEqual([]);
+    expect(dropShopItems({ ...ctx, unlockAll: true }).sale).toEqual([]);
   });
 });

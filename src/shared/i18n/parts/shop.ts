@@ -27,14 +27,12 @@ export const shop = {
   shopNotEnoughLine: 'не хватает {n} · их дают за забеги',
   /** Aria: tap an owned card → the deck. */
   shopOpenOwned: 'Открыт — к колоде',
-  // --- rewarded ad (package B+) ---
+  // --- rewarded ad (package B+): only the week's new track, in its first 14 days ---
   shopWatchAd: 'Смотреть рекламу',
-  /** «бесплатно · 30 секунд» — the ad row's second line. */
-  shopAdFree: 'бесплатно · {n} {noun}',
-  /** «БЕСПЛАТНО» — the primary button when the crystals are short. */
+  /** What the ad gives — the second line of «Смотреть рекламу» (the row and the primary button). */
+  shopAdForever: 'трек твой навсегда',
+  /** «БЕСПЛАТНО | ЗА РЕКЛАМУ» — the left half of the tag pair after the ad. */
   shopAdFreeShort: 'Бесплатно',
-  /** «реклама · 30 секунд» — its second line. */
-  shopAdCaption: 'реклама · {n} {noun}',
   shopAdTag: 'Реклама',
   shopAdOpensAfter: 'трек откроется после ролика',
   shopAdPlaceholder: 'здесь ролик провайдера',

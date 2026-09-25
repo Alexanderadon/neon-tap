@@ -20,7 +20,7 @@ interface Props {
   onOpen: () => void;
 }
 
-/** The condition tag: «ПРЕМИУМ» (gold) · «★ ЕЩЁ N» (dark) · «КУПЛЕНО» (dark, one shine after the purchase). */
+/** The condition tag: «НОВИНКА НЕДЕЛИ» (gold) / «НОВИНКА» (dark) · «ПРЕМИУМ» (gold) · «★ ЕЩЁ N» (dark) · «КУПЛЕНО» (dark, one shine after the purchase). */
 function ConditionTag({ item, justBought, starId }: { item: ShopItem; justBought: boolean; starId: string }) {
   if (item.kind === 'owned') {
     return (
@@ -29,6 +29,7 @@ function ConditionTag({ item, justBought, starId }: { item: ShopItem; justBought
       </Tag>
     );
   }
+  if (item.drop) return item.drop.thisWeek ? <Tag>{dict.dropThisWeek}</Tag> : <Tag variant="dark">{dict.dropTag}</Tag>;
   if (item.kind === 'premium') return <Tag>{dict.shopPremium}</Tag>;
   return (
     <Tag variant="dark" icon={<Star id={starId} on />}>
