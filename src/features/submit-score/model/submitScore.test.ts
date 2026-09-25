@@ -33,6 +33,11 @@ describe('submit-score', () => {
     expect(isEligible(null, 'catalog')).toBe(false);
   });
 
+  it('never sends a player song online, even if the source was mislabelled', () => {
+    expect(isEligible(result({ trackId: 'custom:0123456789abcdef0123' }), 'catalog')).toBe(false);
+    expect(isEligible(result({ trackId: 'custom:0123456789abcdef0123' }), 'custom')).toBe(false);
+  });
+
   it('posts once per run and shares the promise', async () => {
     const submit = vi.fn(async (_p: LeaderboardSubmission) => ({ enabled: true, ok: true, improved: true, position: 1, top: [] }));
     const client = { submit } as unknown as LeaderboardClient;
