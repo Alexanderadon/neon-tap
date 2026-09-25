@@ -1,10 +1,5 @@
 /** First launch, calibration, settings (package C). Keys must not repeat those of other parts (see ru.test.ts). */
 export const onboard = {
-  // --- audio gate ---
-  tapAnywhere: 'нажми в любом месте',
-  tapAgain: 'нажми ещё раз',
-  audioGateVolumeShort: 'Тихо? Проверь громкость',
-  audioGateMuteShort: 'Тихо? Боковой тумблер',
   // --- first-launch steps ---
   stepOf: 'Шаг {n} из {m}',
   welcomeHintShort: '1–16 символов · потом можно поменять',

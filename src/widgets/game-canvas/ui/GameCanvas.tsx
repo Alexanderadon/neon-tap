@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { audioEngine, preloadSfx, sfxUi } from '@/shared/lib/audio';
+import { audioEngine, loadSong, preloadSfx, sfxUi, waitForAudioUnlock } from '@/shared/lib/audio';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
 import { ads, stubAds } from '@/shared/lib/ads';
 import { navigate } from '@/shared/lib/router';
@@ -76,7 +76,9 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
 export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'tap' | 'ready' | 'error'>('loading');
+  /** The song's download and decode, 0–100 (the loading tag's number). */
+  const [loadPct, setLoadPct] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [paused, setPaused] = useState<Snapshot | null>(null);
   const [fail, setFail] = useState<{ stars: number; crowns: number; finale: boolean } | null>(null);
@@ -160,14 +162,23 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     };
 
     setStatus('loading');
+    setLoadPct(0);
     (async () => {
       try {
         await audioEngine.ensureContext();
         const settings = getSettings();
         audioEngine.setVolumes({ music: settings.musicVolume, sfx: settings.sfxVolume, voice: settings.voiceVolume });
         voice.setVoice(settings.voice);
-        const [buffer] = await Promise.all([audioBuffer ?? audioEngine.loadUrl(`${import.meta.env.BASE_URL}${chart.audio}`), preloadSfx(), voice.preload()]);
+        const song = audioBuffer ?? loadSong(`${import.meta.env.BASE_URL}${chart.audio}`, { onProgress: (f) => !cancelled && setLoadPct(Math.round(f * 100)) });
+        const [buffer] = await Promise.all([song, preloadSfx(), voice.preload()]);
         if (cancelled || !canvasRef.current) return;
+        // Sound needs one tap on the page. A run reached without any (a first-launch step that opened on
+        // its own) waits for it instead of starting silent with a frozen clock.
+        if (audioEngine.context?.state !== 'running') {
+          setStatus('tap');
+          await waitForAudioUnlock();
+          if (cancelled || !canvasRef.current) return;
+        }
         const autoFlag = hasDevFlag('auto');
         const noFailFlag = hasDevFlag('nofail') || autoFlag;
         session = new GameSession({
@@ -348,12 +359,12 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       )}
       {hudVisible && overlay}
 
-      {status === 'loading' &&
+      {(status === 'loading' || status === 'tap') &&
         skeleton(
           <>
             <div className="game-tabline">
               <Tag variant="dark" shine className="game-tag-loading">
-                {dict.loading}
+                {status === 'tap' ? dict.tapToStart : loadPct > 0 ? fmt(dict.loadingPercent, { n: loadPct }) : dict.loading}
               </Tag>
             </div>
             <SegmentsPulse count={10} className="game-segs" />

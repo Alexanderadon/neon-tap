@@ -1,3 +1,4 @@
+import { fetchBytes } from '@/shared/lib/net';
 /**
  * Thin, dependency-free wrapper over the Web Audio API.
  *
@@ -17,6 +18,8 @@ export interface Volumes {
 }
 
 /** Fade in / out of a shop preview clip, seconds. */
+/** How long ensureContext waits for resume() outside a gesture before handing the context back as it is. */
+const RESUME_WAIT_MS = 400;
 const PREVIEW_FADE = 0.25;
 /** The menu radio: fade in / out, seconds. */
 const AMBIENT_FADE_IN = 0.9;
@@ -41,12 +44,28 @@ export class AudioEngine {
   /** The menu radio's fade node — ramped down by `stopAmbient`, so the song does not cut. */
   private ambientFade: GainNode | null = null;
   private startTime = 0;
+  /** Decodes sounds before the real context exists (see `decode`). */
+  private offline: OfflineAudioContext | null = null;
   private pausePosition: number | null = null;
   private volumes: Volumes = { master: 1, music: 0.9, sfx: 0.8, voice: 1 };
   private onEnded: (() => void) | null = null;
 
-  /** Must be called from a user gesture on iOS/Chrome. Safe to call repeatedly. */
+  /**
+   * The running context. Must be called from a user gesture on iOS/Chrome (the first tap anywhere does
+   * it — installGestureUnlock). resume() outside a gesture rejects or never settles (iOS "interrupted",
+   * Chrome's autoplay policy): never fatal and never a hang — after a short wait the caller gets the
+   * context as it is, and the next tap resumes it.
+   */
   async ensureContext(): Promise<AudioContext> {
+    const ctx = this.createContext();
+    if (ctx.state !== 'running') {
+      await Promise.race([ctx.resume().catch(() => undefined), new Promise((resolve) => setTimeout(resolve, RESUME_WAIT_MS))]);
+    }
+    return ctx;
+  }
+
+  /** The context and its graph, created on first use (suspended until a gesture resumes it). */
+  private createContext(): AudioContext {
     if (!this.ctx) {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new Ctor({ latencyHint: 'interactive' });
@@ -70,15 +89,6 @@ export class AudioEngine {
       this.voiceGain.connect(this.master);
       this.master.connect(this.ctx.destination);
       this.applyVolumes();
-    }
-    // resume() rejects/hangs outside a user gesture (iOS "interrupted", Chrome autoplay policy).
-    // Never fatal: the caller gets the context, and the audio gate re-appears while it is not running.
-    if (this.ctx.state !== 'running') {
-      try {
-        await this.ctx.resume();
-      } catch {
-        /* the next tap on the audio gate resumes it */
-      }
     }
     return this.ctx;
   }
@@ -145,15 +155,27 @@ export class AudioEngine {
     this.voiceGain.gain.value = this.volumes.voice;
   }
 
+  /**
+   * Decode compressed audio. Before the first gesture there is no AudioContext (creating one then is
+   * refused and warned about), so the boot loader's sounds decode through an OfflineAudioContext —
+   * the buffers play in the real context all the same.
+   */
   async decode(data: ArrayBuffer): Promise<AudioBuffer> {
-    const ctx = await this.ensureContext();
+    const ctx: BaseAudioContext = this.ctx ?? this.offlineDecoder();
     return ctx.decodeAudioData(data);
   }
 
-  async loadUrl(url: string): Promise<AudioBuffer> {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to load audio: ${url} (${res.status})`);
-    return this.decode(await res.arrayBuffer());
+  private offlineDecoder(): OfflineAudioContext {
+    if (!this.offline) {
+      const Ctor = window.OfflineAudioContext ?? (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext }).webkitOfflineAudioContext;
+      this.offline = new Ctor(2, 1, 48000);
+    }
+    return this.offline;
+  }
+
+  /** Download (retrying a dropped or stalled request) and decode; `onProgress` follows the download. */
+  async loadUrl(url: string, opts: { signal?: AbortSignal; onProgress?: (loaded: number, total: number) => void } = {}): Promise<AudioBuffer> {
+    return this.decode(await fetchBytes(url, { signal: opts.signal, onProgress: opts.onProgress }));
   }
 
   /**

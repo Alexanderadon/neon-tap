@@ -173,7 +173,7 @@ npx cap open android   # Android Studio → Build → Generate Signed Bundle
   (`server.androidScheme: 'https'` — иначе `localStorage` и Web Audio ведут себя иначе);
 - WebView на старых Android (< 10) отстаёт от Chrome по Web Audio (латентность выше,
   `AudioContext.outputLatency` отсутствует) — калибровка задержки остаётся обязательной;
-- аудио-разблокировка та же: первый тап (`widgets/audio-gate`);
+- аудио-разблокировка та же: первое касание где угодно (`installGestureUnlock`);
 - нужен `@capacitor/app` для события `appStateChange` → пауза (в TWA хватает `visibilitychange`).
 
 Правило проекта «рантайм-зависимости — только `react` и `react-dom`» относится к игре: обёртку

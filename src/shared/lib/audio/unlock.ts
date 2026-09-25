@@ -100,3 +100,35 @@ export function syncAudioUnlockState(): void {
 export function useAudioUnlocked(): boolean {
   return useStore(audioUnlockStore, (s) => s.unlocked);
 }
+
+/** Gestures that browsers accept for starting audio: iOS only touchend / click, Chrome also mousedown / pointerup / keydown. */
+const GESTURES = ['touchend', 'click', 'mousedown', 'pointerup', 'keydown'] as const;
+let gestureHooked = false;
+
+/**
+ * Sound without a "tap to enable sound" screen: the first gesture anywhere on the page unlocks audio,
+ * and the first one after an interruption (a call, the app in the background) resumes it. Capture-
+ * phase listeners on the window, so no element that stops propagation (the deck's swipe) can
+ * swallow the gesture. Idempotent.
+ */
+export function installGestureUnlock(): void {
+  if (gestureHooked || typeof window === 'undefined') return;
+  gestureHooked = true;
+  const onGesture = () => {
+    if (audioEngine.context?.state === 'running' && audioUnlockStore.get().unlocked) return;
+    void unlockAudio();
+  };
+  for (const type of GESTURES) window.addEventListener(type, onGesture, { capture: true, passive: true });
+}
+
+/** Resolves once audio runs (at once when it already does). */
+export function waitForAudioUnlock(): Promise<void> {
+  if (audioUnlockStore.get().unlocked) return Promise.resolve();
+  return new Promise((resolve) => {
+    const off = audioUnlockStore.subscribe(() => {
+      if (!audioUnlockStore.get().unlocked) return;
+      off();
+      resolve();
+    });
+  });
+}

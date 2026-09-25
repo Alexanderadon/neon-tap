@@ -22,7 +22,7 @@
     <!--
       Critical CSS: the page is dark from the very first paint (no white flash while the bundle
       loads — matters most for the installed app, whose splash is background_color + icon), and a
-      logo splash sits on top until React mounts (src/app/main.tsx fades it out).
+      logo splash with a loading bar sits on top until the boot assets are in (src/app/main.tsx, src/app/boot.ts).
     -->
     <style>
       html {
@@ -81,28 +81,24 @@
         color: #ff2bd6;
         text-shadow: 0 0 18px #ff2bd6, 0 0 50px rgba(255, 43, 214, 0.5);
       }
-      .splash-line {
-        width: 120px;
-        height: 3px;
+      /* The loading bar: `--p` (0..1) is set by src/app/main.tsx as the boot assets arrive. */
+      .splash-bar {
+        width: 160px;
+        height: 4px;
         border-radius: 2px;
-        background: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+      .splash-bar i {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 2px;
+        background: #fff;
         box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
-        animation: splash-line 1.2s ease-in-out infinite alternate;
-      }
-      @keyframes splash-line {
-        from {
-          transform: scaleX(0.35);
-          opacity: 0.5;
-        }
-        to {
-          transform: scaleX(1);
-          opacity: 1;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .splash-line {
-          animation: none;
-        }
+        transform-origin: left center;
+        transform: scaleX(max(0.04, var(--p, 0)));
+        transition: transform 0.25s ease;
       }
     </style>
   </head>
@@ -118,7 +114,7 @@
         <rect x="7" y="41" width="50" height="1.6" rx="0.8" fill="#fff" fill-opacity="0.85" />
       </svg>
       <div class="splash-logo"><span class="l1">NEON</span><span class="l2">TAP</span></div>
-      <div class="splash-line"></div>
+      <div class="splash-bar" id="splash-bar"><i></i></div>
     </div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>

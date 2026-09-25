@@ -19,6 +19,8 @@ export const game = {
   endlessMode: 'Бесконечный режим',
   /** The pause panel while the review autoplayer (`?auto=1`) is playing. */
   autoTag: 'Автопрогон',
+  /** The game's loading tag when the page has not had a single tap yet (sound needs one). */
+  tapToStart: 'Коснись экрана',
   heartsOut: 'Сердца кончились',
   loadFailed: 'Не удалось загрузить',
   checkConnection: 'проверь связь и попробуй ещё раз',
