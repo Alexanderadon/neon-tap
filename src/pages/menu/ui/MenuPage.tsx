@@ -50,7 +50,7 @@ const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS a
 
 /**
  * The main screen: top bar · chapter row · the deck · three doors (shop, records, profile) · «ИГРАТЬ»
- * (on the deck's last card, «Своя музыка», the primary is «ВЫБРАТЬ ФАЙЛ» and leads to the custom-song screen).
+ * (on the deck's last card, «Моя музыка», the primary is «ВЫБРАТЬ ФАЙЛ» and leads to the custom-song screen).
  * Profile, records, achievements and duels are the same screen with the middle swapped: the
  * focused track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
  * nickname question and the avatar picker are the overlays (a dialog over the dimmed screen). Other screens open a
@@ -63,7 +63,7 @@ export function MenuPage() {
   const songs = useSongCount();
   const params = useRouteParams();
   const [index, setIndex] = useState(() => {
-    // Back from the custom-song screen: the deck opens on its «Своя музыка» card.
+    // Back from the custom-song screen: the deck opens on its «Моя музыка» card.
     if (params.track === 'custom') return CUSTOM_CARD;
     const wanted = params.track ? CATALOG.findIndex((t) => t.id === params.track) : -1;
     return wanted >= 0 ? wanted : initialDeckIndex(state, storage());
@@ -72,7 +72,7 @@ export function MenuPage() {
   const [askName, setAskName] = useState(false);
   const [askAvatar, setAskAvatar] = useState(false);
   const { busy, play } = usePlayTrack();
-  // The deck's last card is «Своя музыка» and the empty-week card is a promise, not a track: the views that need one show the last track.
+  // The deck's last card is «Моя музыка» and the empty-week card is a promise, not a track: the views that need one show the last track.
   const custom = isCustomCard(index);
   const slot = isSlotCard(index);
   const { track, lock } = focusedTrack(state, index);

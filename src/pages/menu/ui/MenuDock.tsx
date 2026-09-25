@@ -15,7 +15,7 @@ interface Props {
   doors: readonly [Door, Door, Door];
   track: TrackMeta;
   lock: LockState;
-  /** The deck's «Своя музыка» card is focused: the primary is «ВЫБРАТЬ ФАЙЛ» (the custom-song screen) instead of a track's. */
+  /** The deck's «Моя музыка» card is focused: the primary is «ВЫБРАТЬ ФАЙЛ» (the custom-song screen) instead of a track's. */
   custom: boolean;
   /** How many stars the player has (the locked sub-line «★ 22 из 25»). */
   stars: number;
@@ -23,7 +23,7 @@ interface Props {
   onPlay: () => void;
   /** The deck's «Новые треки — по понедельникам» card is focused: nothing to play, a disabled «СКОРО». */
   slot?: boolean;
-  /** Saved songs: on the «Своя музыка» card the primary becomes «МОЯ МУЗЫКА / 3 песни» once there is one. */
+  /** Saved songs: on the «Моя музыка» card the primary becomes «МОЯ МУЗЫКА / 3 песни» once there is one. */
   songs?: number;
   /** The clock the weekly locks were computed with (`CatalogState.nowMs`) — «Выйдет через N дн.» under a weekly track's «СКОРО». */
   nowMs?: number;
@@ -42,7 +42,7 @@ const DOOR_LABEL: Record<Door['key'], string> = { shop: dict.shop, records: dict
  * 64 px primary — «ИГРАТЬ / track» with the play disc, or «ОТКРЫТЬ» with a lock while the
  * focused track is closed (a premium or weekly track leads to the shop instead), a disabled
  * «СКОРО» on a weekly track not out yet and on the empty-week card, or «ВЫБРАТЬ ФАЙЛ» on the
- * deck's «Своя музыка» card («МОЯ МУЗЫКА / N песен» once songs are saved).
+ * deck's «Моя музыка» card («МОЯ МУЗЫКА / N песен» once songs are saved).
  */
 export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay, slot = false, songs = 0, nowMs = 0 }: Props) {
   let primary: ReactNode;
@@ -54,7 +54,7 @@ export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay, slot
             <Icon name="note" size={24} />
           </Disc>
         }
-        label={dict.deckMyMusic}
+        label={dict.libTitle}
         sub={songsText(songs)}
         beat={!busy}
         disabled={busy}

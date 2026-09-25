@@ -4,6 +4,7 @@
  */
 export {
   CUSTOM_FREE_LIMIT,
+  songLimit,
   MAX_FILE_BYTES,
   MIN_DURATION_SEC,
   MAX_DURATION_SEC,

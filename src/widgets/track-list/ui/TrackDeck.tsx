@@ -38,7 +38,7 @@ const TOAST_MS = 2600;
 /**
  * The deck: one card per track — cover art edge to edge, title, three stars, the flame and the
  * rank — with the neighbours peeking at the sides; after the weekly tracks the «Новые треки — по
- * понедельникам» card while the next week has no track, and last the «Своя музыка» card.
+ * понедельникам» card while the next week has no track, and last the «Моя музыка» card.
  * Above it the chapter row: a gold «ГЛАВА N» (or «РОК-ПАК», «ПРЕМИУМ», «НОВИНКИ») tag and one
  * segment per track of the chapter. Swipe (or tap the edge, or use the arrow keys) to flip; tapping
  * the centre card shows what the track is made of. Playing lives in the page's primary button.
@@ -328,7 +328,7 @@ interface CustomCardProps {
   onTap: () => void;
 }
 
-/** The last card, «Своя музыка»: the drop zone's placeholder face (a thin note on dark), the title and one line — what it does, or the saved songs. */
+/** The last card, «Моя музыка»: the drop zone's placeholder face (a thin note on dark), the title and one line — what it does, or the saved songs. */
 function CustomCard({ mount, current, line, onTap }: CustomCardProps) {
   return (
     <article
