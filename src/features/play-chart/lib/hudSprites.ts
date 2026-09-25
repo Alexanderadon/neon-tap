@@ -66,14 +66,8 @@ function vertical(ctx: Ctx, stops: [number, string][]): CanvasGradient {
   return g;
 }
 
-/** The three faces of spec §1.1: gold, off (dark grey), white glossy. */
-function face(ctx: Ctx, kind: 'gold' | 'off' | 'white'): CanvasGradient {
-  if (kind === 'gold')
-    return vertical(ctx, [
-      [0, '#fff3a0'],
-      [0.45, '#ffd23f'],
-      [1, '#ff8a00'],
-    ]);
+/** The heart faces of spec §1.1: off (dark grey) and white glossy (the gold face lives in the stars and tags). */
+function face(ctx: Ctx, kind: 'off' | 'white'): CanvasGradient {
   if (kind === 'white')
     return vertical(ctx, [
       [0, '#ffffff'],
@@ -104,19 +98,18 @@ function halo(ctx: Ctx, cx: number, cy: number, r: number, color: 'gold' | 'cyan
   ctx.fill();
 }
 
-export type HeartKind = 'on' | 'off' | 'gold';
+export type HeartKind = 'on' | 'off';
 
-/** Heart 20 (HUD) / 40 (revive panel): white glossy, off, or gilded with a halo. */
+/** Heart 20 (HUD) / 40 (revive panel): white glossy or off. Lives past five are a «+N» beside the row, never a gilded heart. */
 export function heartSprite(kind: HeartKind, size: number, dpr: number): NoteSprite {
   return glyph(size, Math.round(size * 0.6), dpr, (ctx) => {
-    if (kind === 'gold') halo(ctx, 12, 13, 13, 'gold');
     const body = new Path2D(HEART_PATH);
-    ctx.fillStyle = face(ctx, kind === 'on' ? 'white' : kind === 'gold' ? 'gold' : 'off');
+    ctx.fillStyle = face(ctx, kind === 'on' ? 'white' : 'off');
     ctx.fill(body);
     ctx.lineWidth = 1.3;
-    ctx.strokeStyle = kind === 'gold' ? HUD.goldRim : 'rgba(0,0,0,0.6)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
     ctx.stroke(body);
-    ctx.strokeStyle = kind === 'off' ? 'rgba(255,255,255,0.08)' : kind === 'gold' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.8)';
+    ctx.strokeStyle = kind === 'off' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.8)';
     ctx.lineWidth = 1.4;
     ctx.lineCap = 'round';
     ctx.stroke(new Path2D(HEART_SHINE));
@@ -275,7 +268,7 @@ export function tagSprite(text: string, kind: TagKind, dpr: number, shape: TagSh
 }
 
 export interface EmbossStyle {
-  /** Face colour (white; gold for the combo from 50). */
+  /** Face colour (white; gold for the combo only while it burns). */
   fill: string;
   /** Outline / underside colour (#7a3a00; #5a0a48 for «ПРОВАЛ»). */
   under: string;
