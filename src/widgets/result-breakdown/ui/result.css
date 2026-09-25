@@ -202,6 +202,14 @@
   min-width: 0;
 }
 
+/* --- economy notes 16 each, 4 apart: the calendar mark, the full allowance (grey, no buttons) --- */
+.result-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: result-rise 0.4s ease-out 3.3s both;
+}
+
 /* --- unlock bar 32: text 16 + 8 + track 8 --- */
 .result-unlock {
   height: 32px;
@@ -462,6 +470,7 @@
   .result-verdict,
   .result-tab,
   .result-score-panel,
+  .result-notes,
   .result-unlock,
   .result-trio,
   .result-primary,

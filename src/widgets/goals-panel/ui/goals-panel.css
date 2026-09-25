@@ -75,3 +75,45 @@
 .goal-got .stars {
   --star: 16px;
 }
+
+/* CalendarStrip (CalendarStrip.tsx): the login calendar above the ladders — a goal row 88 tall
+   (title 24 · 8 · seven segments · 8 · the seven rewards 16) and a hint line 8 under it. */
+.goals-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 16px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.goal-cal {
+  height: 88px;
+}
+.goal-cal-next {
+  color: var(--cyan);
+}
+.goal-cal-next > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  overflow: visible;
+}
+.goal-cal-rewards {
+  display: flex;
+  gap: 4px;
+  height: 16px;
+}
+.goal-cal-r {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font: var(--t-11);
+  color: var(--w55);
+}
+.goal-cal-r-done {
+  color: var(--gold);
+}
+.goal-cal-r-cur {
+  color: var(--cyan);
+}
