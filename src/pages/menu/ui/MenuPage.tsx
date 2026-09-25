@@ -18,6 +18,7 @@ import {
   focusedTrack,
   initialDeckIndex,
   isCustomCard,
+  CUSTOM_CARD,
   trackIndexOf,
   useCatalogState,
   useDeckRadio,
@@ -55,6 +56,8 @@ export function MenuPage() {
   const state = useCatalogState();
   const params = useRouteParams();
   const [index, setIndex] = useState(() => {
+    // Back from the custom-song screen: the deck opens on its «Своя музыка» card.
+    if (params.track === 'custom') return CUSTOM_CARD;
     const wanted = params.track ? CATALOG.findIndex((t) => t.id === params.track) : -1;
     return wanted >= 0 ? wanted : initialDeckIndex(state, storage());
   });

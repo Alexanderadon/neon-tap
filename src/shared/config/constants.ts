@@ -80,7 +80,7 @@ export const RANK_THRESHOLDS = [
 ] as const;
 
 export const CALIBRATION_BPM = 120;
-/** Bump to force every player through calibration again (v2: mobile audio was silent before, offsets were garbage). */
+/** Bump to drop every saved latency offset made by an older calibration (it is reset to 0 and the in-game auto-offset re-learns it; calibration itself is only in the settings). */
 export const CALIBRATION_VERSION = 3; // 3: device output latency is subtracted automatically; old offsets double-counted it
 export const CALIBRATION_TAPS = 16;
 

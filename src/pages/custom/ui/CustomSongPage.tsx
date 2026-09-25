@@ -12,7 +12,7 @@ export function CustomSongPage() {
       <SongDropZone
         onBack={() => {
           sfxUi();
-          navigate('menu');
+          navigate('menu', { track: 'custom' });
         }}
       />
     </Screen>
