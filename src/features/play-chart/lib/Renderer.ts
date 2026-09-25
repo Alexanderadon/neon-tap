@@ -158,6 +158,17 @@ const TRANSITION_SEC = 0.35; // a beat of empty field is all the generator leave
 const RING_POOL = 16;
 const PRESS_BOUNCE_SEC = 0.12;
 const POP_POOL = 8;
+/** A roll's floating «8/8» rises this far (px) while it fades. */
+const POP_RISE = 30;
+/**
+ * Judgement popup above the hit line, px (fixed, whatever the note size): the word's centre and the
+ * «+N» over it — clear of the thumbs under the line. A running roll's counter keeps its place and the
+ * popup moves up over it instead.
+ */
+const JUDGE_WORD_ABOVE = 64;
+const JUDGE_GAIN_ABOVE = 92;
+/** Room kept between the roll counter's top and the judgement word's centre (half the 20 px word + a gap). */
+const JUDGE_ROLL_CLEAR = 14;
 /** Beat pulse: ring + horizon flash decay over this long. */
 const BEAT_SEC = 0.3;
 /** Equaliser smoothing (per second): fast attack, slow release. */
@@ -321,6 +332,8 @@ export class Renderer {
   private readonly popAge = new Float32Array(POP_POOL).fill(1);
   private readonly popText: string[] = new Array(POP_POOL).fill('');
   private popCursor = 0;
+  /** Top edge of the highest roll counter on screen this frame (Infinity when none): the judgement popup sits above it. */
+  private rollTop = Infinity;
   private shockAge = 1;
   // Crystals flying from the hit line to the HUD counter (SoA pool).
   private readonly flyX = new Float32Array(FLY_POOL);
@@ -1065,6 +1078,7 @@ export class Renderer {
     let prevCircle: PooledNote | null = null;
     let prevCircleSet: LaneSet | null = null;
     let circlesAhead = 0;
+    this.rollTop = Infinity;
     /** y of the last tile drawn per lane (tiles come in time order, so the previous one is the lower one). */
     const ghostY: number[] = [];
     for (let i = notes.firstActive; i < notes.count; i++) {
@@ -1200,7 +1214,9 @@ export class Renderer {
       ctx.globalAlpha = 1 - a;
       ctx.font = `900 16px ${FONT}`;
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(this.popText[i], this.popX[i], this.popY[i] - a * 30);
+      ctx.fillText(this.popText[i], this.popX[i], this.popY[i] - a * POP_RISE);
+      // The whole rise (not the current height) counts, so the judgement does not ride up with it.
+      this.rollTop = Math.min(this.rollTop, this.popY[i] - POP_RISE - 8);
     }
     ctx.globalAlpha = 1;
 
@@ -1488,12 +1504,15 @@ export class Renderer {
         ctx.fillRect(cx - lw * 0.22, top + k * h + 1, lw * 0.44, Math.max(1, h - 2));
       }
       if (n.state === NoteState.Holding) {
+        const size = Math.round(set.layout.noteHeight * 0.8);
+        const ry = set.layout.hitY - set.layout.noteHeight * 2.2;
         ctx.globalAlpha = 1;
-        ctx.font = `900 ${Math.round(set.layout.noteHeight * 0.8)}px ${FONT}`;
+        ctx.font = `900 ${size}px ${FONT}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${Math.min(n.taps, n.extra)}/${n.extra}`, cx, set.layout.hitY - set.layout.noteHeight * 2.2 + Math.sin(s.songTime * 20) * 2);
+        ctx.fillText(`${Math.min(n.taps, n.extra)}/${n.extra}`, cx, ry + Math.sin(s.songTime * 20) * 2);
+        this.rollTop = Math.min(this.rollTop, ry - size / 2 - 2);
       }
     } else {
       ctx.fillRect(cx - lw * 0.18, top, lw * 0.36, bottom - top);
@@ -1912,7 +1931,7 @@ export class Renderer {
    * The HUD (screens-game.html, frames 1–5): the song map 6 px at the safe top; row 1 — the score
    * chip 112 and the accuracy chip 96 (the pause chip between them is a DOM button); row 2 — five
    * hearts, three level stars, the crystal count; the slow bar; the combo in the verdict material
-   * with its «КОМБО» caption; the judgement popup under the hit line; the milestone and lane tags.
+   * with its «КОМБО» caption; the judgement popup above the hit line; the milestone and lane tags.
    */
   private drawHud(s: FrameState): void {
     const ctx = this.ctx;
@@ -2040,17 +2059,17 @@ export class Renderer {
       this.caption(dict.comboWord, cx, comboTop + 56, HUD.w30);
     }
 
-    // Judgement popup: «+300» 13/700 over the word 20/700 caps; under the line on touch, above it on desktop.
+    // Judgement popup: «+300» 13/700 over the word 20/700 caps, above the hit line (and above a running roll's counter).
     if (s.lastJudgement && s.lastJudgementAge < 0.5) {
       const age = s.lastJudgementAge;
       const a = age < 0.35 ? 1 : 1 - (age - 0.35) / 0.15;
       const k = 0.7 + 0.3 * popEase(Math.min(1, age / 0.2));
-      const jTop = this.touch ? hitY + this.layout.noteHeight * 2.6 - 24 : hitY - this.layout.noteHeight * 3.4 - 24;
+      const wordY = Math.min(hitY - JUDGE_WORD_ABOVE, this.rollTop - JUDGE_ROLL_CLEAR);
       const miss = s.lastJudgement === 'miss';
       const color = miss ? HUD.mag : s.lastJudgement === 'great' ? HUD.cyan : s.lastJudgement === 'good' ? HUD.w80 : '#ffffff';
       ctx.save();
       ctx.globalAlpha = Math.max(0, a);
-      ctx.translate(cx, jTop + 36);
+      ctx.translate(cx, wordY);
       ctx.scale(k, k);
       ctx.font = `700 20px ${FONT}`;
       ctx.fillStyle = '#000';
@@ -2063,7 +2082,7 @@ export class Renderer {
         ctx.font = `700 13px ${FONT}`;
         ctx.textAlign = 'center';
         ctx.fillStyle = HUD.w80;
-        ctx.fillText(`+${s.lastGain}`, cx, jTop + 8);
+        ctx.fillText(`+${s.lastGain}`, cx, wordY - (JUDGE_GAIN_ABOVE - JUDGE_WORD_ABOVE));
         ctx.globalAlpha = 1;
       }
     }
