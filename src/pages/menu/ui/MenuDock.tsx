@@ -25,7 +25,7 @@ interface Props {
   slot?: boolean;
   /** Saved songs: on the «Своя музыка» card the primary becomes «МОЯ МУЗЫКА / 3 песни» once there is one. */
   songs?: number;
-  /** The page load's clock — «Выйдет через N дн.» under a weekly track's «СКОРО». */
+  /** The clock the weekly locks were computed with (`CatalogState.nowMs`) — «Выйдет через N дн.» under a weekly track's «СКОРО». */
   nowMs?: number;
 }
 
@@ -88,7 +88,9 @@ export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay, slot
         label={dict.dropSoon}
         sub={slot || !lock.drop ? dict.dropSlotLine : dropSoonText(lock.drop, nowMs)}
         disabled
-        aria-label={slot ? `${dict.dropSlotTitle} · ${dict.dropSlotLine}` : `${dict.dropSoon} · ${track.title}`}
+        aria-label={
+          slot || !lock.drop ? `${dict.dropSlotTitle} · ${dict.dropSlotLine}` : `${dict.dropSoon} · ${track.title} · ${dropSoonText(lock.drop, nowMs)}`
+        }
       />
     );
   } else if (lock.locked && (lock.premium || lock.drop)) {

@@ -6,9 +6,11 @@ export const drops = {
   dropThisWeek: 'Новинка недели',
   /** Tag on an older weekly track in the shop. */
   dropTag: 'Новинка',
-  /** The next drop's lock line: days until Monday 00:00 Moscow, rounded up. */
+  /** The next drop's lock line: calendar days on the player's clock to the day Monday 00:00 Moscow falls on. */
   dropSoonDays: 'Выйдет через {n} дн.',
   dropSoonTomorrow: 'Выйдет завтра',
+  /** East of Moscow the drop opens on Monday morning, west of it on Sunday evening: the same day. */
+  dropSoonToday: 'Выйдет сегодня',
   /** The primary button on a drop that is not out yet (disabled). */
   dropSoon: 'Скоро',
   /** Tag on a drop NEON PASS opened before its release. */

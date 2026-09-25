@@ -128,8 +128,20 @@ export function dropState(track: { release?: string }, ctx: DropContext): DropSt
   };
 }
 
-/** Whole days until the release, rounded up (1 = «завтра»); 0 once it is out. */
-export function daysUntil(releaseAt: number, nowMs: number): number {
+/** The device's UTC offset at `ms` (east positive, DST included) — whose calendar says «сегодня» / «завтра». */
+export function localOffsetMs(ms: number): number {
+  return -new Date(ms).getTimezoneOffset() * 60_000;
+}
+
+/**
+ * Calendar days on the player's clock from `nowMs` to the release day: 0 = it opens later today, 1 =
+ * «завтра», and so on; 0 once it is out, Infinity for a bad date. Not whole 24-hour periods: Monday
+ * 00:00 Moscow is Monday 07:00 in Vladivostok (still «завтра» on Sunday morning there) and Sunday
+ * 23:00 in Kaliningrad (already «сегодня» on Sunday). `offsetMs` is injectable for tests.
+ */
+export function daysUntil(releaseAt: number, nowMs: number, offsetMs: (ms: number) => number = localOffsetMs): number {
   if (!(releaseAt > nowMs)) return 0;
-  return Math.ceil((releaseAt - nowMs) / DAY_MS);
+  if (!Number.isFinite(releaseAt)) return Number.POSITIVE_INFINITY;
+  const localDay = (ms: number) => Math.floor((ms + offsetMs(ms)) / DAY_MS);
+  return localDay(releaseAt) - localDay(nowMs);
 }
