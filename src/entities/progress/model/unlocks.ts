@@ -8,9 +8,10 @@ export const THRESHOLD_HEADROOM = 6;
 export const STARS_PER_TRACK = 3;
 
 /**
- * Stars needed to open the track at `position` (0-based, easiest first) in a catalog of
+ * Stars needed to open the track at `position` (0-based, easiest first) on a road of
  * `catalogSize` songs: 0 for the first ALWAYS_OPEN, then round((position − 4) · 2.2), never above
  * `catalogSize · 3 − 6` so the last song opens before the player has to perfect everything.
+ * The road is the non-premium tracks (see `roadThresholds`).
  */
 export function unlockThreshold(position: number, catalogSize: number): number {
   if (position < ALWAYS_OPEN) return 0;
@@ -34,7 +35,7 @@ export interface UnlockContext {
 export interface UnlockInfo {
   id: string;
   unlocked: boolean;
-  /** Stars required (0 when free); meaningless for premium tracks. */
+  /** Stars required (0 when free; 0 for premium tracks, which never open by stars). */
   need: number;
   /** Premium: shop-only. */
   premium: boolean;
@@ -51,10 +52,25 @@ export function isOpen(need: number, premium: boolean, purchased: boolean, isDai
   return !premium && ctx.stars >= need;
 }
 
+/**
+ * Stars needed per catalog track, in catalog order. The road counts only the tracks that open by
+ * stars: a track's position is its place among the non-premium ones and the cap follows their
+ * number, so premium tracks in the middle of the catalog never push the road further (the rock
+ * pack after them opens at 70 / 73 / 75 instead of 81 / 84 / 86). Premium tracks need 0 — they
+ * never open by stars.
+ */
+export function roadThresholds(catalogIds: readonly string[], premium: readonly string[] = []): number[] {
+  const shopOnly = new Set(premium);
+  const roadSize = catalogIds.filter((id) => !shopOnly.has(id)).length;
+  let position = 0;
+  return catalogIds.map((id) => (shopOnly.has(id) ? 0 : unlockThreshold(position++, roadSize)));
+}
+
 /** Unlock state for every catalog track, in catalog order. */
 export function unlockStates(catalogIds: readonly string[], ctx: UnlockContext): UnlockInfo[] {
+  const needs = roadThresholds(catalogIds, ctx.premium);
   return catalogIds.map((id, i) => {
-    const need = unlockThreshold(i, catalogIds.length);
+    const need = needs[i];
     const premium = ctx.premium?.includes(id) ?? false;
     const purchased = ctx.purchased?.includes(id) ?? false;
     return { id, unlocked: isOpen(need, premium, purchased, id === ctx.dailyId, ctx), need, premium, purchased };
@@ -67,7 +83,7 @@ export function isTrackUnlocked(catalogIds: readonly string[], id: string, ctx: 
   if (i < 0) return true;
   const premium = ctx.premium?.includes(id) ?? false;
   const purchased = ctx.purchased?.includes(id) ?? false;
-  return isOpen(unlockThreshold(i, catalogIds.length), premium, purchased, id === ctx.dailyId, ctx);
+  return isOpen(roadThresholds(catalogIds, ctx.premium)[i], premium, purchased, id === ctx.dailyId, ctx);
 }
 
 /**
@@ -77,10 +93,10 @@ export function isTrackUnlocked(catalogIds: readonly string[], id: string, ctx: 
 export function newlyUnlocked(catalogIds: readonly string[], before: number, after: number, premium: readonly string[] = []): string[] {
   const out: string[] = [];
   if (after <= before) return out;
+  const needs = roadThresholds(catalogIds, premium);
   catalogIds.forEach((id, i) => {
     if (premium.includes(id)) return;
-    const need = unlockThreshold(i, catalogIds.length);
-    if (before < need && after >= need) out.push(id);
+    if (before < needs[i] && after >= needs[i]) out.push(id);
   });
   return out;
 }
