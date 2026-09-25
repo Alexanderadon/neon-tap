@@ -19,7 +19,7 @@ export interface Settings {
   /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
   calibrationVersion: number;
   debugOverlay: boolean;
-  /** The interactive tutorial was finished or skipped once (it opens itself after first calibration). */
+  /** The interactive tutorial was finished or skipped once (it opens itself on first launch). */
   tutorialDone: boolean;
   /** Name shown on the online leaderboard; '' = not asked yet. */
   nickname: string;
@@ -32,7 +32,7 @@ const KEY = 'neon-tap:settings';
 
 export const NICKNAME_MAX = 16;
 
-/** A name the online table accepts: anything non-empty once trimmed (the one rule, shared by the welcome screen, the dialog and the settings). */
+/** A name the online table accepts: anything non-empty once trimmed (the one rule, shared by the dialog and the settings). */
 export function isValidNickname(name: string): boolean {
   return name.trim().length >= 1;
 }

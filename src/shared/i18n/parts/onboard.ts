@@ -1,12 +1,5 @@
-/** First launch, calibration, settings (package C). Keys must not repeat those of other parts (see ru.test.ts). */
+/** Calibration, settings, install prompts (package C). Keys must not repeat those of other parts (see ru.test.ts). */
 export const onboard = {
-  // --- first-launch steps ---
-  stepOf: 'Шаг {n} из {m}',
-  welcomeHintShort: '1–16 символов · потом можно поменять',
-  /** Second line of «ДАЛЬШЕ» on the welcome screen: what comes next. */
-  welcomeNext: 'калибровка',
-  /** Caption under the 96 px avatar on the welcome screen — a tap opens the picker. */
-  welcomeAvatarHint: 'выбери аватар',
   // --- calibration ---
   calibLine1: 'Звук в наушниках запаздывает',
   calibLine2: 'Тапни {n} раз под метроном',
@@ -20,7 +13,6 @@ export const onboard = {
   calibShiftEarly: ['ноты засчитаем на', 'раньше'],
   calibShiftNone: 'задержки нет · ноты на месте',
   calibTapScreen: 'тапай в любом месте экрана',
-  nextTutorial: 'дальше — обучение',
   // --- settings ---
   appliesNow: 'применяется сразу',
   fxModeHintShort: 'меньше вспышек · авто при лагах',

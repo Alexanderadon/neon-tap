@@ -1,6 +1,6 @@
 import { createStore, useStore } from '@/shared/lib/store/createStore';
 
-export type Screen = 'menu' | 'game' | 'result' | 'calibration' | 'settings' | 'custom' | 'tutorial' | 'shop' | 'welcome' | 'duel';
+export type Screen = 'menu' | 'game' | 'result' | 'calibration' | 'settings' | 'custom' | 'tutorial' | 'shop' | 'duel';
 
 /** Intent for the target screen: which view to open (`records`, `profile`) or which track to focus (`track: id`). */
 export type RouteParams = Readonly<Record<string, string>>;

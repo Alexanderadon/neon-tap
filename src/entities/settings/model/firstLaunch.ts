@@ -1,24 +1,12 @@
-import { CALIBRATION_VERSION } from '@/shared/config/constants';
 import type { Settings } from './settingsStore';
 
-export type FirstLaunchStep = 'welcome' | 'calibration' | 'tutorial';
-
-let welcomeSkipped = false;
-/** "Not now" on the welcome screen — remembered for this session only, so the name is asked again next launch. */
-export function markWelcomeSkipped(): void {
-  welcomeSkipped = true;
-}
-export function isWelcomeSkipped(): boolean {
-  return welcomeSkipped;
-}
+export type FirstLaunchStep = 'tutorial';
 
 /**
- * What the app must show before the menu on this device: the name (once, unless skipped this
- * session), then latency calibration (again after a calibration-affecting update), then the tutorial.
+ * What the app must show before the menu on this device: the tutorial (a first song with hints),
+ * until it is finished or skipped once. The name is asked where it is needed (the result screen,
+ * duels); latency calibration lives in the settings — the game tunes the latency on its own.
  */
-export function firstLaunchStep(s: Pick<Settings, 'nickname' | 'calibrated' | 'calibrationVersion' | 'tutorialDone'>, welcomeSkipped = false): FirstLaunchStep | null {
-  if (!s.nickname && !welcomeSkipped) return 'welcome';
-  if (!s.calibrated || s.calibrationVersion < CALIBRATION_VERSION) return 'calibration';
-  if (!s.tutorialDone) return 'tutorial';
-  return null;
+export function firstLaunchStep(s: Pick<Settings, 'tutorialDone'>): FirstLaunchStep | null {
+  return s.tutorialDone ? null : 'tutorial';
 }
