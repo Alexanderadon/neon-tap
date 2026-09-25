@@ -12,7 +12,17 @@ import { myDuels } from '@/entities/duel';
 import type { OfferKind } from '@/entities/offers';
 import { TopBar, type CounterTick } from '@/widgets/top-bar';
 import { OfferPopups, type OfferWalletTick } from '@/widgets/offer-popups';
-import { TrackDeck, affordableCount, focusedTrack, initialDeckIndex, useCatalogState, useDeckRadio, usePlayTrack } from '@/widgets/track-list';
+import {
+  TrackDeck,
+  affordableCount,
+  focusedTrack,
+  initialDeckIndex,
+  isCustomCard,
+  trackIndexOf,
+  useCatalogState,
+  useDeckRadio,
+  usePlayTrack,
+} from '@/widgets/track-list';
 import { GoalsPanel, goalsGotLine } from '@/widgets/goals-panel';
 import { DuelList, useMyDuels } from '@/widgets/duel-list';
 import { HistoryPanel } from '@/widgets/history-panel';
@@ -32,7 +42,8 @@ const TICK_HOLD_MS = 1400;
 const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS as readonly string[]).includes(v);
 
 /**
- * The main screen: top bar · chapter row · the deck · three doors (shop, records, profile) · «ИГРАТЬ».
+ * The main screen: top bar · chapter row · the deck · three doors (shop, records, profile) · «ИГРАТЬ»
+ * (on the deck's last card, «Своя музыка», the primary is «ВЫБРАТЬ ФАЙЛ» and leads to the custom-song screen).
  * Profile, records, achievements and duels are the same screen with the middle swapped: the
  * focused track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
  * nickname question and the avatar picker are the overlays (a dialog over the dimmed screen). Other screens open a
@@ -51,10 +62,12 @@ export function MenuPage() {
   const [askName, setAskName] = useState(false);
   const [askAvatar, setAskAvatar] = useState(false);
   const { busy, play } = usePlayTrack();
+  // The deck's last card is «Своя музыка», not a track: the views that need one show the last track.
+  const custom = isCustomCard(index);
   const { track, lock } = focusedTrack(state, index);
   const badge = affordableCount(state);
-  // The radio: the focused song, quietly, while the menu is up and no song is being started.
-  useDeckRadio(track.id, busy === null);
+  // The radio: the focused song, quietly, while the menu is up and no song is being started (silent on the custom card).
+  useDeckRadio(custom ? undefined : track.id, busy === null);
 
   // Offers: an explicit ask from the wallet's «+», and the wallet tick after a purchase (the crystals fly into the chip).
   const [offer, setOffer] = useState<OfferKind | null>(null);
@@ -90,15 +103,21 @@ export function MenuPage() {
     sfxUi();
     navigate(screen);
   };
-  const onPlay = (id: string = track.id) => {
+  /** The primary action: play `id` (a duel's track) or the focused card — the custom card opens the custom-song screen. */
+  const onPlay = (id?: string) => {
     if (busy) return;
+    if (id === undefined && custom) {
+      open('custom');
+      return;
+    }
     sfxUi();
-    const l = id === track.id ? lock : null;
+    const target = id ?? track.id;
+    const l = target === track.id ? lock : null;
     if (l?.locked) {
       if (l.premium) navigate('shop');
       return;
     }
-    void play(id);
+    void play(target);
   };
 
   const shopDoor: Door = { key: 'shop', badge, onTap: () => open('shop') };
@@ -110,14 +129,14 @@ export function MenuPage() {
     duels: [shopDoor, { key: 'menu', onTap: () => goTo('deck') }, { key: 'profile', onTap: () => goTo('profile') }],
   };
 
-  const chapter = chapterAt(index) ?? { start: 0, end: CATALOG.length, number: 1 };
+  const chapter = chapterAt(trackIndexOf(index)) ?? { start: 0, end: CATALOG.length, number: 1 };
   const chapterTracks = CATALOG.slice(chapter.start, chapter.end);
   const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
   const chapterLine = `${chapterTitle(chapter)} · ${fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}`;
 
   return (
     <Screen frame className="menu">
-      <CoverScene id={track.id} genre={track.genre} />
+      <CoverScene id={custom ? undefined : track.id} genre={custom ? undefined : track.genre} />
       <TopBar onCrystalsTap={() => open('shop')} onTopUp={store.available() ? topUp : undefined} crystalsRef={crystalsRef} crystals={tick ?? undefined} />
 
       {view === 'deck' && <TrackDeck index={index} onIndexChange={setIndex} onPlay={() => onPlay()} />}
@@ -161,7 +180,7 @@ export function MenuPage() {
 
       {view === 'duels' && <DuelsView onPlay={onPlay} />}
 
-      <MenuDock doors={doors[view]} track={track} lock={lock} stars={state.stars} busy={busy !== null} onPlay={() => onPlay()} />
+      <MenuDock doors={doors[view]} track={track} lock={lock} custom={custom} stars={state.stars} busy={busy !== null} onPlay={() => onPlay()} />
 
       <NicknameDialog open={askName} onSkip={() => setAskName(false)} />
       <AvatarPicker open={askAvatar} onClose={() => setAskAvatar(false)} />

@@ -7,6 +7,8 @@ export const menu = {
   forCrystals: 'за {n}',
   shopAffordable: 'можно купить: {n}',
   deckSegmentAria: '{title}: к треку',
+  /** The deck's last card «Своя музыка»: the one line under its title. */
+  deckCustomLine: 'твой MP3 — игра сама сделает уровень',
   // --- profile ---
   nicknameFor: 'ник для онлайн-рекордов',
   nicknameShort: 'для онлайн-рекордов · 1–16 символов',

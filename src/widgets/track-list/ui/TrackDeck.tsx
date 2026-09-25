@@ -7,6 +7,7 @@ import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, idsAround, pr
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { writeDeckIndex } from '../model/deckPosition';
+import { DECK_SIZE, isCustomCard, trackIndexOf } from '../model/deckCards';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
 import { cardGlow } from '../lib/coverGlow';
 import './track-deck.css';
@@ -20,21 +21,25 @@ interface Props {
   /** The centre card (controlled: the page keeps it so the primary button and the records screen follow it). */
   index: number;
   onIndexChange: (index: number) => void;
-  /** Enter / Space on the stage = the primary action. */
+  /** Enter / Space on the stage = the primary action (on the custom card, and a tap on it: the custom-song screen). */
   onPlay?: () => void;
 }
 
 const storage = (): Storage | null => (typeof localStorage === 'undefined' ? null : localStorage);
 
+/** Finger travel before a press on the stage becomes a drag; below it the press stays a tap on its card. */
+const TAP_SLOP_PX = 6;
+
 /**
  * The deck: one card per track — cover art edge to edge, title, three stars, the flame and the
- * rank — with the neighbours peeking at the sides. Above it the chapter row: a gold «ГЛАВА N»
- * (or «РОК-ПАК») tag and one segment per track of the chapter. Swipe (or tap the edge, or use the arrow keys) to flip; tapping
- * the centre card shows what the track is made of. Playing lives in the page's primary button.
+ * rank — with the neighbours peeking at the sides, and after the last track the «Своя музыка» card.
+ * Above it the chapter row: a gold «ГЛАВА N» (or «РОК-ПАК») tag and one segment per track of the
+ * chapter. Swipe (or tap the edge, or use the arrow keys) to flip; tapping the centre card shows
+ * what the track is made of. Playing lives in the page's primary button.
  */
 export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   const state = useCatalogState();
-  const n = CATALOG.length;
+  const n = DECK_SIZE;
   const [details, setDetails] = useState(false);
   /** Motion lives outside React; `index` follows the centre card and is the only render trigger. */
   const motion = useRef<DeckMotion | null>(null);
@@ -45,8 +50,8 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   indexRef.current = index;
   const changeRef = useRef(onIndexChange);
   changeRef.current = onIndexChange;
-  /** Active drag: pointer id, start x, and the last two samples for the release velocity. */
-  const pointer = useRef<{ id: number; x: number; prev: { x: number; t: number }; last: { x: number; t: number } } | null>(null);
+  /** Active drag: pointer id, start x, the last two samples for the release velocity, and whether the stage holds the pointer yet. */
+  const pointer = useRef<{ id: number; x: number; prev: { x: number; t: number }; last: { x: number; t: number }; captured: boolean } | null>(null);
 
   /** Write every mounted card's transform from the current position — no React involved. */
   const paint = useCallback(() => {
@@ -97,7 +102,7 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   // Keep the pictures ahead of the swipe: the nearest cards first, then the rest of the deck.
   useEffect(() => {
     const ids = CATALOG.map((t) => t.id);
-    prioritizeCovers(idsAround(ids, index, ids.length));
+    prioritizeCovers(idsAround(ids, trackIndexOf(index), ids.length));
   }, [index]);
   // New cards mount (the window slid): place them before the browser paints.
   useLayoutEffect(paint, [index, paint]);
@@ -107,7 +112,8 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
     if (!m.isFlying() && Math.round(m.pos()) !== index) flyTo(index);
   }, [index, flyTo]);
 
-  const track = CATALOG[index];
+  const custom = isCustomCard(index);
+  const track = CATALOG[trackIndexOf(index)];
   const lock = useMemo(() => lockFor(state, track.id, track.stars), [state, track]);
 
   const go = useCallback((to: number) => flyTo(Math.max(0, Math.min(n - 1, to))), [flyTo, n]);
@@ -140,12 +146,16 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     cancelAnimationFrame(raf.current);
     const sample = { x: e.clientX, t: e.timeStamp };
-    pointer.current = { id: e.pointerId, x: e.clientX, prev: sample, last: sample };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    pointer.current = { id: e.pointerId, x: e.clientX, prev: sample, last: sample, captured: false };
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const p = pointer.current;
     if (!p || p.id !== e.pointerId) return;
+    // Captured only once the press is a drag: a captured press clicks the stage, and a tap must click the card under the finger.
+    if (!p.captured && Math.abs(e.clientX - p.x) > TAP_SLOP_PX) {
+      p.captured = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
     p.prev = p.last;
     p.last = { x: e.clientX, t: e.timeStamp };
     motion.current!.drag(rubberBand(indexRef.current - (e.clientX - p.x) / cardPx(), n));
@@ -166,32 +176,35 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
     e.preventDefault();
   };
 
-  const chapter = chapterAt(index) ?? { start: 0, end: n, number: 1 };
+  const chapter = chapterAt(index) ?? { start: 0, end: CATALOG.length, number: 1 };
   const chapterTracks = CATALOG.slice(chapter.start, chapter.end);
   const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
 
   return (
     <section className="deck" aria-label={dict.deckAria}>
+      {/* On the custom card: its own tag, no segments; the tag leads back to chapter 1 (as the last chapter's does). */}
       <header className="deck-head">
         <button
           type="button"
           className="deck-chapter"
           onClick={() => {
             sfxUi();
-            go(chapter.end % n);
+            go(custom ? 0 : chapter.end % CATALOG.length);
           }}
           aria-label={dict.deckNextChapter}
         >
-          <Tag>{chapterTitle(chapter)}</Tag>
+          <Tag>{custom ? dict.customSong : chapterTitle(chapter)}</Tag>
         </button>
-        <Segments
-          states={chapterTracks.map<SegmentState>((t, i) =>
-            chapter.start + i === index ? 'current' : starsForTrack(state.save.tracks[t.id]) > 0 ? 'done' : 'rest',
-          )}
-          labels={chapterTracks.map((t) => fmt(dict.deckSegmentAria, { title: t.title }))}
-          onSelect={(i) => go(chapter.start + i)}
-          aria-label={fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}
-        />
+        {!custom && (
+          <Segments
+            states={chapterTracks.map<SegmentState>((t, i) =>
+              chapter.start + i === index ? 'current' : starsForTrack(state.save.tracks[t.id]) > 0 ? 'done' : 'rest',
+            )}
+            labels={chapterTracks.map((t) => fmt(dict.deckSegmentAria, { title: t.title }))}
+            onSelect={(i) => go(chapter.start + i)}
+            aria-label={fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}
+          />
+        )}
       </header>
 
       <div
@@ -204,13 +217,15 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
         onPointerCancel={onPointerUp}
       >
         {windowCards(index, n).map((i) => {
-          const t = CATALOG[i];
           const current = i === index;
+          const mount = (el: HTMLElement | null) => (el ? cards.current.set(i, el) : cards.current.delete(i));
+          if (isCustomCard(i)) return <CustomCard key="custom-card" mount={mount} current={current} onTap={() => (current ? onPlay?.() : go(i))} />;
+          const t = CATALOG[i];
           return (
             <DeckCard
               key={t.id}
               track={t}
-              mount={(el) => (el ? cards.current.set(i, el) : cards.current.delete(i))}
+              mount={mount}
               current={current}
               lock={current ? lock : lockFor(state, t.id, t.stars)}
               daily={t.id === state.dailyId}
@@ -233,6 +248,32 @@ function windowCards(index: number, n: number): number[] {
   const out: number[] = [];
   for (let i = index - WINDOW; i <= index + WINDOW; i++) if (i >= 0 && i < n) out.push(i);
   return out;
+}
+
+interface CustomCardProps {
+  mount: (el: HTMLElement | null) => void;
+  current: boolean;
+  onTap: () => void;
+}
+
+/** The last card, «Своя музыка»: the drop zone's placeholder face (a thin note on dark), the title and one line saying what it does. */
+function CustomCard({ mount, current, onTap }: CustomCardProps) {
+  return (
+    <article
+      ref={mount}
+      className={current ? 'deck-card deck-card-custom is-current' : 'deck-card deck-card-custom'}
+      aria-hidden={current ? undefined : true}
+      onClick={onTap}
+    >
+      <span className="deck-custom-note" aria-hidden="true">
+        <Icon name="note" size={96} strokeWidth={0.5} />
+      </span>
+      <div className="deck-text">
+        <h1 className="deck-title">{dict.customSong}</h1>
+        <p className="deck-custom-line">{dict.deckCustomLine}</p>
+      </div>
+    </article>
+  );
 }
 
 interface CardProps {
