@@ -1,14 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { emptySave } from './SaveData';
-import { PREMIUM_MULTIPLIER, PRICE_BASE, PRICE_PER_STAR, addCrystals, canAfford, isForSale, isPurchased, purchaseTrack, trackPrice } from './shop';
+import {
+  PREMIUM_MULTIPLIER,
+  PRICE_BASE,
+  PRICE_PER_STAR,
+  addCrystals,
+  canAfford,
+  creditPaidCrystals,
+  isForSale,
+  isPurchased,
+  purchaseTrack,
+  trackPrice,
+  withdrawCrystals,
+} from './shop';
 import { unlockStates } from './unlocks';
 
 describe('shop', () => {
   it('lists premium, bought and star-locked tracks; tracks open by stars alone are not for sale', () => {
     const ids = Array.from({ length: 12 }, (_, i) => `t${i}`);
-    const stars = 3; // t0–t5 open by stars (t5 needs 2), t6 (needs 4) and up are locked
+    // t3 is premium, so the road is t0–t2, t4… : t4 and t5 are free, t6 needs 2 (open), t7 needs 4 and up are locked
+    const stars = 3;
     const states = unlockStates(ids, { stars, premium: ['t3'], purchased: ['t9'] });
-    expect(states.map((s) => isForSale(s, stars))).toEqual([false, false, false, true, false, false, true, true, true, true, true, true]);
+    expect(states.map((s) => isForSale(s, stars))).toEqual([false, false, false, true, false, false, false, true, true, true, true, true]);
     // the daily track being open for the day does not hide it from the shop
     const daily = unlockStates(ids, { stars, dailyId: 't8' });
     expect(daily[8].unlocked).toBe(true);
@@ -18,11 +31,16 @@ describe('shop', () => {
     expect(rich.some((s) => isForSale(s, 999))).toBe(false);
   });
 
-  it('prices a track by its stars, premium ×1.5, always a whole number', () => {
+  it('prices a track by its stars, premium ×2.5, always a whole number', () => {
+    expect(PREMIUM_MULTIPLIER).toBe(2.5);
     expect(trackPrice(0)).toBe(PRICE_BASE);
     expect(trackPrice(4)).toBe(100);
     expect(trackPrice(7)).toBe(145);
-    expect(trackPrice(4, true)).toBe(150);
+    // the premium shelf (★3, ★5, ★6): 213 / 288 / 325
+    expect(trackPrice(3, true)).toBe(213);
+    expect(trackPrice(5, true)).toBe(288);
+    expect(trackPrice(6, true)).toBe(325);
+    expect(trackPrice(4, true)).toBe(250);
     expect(trackPrice(5, true)).toBe(Math.round((PRICE_BASE + 5 * PRICE_PER_STAR) * PREMIUM_MULTIPLIER));
     for (let s = 1; s <= 10; s++) {
       expect(Number.isInteger(trackPrice(s, true))).toBe(true);
@@ -71,5 +89,36 @@ describe('shop', () => {
     expect(purchaseTrack(bought.save, 't2', 20).save.crystals).toBe(0);
     expect(purchaseTrack(emptySave(), 't3', 0).ok).toBe(true);
   });
-});
 
+  it('counts purchases for crystals in counters.bought; a free unlock (an ad, NEON PASS) does not', () => {
+    const rich = addCrystals(emptySave(), 500);
+    const paid = purchaseTrack(rich, 't1', 100).save;
+    expect(paid.counters.bought).toBe(1);
+    const free = purchaseTrack(paid, 'drop', 0).save;
+    expect(free.purchased).toEqual(['t1', 'drop']);
+    expect(free.counters.bought).toBe(1);
+    // a refused purchase counts nothing
+    expect(purchaseTrack(free, 't1', 100).save.counters.bought).toBe(1);
+    expect(rich.counters.bought).toBe(0);
+  });
+
+  it('bought crystals raise the balance only, never the lifetime total', () => {
+    const s0 = addCrystals(emptySave(), 40);
+    const s1 = creditPaidCrystals(s0, 700);
+    expect(s1).toMatchObject({ crystals: 740, lifetimeCrystals: 40 });
+    expect(creditPaidCrystals(s1, 0)).toBe(s1);
+    expect(creditPaidCrystals(s1, -5)).toBe(s1);
+  });
+
+  it('withdraws crystals when the balance covers them, else refuses without touching the save', () => {
+    const s0 = addCrystals(emptySave(), 45);
+    const paid = withdrawCrystals(s0, 30);
+    expect(paid.ok).toBe(true);
+    expect(paid.save).toMatchObject({ crystals: 15, lifetimeCrystals: 45 });
+    const short = withdrawCrystals(paid.save, 30);
+    expect(short).toEqual({ save: paid.save, ok: false });
+    // free is always fine and changes nothing
+    expect(withdrawCrystals(paid.save, 0)).toEqual({ save: paid.save, ok: true });
+    expect(withdrawCrystals(emptySave(), Number.NaN).ok).toBe(true);
+  });
+});

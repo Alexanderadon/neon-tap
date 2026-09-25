@@ -14,7 +14,7 @@ describe('SaveData', () => {
   it('migrates v1 (three charts per track) up to the current version keeping the best result', () => {
     const v1 = { version: 1, tracks: { a: { easy: res('B', 900), hard: res('A', 500) }, b: { normal: res('D', 50) } }, plays: 3 };
     const out = migrate(v1);
-    expect(out.version).toBe(5);
+    expect(out.version).toBe(6);
     expect(out.tracks.a.rank).toBe('A');
     expect(out.tracks.b.rank).toBe('D');
     expect(out.plays).toBe(3);
@@ -25,11 +25,20 @@ describe('SaveData', () => {
   it('migrates v2 to v3 with back-filled counters, empty daily state and no claimed goals', () => {
     const v2 = { version: 2, tracks: { a: res('A', 900, 120), b: res('D', 50, 40), c: res('C', 300, 77) }, plays: 9 };
     const out = migrate(v2);
-    expect(out.version).toBe(5);
+    expect(out.version).toBe(6);
     expect(out.tracks).toEqual(v2.tracks);
     expect(out.plays).toBe(9);
     // derived from the stored bests: best combo ever, passes (rank ≥ C)
-    expect(out.counters).toEqual({ spells: { slow: 0, heart: 0 }, tracksPlayed: 2, maxCombo: 120, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 });
+    expect(out.counters).toEqual({
+      spells: { slow: 0, heart: 0 },
+      tracksPlayed: 2,
+      maxCombo: 120,
+      maxTrackStars: 0,
+      genres: [],
+      perfects: 0,
+      customPlays: 0,
+      bought: 0,
+    });
     expect(out.daily).toEqual({ date: '', done: false, streak: 0, total: 0 });
     expect(out.goalsClaimed).toEqual([]);
   });
@@ -44,13 +53,22 @@ describe('SaveData', () => {
       goalsClaimed: ['pass-5', 42, null],
     };
     const out = migrate(v3);
-    expect(out.counters).toEqual({ spells: { slow: 4, heart: 0 }, tracksPlayed: 2, maxCombo: 150, maxTrackStars: 0, genres: [], perfects: 0, customPlays: 0 });
+    expect(out.counters).toEqual({
+      spells: { slow: 4, heart: 0 },
+      tracksPlayed: 2,
+      maxCombo: 150,
+      maxTrackStars: 0,
+      genres: [],
+      perfects: 0,
+      customPlays: 0,
+      bought: 0,
+    });
     expect(out.daily).toEqual({ date: '2026-09-05', done: true, streak: 2, total: 5 });
     expect(out.goalsClaimed).toEqual(['pass-5']);
-    expect(migrate({ version: 99 }).version).toBe(5);
+    expect(migrate({ version: 99 }).version).toBe(6);
   });
 
-  it('migrates v3 through v4 to v5: empty wallet, zeroed achievement counters, everything else kept', () => {
+  it('migrates v3 through v4 and v5 to v6: empty wallet, zeroed achievement counters, everything else kept', () => {
     const v3 = {
       version: 3,
       tracks: { a: res('S') },
@@ -60,18 +78,20 @@ describe('SaveData', () => {
       goalsClaimed: ['pass-5'],
     };
     const out = migrate(v3);
-    expect(out.version).toBe(5);
+    expect(out.version).toBe(6);
     expect(out).toMatchObject({
       ...v3,
-      version: 5,
-      counters: { ...v3.counters, genres: [], perfects: 0, customPlays: 0 },
+      version: 6,
+      counters: { ...v3.counters, genres: [], perfects: 0, customPlays: 0, bought: 0 },
       crystals: 0,
       lifetimeCrystals: 0,
       purchased: [],
+      earnings: { date: '', run: 0, custom: 0 },
+      calendar: { count: 0, date: '' },
     });
-    // v2 walks through both steps
+    // v2 walks through every step
     const fromV2 = migrate({ version: 2, tracks: {}, plays: 0 });
-    expect(fromV2).toMatchObject({ version: 5, crystals: 0, lifetimeCrystals: 0, purchased: [] });
+    expect(fromV2).toMatchObject({ version: 6, crystals: 0, lifetimeCrystals: 0, purchased: [] });
     // v4 with the new counters already present keeps them (unique genres, numbers sanitised)
     const v4 = {
       version: 4,
@@ -87,12 +107,61 @@ describe('SaveData', () => {
     expect(migrate(v4).counters).toMatchObject({ genres: ['rock'], perfects: 0, customPlays: 2 });
   });
 
-  it('sanitises the wallet: no negative / fractional balance, lifetime ≥ balance, unique string ids', () => {
+  it('migrates v5 to v6: the purchases counter starts at the tracks owned, the allowance and the calendar start empty', () => {
+    const v5 = {
+      version: 5,
+      tracks: { a: res('S') },
+      plays: 7,
+      counters: { spells: { slow: 1, heart: 2 }, tracksPlayed: 7, maxCombo: 90, maxTrackStars: 4, genres: ['rock'], perfects: 300, customPlays: 1 },
+      daily: { date: '2026-09-20', done: true, streak: 1, total: 4 },
+      goalsClaimed: ['pass-1', 'bought-1'],
+      crystals: 420,
+      lifetimeCrystals: 900,
+      purchased: ['t1', 't2', 't2', 't3'],
+    };
+    const out = migrate(v5);
+    expect(out).toEqual({
+      ...v5,
+      version: 6,
+      counters: { ...v5.counters, bought: 3 },
+      purchased: ['t1', 't2', 't3'],
+      earnings: { date: '', run: 0, custom: 0 },
+      calendar: { count: 0, date: '' },
+    });
+    // garbage around the new step: no counters object, purchases not a list
+    expect(migrate({ version: 5, tracks: {}, counters: 'x', purchased: 'y' }).counters.bought).toBe(0);
+  });
+
+  it('sanitises the v6 fields: garbage allowance / calendar / purchases counter', () => {
+    const out = migrate({
+      ...emptySave(),
+      counters: { ...emptySave().counters, bought: -2 },
+      earnings: { date: 5, run: 'many', custom: -7 },
+      calendar: { count: 3.9, date: null },
+    });
+    expect(out.counters.bought).toBe(0);
+    expect(out.earnings).toEqual({ date: '', run: 0, custom: 0 });
+    expect(out.calendar).toEqual({ count: 3, date: '' });
+    expect(migrate({ ...emptySave(), earnings: null, calendar: [] })).toMatchObject({
+      earnings: { date: '', run: 0, custom: 0 },
+      calendar: { count: 0, date: '' },
+    });
+    const kept = { date: '2026-10-05', run: 40, custom: 12 };
+    expect(
+      migrate({ ...emptySave(), earnings: kept, calendar: { count: 9, date: '2026-10-05' }, counters: { ...emptySave().counters, bought: 4 } }),
+    ).toMatchObject({
+      earnings: kept,
+      calendar: { count: 9, date: '2026-10-05' },
+      counters: { bought: 4 },
+    });
+  });
+
+  it('sanitises the wallet: no negative / fractional balance, unique string ids; bought crystals may leave the balance above the lifetime total', () => {
     const out = migrate({ ...emptySave(), crystals: 12.7, lifetimeCrystals: 3, purchased: ['a', 5, 'a', null, 'b'] });
     expect(out.crystals).toBe(12);
-    expect(out.lifetimeCrystals).toBe(12);
+    expect(out.lifetimeCrystals).toBe(3);
     expect(out.purchased).toEqual(['a', 'b']);
-    expect(migrate({ ...emptySave(), crystals: -5, purchased: 'x' })).toMatchObject({ crystals: 0, lifetimeCrystals: 0, purchased: [] });
+    expect(migrate({ ...emptySave(), crystals: -5, lifetimeCrystals: -1, purchased: 'x' })).toMatchObject({ crystals: 0, lifetimeCrystals: 0, purchased: [] });
   });
 
   it('emptySave() returns unshared nested objects', () => {

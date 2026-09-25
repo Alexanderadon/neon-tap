@@ -3,7 +3,9 @@ import type { SpellKind } from '@/shared/types/chart';
 import { addRun, addSpell, emptySave, mergeResult, migrate, type BestResult, type SaveData } from './SaveData';
 import { completeDaily, localDateString } from './daily';
 import { claimGoals, type Goal } from './goals';
-import { addCrystals, purchaseTrack, type PurchaseFailure } from './shop';
+import { addCrystals, creditPaidCrystals, purchaseTrack, withdrawCrystals, type PurchaseFailure } from './shop';
+import { earnRun, type EarningCap, type RunEarningInput } from './earnings';
+import { markCalendar, type CalendarMark } from './calendar';
 
 const KEY = 'neon-tap:save';
 
@@ -58,9 +60,40 @@ export function claimCompletedGoals(): Goal[] {
   return claimed;
 }
 
-/** Credit crystals collected in a finished, non-failed run. */
+/** Credit crystals the player earned outside the daily allowance (the daily track, first clears, the calendar); they count towards the lifetime total. */
 export function recordCrystals(amount: number): void {
   if (amount > 0) progressStore.set(addCrystals(progressStore.get(), amount));
+}
+
+/**
+ * Credit the crystals a finished, non-failed run collected, through the day's allowance
+ * (earnings.ts); returns what reached the wallet and why it was less, if it was.
+ */
+export function recordRunCrystals(input: RunEarningInput): { credited: number; capped: EarningCap | null } {
+  const save = progressStore.get();
+  const { state, credited, capped } = earnRun(save.earnings, input);
+  if (state !== save.earnings || credited > 0) progressStore.set(addCrystals({ ...save, earnings: state }, credited));
+  return { credited, capped };
+}
+
+/** The login calendar's mark for the first passed run of `date`, with its crystals credited; null when the day is marked already. */
+export function recordCalendarMark(date: string = localDateString()): CalendarMark | null {
+  const save = progressStore.get();
+  const { state, mark } = markCalendar(save.calendar, date);
+  if (mark) progressStore.set(addCrystals({ ...save, calendar: state }, mark.reward));
+  return mark;
+}
+
+/** Crystals bought for money: the balance grows, the lifetime total does not. */
+export function addPaidCrystals(amount: number): void {
+  if (amount > 0) progressStore.set(creditPaidCrystals(progressStore.get(), amount));
+}
+
+/** Pay crystals from the wallet (the second chance); false, and nothing spent, when the balance is short. */
+export function spendCrystals(amount: number): boolean {
+  const { save, ok } = withdrawCrystals(progressStore.get(), amount);
+  if (ok && save !== progressStore.get()) progressStore.set(save);
+  return ok;
 }
 
 /** Buy a track in the shop; false with the reason when it is owned already or the balance is short. */

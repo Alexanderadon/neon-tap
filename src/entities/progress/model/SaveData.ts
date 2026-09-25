@@ -1,5 +1,7 @@
 import type { Rank } from '@/shared/types/result';
 import type { SpellKind } from '@/shared/types/chart';
+import { EMPTY_EARNINGS, type EarningsState } from './earnings';
+import { EMPTY_CALENDAR, type CalendarState } from './calendar';
 
 export interface BestResult {
   score: number;
@@ -39,6 +41,8 @@ export interface Counters {
   perfects: number;
   /** Finished, non-failed runs of the player's own songs. */
   customPlays: number;
+  /** Tracks bought for crystals (the «Покупки» badges); free unlocks (an ad, NEON PASS) do not count. */
+  bought: number;
 }
 
 /** Daily-track state: one bonus star per local day. */
@@ -82,9 +86,17 @@ export interface SaveDataV5 extends Omit<SaveDataV4, 'version'> {
   version: 5;
 }
 
-export type SaveData = SaveDataV5;
+export interface SaveDataV6 extends Omit<SaveDataV5, 'version'> {
+  version: 6;
+  /** Today's run crystals against the daily allowance (earnings.ts). */
+  earnings: EarningsState;
+  /** The login calendar (calendar.ts). */
+  calendar: CalendarState;
+}
 
-export const CURRENT_VERSION = 5;
+export type SaveData = SaveDataV6;
+
+export const CURRENT_VERSION = 6;
 
 export const EMPTY_COUNTERS: Counters = {
   spells: { slow: 0, heart: 0 },
@@ -94,11 +106,12 @@ export const EMPTY_COUNTERS: Counters = {
   genres: [],
   perfects: 0,
   customPlays: 0,
+  bought: 0,
 };
 export const EMPTY_DAILY: DailyState = { date: '', done: false, streak: 0, total: 0 };
 
 export const EMPTY_SAVE: SaveData = {
-  version: 5,
+  version: 6,
   tracks: {},
   plays: 0,
   counters: EMPTY_COUNTERS,
@@ -107,12 +120,14 @@ export const EMPTY_SAVE: SaveData = {
   crystals: 0,
   lifetimeCrystals: 0,
   purchased: [],
+  earnings: EMPTY_EARNINGS,
+  calendar: EMPTY_CALENDAR,
 };
 
 /** Fresh, unshared copy of the empty save (nested objects are cloned). */
 export function emptySave(): SaveData {
   return {
-    version: 5,
+    version: 6,
     tracks: {},
     plays: 0,
     counters: cloneCounters(EMPTY_COUNTERS),
@@ -121,6 +136,8 @@ export function emptySave(): SaveData {
     crystals: 0,
     lifetimeCrystals: 0,
     purchased: [],
+    earnings: { ...EMPTY_EARNINGS },
+    calendar: { ...EMPTY_CALENDAR },
   };
 }
 
@@ -147,7 +164,22 @@ function sanitizeCounters(raw: unknown): Counters {
     genres: [...new Set(stringList(c.genres))],
     perfects: num(c.perfects),
     customPlays: num(c.customPlays),
+    bought: Math.max(0, Math.floor(num(c.bought))),
   };
+}
+
+const record = (raw: unknown): Record<string, unknown> => (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+const dateOf = (v: unknown): string => (typeof v === 'string' ? v : '');
+const amount = (v: unknown): number => Math.max(0, num(v));
+
+function sanitizeEarnings(raw: unknown): EarningsState {
+  const e = record(raw);
+  return { date: dateOf(e.date), run: amount(e.run), custom: amount(e.custom) };
+}
+
+function sanitizeCalendar(raw: unknown): CalendarState {
+  const c = record(raw);
+  return { count: Math.floor(amount(c.count)), date: dateOf(c.date) };
 }
 
 function sanitizeDaily(raw: unknown): DailyState {
@@ -168,6 +200,9 @@ function sanitizeDaily(raw: unknown): DailyState {
  *           derived from existing bests (max combo, tracks passed) are back-filled so an old
  *           player does not start the quests from zero.
  *  v3 → v4: crystal wallet — balance, lifetime total and purchased track ids, all starting empty.
+ *  v4 → v5: achievements — genre / perfect / custom-song counters.
+ *  v5 → v6: economy — the daily allowance and the login calendar start empty; the «Покупки»
+ *           counter starts at the number of tracks owned (every earlier unlock counts as bought).
  */
 const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
   0: (data) => ({ version: 1, tracks: (data.tracks as Record<string, unknown>) ?? {}, plays: 0 }),
@@ -198,6 +233,13 @@ const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<strin
   // v4 → v5: achievements — genre / perfect / custom-song counters (start at zero; goals claimed
   // under the old 8-quest list keep their ids, they simply never match a badge again).
   4: (data) => ({ ...data, version: 5 }),
+  5: (data) => ({
+    ...data,
+    version: 6,
+    counters: { ...record(data.counters), bought: new Set(stringList(data.purchased)).size },
+    earnings: { ...EMPTY_EARNINGS },
+    calendar: { ...EMPTY_CALENDAR },
+  }),
 };
 
 const stringList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((g): g is string => typeof g === 'string') : []);
@@ -212,17 +254,20 @@ export function migrate(raw: unknown): SaveData {
     data = step(data);
     version++;
   }
-  const crystals = Math.max(0, Math.floor(num(data.crystals)));
+  // Bought crystals raise the balance, not the lifetime total (the «Кристаллы» badges count earned ones only),
+  // so the balance may exceed it.
   return {
-    version: 5,
+    version: 6,
     tracks: (data.tracks as Record<string, BestResult>) ?? {},
     plays: num(data.plays),
     counters: sanitizeCounters(data.counters),
     daily: sanitizeDaily(data.daily),
     goalsClaimed: stringList(data.goalsClaimed),
-    crystals,
-    lifetimeCrystals: Math.max(crystals, Math.floor(num(data.lifetimeCrystals))),
+    crystals: Math.max(0, Math.floor(num(data.crystals))),
+    lifetimeCrystals: Math.max(0, Math.floor(num(data.lifetimeCrystals))),
     purchased: [...new Set(stringList(data.purchased))],
+    earnings: sanitizeEarnings(data.earnings),
+    calendar: sanitizeCalendar(data.calendar),
   };
 }
 

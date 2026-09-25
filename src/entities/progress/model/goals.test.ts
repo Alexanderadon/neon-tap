@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GOALS, bonusStars, claimGoals, findGoal, goalProgress, grandTotalStars, isGoalDone, nextGoals } from './goals';
 import { EMPTY_COUNTERS, emptySave, type BestResult, type SaveData } from './SaveData';
+import { addCrystals, creditPaidCrystals, purchaseTrack } from './shop';
 
 const res = (rank: BestResult['rank'], fullCombo = false, maxCombo = 10): BestResult => ({
   score: 1000,
@@ -14,9 +15,9 @@ const res = (rank: BestResult['rank'], fullCombo = false, maxCombo = 10): BestRe
 const g = (id: string) => findGoal(id)!;
 
 describe('achievements', () => {
-  it('is a ladder of exactly 100 badges with unique ids, ascending tiers and copy', () => {
-    expect(GOALS.length).toBe(100);
-    expect(new Set(GOALS.map((x) => x.id)).size).toBe(100);
+  it('is a ladder of exactly 97 badges with unique ids, ascending tiers and copy', () => {
+    expect(GOALS.length).toBe(97);
+    expect(new Set(GOALS.map((x) => x.id)).size).toBe(97);
     const families = new Set(GOALS.map((x) => x.family));
     expect(families.size).toBe(15);
     for (const family of families) {
@@ -34,6 +35,43 @@ describe('achievements', () => {
       expect(goal.progress(emptySave())).toBe(0);
     }
     expect(findGoal('nope')).toBeUndefined();
+  });
+
+  it('pays exactly 2 000 crystals over all badges: 5 · tier, 5 · tier + 5 for rank S, full combo, daily and purchases', () => {
+    expect(GOALS.reduce((sum, x) => sum + x.reward, 0)).toBe(2000);
+    const rewards = (family: string) => GOALS.filter((x) => x.family === family).map((x) => x.reward);
+    expect(rewards('pass')).toEqual([5, 10, 15, 20, 25, 30, 35, 40]);
+    expect(rewards('rankS')).toEqual([10, 15, 20, 25, 30, 35, 40, 45]);
+    expect(rewards('fullCombo')).toEqual([10, 15, 20, 25, 30, 35]);
+    expect(rewards('daily')).toEqual([10, 15, 20, 25, 30]);
+    expect(rewards('bought')).toEqual([10, 15, 20, 25, 30]);
+    expect(rewards('custom')).toEqual([5, 10, 15, 20]);
+  });
+
+  it('has fixed targets: pass and rank S up to 50, the hardest track up to ★6, genres up to 18', () => {
+    const targets = (family: string) => GOALS.filter((x) => x.family === family).map((x) => x.target);
+    expect(targets('pass')).toEqual([1, 3, 5, 10, 20, 30, 40, 50]);
+    expect(targets('rankS')).toEqual([1, 3, 5, 10, 20, 30, 40, 50]);
+    expect(targets('hardest')).toEqual([2, 3, 4, 5, 6]);
+    expect(Math.max(...targets('hardest'))).toBeLessThanOrEqual(6);
+    expect(targets('genres')).toEqual([2, 4, 6, 8, 10, 14, 18]);
+    expect(Math.max(...targets('genres'))).toBeLessThanOrEqual(18);
+  });
+
+  it('«Покупки» count tracks bought for crystals only, not free unlocks; «Кристаллы» count earned crystals only', () => {
+    let save = addCrystals(emptySave(), 300);
+    save = purchaseTrack(save, 'free-for-ad', 0).save; // an ad / NEON PASS unlock
+    expect(g('bought-1').progress(save)).toBe(0);
+    save = purchaseTrack(save, 'bought', 120).save;
+    expect(save.purchased).toEqual(['free-for-ad', 'bought']);
+    expect(g('bought-1').progress(save)).toBe(1);
+    // 4 500 bought crystals: the balance grows, the «Кристаллы» ladder does not move
+    const rich = creditPaidCrystals(emptySave(), 4500);
+    expect(rich.crystals).toBe(4500);
+    expect(g('crystals-50').progress(rich)).toBe(0);
+    expect(claimGoals(rich).claimed).toEqual([]);
+    // earned ones do count
+    expect(g('crystals-50').progress(addCrystals(rich, 60))).toBe(60);
   });
 
   it('evaluates track-based badges from the bests', () => {
@@ -68,14 +106,15 @@ describe('achievements', () => {
   });
 
   it('claims every newly reached tier once and pays crystals, never stars', () => {
-    const base: SaveData = { ...emptySave(), counters: { ...EMPTY_COUNTERS, spells: { slow: 10, heart: 0 }, maxCombo: 100 } };
+    const base: SaveData = { ...emptySave(), counters: { ...EMPTY_COUNTERS, spells: { slow: 10, heart: 0 }, maxCombo: 150 } };
     const first = claimGoals(base);
-    expect(first.claimed.map((x) => x.id).sort()).toEqual(['combo-100', 'combo-25', 'combo-50', 'slow-10', 'slow-5']);
+    expect(first.claimed.map((x) => x.id).sort()).toEqual(['combo-100', 'combo-150', 'combo-25', 'combo-50', 'slow-10', 'slow-5']);
     const reward = first.claimed.reduce((s, x) => s + x.reward, 0);
+    expect(reward).toBe(65);
     expect(first.save.crystals).toBe(reward);
     expect(first.save.lifetimeCrystals).toBe(reward);
     expect(base.goalsClaimed).toEqual([]);
-    // the reward itself climbs the crystal ladder (85 crystals → the 50 tier), then the ladder rests
+    // the reward itself climbs the crystal ladder (65 crystals → the 50 tier), then the ladder rests
     const second = claimGoals(first.save);
     expect(second.claimed.map((x) => x.id)).toEqual(['crystals-50']);
     const third = claimGoals(second.save);
@@ -89,6 +128,7 @@ describe('achievements', () => {
   it('lists the next unearned tier of every family, in family order', () => {
     const save: SaveData = { ...emptySave(), counters: { ...EMPTY_COUNTERS, maxCombo: 60 } };
     const next = nextGoals(save);
+    expect(next.find((x) => x.family === 'bought')?.id).toBe('bought-1');
     expect(next.length).toBe(15);
     expect(next.find((x) => x.family === 'combo')?.id).toBe('combo-100');
     expect(next.find((x) => x.family === 'pass')?.id).toBe('pass-1');

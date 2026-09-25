@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ALWAYS_OPEN, isTrackUnlocked, newlyUnlocked, nextUnlock, unlockStates, unlockThreshold } from './unlocks';
+import { CATALOG, PREMIUM_IDS, TRACK_IDS } from '@/entities/track';
+import { ALWAYS_OPEN, isTrackUnlocked, newlyUnlocked, nextUnlock, roadThresholds, unlockStates, unlockThreshold } from './unlocks';
 
 const IDS = Array.from({ length: 21 }, (_, i) => `t${i}`);
 
@@ -71,7 +72,40 @@ describe('unlocks — purchased and premium', () => {
 
   it('newlyUnlocked skips premium tracks', () => {
     expect(newlyUnlocked(IDS, 3, 7)).toEqual(['t6', 't7']);
-    expect(newlyUnlocked(IDS, 3, 7, ['t6'])).toEqual(['t7']);
+    // t6 premium: t7 takes its place on the road (needs 4), t8 needs 7
+    expect(newlyUnlocked(IDS, 3, 7, ['t6'])).toEqual(['t7', 't8']);
+  });
+});
+
+describe('unlocks — the road counts non-premium tracks only', () => {
+  it('a premium track does not push the tracks after it further', () => {
+    const premium = ['t5', 't6'];
+    expect(roadThresholds(IDS, premium).slice(0, 10)).toEqual([0, 0, 0, 0, 0, 0, 0, 2, 4, 7]);
+    const states = unlockStates(IDS, { stars: 4, premium });
+    expect(states[7]).toMatchObject({ id: 't7', need: 2, unlocked: true });
+    expect(states[8]).toMatchObject({ id: 't8', need: 4, unlocked: true });
+    expect(states[9]).toMatchObject({ id: 't9', need: 7, unlocked: false });
+    // premium tracks need no stars — they never open by stars
+    expect(states[5]).toMatchObject({ need: 0, premium: true, unlocked: false });
+    expect(isTrackUnlocked(IDS, 't8', { stars: 4, premium })).toBe(true);
+    expect(isTrackUnlocked(IDS, 't9', { stars: 4, premium })).toBe(false);
+    // the cap follows the road size: 19 road tracks → 57 − 6
+    expect(Math.max(...roadThresholds(IDS, premium))).toBeLessThanOrEqual(19 * 3 - 6);
+    expect(roadThresholds(IDS)).toEqual(IDS.map((_, i) => unlockThreshold(i, IDS.length)));
+  });
+
+  it('on the real catalog: the rock pack opens at 70 / 73 / 75 and no threshold grows', () => {
+    const road = CATALOG.filter((t) => TRACK_IDS.includes(t.id));
+    const needs = roadThresholds(TRACK_IDS, PREMIUM_IDS);
+    const rock = road.filter((t) => t.pack === 'rock').map((t) => needs[TRACK_IDS.indexOf(t.id)]);
+    expect(rock).toEqual([70, 73, 75]);
+    TRACK_IDS.forEach((id, i) => {
+      if (PREMIUM_IDS.includes(id)) return;
+      expect(needs[i]).toBeLessThanOrEqual(unlockThreshold(i, TRACK_IDS.length));
+    });
+    // still easiest first: the road never asks for fewer stars further on
+    const roadNeeds = needs.filter((_, i) => !PREMIUM_IDS.includes(TRACK_IDS[i]));
+    for (let i = 1; i < roadNeeds.length; i++) expect(roadNeeds[i]).toBeGreaterThanOrEqual(roadNeeds[i - 1]);
   });
 });
 
@@ -83,7 +117,8 @@ describe('nextUnlock', () => {
 
   it('skips premium and bought tracks — they never open by stars', () => {
     const states = unlockStates(IDS, { stars: 5, premium: ['t7'], purchased: ['t8'] });
-    expect(nextUnlock(states, 5)).toEqual({ id: 't9', need: 11, have: 5, missing: 6 });
+    // t7 premium moves the road up by one: t8 would need 7 (bought), t9 needs 9
+    expect(nextUnlock(states, 5)).toEqual({ id: 't9', need: 9, have: 5, missing: 4 });
   });
 
   it('is null when every star-gated track is open', () => {
