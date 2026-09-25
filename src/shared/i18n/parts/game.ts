@@ -50,10 +50,14 @@ export const game = {
   analysisWord: 'Анализ',
   // --- second chance (30 crystals, free with NEON PASS; never an ad) ---
   reviveOnce: '1 раз за забег',
-  reviveHint: 'забег продолжится с этого места',
-  /** «+5 сердец · 30 кристаллов» / «+5 сердец · бесплатно с PASS» under «Продолжить». */
-  reviveSubPrice: '+5 сердец · {price}',
-  revivePrice: '{n} {noun}',
+  /** The panel line under the five empty hearts: what the second chance gives (the refill then shows the same words in bold). */
+  reviveHint: '+5 сердец · с этого же места',
+  /**
+   * «за 30 кристаллов» / «бесплатно с PASS» under «Продолжить» — the price alone: with «+5 сердец · » in
+   * front the line is 222–245 px against 208–223 px of room (360–390 px screens) and lost its end to an ellipsis.
+   */
+  reviveSubPrice: '{price}',
+  revivePrice: 'за {n} {noun}',
   reviveFree: 'бесплатно с PASS',
   toResult: 'К результату',
   revived: '+5 сердец',
