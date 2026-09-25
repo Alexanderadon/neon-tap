@@ -4,7 +4,6 @@ import { Coin, CrystalIcon, Difficulty, Disc, Icon, ObjButton, PrimaryAction, Sh
 import { TrackCover, type TrackMeta } from '@/entities/track';
 import type { PurchasePaths, PurchasePlan } from '@/features/buy-track';
 import type { ShopItem } from '../model/shopItems';
-import { adSecondsText } from '../lib/adText';
 
 interface Props {
   item: ShopItem;
@@ -26,7 +25,9 @@ interface Props {
  * The purchase sheet (mockup screens 3 / 6 / 9 / 10): a bottom sheet 375 × 544 over a plain veil,
  * one 335 column inside — title · cover 96 · name · flame + condition · three coins («цена · у тебя ·
  * останется» or «… · не хватает») · [hint] · [ad row] · [top-up row] · «Отмена» · the primary
- * button on the same line as the screen's own. One cyan button = one way in.
+ * button on the same line as the screen's own. One cyan button = one way in. The ad is a way only
+ * for the week's new track: «Смотреть рекламу · трек твой навсегда» — the button says it is an ad
+ * and what it gives.
  */
 export function PurchaseSheet({ item, plan, paths, daily, onBuy, onAd, onEarn, onClose, onTopUp, primaryRef }: Props) {
   const { track } = item;
@@ -64,8 +65,8 @@ export function PurchaseSheet({ item, plan, paths, daily, onBuy, onAd, onEarn, o
             <Icon name="ad" size={24} />
           </Disc>
         }
-        label={dict.shopAdFreeShort}
-        sub={adSecondsText(dict.shopAdCaption)}
+        label={dict.shopWatchAd}
+        sub={dict.shopAdForever}
         onClick={onAd}
       />
     );
@@ -101,7 +102,9 @@ export function PurchaseSheet({ item, plan, paths, daily, onBuy, onAd, onEarn, o
       <h3 className="sheet-h2">{track.title}</h3>
       <div className="sheet-meta">
         <Difficulty stars={track.stars} />
-        {item.kind === 'premium' ? (
+        {item.drop ? (
+          <Tag variant={item.drop.thisWeek ? 'gold' : 'dark'}>{item.drop.thisWeek ? dict.dropThisWeek : dict.dropTag}</Tag>
+        ) : item.kind === 'premium' ? (
           <Tag>{dict.shopPremium}</Tag>
         ) : (
           <Tag variant="dark" icon={<Star id={starId} on />}>
@@ -125,7 +128,7 @@ export function PurchaseSheet({ item, plan, paths, daily, onBuy, onAd, onEarn, o
           className="shop-adrow"
           icon={<Icon name="ad" size={20} />}
           label={dict.shopWatchAd}
-          sub={adSecondsText(dict.shopAdFree)}
+          sub={dict.shopAdForever}
           end={<Icon name="arrow" size={20} />}
           onClick={onAd}
         />

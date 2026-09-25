@@ -58,6 +58,12 @@
   height: 32px;
   color: var(--w80);
 }
+/* The first shelf «НОВИНКИ»: its gold tag (as the deck's chapter row) above the weekly tracks. */
+.shop-shelf {
+  display: flex;
+  flex: none;
+  height: 24px;
+}
 
 /* ---- ShopCard 335 × 72, r 16: the deck card on its side, compact (the owner: smaller type, tighter) ---- */
 .scard {
