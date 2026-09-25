@@ -10,6 +10,11 @@
  * policy. Every chart passes the hands gate (`assertPlayable`) and the ★ gate (its check rating is
  * at most its target, never above MAX_STARS) or the run aborts. `--dry` composes and prints without
  * writing the charts or the catalog.
+ *
+ * Weekly tracks (`"drop": true`) take their Monday from assets-src/drops.json, which is checked
+ * before any audio is read (start on a Monday, known drop ids, no repeats, a week for every drop —
+ * `npm run assets:drops` fills it). They are charted like pack tracks (★2–6), written to the catalog
+ * with `drop: true` and `release: "YYYY-MM-DD"`, and placed after the packs by release date.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -34,6 +39,7 @@ import {
   type StemLayers,
 } from '../src/shared/lib/analysis';
 import { GENRES, type ChartFile, type Genre } from '../src/shared/types/chart';
+import { releaseDates, validateDrops, type DropsFile } from './lib/drops';
 
 interface RawTrack {
   id: string;
@@ -44,6 +50,8 @@ interface RawTrack {
   premium?: boolean;
   /** Named pack (`rock`): its tracks sit together after the main catalog as a chapter of their own. */
   pack?: string;
+  /** Weekly track («Новинка недели»): its week is in assets-src/drops.json; never premium, never in a pack. */
+  drop?: boolean;
   raw: string;
   sourceUrl: string;
   license: string;
@@ -69,8 +77,14 @@ const MEDIUM_TRACKS = 10;
 /** Compose and print only — neither the charts nor the catalog are written. */
 const DRY = process.argv.includes('--dry');
 
-if (!DRY) mkdirSync(CHART_DIR, { recursive: true });
 const tracks = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'tracks.json'), 'utf8')) as RawTrack[];
+// The weekly schedule is checked before any audio is decoded: a broken plan fails in a second, not after the whole analysis.
+const drops = JSON.parse(readFileSync(join(ROOT, 'assets-src', 'drops.json'), 'utf8')) as DropsFile;
+const dropProblems = validateDrops(drops, tracks);
+if (dropProblems.length) throw new Error(`assets-src/drops.json:\n  ${dropProblems.join('\n  ')}`);
+/** Release date of every scheduled weekly track (validated: every drop track has one). */
+const releaseOf = releaseDates(drops);
+if (!DRY) mkdirSync(CHART_DIR, { recursive: true });
 
 interface Analysed {
   t: RawTrack;
@@ -121,7 +135,7 @@ const naturalOf = (a: Analysed): { stars: number; energy: number } => {
 const order = published.length
   ? published
   : [...analysed]
-      .filter((a) => !a.t.premium && !a.t.pack)
+      .filter((a) => !a.t.premium && !a.t.pack && !a.t.drop)
       .map((a) => ({ id: a.t.id, ...naturalOf(a) }))
       .sort((a, b) => a.stars - b.stars || a.energy - b.energy || a.id.localeCompare(b.id))
       .map((a) => a.id);
@@ -131,7 +145,7 @@ order.slice(BEGINNER_TRACKS, BEGINNER_TRACKS + MEDIUM_TRACKS).forEach((id) => ch
 
 const built: ChartFile[] = [];
 for (const { t, duration, analysis, layers, ms } of analysed) {
-  const chapter: Chapter = t.pack ? 'normal' : (chapters.get(t.id) ?? 'normal');
+  const chapter: Chapter = t.pack || t.drop ? 'normal' : (chapters.get(t.id) ?? 'normal');
   let trace: ComposeTrace | undefined;
   const chart = composeChart(analysis, {
     seed: hash(t.id),
@@ -166,7 +180,7 @@ for (const { t, duration, analysis, layers, ms } of analysed) {
   const chords = lane.length - new Set(lane.map((n) => n[0])).size;
   const lanes = (chart.sections ?? [[0, 4]]).map((s) => s[1]).join('→');
   console.log(
-    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : chapter === 'easy' ? ' E' : chapter === 'medium' ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ` +
+    `${t.id.padEnd(28)} ${t.genre.padEnd(10)}${t.premium ? ' $' : t.drop ? ' W' : chapter === 'easy' ? ' E' : chapter === 'medium' ? ' M' : '  '} ${duration.toFixed(0).padStart(4)}s bpm ${analysis.bpm.toString().padStart(5)} ` +
       `★${trace!.target} (check ★${trace!.stars}) E ${songEnergy(trace!.energy).toFixed(2)} levels ${trace!.levels.join('')} shrinks ${trace!.shrinks}/${trace!.repairs} ` +
       `${(chart.notes.length / duration).toFixed(2)}/s notes ${String(chart.notes.length).padStart(4)} H${f.holds}/S${f.slides}/R${f.rolls}/C${f.circles}/Sp${f.spins}/Ch${chords} [${lanes}] ${ms} ms` +
       (trace!.fails.length ? ` fails: ${trace!.fails.join(', ')}` : ''),
@@ -177,11 +191,20 @@ const rank = (c: ChartFile): number => {
   const i = order.indexOf(c.id);
   return i < 0 ? order.length : i;
 };
-// Packs go after the main catalog, one after another in order of first appearance, each in its own published order.
+// Packs go after the main catalog, one after another in order of first appearance, each in its own published order;
+// the weekly tracks come last, by release date (the deck's «Новинки» chapter).
 const packs = [...new Set(tracks.map((t) => t.pack).filter((p): p is string => !!p))];
-const packRank = (c: ChartFile): number => (c.pack ? 1 + packs.indexOf(c.pack) : 0);
+const isDrop = (c: ChartFile): boolean => tracks.some((t) => t.id === c.id && t.drop === true);
+const packRank = (c: ChartFile): number => (isDrop(c) ? 1 + packs.length : c.pack ? 1 + packs.indexOf(c.pack) : 0);
+const releaseRank = (c: ChartFile): string => (isDrop(c) ? (releaseOf.get(c.id) ?? '') : '');
 built.sort(
-  (a, b) => packRank(a) - packRank(b) || rank(a) - rank(b) || a.chart.stars - b.chart.stars || a.chart.notes.length - b.chart.notes.length || a.bpm - b.bpm,
+  (a, b) =>
+    packRank(a) - packRank(b) ||
+    releaseRank(a).localeCompare(releaseRank(b)) ||
+    rank(a) - rank(b) ||
+    a.chart.stars - b.chart.stars ||
+    a.chart.notes.length - b.chart.notes.length ||
+    a.bpm - b.bpm,
 );
 const catalog = built.map((c) => ({
   id: c.id,
@@ -192,6 +215,7 @@ const catalog = built.map((c) => ({
   genre: c.genre,
   ...(c.premium ? { premium: true } : {}),
   ...(c.pack ? { pack: c.pack } : {}),
+  ...(isDrop(c) ? { drop: true, release: releaseOf.get(c.id) } : {}),
   ...(coverFile(c.id) ? { cover: coverFile(c.id) } : {}),
   ...(coverFile(c.id) && colors[c.id] ? { tint: colors[c.id].tint } : {}),
   bpm: c.bpm,
