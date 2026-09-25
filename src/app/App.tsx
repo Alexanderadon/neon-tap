@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { navigate, useRouteKey, useScreen } from '@/shared/lib/router';
-import { firstLaunchStep, getSettings, isWelcomeSkipped } from '@/entities/settings';
+import { firstLaunchStep, getSettings } from '@/entities/settings';
 import { MenuPage } from '@/pages/menu';
 import { GamePage } from '@/pages/game';
 import { ResultPage } from '@/pages/result';
@@ -11,7 +11,6 @@ import { TutorialPage } from '@/pages/tutorial';
 import { DuelPage } from '@/pages/duel';
 import { duelIdFromUrl } from '@/shared/api/duels';
 import { ShopPage } from '@/pages/shop';
-import { WelcomePage } from '@/pages/welcome';
 import { OrientationHint } from '@/widgets/orientation-hint';
 import { InstallBanner } from '@/widgets/install-banner';
 import { UpdateToast } from '@/widgets/update-toast';
@@ -21,13 +20,14 @@ export function App() {
   const screen = useScreen();
   const key = useRouteKey();
 
-  // First launch: name → latency calibration (GDD §4) → tutorial, each once. Every step returns
-  // to the menu, so the check runs every time the menu opens.
+  // First launch goes straight to the tutorial (a first song with hints), once: the name is asked
+  // where it is needed, latency calibration waits in the settings. The tutorial returns to the
+  // menu, so the check runs every time the menu opens.
   useEffect(() => {
     if (screen !== 'menu') return;
-    const step = firstLaunchStep(getSettings(), isWelcomeSkipped());
+    const step = firstLaunchStep(getSettings());
     if (step) navigate(step);
-    // A duel link (?duel=<id>): the challenge screen comes right after the first-launch steps.
+    // A duel link (?duel=<id>): the challenge screen comes right after the tutorial.
     else if (duelIdFromUrl()) navigate('duel');
   }, [screen]);
 
@@ -50,9 +50,6 @@ export function App() {
       break;
     case 'tutorial':
       page = <TutorialPage key={key} />;
-      break;
-    case 'welcome':
-      page = <WelcomePage key={key} />;
       break;
     case 'shop':
       page = <ShopPage key={key} />;

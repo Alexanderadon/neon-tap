@@ -243,7 +243,6 @@ export const common = {
   deckStars: 'звёзды',
   difficultyLabel: 'Сложность {n}',
   profile: 'Профиль',
-  welcomeTitle: 'Как тебя зовут?',
   next: 'Дальше',
   resultMore: 'Подробнее',
   resultLess: 'Скрыть',

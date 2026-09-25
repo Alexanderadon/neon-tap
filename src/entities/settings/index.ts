@@ -10,5 +10,5 @@ export {
   FX_MODES,
 } from './model/settingsStore';
 export type { Settings, VoiceSetting, FxMode } from './model/settingsStore';
-export { firstLaunchStep, markWelcomeSkipped, isWelcomeSkipped } from './model/firstLaunch';
+export { firstLaunchStep } from './model/firstLaunch';
 export type { FirstLaunchStep } from './model/firstLaunch';

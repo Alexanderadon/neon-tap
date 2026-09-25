@@ -4,7 +4,7 @@ import { store } from '@/shared/lib/iap';
 import { sfxGem, sfxMilestone } from '@/shared/lib/audio';
 import { centreOf } from '@/shared/lib/viewport';
 import { CrystalFlight, CrystalIcon, Icon, type FlightPath } from '@/shared/ui';
-import { firstLaunchStep, getSettings, isWelcomeSkipped } from '@/entities/settings';
+import { firstLaunchStep, getSettings } from '@/entities/settings';
 import { progressStore, useProgress } from '@/entities/progress';
 import {
   ensureOffersAnchor,
@@ -88,7 +88,7 @@ export function OfferPopups({ auto = false, request, onRequestHandled, crystalsR
     const progress = progressStore.get();
     const pick = pickAutoOffer({
       available: store.available(),
-      firstLaunchPending: firstLaunchStep(getSettings(), isWelcomeSkipped()) !== null,
+      firstLaunchPending: firstLaunchStep(getSettings()) !== null,
       limitedActive: limitedWindow(anchor, now).active,
       limitedShown: limitedShownThisSession(),
       musicDue: musicOfferDue(

@@ -10,9 +10,8 @@ import { TapMeter } from './TapMeter';
 import './calibration.css';
 
 interface Props {
+  /** Saved or skipped: back to the menu. */
   onDone: () => void;
-  /** First launch (the tutorial comes next) vs. opened from the settings (back to the menu). */
-  firstRun?: boolean;
 }
 
 type Phase = 'intro' | 'running' | 'done';
@@ -31,7 +30,7 @@ const SPARKS = Array.from({ length: 12 }, (_, i) => ({
  * Three screens (screens-onboard C3–C5): the intro with the headphones disc, the measurement with
  * the ticking metronome disc, the «7 / 16» panel and the TapMeter, and the result with the check.
  */
-export function CalibrationMeter({ onDone, firstRun = false }: Props) {
+export function CalibrationMeter({ onDone }: Props) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [count, setCount] = useState(0);
   const [lastMs, setLastMs] = useState<number | null>(null);
@@ -230,7 +229,7 @@ export function CalibrationMeter({ onDone, firstRun = false }: Props) {
             </Disc>
           }
           label={dict.calibrationSave}
-          sub={firstRun ? dict.nextTutorial : dict.toMenuShort}
+          sub={dict.toMenuShort}
           beat
           onClick={save}
         />
