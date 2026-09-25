@@ -29,7 +29,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   min-height: 0;
   margin-top: 32px;
@@ -186,6 +186,12 @@
   overflow: visible;
 }
 /* PreviewDisc 32 — the primary button's disc on the cover (left 18, top 20): triangle 18; playing = stop 14 + the 5-second ring. */
+/* The preview disc is 32 px; ::before widens its tap target to 48. */
+.scard-pv::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
 .scard-pv {
   position: absolute;
   left: 18px;

@@ -78,12 +78,15 @@ export function TopBar({ crystals, stars, onCrystalsTap, onTopUp, crystalsRef, s
           onClick={onCrystalsTap}
           chipRef={crystalsRef}
           extra={
-            onTopUp && (
+            onTopUp ? (
               <button type="button" className="topbar-plus" aria-label={dict.offerTopUpAria} title={dict.offerTopUp} onClick={onTopUp}>
                 <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
                   <path d="M6 1v10M1 6h10" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
                 </svg>
               </button>
+            ) : (
+              // No top-up on this screen: the slot stays, so the header is the same on every screen.
+              <span className="topbar-plus-slot" aria-hidden="true" />
             )
           }
         />

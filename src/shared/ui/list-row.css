@@ -15,9 +15,7 @@
   font-variant-numeric: tabular-nums;
 }
 .lrow-me {
-  box-shadow:
-    inset 0 0 0 1px var(--cyan),
-    0 0 16px rgba(0, 240, 255, 0.15);
+  box-shadow: inset 0 0 0 1px var(--cyan);
 }
 .lrow-me .lrow-name {
   color: var(--cyan);
