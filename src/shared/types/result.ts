@@ -1,6 +1,9 @@
 export type Judgement = 'perfect' | 'great' | 'good' | 'miss';
 export type Rank = 'SS' | 'S' | 'A' | 'B' | 'C' | 'D';
 
+/** Ranks from the lowest to the highest — the one order records merge by (catalog tracks and own songs). */
+export const RANK_ORDER: readonly Rank[] = ['D', 'C', 'B', 'A', 'S', 'SS'];
+
 export interface JudgementCounts {
   perfect: number;
   great: number;

@@ -1,4 +1,4 @@
-import type { Rank } from '@/shared/types/result';
+import { RANK_ORDER, type Rank } from '@/shared/types/result';
 import type { SpellKind } from '@/shared/types/chart';
 import { EMPTY_EARNINGS, type EarningsState } from './earnings';
 import { EMPTY_CALENDAR, type CalendarState } from './calendar';
@@ -144,8 +144,6 @@ export function emptySave(): SaveData {
 function cloneCounters(c: Counters): Counters {
   return { ...c, spells: { ...c.spells } };
 }
-
-const RANK_ORDER: Rank[] = ['D', 'C', 'B', 'A', 'S', 'SS'];
 
 export function rankIndex(rank: Rank): number {
   return RANK_ORDER.indexOf(rank);
