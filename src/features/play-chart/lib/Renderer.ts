@@ -185,7 +185,7 @@ const BEAT_RING_ALPHA = 0.35;
  */
 const NOTE_FADE_FROM = 96;
 const NOTE_FADE_TO = 160;
-const NOTE_FADE_BANDS = 8;
+const NOTE_FADE_BANDS = 16;
 const RING_SPRITE_RADIUS = 64;
 const HAZE_RADIUS = 96;
 const GRID_LINES = 7;
