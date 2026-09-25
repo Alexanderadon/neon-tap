@@ -18,8 +18,8 @@ export type VoiceLine =
   | 'mimo'
   | 'eshche-razok';
 
-/** Shipped neural voices (see scripts/generate-voice.ts); `off` disables the announcer. */
-export type VoiceId = 'dmitry' | 'svetlana' | 'off';
+/** The shipped neural voice (see scripts/generate-voice.ts); `off` disables the announcer. */
+export type VoiceId = 'svetlana' | 'off';
 
 /** Text fallback for the Web Speech API when a clip fails to load. */
 const TEXT: Record<VoiceLine, string> = {
@@ -51,7 +51,7 @@ class Voice {
   private buffers = new Map<VoiceLine, AudioBuffer>();
   private loading: Promise<void> | null = null;
   private loadedVoice: VoiceId | null = null;
-  private current: VoiceId = 'dmitry';
+  private current: VoiceId = 'svetlana';
   private lastAt = 0;
   private failed = false;
 

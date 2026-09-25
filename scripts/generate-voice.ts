@@ -2,7 +2,7 @@
  * Russian voice lines with neural TTS (Microsoft Edge "Read Aloud" voices via `msedge-tts`).
  *   assets-src/voice-raw/<voice>/<id>.mp3  (raw TTS output, gitignored, cached — pass --force to regenerate)
  *   public/voice/<voice>/<id>.mp3          (silence-trimmed, loudness-normalised)
- * Two voices are shipped so the player can pick one in settings.
+ * One voice is shipped (Svetlana); the settings can turn the announcer off.
  */
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { ffmpeg } from './ffmpeg';
 
+/** Must match `VoiceId` in src/features/voice-feedback/model/Voice.ts (minus `off`). */
 export const VOICES = {
-  dmitry: 'ru-RU-DmitryNeural',
   svetlana: 'ru-RU-SvetlanaNeural',
 } as const;
 
