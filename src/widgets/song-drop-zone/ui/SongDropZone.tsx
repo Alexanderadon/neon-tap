@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate } from '@/shared/lib/router';
 import { audioEngine, probeDuration, sfxUi } from '@/shared/lib/audio';
@@ -24,8 +24,8 @@ import { QuotaSheet, checkAddNow, saveSong, type SaveOutcome } from '@/features/
 import { playCustomSong, playGeneratedSong, releaseSongBuffer } from '@/features/play-custom';
 import './drop-zone.css';
 
-/** Why a file was refused: unreadable, over 40 MB (before reading), over 12 min by its header (before decoding), under 30 s or over 12 min (after decoding). */
-type Problem = 'format' | 'big' | 'short' | 'long';
+/** Why a file was refused (or a saved song could not open — `gone`: deleted in another tab): unreadable, over 40 MB (before reading), over 12 min by its header (before decoding), under 30 s or over 12 min (after decoding). */
+type Problem = 'format' | 'big' | 'short' | 'long' | 'gone';
 
 type State =
   | { kind: 'idle'; problem?: Problem }
@@ -47,6 +47,7 @@ const PROBLEM_LINE: Record<Problem, string> = {
   big: dict.libTooBig,
   short: dict.libTooShort,
   long: dict.libTooLong,
+  gone: dict.libSongGone,
 };
 
 interface Props {
@@ -77,6 +78,13 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
   const pass = usePassActive();
   const evicted = useSongs((s) => s.evicted);
   const storageOff = useSongs((s) => s.status === 'unavailable');
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -165,16 +173,17 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
     if (starting) return;
     sfxUi();
     if (state.kind === 'ready') {
-      const kept = state.saved === 'saved' || state.saved === 'duplicate';
-      playGeneratedSong(state.song.chart, state.song.audioBuffer, kept);
+      playGeneratedSong(state.song.chart, state.song.audioBuffer, state.saved === 'saved' || state.saved === 'duplicate');
     } else if (state.kind === 'known') {
       setStarting(true);
-      const outcome = await playCustomSong(state.meta.id);
-      if (outcome !== 'ok') {
+      // Left meanwhile (the top bar): the song does not open the game over another screen, and its buffer goes.
+      const go = () => (mounted.current ? navigate('game') : releaseSongBuffer());
+      const outcome = await playCustomSong(state.meta.id, { go });
+      if (outcome !== 'ok' && mounted.current) {
         setStarting(false);
         // Deleted in another tab meanwhile: the file can simply be added again.
         if (outcome === 'missing') void refreshSongs();
-        setState(outcome === 'missing' ? { kind: 'idle' } : { kind: 'idle', problem: 'format' });
+        setState({ kind: 'idle', problem: outcome === 'missing' ? 'gone' : 'format' });
       }
     }
   };
@@ -182,6 +191,8 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
   const song = state.kind === 'ready' ? state.song : null;
   const known = state.kind === 'known' ? state.meta : null;
   const cardId = song?.chart.id ?? known?.id;
+  /** The song on the card is in «Моя музыка» (saved now, or saved before). */
+  const kept = known !== null || (state.kind === 'ready' && (state.saved === 'saved' || state.saved === 'duplicate'));
   let subText: string;
   if (state.kind === 'idle') subText = state.problem ? PROBLEM_LINE[state.problem] : evicted ? dict.libEvicted : dict.fileStays;
   else if (song) {
@@ -282,13 +293,15 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
           {state.kind === 'busy' ? (
             <ObjButton icon={<Icon name="cross" />} label={dict.cancelAnalysis} onClick={cancel} />
           ) : song || known ? (
-            <ObjButton icon={<Icon name="file" />} label={dict.replaceFile} onClick={choose} disabled={starting} />
+            // A kept song stays when another file is chosen: «Ещё файл»; «Заменить» only for a song played once without saving.
+            <ObjButton icon={<Icon name="file" />} label={kept ? dict.libOtherFile : dict.replaceFile} onClick={choose} disabled={starting} />
           ) : (
             <ObjButton icon={<Icon name="back" />} label={dict.back} onClick={onBack} />
           )}
           <ObjButton
             icon={<Icon name="sun" />}
             label={dict.tutorial}
+            disabled={starting}
             onClick={() => {
               sfxUi();
               navigate('tutorial');
@@ -297,6 +310,7 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
           <ObjButton
             icon={<Icon name="user" />}
             label={dict.profile}
+            disabled={starting}
             onClick={() => {
               sfxUi();
               navigate('menu', { view: 'profile' });

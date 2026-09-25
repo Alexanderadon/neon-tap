@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { sfxUi } from '@/shared/lib/audio';
+import { navigate } from '@/shared/lib/router';
 import { formatScore } from '@/shared/lib/format';
 import { isIos, isStandaloneDisplay } from '@/shared/lib/pwa';
 import {
@@ -23,7 +24,7 @@ import {
 import { refreshSongs, useSongs, type SongMeta } from '@/entities/custom-song';
 import { usePassActive } from '@/entities/pass';
 import { TrackCover } from '@/entities/track';
-import { playCustomSong } from '@/features/play-custom';
+import { playCustomSong, releaseSongBuffer } from '@/features/play-custom';
 import { QuotaSheet, songLimit } from '@/features/song-quota';
 import { SONG_SORTS, visibleSongs, type SongSort } from '../model/filter';
 import { SongSheet } from './SongSheet';
@@ -78,7 +79,16 @@ export function MyMusic({ onBack, onAdd, freeMode = false }: Props) {
   const [sheet, setSheet] = useState<SheetState>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  /** The song tapped was deleted in another tab meanwhile: «Песня уже удалена» instead of the count. */
+  const [gone, setGone] = useState(false);
   const ios = useMemo(iosInBrowser, []);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => setQuery(text), SEARCH_DELAY_MS);
@@ -89,10 +99,14 @@ export function MyMusic({ onBack, onAdd, freeMode = false }: Props) {
   // The selection follows the visible rows: a song hidden by the search is never played by mistake.
   const selected = (selectedId ? visible.find((s) => s.id === selectedId) : undefined) ?? visible[0] ?? null;
   const limit = songLimit(pass);
+  const noun = plural(songs.length, dict.libSongsNoun);
+  // More songs than slots (kept from a NEON PASS that has ended — nothing is taken away): «5 песен · мест 3», never «5 из 3».
   const countLine =
     limit === null
-      ? fmt(dict.libCountPass, { n: songs.length, noun: plural(songs.length, dict.libSongsNoun) })
-      : fmt(dict.libCountFree, { n: songs.length, max: limit });
+      ? fmt(dict.libCountPass, { n: songs.length, noun })
+      : songs.length > limit
+        ? fmt(dict.libCountOver, { n: songs.length, noun, max: limit })
+        : fmt(dict.libCountFree, { n: songs.length, max: limit });
 
   const chooseSort = (next: SongSort) => {
     sfxUi();
@@ -100,21 +114,28 @@ export function MyMusic({ onBack, onAdd, freeMode = false }: Props) {
     setSort(next);
   };
 
-  const select = (id: string) => {
+  // Stable for the memoised rows: a keystroke in the search re-renders the screen, not 300 rows.
+  const select = useCallback((id: string) => {
     setSelectedId(id);
     setFailed(false);
-  };
+    setGone(false);
+  }, []);
 
   const play = async (song: SongMeta) => {
     if (busy) return;
     sfxUi();
     setBusy(true);
     setFailed(false);
-    const outcome = await playCustomSong(song.id);
-    if (outcome === 'ok') return; // the game screen replaces this one
+    setGone(false);
+    // Left meanwhile (the top bar): the song does not open the game over another screen, and its buffer goes.
+    const go = () => (mounted.current ? navigate('game') : releaseSongBuffer());
+    const outcome = await playCustomSong(song.id, { go });
+    if (outcome === 'ok' || !mounted.current) return; // the game screen replaces this one
     setBusy(false);
-    if (outcome === 'missing') void refreshSongs();
-    else setFailed(true);
+    if (outcome === 'missing') {
+      void refreshSongs();
+      setGone(true);
+    } else setFailed(true);
   };
 
   const add = () => {
@@ -173,7 +194,7 @@ export function MyMusic({ onBack, onAdd, freeMode = false }: Props) {
     );
   };
 
-  const subText = mode === 'free' ? dict.libFreeHint : failed ? dict.readFailed : countLine;
+  const subText = mode === 'free' ? dict.libFreeHint : failed ? dict.readFailed : gone ? dict.libSongGone : countLine;
 
   return (
     <>
@@ -218,7 +239,7 @@ export function MyMusic({ onBack, onAdd, freeMode = false }: Props) {
         ) : (
           <ol className="mm-list">
             {visible.map((s) => (
-              <SongRow key={s.id} song={s} selected={selected?.id === s.id} free={mode === 'free'} onSelect={select} />
+              <SongRow key={s.id} song={s} selected={selected?.id === s.id} free={mode === 'free'} disabled={busy} onSelect={select} />
             ))}
           </ol>
         )}
@@ -237,13 +258,13 @@ export function MyMusic({ onBack, onAdd, freeMode = false }: Props) {
               }}
             />
           ) : (
-            <ObjButton icon={<Icon name="back" />} label={dict.back} onClick={onBack} />
+            <ObjButton icon={<Icon name="back" />} label={dict.back} onClick={onBack} disabled={busy} />
           )}
-          <ObjButton icon={<Icon name="plus-square" />} label={dict.libAdd} onClick={add} disabled={mode === 'free'} />
+          <ObjButton icon={<Icon name="plus-square" />} label={dict.libAdd} onClick={add} disabled={mode === 'free' || busy} />
           <ObjButton
             icon={<Icon name="sliders" />}
             label={dict.libMore}
-            disabled={!selected}
+            disabled={!selected || busy}
             onClick={() => {
               if (!selected) return;
               sfxUi();
@@ -301,11 +322,13 @@ interface RowProps {
   selected: boolean;
   /** Delete mode: a trash mark instead of the stars. */
   free: boolean;
+  /** A song is loading: the rows wait. */
+  disabled: boolean;
   onSelect: (id: string) => void;
 }
 
-/** One song: ListRow (cover 32 · title · best or «—» · stars with crowns) under a transparent tap target. */
-function SongRow({ song, selected, free, onSelect }: RowProps) {
+/** One song: ListRow (cover 32 · title · best or «—» · stars with crowns) under a transparent tap target. Memoised: it re-renders only when its own props change. */
+const SongRow = memo(function SongRow({ song, selected, free, disabled, onSelect }: RowProps) {
   const best = song.best;
   return (
     <li className="mm-item">
@@ -334,8 +357,9 @@ function SongRow({ song, selected, free, onSelect }: RowProps) {
         className="mm-hit"
         aria-pressed={selected}
         aria-label={song.artist ? `${song.title} · ${song.artist}` : song.title}
+        disabled={disabled}
         onClick={() => onSelect(song.id)}
       />
     </li>
   );
-}
+});

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { dict } from '@/shared/i18n';
 import { sfxUi } from '@/shared/lib/audio';
 import { Disc, Icon, Line, ObjButton, PrimaryAction, Sheet, Tag } from '@/shared/ui';
-import { useSongs } from '@/entities/custom-song';
+import { CUSTOM_FREE_LIMIT, useSongs } from '@/entities/custom-song';
 import { TrackCover } from '@/entities/track';
 import './quota-sheet.css';
 
@@ -23,6 +23,8 @@ export function QuotaSheet({ onFree, onClose }: Props) {
   const primaryRef = useRef<HTMLButtonElement>(null);
   const songs = useSongs((s) => s.songs);
   const covers = songs.slice(-3);
+  // More songs than slots (kept after NEON PASS ended): a neutral title, and «удали лишние» — one delete would not be enough.
+  const over = songs.length > CUSTOM_FREE_LIMIT;
   useEffect(() => {
     primaryRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -35,7 +37,7 @@ export function QuotaSheet({ onFree, onClose }: Props) {
   return (
     <Sheet titleId={titleId} onClose={onClose}>
       <h2 id={titleId} className="sheet-h1">
-        {dict.libLimitTitle}
+        {over ? dict.libLimitFullTitle : dict.libLimitTitle}
       </h2>
       {covers.length > 0 && (
         <div className="qs-covers" aria-hidden="true">
@@ -46,7 +48,7 @@ export function QuotaSheet({ onFree, onClose }: Props) {
           ))}
         </div>
       )}
-      <Line className="qs-line">{dict.libLimitLine}</Line>
+      <Line className="qs-line">{over ? dict.libLimitOverLine : dict.libLimitLine}</Line>
       <Tag variant="dark" className="qs-pass">
         {dict.libLimitPass}
       </Tag>
