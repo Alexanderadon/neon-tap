@@ -1,0 +1,138 @@
+/*
+ * MyMusic (MyMusic.tsx): the frame's skeleton — sub row, the tools (search field 48 · 8 · the
+ * order trio 48), the scrolling list of ListRows 48 (gap 8), the dock (trio · primary).
+ * SongSheet (SongSheet.tsx): the song's bottom sheet.
+ */
+.mm-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: var(--col);
+  flex: none;
+  margin-top: 16px;
+}
+.mm-tools .field {
+  width: 100%;
+}
+.mm-body {
+  width: var(--col);
+  margin-top: 16px;
+  gap: 8px;
+}
+.mm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* A row off screen skips layout and paint; 300 songs stay light on a phone without virtualisation. */
+.mm-item {
+  position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
+.mm-thumb {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-999);
+  overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(5, 6, 10, 0.35);
+}
+.mm-thumb > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.mm-item .lrow .stars {
+  flex: none;
+}
+.mm-trash {
+  display: inline-flex;
+  flex: none;
+  color: var(--mag);
+}
+/* The whole row is the tap target (ListRow itself is not a button). */
+.mm-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-16);
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mm-hit:active {
+  background: var(--w10);
+}
+.mm-hit:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.mm-note {
+  flex: none;
+  margin: 8px 0;
+}
+.mm-dock {
+  padding-top: 16px;
+}
+
+/* --- the song's sheet --- */
+.mm-sheet-cover {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-top: 24px;
+  border-radius: var(--r-16);
+  overflow: hidden;
+  box-shadow:
+    0 4px 0 #000,
+    0 16px 32px rgba(0, 0, 0, 0.5);
+}
+.mm-sheet-cover > svg,
+.mm-sheet-cover > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.mm-sheet-h2 {
+  width: 100%;
+  height: 24px;
+  margin: 16px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font: var(--t-20);
+  letter-spacing: var(--track-title);
+}
+.mm-sheet-line {
+  margin-top: 16px;
+}
+.mm-sheet-coins {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+}
+.mm-sheet-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+}
+.mm-rename {
+  width: 100%;
+  margin-top: 24px;
+}

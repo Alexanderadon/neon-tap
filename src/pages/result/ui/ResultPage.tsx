@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { navigate } from '@/shared/lib/router';
 import { Icon, ObjButton, Screen } from '@/shared/ui';
 import { dict } from '@/shared/i18n';
+import { isCustomId } from '@/shared/types/chart';
 import { startSession, useSession } from '@/entities/play-session';
 import { CATALOG, CoverScene, TRACK_IDS, chapterAt, chapterTitle, findTrack, loadChart, trackTint } from '@/entities/track';
 import { grandTotalStars, findGoal, nextUnlock, useProgress } from '@/entities/progress';
 import { attemptsOf, useHistory } from '@/entities/history';
+import { useSong } from '@/entities/custom-song';
 import {
   RESULT_TIMELINE as T,
   ResultBreakdown,
@@ -85,6 +87,8 @@ export function ResultPage() {
   const walletCrystals = useProgress((s) => s.crystals);
   const walletStars = useProgress((s) => grandTotalStars(s, TRACK_IDS));
   const bestNow = useProgress((s) => (result ? s.tracks[result.trackId]?.score : undefined));
+  // An own song keeps its record with the song («Моя музыка»), never in the progress save.
+  const savedSong = useSong(source === 'custom' ? result?.trackId : null);
   const attempts = useHistory((h) => (result ? attemptsOf(h, result.trackId) : undefined));
 
   const failed = result?.failed ?? false;
@@ -95,18 +99,23 @@ export function ResultPage() {
 
   if (!chart || !result) return null;
 
-  const isCatalog = source === 'catalog';
+  // An own song (by source or by its `custom:` id) has no chapter, no «Дальше», no duel and no online table.
+  const isCatalog = source === 'catalog' && !isCustomId(result.trackId);
   const chapterOfTrack = isCatalog && trackIndex >= 0 ? chapterAt(trackIndex) : undefined;
   const chapter = chapterOfTrack ? chapterTitle(chapterOfTrack) : undefined;
 
-  const record: RecordInfo | undefined = isCatalog
-    ? {
-        newRecord: resultMeta?.newRecord === true,
-        // The save wrote the exact record it replaced; the attempt history (cap 50) is the fallback for older saves.
-        previous: resultMeta?.bestBefore !== undefined ? resultMeta.bestBefore : attempts ? previousBest(attempts) : null,
-        best: bestNow ?? null,
-      }
-    : undefined;
+  let record: RecordInfo | undefined;
+  if (isCatalog) {
+    record = {
+      newRecord: resultMeta?.newRecord === true,
+      // The save wrote the exact record it replaced; the attempt history (cap 50) is the fallback for older saves.
+      previous: resultMeta?.bestBefore !== undefined ? resultMeta.bestBefore : attempts ? previousBest(attempts) : null,
+      best: bestNow ?? null,
+    };
+  } else if (savedSong) {
+    // A saved own song: the record from the song store (a song played once without saving has none).
+    record = { newRecord: resultMeta?.newRecord === true, previous: resultMeta?.bestBefore ?? null, best: savedSong.best?.score ?? null };
+  }
 
   // «до открытия Bouncer ★ 22 / 25» — the nearest star-gated track, the bar from before this run to now.
   let unlock: UnlockInfoLine | null = null;
