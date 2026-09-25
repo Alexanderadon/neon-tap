@@ -209,6 +209,12 @@
   gap: 4px;
   animation: result-rise 0.4s ease-out 3.3s both;
 }
+/* «Запас дня собран — дальше каждый пятый кристалл» is wider than the column in Unbounded 13: it wraps, never cut. */
+.result-notes .line {
+  height: auto;
+  white-space: normal;
+  text-wrap: balance;
+}
 
 /* --- unlock bar 32: text 16 + 8 + track 8 --- */
 .result-unlock {

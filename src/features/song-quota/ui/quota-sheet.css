@@ -22,7 +22,10 @@
   height: 100%;
 }
 .qs-line {
+  height: auto;
   margin-top: 24px;
+  white-space: normal;
+  text-wrap: balance;
 }
 .qs-pass {
   margin-top: 16px;
