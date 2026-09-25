@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ParsedNote } from '@/entities/chart';
-import { BIG_GEM_VALUE, GEM_MAX_COUNT, GEM_MIN_COUNT, GEM_MIN_TIME, gemTotal, isGemCandidate, pickGems } from './gems';
+import { BIG_GEM_VALUE, GEM_MAX_COUNT, GEM_MIN_COUNT, GEM_MIN_TIME, LOOP_GEM_COUNT, gemTotal, isGemCandidate, pickGems, pickLoopGems } from './gems';
 
 const tap = (time: number, over: Partial<ParsedNote> = {}): ParsedNote => ({ time, lane: 0, duration: 0, kind: null, seq: 0, extra: 0, lanes: 4, ...over });
 
@@ -28,7 +28,8 @@ describe('pickGems', () => {
     expect(a.map((p) => p.index)).not.toEqual(c.map((p) => p.index));
   });
 
-  it('only flags plain taps after the first seconds, 6–10 of them, exactly one big', () => {
+  it('only flags plain taps after the first seconds, 3–5 of them, exactly one big worth 3', () => {
+    expect([GEM_MIN_COUNT, GEM_MAX_COUNT, BIG_GEM_VALUE]).toEqual([3, 5, 3]);
     const notes = song();
     const picks = pickGems(notes, 1234);
     expect(picks.length).toBeGreaterThanOrEqual(GEM_MIN_COUNT);
@@ -63,10 +64,31 @@ describe('pickGems', () => {
     }
   });
 
-  it('scales the count with song length', () => {
+  it('scales the count with song length: one gem per ~30 s, 3 to 5', () => {
     expect(pickGems(song(60), 5).length).toBe(GEM_MIN_COUNT);
     expect(pickGems(song(300), 5).length).toBe(GEM_MAX_COUNT);
+    expect(pickGems(song(135), 5).length).toBe(4);
     expect(pickGems(song(135), 5).length).toBeGreaterThan(GEM_MIN_COUNT);
+    // a level pays 2 + 3 = 5 crystals at least, 4 + 3 = 7 at most
+    expect(gemTotal(pickGems(song(60), 9))).toBe(5);
+    expect(gemTotal(pickGems(song(300), 9))).toBe(7);
+  });
+
+  it('an endless loop carries exactly three small gems, spread over the song', () => {
+    expect(LOOP_GEM_COUNT).toBe(3);
+    for (const length of [60, 150, 300]) {
+      const notes = song(length);
+      const picks = pickLoopGems(notes, 11);
+      expect(picks).toHaveLength(3);
+      expect(picks.every((p) => p.value === 1)).toBe(true);
+      expect(gemTotal(picks)).toBe(3);
+      for (const p of picks) expect(isGemCandidate(notes[p.index])).toBe(true);
+      const times = picks.map((p) => notes[p.index].time);
+      expect(times[2] - times[0]).toBeGreaterThan((length - GEM_MIN_TIME) / 3);
+    }
+    expect(pickLoopGems(song(150), 4)).toEqual(pickLoopGems(song(150), 4));
+    expect(pickLoopGems([tap(1), tap(7)], 4)).toEqual([{ index: 1, value: 1 }]);
+    expect(pickLoopGems([], 4)).toEqual([]);
   });
 
   it('degrades gracefully: few candidates → all of them, none → empty', () => {

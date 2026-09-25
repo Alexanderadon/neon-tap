@@ -13,7 +13,7 @@ import { NoteManager, NoteState, type JudgeEvent, type PooledNote } from './Note
 import { SpinTracker } from './SpinTracker';
 import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
-import { pickGems } from './gems';
+import { pickGems, pickLoopGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
 import { songMap } from './songMap';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
@@ -43,8 +43,8 @@ export type SessionEvent =
   | { type: 'pause'; score: number; accuracy: number; level: number }
   | { type: 'resume' }
   /**
-   * The fifth heart is gone and a revive can be offered: the field is frozen, the music paused, and
-   * fail() waits for the host — `revive()` after a rewarded ad, `declineRevive()` otherwise.
+   * The fifth heart is gone and a second chance can be offered: the field is frozen, the music paused,
+   * and fail() waits for the host — `revive()` once it is paid for, `declineRevive()` otherwise.
    */
   | { type: 'hearts-out'; score: number; accuracy: number; level: number }
   /** A revive was granted: hearts pop back, the count-in runs, then `resume` follows. */
@@ -67,8 +67,14 @@ export interface SessionOptions {
   autoplay?: boolean;
   /** Tutorial: no hearts drawn, no heart-loss effects (implies no fail). */
   hideHearts?: boolean;
-  /** Offer a rewarded revive when the hearts run out (default on; off in the tutorial / no-fail runs). */
+  /** Offer a second chance when the hearts run out (default on; off in the tutorial / no-fail runs). */
   revive?: boolean;
+  /**
+   * Asked the moment the hearts run out: can the player have the second chance now (NEON PASS, or
+   * enough crystals to pay for it)? When false the run fails as usual — nothing is offered.
+   * Absent = always.
+   */
+  canRevive?: () => boolean;
   /** Crystals: a few plain taps per run become gems (default on; off in the tutorial). */
   gems?: boolean;
   /** Levels: the song is played up to three times in a row, faster each time, a star per level (default on; the tutorial plays once). */
@@ -165,7 +171,7 @@ export class GameSession {
   private failTimer = 0;
   private levelTimer = 0;
   private reviveTimer = 0;
-  /** Revive: frozen with the offer open / hearts popping back and counting in; the one revive is spent; seconds since the reward. */
+  /** Revive: frozen with the offer open / hearts popping back and counting in; the one revive is spent; seconds since «Продолжить». */
   private heartsOut = false;
   private reviving = false;
   private reviveUsed = false;
@@ -264,14 +270,17 @@ export class GameSession {
     this.resizeObserver.observe(opts.canvas);
   }
 
-  /** New gem layout for this run: a handful of plain taps spread over the song, seeded per run. */
+  /**
+   * New gem layout for this pass: 3–5 plain taps spread over the song (one of them the big gem) on
+   * each of the three levels, three small ones on an endless loop past them. Seeded per pass.
+   */
   private rollGems(): void {
     if (this.opts.gems === false) {
       this.notes.setGems([]);
       return;
     }
     const seed = this.opts.gemSeed ?? (Math.random() * 0x100000000) >>> 0;
-    this.notes.setGems(pickGems(this.parsed, seed, this.opts.audioBuffer.duration));
+    this.notes.setGems(this.level > LEVELS ? pickLoopGems(this.parsed, seed) : pickGems(this.parsed, seed, this.opts.audioBuffer.duration));
   }
 
   /** Levels in a run: three, or one when levels are off (the tutorial). */
@@ -437,9 +446,9 @@ export class GameSession {
   }
 
   /**
-   * The rewarded ad paid out: five hearts back, the HUD hearts pop in one by one, the «3 / 2 / 1»
-   * runs, and the song goes on from one second before the freeze (`REVIVE_RESUME_AT`). The field
-   * does not move until then — not a note is skipped.
+   * The second chance is paid for (crystals, or free with NEON PASS): five hearts back, the HUD
+   * hearts pop in one by one, the «3 / 2 / 1» runs, and the song goes on from one second before the
+   * freeze (`REVIVE_RESUME_AT`). The field does not move until then — not a note is skipped.
    */
   revive(): void {
     if (!this.heartsOut || this.destroyed) return;
@@ -459,7 +468,7 @@ export class GameSession {
     }, REVIVE_RESUME_AT * 1000);
   }
 
-  /** No ad (declined, timed out, closed): the run fails as it always did. */
+  /** No second chance (declined, timed out, not paid): the run fails as it always did. */
   declineRevive(): void {
     if (!this.heartsOut) return;
     this.heartsOut = false;
@@ -692,7 +701,8 @@ export class GameSession {
       }
       this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
       if (dead && !this.opts.noFail && !this.opts.hideHearts) {
-        if (canOfferRevive(this.reviveUsed, this.opts.revive !== false)) this.freezeHeartsOut();
+        // No second chance without the means to pay for it: the run simply ends, nothing is dangled.
+        if (canOfferRevive(this.reviveUsed, this.opts.revive !== false) && (this.opts.canRevive?.() ?? true)) this.freezeHeartsOut();
         else this.fail();
       }
       return;

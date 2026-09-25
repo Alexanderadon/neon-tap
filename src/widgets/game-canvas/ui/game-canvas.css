@@ -334,13 +334,6 @@
 .game-ring .ring-center {
   color: var(--bg);
 }
-.game-ring-dim,
-.game-ring-dim .ring-center {
-  color: var(--w30);
-}
-.game-ring-dim .ring-track {
-  stroke: var(--w10);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .game-verdict,

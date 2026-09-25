@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { audioEngine, loadSong, preloadSfx, sfxUi, waitForAudioUnlock } from '@/shared/lib/audio';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
-import { ads, stubAds } from '@/shared/lib/ads';
 import { navigate } from '@/shared/lib/router';
 import { needsRotateHint } from '@/shared/lib/viewport';
-import { dict, fmt } from '@/shared/i18n';
+import { dict, fmt, plural } from '@/shared/i18n';
 import { hasDevFlag } from '@/shared/config/devFlags';
 import {
   ActionZone,
@@ -26,7 +25,20 @@ import {
 import type { ChartFile } from '@/shared/types/chart';
 import { getSettings, updateSettings } from '@/entities/settings';
 import { CoverScene, TrackCover, trackTint } from '@/entities/track';
-import { GameSession, LEVELS, REFILL_AT, REVIVE_IDLE, REVIVE_OFFER_SEC, reviveReducer, type SessionEvent } from '@/features/play-chart';
+import { isPassActive } from '@/entities/pass';
+import { progressStore, spendCrystals } from '@/entities/progress';
+import {
+  GameSession,
+  LEVELS,
+  REFILL_AT,
+  REVIVE_IDLE,
+  REVIVE_OFFER_SEC,
+  REVIVE_PRICE,
+  payForRevive,
+  reviveAffordable,
+  reviveReducer,
+  type SessionEvent,
+} from '@/features/play-chart';
 import { saveResult } from '@/features/save-result';
 import { trackSpell } from '@/features/track-progress';
 import { voice, praise } from '@/features/voice-feedback';
@@ -71,7 +83,8 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
 /**
  * Hosts the canvas, owns the GameSession lifecycle and routes session events to voice/save.
  * Everything that is not the field is DOM chrome here: the pause chip on the HUD line, the pause
- * menu, loading / error, the fail frame, and the revive offer for a rewarded ad (spec: screens-game.html).
+ * menu, loading / error, the fail frame, and the second-chance offer for 30 crystals (free with
+ * NEON PASS; spec: screens-game.html).
  */
 export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -195,7 +208,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           gems: !tutorial,
           levels: !tutorial,
           endless: !tutorial,
-          revive: !tutorial && !noFailFlag && ads.available(),
+          // The second chance: never for an ad — 30 crystals, free with NEON PASS, and not offered at all without them.
+          revive: !tutorial && !noFailFlag,
+          canRevive: () => reviveAffordable(isPassActive(), progressStore.get().crystals),
           fxMode: settings.fxMode,
           debug: settings.debugOverlay,
           onEvent: handleEvent,
@@ -279,28 +294,24 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     audioEngine.setVolumes({ music: next ? 0 : getSettings().musicVolume });
   };
 
-  // --- revive: the offer times out after 5 s; accepting plays the rewarded ad ---
-  const acceptRevive = () => {
-    const s = sessionRef.current;
-    if (!s || !s.isHeartsOut || revive.phase !== 'offer') return;
-    sfxUi();
-    dispatch({ type: 'accept' });
-    void ads.show('revive').then((outcome) => {
-      if (sessionRef.current !== s || !s.isHeartsOut) return; // restarted / left meanwhile
-      if (outcome === 'rewarded') {
-        dispatch({ type: 'rewarded' });
-        s.revive();
-      } else {
-        dispatch({ type: 'decline' });
-        s.declineRevive();
-      }
-    });
-  };
+  // --- second chance: the offer times out after 5 s; «Продолжить» pays 30 crystals (free with NEON PASS) ---
   const declineRevive = useCallback(() => {
     const s = sessionRef.current;
     dispatch({ type: 'decline' });
     if (s?.isHeartsOut) s.declineRevive();
   }, []);
+  const acceptRevive = () => {
+    const s = sessionRef.current;
+    if (!s || !s.isHeartsOut || revive.phase !== 'offer') return;
+    sfxUi();
+    // The wallet may have changed in another tab since the offer opened: nothing paid, no hearts.
+    if (!payForRevive(isPassActive(), spendCrystals)) {
+      declineRevive();
+      return;
+    }
+    dispatch({ type: 'accept' });
+    s.revive();
+  };
   useEffect(() => {
     if (revive.phase !== 'offer') return;
     const t = window.setTimeout(declineRevive, REVIVE_OFFER_SEC * 1000);
@@ -474,7 +485,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
       {fail !== null && <FailFrame stars={fail.stars} crowns={fail.crowns} finale={fail.finale} />}
 
-      {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} title={chart.title} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
+      {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} pass={isPassActive()} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
     </div>
   );
 }
@@ -508,8 +519,9 @@ function FailFrame({ stars, crowns, finale }: { stars: number; crowns: number; f
 }
 
 interface ReviveProps {
-  phase: 'offer' | 'ad' | 'refill';
-  title: string;
+  phase: 'offer' | 'refill';
+  /** NEON PASS: the second chance is free. */
+  pass: boolean;
   /** The playing track's accent for «ПРОДОЛЖИТЬ». */
   tint?: string;
   onAccept: () => void;
@@ -517,14 +529,13 @@ interface ReviveProps {
 }
 
 /**
- * The revive offer (frame 20): five empty hearts in a panel, «СЕРДЦА КОНЧИЛИСЬ», «ПРОДОЛЖИТЬ · +5
- * сердец · за рекламу» with a 5 s ring, «К результату». While the stub ad plays the button waits
- * with its own ring; after the reward (frame 21) the hearts pop back with sparks and the canvas
- * counts «3 / 2 / 1» under a light veil.
+ * The second-chance offer (frame 20): five empty hearts in a panel, «СЕРДЦА КОНЧИЛИСЬ», «ПРОДОЛЖИТЬ
+ * · +5 сердец · 30 кристаллов» (free with NEON PASS) with a 5 s ring, «К результату». It only opens
+ * when the wallet can pay. After «Продолжить» (frame 21) the hearts pop back with sparks and the
+ * canvas counts «3 / 2 / 1» under a light veil.
  */
-function ReviveFrame({ phase, title, tint, onAccept, onDecline }: ReviveProps) {
+function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
   const [left, setLeft] = useState(REVIVE_OFFER_SEC);
-  const [ad, setAd] = useState({ progress: 0, remaining: 0 });
   useEffect(() => {
     if (phase !== 'offer') return;
     setLeft(REVIVE_OFFER_SEC);
@@ -532,18 +543,8 @@ function ReviveFrame({ phase, title, tint, onAccept, onDecline }: ReviveProps) {
     const t = window.setInterval(() => setLeft(Math.max(0, REVIVE_OFFER_SEC - Math.floor((performance.now() - started) / 1000))), 200);
     return () => window.clearInterval(t);
   }, [phase]);
-  useEffect(() => {
-    if (phase !== 'ad') return;
-    const tick = () => setAd({ progress: stubAds.progress(), remaining: Math.ceil(stubAds.remainingSeconds()) });
-    tick();
-    const t = window.setInterval(tick, 200);
-    const off = stubAds.subscribe(tick);
-    return () => {
-      window.clearInterval(t);
-      off();
-    };
-  }, [phase]);
   const refill = phase === 'refill';
+  const price = pass ? dict.reviveFree : fmt(dict.revivePrice, { n: REVIVE_PRICE, noun: plural(REVIVE_PRICE, dict.crystalsNoun) });
   return (
     <div className={refill ? 'game-frame game-revive game-revive-fill' : 'game-shade game-frame game-revive'} aria-live="polite">
       <div className="game-col">
@@ -590,45 +591,26 @@ function ReviveFrame({ phase, title, tint, onAccept, onDecline }: ReviveProps) {
         {!refill && (
           <ActionZone className="game-bottom">
             <Trio one className="game-trio">
-              <ObjButton icon={<Icon name="arrow" />} label={dict.toResult} onClick={onDecline} disabled={phase === 'ad'} />
+              <ObjButton icon={<Icon name="arrow" />} label={dict.toResult} onClick={onDecline} />
             </Trio>
-            {phase === 'offer' ? (
-              <PrimaryAction
-                lead={
-                  <Disc>
-                    <Icon name="tray" />
-                  </Disc>
-                }
-                label={dict.continue}
-                tint={tint}
-                sub={dict.reviveSub}
-                beat
-                autoFocus
-                icon={
-                  <RingCountdown size={40} seconds={REVIVE_OFFER_SEC} className="game-ring" track>
-                    {left}
-                  </RingCountdown>
-                }
-                onClick={onAccept}
-              />
-            ) : (
-              <PrimaryAction
-                tone="locked"
-                lead={
-                  <Disc>
-                    <Icon name="hourglass" />
-                  </Disc>
-                }
-                label={dict.adPlaying}
-                sub={title}
-                icon={
-                  <RingCountdown size={40} seconds={1} progress={ad.progress} className="game-ring game-ring-dim" track>
-                    {ad.remaining}
-                  </RingCountdown>
-                }
-                disabled
-              />
-            )}
+            <PrimaryAction
+              lead={
+                <Disc>
+                  <Icon name="tray" />
+                </Disc>
+              }
+              label={dict.continue}
+              tint={tint}
+              sub={fmt(dict.reviveSubPrice, { price })}
+              beat
+              autoFocus
+              icon={
+                <RingCountdown size={40} seconds={REVIVE_OFFER_SEC} className="game-ring" track>
+                  {left}
+                </RingCountdown>
+              }
+              onClick={onAccept}
+            />
           </ActionZone>
         )}
       </div>
