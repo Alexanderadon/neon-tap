@@ -1,6 +1,6 @@
 import { blobFingerprint } from '@/shared/lib/hash';
 import { CUSTOM_ID_PREFIX, type ChartFile } from '@/shared/types/chart';
-import type { PlayResult, Rank } from '@/shared/types/result';
+import { RANK_ORDER, type PlayResult } from '@/shared/types/result';
 import type { NewSong, SongBest, SongMeta } from './types';
 
 /** Saved songs a player without NEON PASS may keep. */
@@ -92,8 +92,6 @@ export function renamedMeta(meta: SongMeta, rawTitle: string): SongMeta | null {
   const title = cleanTitle(rawTitle);
   return title ? { ...meta, title, titleKey: songKey(title) } : null;
 }
-
-const RANK_ORDER: readonly Rank[] = ['D', 'C', 'B', 'A', 'S', 'SS'];
 
 /** The record candidate of a finished run. */
 export function bestOfRun(result: PlayResult, playedAt: string): SongBest {
