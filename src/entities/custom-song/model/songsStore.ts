@@ -56,7 +56,17 @@ songsStore.subscribe(() => {
 
 const byCreated = (a: SongMeta, b: SongMeta) => a.createdAt - b.createdAt;
 
+/**
+ * A first load that has not answered by then counts as no storage (some Safari versions never
+ * settle `indexedDB.open`): songs play once instead of the screen waiting forever. A late answer
+ * still makes the list ready.
+ */
+const LOAD_GIVE_UP_MS = 4000;
+
 async function load(r: SongRepo): Promise<void> {
+  const giveUp = setTimeout(() => {
+    if (r === repo && songsStore.get().status === 'loading') songsStore.set({ status: 'unavailable' });
+  }, LOAD_GIVE_UP_MS);
   try {
     const songs = (await r.list()).sort(byCreated);
     if (r !== repo) return;
@@ -67,6 +77,8 @@ async function load(r: SongRepo): Promise<void> {
     console.warn('songs: storage unavailable', err);
     repo = null;
     songsStore.set({ status: 'unavailable', songs: [], evicted: false });
+  } finally {
+    clearTimeout(giveUp);
   }
 }
 
@@ -94,7 +106,7 @@ export function refreshSongs(): Promise<void> {
   return loading;
 }
 
-/** Songs can be saved on this device (after the first load). */
+/** Songs can be saved on this device (after the first load; a load that gave up says no until it answers). */
 export function songStorageAvailable(): boolean {
   return repo !== null && songsStore.get().status !== 'unavailable';
 }

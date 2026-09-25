@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import { navigate, useRouteParams } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { Screen } from '@/shared/ui';
-import { useSongCount, useSongs } from '@/entities/custom-song';
+import { dict } from '@/shared/i18n';
+import { FrameBody, Screen, SegmentsPulse, StatePanel } from '@/shared/ui';
+import { useSongCount, useSongs, type SongsStatus } from '@/entities/custom-song';
 import { releaseSongBuffer } from '@/features/play-custom';
 import { MyMusic } from '@/widgets/my-music';
 import { SongDropZone } from '@/widgets/song-drop-zone';
 import { TopBar } from '@/widgets/top-bar';
 
 type View = 'list' | 'add';
+
+/** The view to open: none while the list loads; `add` when asked, with no storage or with no songs; else `list`. */
+function pickView(status: SongsStatus, count: number, wanted: string | undefined): View | null {
+  if (status === 'loading') return null;
+  return wanted === 'add' || status === 'unavailable' || count === 0 ? 'add' : 'list';
+}
 
 /**
  * «Моя музыка»: the top bar and one of two views — `list` (the saved songs, MyMusic) or `add` (the
@@ -21,15 +28,14 @@ export function CustomSongPage() {
   const params = useRouteParams();
   const status = useSongs((s) => s.status);
   const count = useSongCount();
-  const [view, setView] = useState<View | null>(null);
+  const [view, setView] = useState<View | null>(() => pickView(status, count, params.view));
 
   useEffect(() => {
     releaseSongBuffer();
   }, []);
 
   useEffect(() => {
-    if (view !== null || status === 'loading') return;
-    setView(params.view === 'add' || status === 'unavailable' || count === 0 ? 'add' : 'list');
+    if (view === null) setView(pickView(status, count, params.view));
   }, [view, status, count, params.view]);
 
   const toDeck = () => {
@@ -40,6 +46,11 @@ export function CustomSongPage() {
   return (
     <Screen frame>
       <TopBar />
+      {view === null && (
+        <FrameBody>
+          <StatePanel icon={<SegmentsPulse />}>{dict.loading}</StatePanel>
+        </FrameBody>
+      )}
       {view === 'list' && <MyMusic onBack={toDeck} onAdd={() => navigate('custom', { view: 'add' })} freeMode={params.mode === 'free'} />}
       {view === 'add' && (
         <SongDropZone

@@ -15,7 +15,7 @@ import {
   touchPlayed,
   whenSongsLoaded,
 } from './songsStore';
-import type { SongBest } from './types';
+import type { SongBest, SongRepo } from './types';
 
 const best = (score: number): SongBest => ({
   score,
@@ -102,5 +102,19 @@ describe('songsStore', () => {
     expect(ls.get(SONGS_COUNT_KEY)).toBe('1');
     await setSongRepo(memoryRepo([testSong('custom:a')]));
     expect(songsStore.get().evicted).toBe(false);
+  });
+
+  it('gives up on a first load that never answers (a stuck indexedDB.open): songs play once', async () => {
+    vi.useFakeTimers();
+    try {
+      const hanging: SongRepo = { ...memoryRepo(), list: () => new Promise(() => undefined) };
+      void setSongRepo(hanging);
+      expect(songsStore.get().status).toBe('loading');
+      vi.advanceTimersByTime(4000);
+      expect(songsStore.get().status).toBe('unavailable');
+      expect(songStorageAvailable()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
