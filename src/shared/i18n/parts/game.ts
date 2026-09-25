@@ -48,17 +48,22 @@ export const game = {
   cancelAnalysis: 'Отмена',
   replaceFile: 'Заменить',
   analysisWord: 'Анализ',
-  // --- second chance (30 crystals, free with NEON PASS; never an ad) ---
+  // --- second chance: for a rewarded ad, free with NEON PASS (no ad); never for crystals ---
   reviveOnce: '1 раз за забег',
   /** The panel line under the five empty hearts: what the second chance gives (the refill then shows the same words in bold). */
   reviveHint: '+5 сердец · с этого же места',
   /**
-   * «за 30 кристаллов» / «бесплатно с PASS» under «Продолжить» — the price alone: with «+5 сердец · » in
-   * front the line is 222–245 px against 208–223 px of room (360–390 px screens) and lost its end to an ellipsis.
+   * Without NEON PASS the primary button says it is an ad and what it gives (Yandex Games 4.5.1): «СМОТРЕТЬ /
+   * рекламу · +5 сердец». Its 20 px caps label fits about ten letters at 360 px, so «рекламу» goes to the sub
+   * line; the sub line has about 208 px there (≈ 21 letters) — «с этого же места» stays in the panel line above.
    */
-  reviveSubPrice: '{price}',
-  revivePrice: 'за {n} {noun}',
-  reviveFree: 'бесплатно с PASS',
+  reviveWatchAd: 'Смотреть',
+  reviveWatchAdSub: 'рекламу · +5 сердец',
+  /** With NEON PASS: «ПРОДОЛЖИТЬ / бесплатно с NEON PASS» (the label is `continue`), no ad. */
+  reviveFreePass: 'бесплатно с NEON PASS',
+  /** While the rewarded ad plays: the waiting button «РЕКЛАМА / сердца после ролика» with the seconds in the ring. */
+  reviveAdPlaying: 'Реклама',
+  reviveAdPlayingSub: 'сердца после ролика',
   toResult: 'К результату',
   revived: '+5 сердец',
   samePlace: 'с этого же места',

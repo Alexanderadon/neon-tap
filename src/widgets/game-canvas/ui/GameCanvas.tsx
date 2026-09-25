@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { audioEngine, loadSong, preloadSfx, sfxUi, waitForAudioUnlock } from '@/shared/lib/audio';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
+import { ads, stubAds } from '@/shared/lib/ads';
 import { navigate } from '@/shared/lib/router';
 import { needsRotateHint } from '@/shared/lib/viewport';
-import { dict, fmt, plural } from '@/shared/i18n';
+import { dict, fmt } from '@/shared/i18n';
 import { hasDevFlag } from '@/shared/config/devFlags';
 import {
   ActionZone,
@@ -26,27 +27,31 @@ import type { ChartFile } from '@/shared/types/chart';
 import { getSettings, updateSettings } from '@/entities/settings';
 import { CoverScene, TrackCover, trackTint } from '@/entities/track';
 import { isPassActive } from '@/entities/pass';
-import { progressStore, spendCrystals } from '@/entities/progress';
 import {
   GameSession,
   LEVELS,
   REFILL_AT,
   REVIVE_IDLE,
   REVIVE_OFFER_SEC,
-  payForRevive,
-  reviveAffordable,
   reviveArmed,
-  revivePrice,
-  reviveReducer,
+  reviveAvailable,
+  reviveStep,
+  watchReviveAd,
+  type ReviveAction,
+  type ReviveState,
   type SessionEvent,
 } from '@/features/play-chart';
 import { saveResult } from '@/features/save-result';
 import { trackSpell } from '@/features/track-progress';
 import { voice, praise } from '@/features/voice-feedback';
 import type { ChartSource } from '@/entities/play-session';
+import { reviveButton } from '../model/reviveButton';
 import './game-canvas.css';
 
 export type GameCanvasMode = 'play' | 'tutorial';
+
+/** The development / `?ads=fast` build: the timer stub plays, and the frame shows its seconds and can close it. A real network shows its own player. */
+const STUB_ADS = ads === stubAds;
 
 interface Props {
   chart: ChartFile;
@@ -83,8 +88,8 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
 /**
  * Hosts the canvas, owns the GameSession lifecycle and routes session events to voice/save.
  * Everything that is not the field is DOM chrome here: the pause chip on the HUD line, the pause
- * menu, loading / error, the fail frame, and the second-chance offer for 30 crystals (free with
- * NEON PASS; spec: screens-game.html).
+ * menu, loading / error, the fail frame, and the second-chance offer — for a rewarded ad, free with
+ * NEON PASS, never for crystals (spec: screens-game.html).
  */
 export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -95,9 +100,25 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   const [attempt, setAttempt] = useState(0);
   const [paused, setPaused] = useState<Snapshot | null>(null);
   const [fail, setFail] = useState<{ stars: number; crowns: number; finale: boolean } | null>(null);
-  const [revive, dispatch] = useReducer(reviveReducer, REVIVE_IDLE);
-  /** When the second-chance offer opened (performance.now()): «Продолжить» is not armed before it has risen. */
+  const [revive, setRevive] = useState<ReviveState>(REVIVE_IDLE);
+  /** The same state for what runs outside a render: session events, the offer's timer, the ad's end. */
+  const reviveRef = useRef<ReviveState>(REVIVE_IDLE);
+  /** When the second-chance offer opened (performance.now()): the primary button is not armed before it has risen. */
   const offerAtRef = useRef<number | null>(null);
+  /**
+   * Advance the second chance and do what it asks of the session: the hearts back (the ad's reward,
+   * or NEON PASS) or the end of the run. The ad itself plays from the effect below while the phase is 'ad'.
+   */
+  const stepRevive = useCallback((action: ReviveAction) => {
+    const { state, effect } = reviveStep(reviveRef.current, action);
+    if (state !== reviveRef.current) {
+      reviveRef.current = state;
+      setRevive(state);
+    }
+    const s = sessionRef.current;
+    if (effect === 'revive') s?.revive();
+    else if (effect === 'fail') s?.declineRevive(); // a no-op once the session has failed on its own
+  }, []);
   const [muted, setMuted] = useState(false);
   // Latest host callbacks without re-creating the session when the parent re-renders.
   const hostRef = useRef({ onEvent, onTime, onExit });
@@ -117,7 +138,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           voice.say('poehali', true);
           setFail(null);
           setPaused(null);
-          dispatch({ type: 'restart' });
+          stepRevive({ type: 'restart' });
           break;
         case 'combo-milestone':
           if (e.combo === 50) voice.say('combo-50', true);
@@ -151,14 +172,15 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         case 'hearts-out':
           setPaused(null);
           offerAtRef.current = performance.now();
-          dispatch({ type: 'hearts-out' });
+          // NEON PASS is read once for the offer: the button's words and what it does never disagree.
+          stepRevive({ type: 'hearts-out', pass: isPassActive() });
           break;
         case 'revive':
           voice.say('poehali', true);
           break;
         case 'fail':
           setPaused(null);
-          dispatch({ type: 'decline' });
+          stepRevive({ type: 'decline' });
           setFail({ stars: e.stars, crowns: e.crowns, finale: e.finale });
           break;
         case 'pause':
@@ -166,7 +188,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           break;
         case 'resume':
           setPaused(null);
-          dispatch({ type: 'resumed' });
+          stepRevive({ type: 'resumed' });
           break;
         case 'finish':
           if (tutorial) break; // the tutorial page decides what happens next
@@ -211,9 +233,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           gems: !tutorial,
           levels: !tutorial,
           endless: !tutorial,
-          // The second chance: never for an ad — 30 crystals, free with NEON PASS, and not offered at all without them.
+          // The second chance: free with NEON PASS, otherwise for a rewarded ad — and not offered at all where no ad can be shown.
           revive: !tutorial && !noFailFlag,
-          canRevive: () => reviveAffordable(isPassActive(), progressStore.get().crystals),
+          canRevive: () => reviveAvailable(isPassActive(), ads.available()),
           fxMode: settings.fxMode,
           debug: settings.debugOverlay,
           onEvent: handleEvent,
@@ -286,7 +308,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       session?.destroy();
       sessionRef.current = null;
     };
-  }, [chart, source, audioBuffer, mode, tutorial, attempt]);
+  }, [chart, source, audioBuffer, mode, tutorial, attempt, stepRevive]);
 
   const exit = useCallback(() => (hostRef.current.onExit ? hostRef.current.onExit() : navigate('menu')), []);
 
@@ -297,31 +319,43 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     audioEngine.setVolumes({ music: next ? 0 : getSettings().musicVolume });
   };
 
-  // --- second chance: the offer times out after 5 s; «Продолжить» pays 30 crystals (free with NEON PASS) ---
-  const declineRevive = useCallback(() => {
-    const s = sessionRef.current;
-    dispatch({ type: 'decline' });
-    if (s?.isHeartsOut) s.declineRevive();
-  }, []);
+  // --- second chance: the 5 s offer; NEON PASS gives the hearts at once, otherwise a rewarded ad plays first ---
   const acceptRevive = () => {
     const s = sessionRef.current;
-    if (!s || !s.isHeartsOut || revive.phase !== 'offer') return;
-    // A tap while the button is still rising is the finger that was hitting the lanes: it pays nothing.
+    if (!s || !s.isHeartsOut || reviveRef.current.phase !== 'offer') return;
+    // A tap while the button is still rising is the finger that was hitting the lanes: no ad starts, no hearts.
     if (!reviveArmed(offerAtRef.current, performance.now())) return;
     sfxUi();
-    // The wallet may have changed in another tab since the offer opened: nothing paid, no hearts.
-    if (!payForRevive(isPassActive(), spendCrystals)) {
-      declineRevive();
+    stepRevive({ type: 'accept' });
+  };
+  const declineRevive = () => {
+    if (reviveRef.current.phase === 'ad') {
+      // «К результату» over the stub's ad closes it: the ad ends 'closed' and nothing is given. A real network closes its own player.
+      if (STUB_ADS) stubAds.cancel();
       return;
     }
-    dispatch({ type: 'accept' });
-    s.revive();
+    stepRevive({ type: 'decline' });
   };
+  // The offer's 5 s run only while it is on screen: the ad phase clears the timer, and a late tick is ignored there.
   useEffect(() => {
     if (revive.phase !== 'offer') return;
-    const t = window.setTimeout(declineRevive, REVIVE_OFFER_SEC * 1000);
+    const t = window.setTimeout(() => stepRevive({ type: 'timeout' }), REVIVE_OFFER_SEC * 1000);
     return () => window.clearTimeout(t);
-  }, [revive.phase, declineRevive]);
+  }, [revive.phase, stepRevive]);
+  // The ad plays while the phase is 'ad'. The run stays frozen and the music paused (nothing here resumes
+  // them): the song goes on only after the refill's count-in.
+  useEffect(() => {
+    if (revive.phase !== 'ad') return;
+    let live = true;
+    void watchReviveAd(ads).then((action) => {
+      if (live) stepRevive(action);
+    });
+    return () => {
+      live = false;
+      // Restarted or left mid-ad: the stub stops too — its late end speaks for no run.
+      if (STUB_ADS) stubAds.cancel();
+    };
+  }, [revive.phase, stepRevive]);
 
   // «Metal Song · Глава 1» / «my-song · Моя музыка»; the tutorial has neither a chapter nor a file — its title stands alone.
   const subTail = chapter !== undefined ? chapter : mode === 'tutorial' ? null : dict.customSong;
@@ -491,7 +525,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
       {fail !== null && <FailFrame stars={fail.stars} crowns={fail.crowns} finale={fail.finale} />}
 
-      {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} pass={isPassActive()} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
+      {revive.phase !== 'idle' && <ReviveFrame phase={revive.phase} pass={revive.pass} tint={tint} onAccept={acceptRevive} onDecline={declineRevive} />}
     </div>
   );
 }
@@ -525,24 +559,28 @@ function FailFrame({ stars, crowns, finale }: { stars: number; crowns: number; f
 }
 
 interface ReviveProps {
-  phase: 'offer' | 'refill';
-  /** NEON PASS: the second chance is free. */
+  phase: 'offer' | 'ad' | 'refill';
+  /** NEON PASS when the offer opened: free, no ad. */
   pass: boolean;
-  /** The playing track's accent for «ПРОДОЛЖИТЬ». */
+  /** The playing track's accent for the primary button. */
   tint?: string;
   onAccept: () => void;
   onDecline: () => void;
 }
 
 /**
- * The second-chance offer (frame 20): five empty hearts in a panel, «СЕРДЦА КОНЧИЛИСЬ», «ПРОДОЛЖИТЬ
- * · +5 сердец · 30 кристаллов» (free with NEON PASS) with a 5 s ring, «К результату». It only opens
- * when the wallet can pay. «Продолжить» is not focused (Space is the circle key) and takes a tap only
- * once it has risen (`REVIVE_ARM_MS`). After «Продолжить» (frame 21) the hearts pop back with sparks and the
- * canvas counts «3 / 2 / 1» under a light veil.
+ * The second-chance offer (frame 20): five empty hearts in a panel with «+5 сердец · с этого же
+ * места», «СЕРДЦА КОНЧИЛИСЬ», the primary button with a 5 s ring — «СМОТРЕТЬ / рекламу · +5 сердец»,
+ * or «ПРОДОЛЖИТЬ / бесплатно с NEON PASS» — and «К результату». It only opens with NEON PASS or an ad
+ * to show. The primary button is not focused (Space is the circle key) and takes a tap only once it
+ * has risen (`REVIVE_ARM_MS`). While the ad plays the button waits, locked, with the stub's seconds in
+ * its ring (a real network covers the frame with its own player), and «К результату» closes the stub
+ * without a reward. Once the hearts are granted (frame 21) they pop back with sparks and the canvas
+ * counts «3 / 2 / 1» under a light veil.
  */
 function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
   const [left, setLeft] = useState(REVIVE_OFFER_SEC);
+  const [ad, setAd] = useState({ progress: 0, left: 0 });
   useEffect(() => {
     if (phase !== 'offer') return;
     setLeft(REVIVE_OFFER_SEC);
@@ -550,9 +588,19 @@ function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
     const t = window.setInterval(() => setLeft(Math.max(0, REVIVE_OFFER_SEC - Math.floor((performance.now() - started) / 1000))), 200);
     return () => window.clearInterval(t);
   }, [phase]);
+  useEffect(() => {
+    if (phase !== 'ad' || !STUB_ADS) return;
+    const read = () => setAd({ progress: stubAds.progress(), left: Math.ceil(stubAds.remainingSeconds()) });
+    read();
+    const t = window.setInterval(read, 200);
+    const off = stubAds.subscribe(read);
+    return () => {
+      window.clearInterval(t);
+      off();
+    };
+  }, [phase]);
   const refill = phase === 'refill';
-  const cost = revivePrice(pass);
-  const price = cost === 0 ? dict.reviveFree : fmt(dict.revivePrice, { n: cost, noun: plural(cost, dict.crystalsNoun) });
+  const button = reviveButton(phase === 'ad' ? 'ad' : 'offer', pass);
   return (
     <div className={refill ? 'game-frame game-revive game-revive-fill' : 'game-shade game-frame game-revive'} aria-live="polite">
       <div className="game-col">
@@ -599,22 +647,32 @@ function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
         {!refill && (
           <ActionZone className="game-bottom">
             <Trio one className="game-trio">
-              <ObjButton icon={<Icon name="arrow" />} label={dict.toResult} onClick={onDecline} />
+              <ObjButton icon={<Icon name="arrow" />} label={dict.toResult} onClick={onDecline} disabled={phase === 'ad' && !STUB_ADS} />
             </Trio>
             <PrimaryAction
+              tone={button.locked ? 'locked' : 'cyan'}
               lead={
                 <Disc>
-                  <Icon name="tray" />
+                  <Icon name={button.icon} />
                 </Disc>
               }
-              label={dict.continue}
+              label={button.label}
               tint={tint}
-              sub={fmt(dict.reviveSubPrice, { price })}
+              sub={button.sub}
               beat
+              disabled={button.locked}
               icon={
-                <RingCountdown size={40} seconds={REVIVE_OFFER_SEC} className="game-ring" track>
-                  {left}
-                </RingCountdown>
+                phase === 'ad' ? (
+                  STUB_ADS ? (
+                    <RingCountdown size={40} seconds={1} progress={ad.progress} className="game-ring game-ring-dim" track>
+                      {ad.left}
+                    </RingCountdown>
+                  ) : null
+                ) : (
+                  <RingCountdown size={40} seconds={REVIVE_OFFER_SEC} className="game-ring" track>
+                    {left}
+                  </RingCountdown>
+                )
               }
               onClick={onAccept}
             />

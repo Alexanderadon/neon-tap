@@ -44,7 +44,8 @@ export type SessionEvent =
   | { type: 'resume' }
   /**
    * The fifth heart is gone and a second chance can be offered: the field is frozen, the music paused,
-   * and fail() waits for the host — `revive()` once it is paid for, `declineRevive()` otherwise.
+   * and fail() waits for the host — `revive()` once it is granted (the ad's reward, or NEON PASS),
+   * `declineRevive()` otherwise. The host may play an ad meanwhile: nothing here moves until then.
    */
   | { type: 'hearts-out'; score: number; accuracy: number; level: number }
   /** A revive was granted: hearts pop back, the count-in runs, then `resume` follows. */
@@ -71,8 +72,8 @@ export interface SessionOptions {
   revive?: boolean;
   /**
    * Asked the moment the hearts run out: can the player have the second chance now (NEON PASS, or
-   * enough crystals to pay for it)? When false the run fails as usual — nothing is offered.
-   * Absent = always.
+   * an ad provider that can show the rewarded ad — `reviveAvailable`)? When false the run fails as
+   * usual — nothing is offered. Absent = always.
    */
   canRevive?: () => boolean;
   /** Crystals: a few plain taps per run become gems (default on; off in the tutorial). */
@@ -446,7 +447,7 @@ export class GameSession {
   }
 
   /**
-   * The second chance is paid for (crystals, or free with NEON PASS): five hearts back, the HUD
+   * The second chance is granted (the rewarded ad ended, or NEON PASS): five hearts back, the HUD
    * hearts pop in one by one, the «3 / 2 / 1» runs, and the song goes on from one second before the
    * freeze (`REVIVE_RESUME_AT`). The field does not move until then — not a note is skipped.
    */
@@ -468,7 +469,7 @@ export class GameSession {
     }, REVIVE_RESUME_AT * 1000);
   }
 
-  /** No second chance (declined, timed out, not paid): the run fails as it always did. */
+  /** No second chance (declined, timed out, the ad closed early or failed): the run fails as it always did. */
   declineRevive(): void {
     if (!this.heartsOut) return;
     this.heartsOut = false;
@@ -701,7 +702,7 @@ export class GameSession {
       }
       this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
       if (dead && !this.opts.noFail && !this.opts.hideHearts) {
-        // No second chance without the means to pay for it: the run simply ends, nothing is dangled.
+        // No NEON PASS and no ad to show: the run simply ends, nothing is dangled.
         if (canOfferRevive(this.reviveUsed, this.opts.revive !== false) && (this.opts.canRevive?.() ?? true)) this.freezeHeartsOut();
         else this.fail();
       }

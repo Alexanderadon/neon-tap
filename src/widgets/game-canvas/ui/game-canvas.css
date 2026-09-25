@@ -334,6 +334,14 @@
 .game-ring .ring-center {
   color: var(--bg);
 }
+/* While the rewarded ad plays: the stub's seconds in a dim ring on the locked (dark) face. */
+.game-ring-dim,
+.game-ring-dim .ring-center {
+  color: var(--w30);
+}
+.game-ring-dim .ring-track {
+  stroke: var(--w10);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .game-verdict,
