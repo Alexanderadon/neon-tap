@@ -8,6 +8,7 @@ import type { OfferKind } from '@/entities/offers';
 import { TopBar, type CounterTick } from '@/widgets/top-bar';
 import { ShopGrid, type SceneTrack, type WalletTick } from '@/widgets/shop-grid';
 import { OfferPopups } from '@/widgets/offer-popups';
+import { releaseSongBuffer } from '@/features/play-custom';
 import './shop.css';
 
 const toMenu = () => {
@@ -49,6 +50,10 @@ export function ShopPage() {
     setOffer('crystals');
   }, []);
   const selling = store.available();
+  // The last own song's decoded buffer is not needed in the shop (its previews decode catalog songs): let it go.
+  useEffect(() => {
+    releaseSongBuffer();
+  }, []);
   useEffect(() => {
     if (!tick) return;
     const id = window.setTimeout(() => setTick(null), (tick.delay ?? 0) * 1000 + TICK_HOLD_MS);

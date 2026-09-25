@@ -35,6 +35,7 @@ import { HistoryPanel } from '@/widgets/history-panel';
 import { NicknameDialog } from '@/features/submit-score';
 import { AvatarPicker } from '@/features/choose-avatar';
 import { grantTracks } from '@/features/buy-track';
+import { releaseSongBuffer } from '@/features/play-custom';
 import { MenuDock, type Door } from './MenuDock';
 import './menu.css';
 
@@ -81,6 +82,11 @@ export function MenuPage() {
   useDeckRadio(custom || slot ? undefined : track.id, busy === null);
   // NEON PASS: the weekly tracks in the deck become the player's for good (price 0 — they stay after the pass).
   const passGrants = passDropGrants(CATALOG, state.save.purchased, state.pass).join(' ');
+  // The last own song's decoded buffer (up to ≈280 MB) is not needed here — «Повторить» lives on the result screen —
+  // and the deck's radio is about to decode catalog songs: let it go.
+  useEffect(() => {
+    releaseSongBuffer();
+  }, []);
   useEffect(() => {
     if (passGrants) grantTracks(passGrants.split(' '));
   }, [passGrants]);
