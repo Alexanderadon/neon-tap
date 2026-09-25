@@ -1,4 +1,5 @@
 import { duels, duelLink, type Duel, type DuelsClient } from '@/shared/api/duels';
+import { isCustomId } from '@/shared/types/chart';
 import { rememberDuel } from '@/entities/duel';
 import type { PlayResult } from '@/entities/score';
 
@@ -8,9 +9,9 @@ export interface Runner {
   avatar?: string;
 }
 
-/** Only finished runs can be a challenge (a failed run has nothing to beat). */
+/** Only finished runs on catalog tracks can be a challenge (a failed run has nothing to beat; a friend has no copy of the player's own song). */
 export function canChallenge(result: PlayResult | null | undefined): boolean {
-  return !!result && !result.failed && result.totalNotes > 0 && result.score > 0;
+  return !!result && !isCustomId(result.trackId) && !result.failed && result.totalNotes > 0 && result.score > 0;
 }
 
 function runOf(result: PlayResult, who: Runner) {

@@ -1,10 +1,11 @@
 import { leaderboard, type LeaderboardClient, type LeaderboardSubmitResult } from '@/shared/api/leaderboard';
+import { isCustomId } from '@/shared/types/chart';
 import type { ChartSource } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
 
-/** Only finished built-in tracks go online; failed runs and custom songs stay local. */
+/** Only finished built-in tracks go online; failed runs and custom songs (by source or by their `custom:` id) stay local. */
 export function isEligible(result: PlayResult | null | undefined, source: ChartSource): boolean {
-  return !!result && source === 'catalog' && !result.failed && result.totalNotes > 0;
+  return !!result && source === 'catalog' && !isCustomId(result.trackId) && !result.failed && result.totalNotes > 0;
 }
 
 const inflight = new WeakMap<PlayResult, Promise<LeaderboardSubmitResult>>();

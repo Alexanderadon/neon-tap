@@ -29,6 +29,10 @@ describe('challenge', () => {
     expect(canChallenge(null)).toBe(false);
   });
 
+  it('a run on the player own song cannot challenge', () => {
+    expect(canChallenge({ ...result, trackId: 'custom:0123456789abcdef0123' })).toBe(false);
+  });
+
   it('creates a duel once per run and phrases the invitation', async () => {
     let calls = 0;
     const client: DuelsClient = {

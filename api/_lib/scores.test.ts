@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   KEEP_LIMIT,
   NAME_MAX,
+  TRACK_ID_RE,
   createRateLimiter,
   decodeMember,
   decodeMembers,
@@ -68,6 +69,13 @@ describe('validateSubmission', () => {
     expect(sanitizeName(undefined)).toBe('');
     expect(isTrackId('neon-hyperdrive')).toBe(true);
     expect(isTrackId('-bad')).toBe(false);
+  });
+
+  it("refuses the player's own songs: their `custom:` ids never pass the track pattern", () => {
+    expect(TRACK_ID_RE.test('custom:0123456789abcdef0123')).toBe(false);
+    expect(isTrackId('custom:0123456789abcdef0123')).toBe(false);
+    expect(isTrackId('custom:My Song:4096')).toBe(false); // the id of the old session-only songs
+    expect(validateSubmission({ ...valid, track: 'custom:0123456789abcdef0123' }, NOW)).toEqual({ ok: false, error: 'track' });
   });
 });
 
