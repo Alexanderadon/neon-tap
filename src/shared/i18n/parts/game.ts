@@ -46,13 +46,15 @@ export const game = {
   cancelAnalysis: 'Отмена',
   replaceFile: 'Заменить',
   analysisWord: 'Анализ',
-  // --- revive (rewarded ad) ---
+  // --- second chance (30 crystals, free with NEON PASS; never an ad) ---
   reviveOnce: '1 раз за забег',
   reviveHint: 'забег продолжится с этого места',
-  reviveSub: '+5 сердец · за рекламу',
+  /** «+5 сердец · 30 кристаллов» / «+5 сердец · бесплатно с PASS» under «Продолжить». */
+  reviveSubPrice: '+5 сердец · {price}',
+  revivePrice: '{n} {noun}',
+  reviveFree: 'бесплатно с PASS',
   toResult: 'К результату',
   revived: '+5 сердец',
   samePlace: 'с этого же места',
   goTag: 'Поехали',
-  adPlaying: 'Реклама',
 } as const;

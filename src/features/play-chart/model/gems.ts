@@ -10,11 +10,13 @@ export interface GemPick {
 
 /** Gems never sit in the first seconds — the player is still settling in. */
 export const GEM_MIN_TIME = 5;
-/** Target number of gems per run, scaled by song length (one per ~15 s), clamped to this range. */
-export const GEM_MIN_COUNT = 6;
-export const GEM_MAX_COUNT = 10;
-export const GEM_SECONDS_PER_GEM = 15;
-export const BIG_GEM_VALUE = 5;
+/** Target number of gems per level, scaled by song length (one per ~30 s), clamped to this range. */
+export const GEM_MIN_COUNT = 3;
+export const GEM_MAX_COUNT = 5;
+export const GEM_SECONDS_PER_GEM = 30;
+export const BIG_GEM_VALUE = 3;
+/** An endless loop past the third level carries only this many small gems (no big one). */
+export const LOOP_GEM_COUNT = 3;
 
 /** A gem can only ride a plain tap: no hold, no spell, no circle, no roll, no slide. */
 export function isGemCandidate(n: ParsedNote): boolean {
@@ -28,8 +30,14 @@ export function gemTotal(picks: readonly GemPick[]): number {
   return sum;
 }
 
+function gemCandidates(notes: readonly ParsedNote[]): number[] {
+  const candidates: number[] = [];
+  for (let i = 0; i < notes.length; i++) if (isGemCandidate(notes[i])) candidates.push(i);
+  return candidates;
+}
+
 /**
- * Choose which notes carry crystals this run. Deterministic for a given `seed` (mulberry32).
+ * Choose which notes carry crystals in a level. Deterministic for a given `seed` (mulberry32).
  *
  * The eligible span (first candidate → last candidate) is cut into `count` equal time slots and
  * one random candidate is taken from each, so gems are spread over the whole song instead of
@@ -37,15 +45,29 @@ export function gemTotal(picks: readonly GemPick[]): number {
  * gem worth `BIG_GEM_VALUE`. Fewer than `count` candidates → every candidate becomes a gem.
  */
 export function pickGems(notes: readonly ParsedNote[], seed: number, duration?: number): GemPick[] {
-  const candidates: number[] = [];
-  for (let i = 0; i < notes.length; i++) if (isGemCandidate(notes[i])) candidates.push(i);
+  const candidates = gemCandidates(notes);
   if (candidates.length === 0) return [];
   const rnd = mulberry32(seed);
   const first = notes[candidates[0]].time;
   const last = notes[candidates[candidates.length - 1]].time;
   const span = Math.max(last, duration ?? last) - first;
   const count = Math.min(candidates.length, clamp(Math.round(span / GEM_SECONDS_PER_GEM), GEM_MIN_COUNT, GEM_MAX_COUNT));
+  const picks = spreadGems(notes, candidates, count, rnd);
+  if (picks.length > 0) picks[Math.floor(rnd() * picks.length)].value = BIG_GEM_VALUE;
+  return picks;
+}
 
+/** An endless loop's gems: `LOOP_GEM_COUNT` small ones spread over the song, no big one. Deterministic per `seed`. */
+export function pickLoopGems(notes: readonly ParsedNote[], seed: number): GemPick[] {
+  const candidates = gemCandidates(notes);
+  if (candidates.length === 0) return [];
+  return spreadGems(notes, candidates, Math.min(candidates.length, LOOP_GEM_COUNT), mulberry32(seed));
+}
+
+/** `count` small gems, one per equal time slot of the candidates' span (see `pickGems`). */
+function spreadGems(notes: readonly ParsedNote[], candidates: readonly number[], count: number, rnd: () => number): GemPick[] {
+  const first = notes[candidates[0]].time;
+  const last = notes[candidates[candidates.length - 1]].time;
   const picks: GemPick[] = [];
   if (count >= candidates.length) {
     for (const index of candidates) picks.push({ index, value: 1 });
@@ -83,6 +105,5 @@ export function pickGems(notes: readonly ParsedNote[], seed: number, duration?: 
       picks.sort((a, b) => a.index - b.index);
     }
   }
-  if (picks.length > 0) picks[Math.floor(rnd() * picks.length)].value = BIG_GEM_VALUE;
   return picks;
 }
