@@ -77,7 +77,8 @@ export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins,
       <h2 id={titleId} className="offer-title">
         {title}
       </h2>
-      <OfferHero name={hero ?? kind} placeholder={placeholder} />
+      {/* Keyed by the picture: a missing one (404) must not hide the next pack's picture. */}
+      <OfferHero key={hero ?? kind} name={hero ?? kind} placeholder={placeholder} />
       <div className="offer-tags">{tags}</div>
       <div className="offer-benefit">{benefit}</div>
       <div className="offer-coins">{coins}</div>
