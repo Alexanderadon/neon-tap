@@ -26,7 +26,7 @@ import { TopBar } from '@/widgets/top-bar';
 import { DuelVerdict } from '@/features/duel';
 import { clearActiveDuel, useActiveDuel } from '@/entities/duel';
 import { NicknameDialog, useSubmitScore } from '@/features/submit-score';
-import { useCatalogState } from '@/widgets/track-list';
+import { lockFor, useCatalogState } from '@/widgets/track-list';
 import { AttemptLine } from '@/widgets/history-panel';
 import { OnlineLeaderboard } from '@/widgets/online-leaderboard';
 import './result-page.css';
@@ -51,12 +51,13 @@ export function ResultPage() {
   const duel = useActiveDuel();
   const answering = duel && result && duel.track === result.trackId ? duel : null;
 
-  // "Next": the following playable catalog track (hidden for custom songs and after the last one).
+  // "Next": the following playable catalog track (hidden for custom songs and after the last one). The same lock
+  // as the deck (`lockFor`): a weekly track bought or opened by NEON PASS is playable, one not out yet is not.
   const catalog = useCatalogState();
   const trackIndex = result ? CATALOG.findIndex((t) => t.id === result.trackId) : -1;
   const nextId = useMemo(() => {
     if (source !== 'catalog' || trackIndex < 0) return null;
-    for (let j = trackIndex + 1; j < CATALOG.length; j++) if (catalog.unlocks.get(CATALOG[j].id)?.unlocked) return CATALOG[j].id;
+    for (let j = trackIndex + 1; j < CATALOG.length; j++) if (!lockFor(catalog, CATALOG[j].id, CATALOG[j].stars).locked) return CATALOG[j].id;
     return null;
   }, [source, trackIndex, catalog]);
   const next = useCallback(async () => {
