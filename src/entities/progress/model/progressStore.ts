@@ -3,7 +3,7 @@ import type { SpellKind } from '@/shared/types/chart';
 import { addRun, addSpell, emptySave, mergeResult, migrate, type BestResult, type SaveData } from './SaveData';
 import { completeDaily, localDateString } from './daily';
 import { claimGoals, type Goal } from './goals';
-import { addCrystals, creditPaidCrystals, purchaseTrack, withdrawCrystals, type PurchaseFailure } from './shop';
+import { addCrystals, creditPaidCrystals, purchaseTrack, type PurchaseFailure } from './shop';
 import { earnRun, type EarningCap, type RunEarningInput } from './earnings';
 import { markCalendar, type CalendarMark } from './calendar';
 
@@ -87,13 +87,6 @@ export function recordCalendarMark(date: string = localDateString()): CalendarMa
 /** Crystals bought for money: the balance grows, the lifetime total does not. */
 export function addPaidCrystals(amount: number): void {
   if (amount > 0) progressStore.set(creditPaidCrystals(progressStore.get(), amount));
-}
-
-/** Pay crystals from the wallet (the second chance); false, and nothing spent, when the balance is short. */
-export function spendCrystals(amount: number): boolean {
-  const { save, ok } = withdrawCrystals(progressStore.get(), amount);
-  if (ok && save !== progressStore.get()) progressStore.set(save);
-  return ok;
 }
 
 /** Buy a track in the shop; false with the reason when it is owned already or the balance is short. */

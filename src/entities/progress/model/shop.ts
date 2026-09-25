@@ -41,14 +41,6 @@ export function creditPaidCrystals(save: SaveData, amount: number): SaveData {
   return { ...save, crystals: save.crystals + n };
 }
 
-/** Pay `amount` crystals from the wallet (the second chance); fails without touching the save when the balance is short. Free is always ok. */
-export function withdrawCrystals(save: SaveData, amount: number): { save: SaveData; ok: boolean } {
-  const cost = Math.max(0, Math.round(Number.isFinite(amount) ? amount : 0));
-  if (cost === 0) return { save, ok: true };
-  if (!canAfford(save, cost)) return { save, ok: false };
-  return { save: { ...save, crystals: save.crystals - cost }, ok: true };
-}
-
 export type PurchaseFailure = 'owned' | 'poor';
 
 /**
