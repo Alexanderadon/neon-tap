@@ -390,10 +390,11 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       {status === 'error' &&
         skeleton(
           <>
+            {/* An own song is a local file: «Не удалось прочитать файл», nothing about the connection. */}
             <div className="game-tabline">
-              <Tag variant="mag">{dict.loadFailed}</Tag>
+              <Tag variant="mag">{source === 'custom' ? dict.readFileFailed : dict.loadFailed}</Tag>
             </div>
-            <Line className="game-line">{dict.checkConnection}</Line>
+            <Line className="game-line">{source === 'custom' ? dict.readFileHint : dict.checkConnection}</Line>
           </>,
           <>
             <Trio className="game-trio">

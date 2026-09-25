@@ -24,6 +24,9 @@ export const game = {
   heartsOut: 'Сердца кончились',
   loadFailed: 'Не удалось загрузить',
   checkConnection: 'проверь связь и попробуй ещё раз',
+  /** An own song that failed to start: the file is local, so nothing about the connection. */
+  readFileFailed: 'Не удалось прочитать файл',
+  readFileHint: 'попробуй ещё раз или выбери другой файл',
   soundToggle: 'Звук',
   tutorialStep: '{n} / {total}',
   // --- duel page ---
