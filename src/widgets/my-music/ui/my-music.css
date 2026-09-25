@@ -14,6 +14,10 @@
 .mm-tools .field {
   width: 100%;
 }
+/* «СЛОЖНОСТЬ» at the caps tracking is 107 px, wider than a trio button (105 at 390, 103 at 360): the order trio tracks tighter. */
+.mm-tools .obj {
+  letter-spacing: 0.04em;
+}
 .mm-body {
   width: var(--col);
   margin-top: 16px;
