@@ -12,8 +12,9 @@ import type { AdOutcome, RewardedAd } from '@/shared/lib/ads';
 /** Seconds the offer stays open (the RingCountdown in the primary button). It stands still while the ad plays. */
 export const REVIVE_OFFER_SEC = 5;
 /**
- * The primary button takes a tap only after it has risen (0.8 s delay + 0.4 s rise, game-canvas.css):
- * the frame opens while the fingers are still hitting the lanes, and a stray tap must never start an ad.
+ * The frame's buttons take a tap only after they have risen (the primary: 0.8 s delay + 0.4 s rise,
+ * «К результату»: 0.7 s + 0.4 s, game-canvas.css): the frame opens while the fingers are still
+ * hitting the lanes, and a stray tap must never start an ad nor throw the second chance away unseen.
  */
 export const REVIVE_ARM_MS = 1200;
 /** Hearts given back. */
@@ -77,9 +78,18 @@ export function reviveAvailable(pass: boolean, adsAvailable: boolean): boolean {
   return pass || adsAvailable;
 }
 
-/** The primary button is armed: the offer opened at `offerAt` (ms, the same clock as `nowMs`) at least `REVIVE_ARM_MS` ago. */
+/** The frame's buttons are armed: the offer opened at `offerAt` (ms, the same clock as `nowMs`) at least `REVIVE_ARM_MS` ago. */
 export function reviveArmed(offerAt: number | null, nowMs: number): boolean {
   return offerAt !== null && nowMs - offerAt >= REVIVE_ARM_MS;
+}
+
+/**
+ * The game's keys wait while the second chance's ad plays: R would restart the run under the
+ * provider's player (the song plays over the ad — a real network's player cannot be closed from
+ * the game), and the ad's end would then speak for no run.
+ */
+export function reviveKeysLocked(phase: RevivePhase): boolean {
+  return phase === 'ad';
 }
 
 /**

@@ -35,6 +35,7 @@ import {
   REVIVE_OFFER_SEC,
   reviveArmed,
   reviveAvailable,
+  reviveKeysLocked,
   reviveStep,
   watchReviveAd,
   type ReviveAction,
@@ -255,6 +256,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     const onKey = (e: KeyboardEvent) => {
       const s = sessionRef.current;
       if (!s) return;
+      // The second chance's ad is playing: no restart under it (the song would play over the provider's player).
+      if (reviveKeysLocked(reviveRef.current.phase)) return;
       if (e.code === 'KeyR') {
         e.preventDefault();
         s.restart();
@@ -329,11 +332,14 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     stepRevive({ type: 'accept' });
   };
   const declineRevive = () => {
-    if (reviveRef.current.phase === 'ad') {
+    const phase = reviveRef.current.phase;
+    if (phase === 'ad') {
       // «К результату» over the stub's ad closes it: the ad ends 'closed' and nothing is given. A real network closes its own player.
       if (STUB_ADS) stubAds.cancel();
       return;
     }
+    // «К результату» rises with the frame too: a lane tap as the last heart goes must not throw the second chance away unseen.
+    if (phase === 'offer' && !reviveArmed(offerAtRef.current, performance.now())) return;
     stepRevive({ type: 'decline' });
   };
   // The offer's 5 s run only while it is on screen: the ad phase clears the timer, and a late tick is ignored there.
@@ -572,8 +578,8 @@ interface ReviveProps {
  * The second-chance offer (frame 20): five empty hearts in a panel with «+5 сердец · с этого же
  * места», «СЕРДЦА КОНЧИЛИСЬ», the primary button with a 5 s ring — «СМОТРЕТЬ / рекламу · +5 сердец»,
  * or «ПРОДОЛЖИТЬ / бесплатно с NEON PASS» — and «К результату». It only opens with NEON PASS or an ad
- * to show. The primary button is not focused (Space is the circle key) and takes a tap only once it
- * has risen (`REVIVE_ARM_MS`). While the ad plays the button waits, locked, with the stub's seconds in
+ * to show. The primary button is not focused (Space is the circle key); both buttons take a tap only
+ * once they have risen (`REVIVE_ARM_MS`). While the ad plays the button waits, locked, with the stub's seconds in
  * its ring (a real network covers the frame with its own player), and «К результату» closes the stub
  * without a reward. Once the hearts are granted (frame 21) they pop back with sparks and the canvas
  * counts «3 / 2 / 1» under a light veil.
