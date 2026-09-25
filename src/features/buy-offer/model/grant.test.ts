@@ -1,48 +1,23 @@
-import { describe, expect, it, vi } from 'vitest';
-import { grantOffer, type GrantDeps } from './grant';
-
-function deps(owned: string[] = []): GrantDeps & { owned: string[]; credited: number[] } {
-  const credited: number[] = [];
-  const d = {
-    owned: [...owned],
-    credited,
-    addCrystals: (n: number) => {
-      credited.push(n);
-    },
-    unlockTrack: (id: string) => {
-      if (d.owned.includes(id)) return false;
-      d.owned.push(id);
-      return true;
-    },
-    packIds: ['p1', 'p2', 'a9'],
-    markMusicBought: vi.fn(),
-  };
-  return d;
-}
+import { describe, expect, it } from 'vitest';
+import { SKUS } from '@/shared/lib/iap';
+import { addCrystals, creditPaidCrystals, type SaveData } from '@/entities/progress';
+import { grantOffer } from './grant';
 
 describe('grantOffer', () => {
-  it('credits the crystals of a pack and of the deal', () => {
-    const d = deps();
-    expect(grantOffer('crystals-s', d)).toEqual({ crystals: 500, tracks: [] });
-    expect(grantOffer('crystals-m', d)).toEqual({ crystals: 1500, tracks: [] });
-    expect(grantOffer('crystals-l', d)).toEqual({ crystals: 4000, tracks: [] });
-    expect(grantOffer('limited-48h', d)).toEqual({ crystals: 3000, tracks: [] });
-    expect(d.credited).toEqual([500, 1500, 4000, 3000]);
-    expect(d.markMusicBought).not.toHaveBeenCalled();
+  it('credits 300 / 700 / 2 000 / 4 500 crystals for the four packs', () => {
+    const credited: number[] = [];
+    const deps = { addCrystals: (n: number) => void credited.push(n) };
+    expect(grantOffer('crystals-s', deps)).toEqual({ crystals: 300 });
+    expect(grantOffer('crystals-m', deps)).toEqual({ crystals: 700 });
+    expect(grantOffer('crystals-l', deps)).toEqual({ crystals: 2000 });
+    expect(grantOffer('crystals-xl', deps)).toEqual({ crystals: 4500 });
+    expect(credited).toEqual([300, 700, 2000, 4500]);
+    expect(SKUS).toHaveLength(4);
   });
 
-  it('unlocks the whole music pack and marks it bought', () => {
-    const d = deps();
-    expect(grantOffer('music-8', d)).toEqual({ crystals: 0, tracks: ['p1', 'p2', 'a9'] });
-    expect(d.owned).toEqual(['p1', 'p2', 'a9']);
-    expect(d.credited).toEqual([]);
-    expect(d.markMusicBought).toHaveBeenCalledTimes(1);
-  });
-
-  it('is idempotent for the music pack: owned tracks stay owned once', () => {
-    const d = deps(['p1']);
-    expect(grantOffer('music-8', d).tracks).toEqual(['p2', 'a9']);
-    expect(grantOffer('music-8', d).tracks).toEqual([]);
-    expect(d.owned).toEqual(['p1', 'p2', 'a9']);
+  it('bought crystals raise the balance, not the lifetime total the badges count', () => {
+    let save = addCrystals({ crystals: 0, lifetimeCrystals: 0 } as SaveData, 50);
+    grantOffer('crystals-m', { addCrystals: (n) => (save = creditPaidCrystals(save, n)) });
+    expect(save).toMatchObject({ crystals: 750, lifetimeCrystals: 50 });
   });
 });

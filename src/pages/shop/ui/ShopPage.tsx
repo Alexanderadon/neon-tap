@@ -7,7 +7,7 @@ import { CoverScene } from '@/entities/track';
 import type { OfferKind } from '@/entities/offers';
 import { TopBar, type CounterTick } from '@/widgets/top-bar';
 import { ShopGrid, type SceneTrack, type WalletTick } from '@/widgets/shop-grid';
-import { LimitedTag, OfferPopups } from '@/widgets/offer-popups';
+import { OfferPopups } from '@/widgets/offer-popups';
 import './shop.css';
 
 const toMenu = () => {
@@ -35,8 +35,7 @@ const TICK_HOLD_MS = 1400;
  * The shop screen: the scene tinted by the focused card's cover, the top bar identical to every
  * other screen, and the shop widget (sub-header, cards, purchase sheet, ad, bottom action zone).
  * The wallet chip ticks when the widget says so; the crystals fly into it from the widget's layer.
- * The offer popups ride on top: the crystal packs from the not-enough sheet and the wallet's «+»,
- * the 48-hour deal from the header's «48 ч» tag.
+ * The crystal packs ride on top — only when asked for: the not-enough sheet and the wallet's «+».
  */
 export function ShopPage() {
   const [scene, setScene] = useState<SceneTrack | null>(null);
@@ -49,7 +48,6 @@ export function ShopPage() {
     sfxUi();
     setOffer('crystals');
   }, []);
-  const openLimited = useCallback(() => setOffer('limited'), []);
   const selling = store.available();
   useEffect(() => {
     if (!tick) return;
@@ -69,7 +67,6 @@ export function ShopPage() {
         onRecords={toRecords}
         onProfile={toProfile}
         onTrack={toTrack}
-        headerTag={<LimitedTag onOpen={openLimited} />}
         onTopUp={selling ? topUp : undefined}
       />
       <OfferPopups request={offer} onRequestHandled={offerHandled} crystalsRef={crystalsRef} onWalletTick={onWalletTick} />

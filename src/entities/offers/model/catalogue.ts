@@ -1,51 +1,45 @@
 import type { Sku } from '@/shared/lib/iap';
 
-/** The kinds of popup: the regular crystal packs, the 48-hour ×2 deal, the eight-track music pack. */
-export type OfferKind = 'crystals' | 'limited' | 'music';
+/**
+ * The kinds of offer sheet. Only the crystal packs are left: the 48-hour deal and the eight-track
+ * music pack are gone, and nothing pops up by itself (docs/plans/economy-drops-mymusic.md §1.2).
+ */
+export type OfferKind = 'crystals';
 
-export type CrystalPackSku = 'crystals-s' | 'crystals-m' | 'crystals-l';
+export type CrystalPackSku = 'crystals-s' | 'crystals-m' | 'crystals-l' | 'crystals-xl';
 
 export interface CrystalPack {
   sku: CrystalPackSku;
   /** Crystals granted. */
   crystals: number;
-  /** The bonus over the small pack's rate, in per cent («+25 %»); 0 for the small one. */
+  /** The bonus over the small pack's rate shown on the sheet, in per cent («+15 %»); 0 for the small one. Never above the real one. */
   bonusPercent: number;
 }
 
-/** Three sizes; the bonus grows with the pack (GDD «Донат»). */
+/** Four sizes (49 / 99 / 249 / 499 ₽); the bonus grows with the pack and each label is rounded down from the real rate. */
 export const CRYSTAL_PACKS: readonly CrystalPack[] = [
-  { sku: 'crystals-s', crystals: 500, bonusPercent: 0 },
-  { sku: 'crystals-m', crystals: 1500, bonusPercent: 10 },
-  { sku: 'crystals-l', crystals: 4000, bonusPercent: 25 },
+  { sku: 'crystals-s', crystals: 300, bonusPercent: 0 },
+  { sku: 'crystals-m', crystals: 700, bonusPercent: 15 },
+  { sku: 'crystals-l', crystals: 2000, bonusPercent: 30 },
+  { sku: 'crystals-xl', crystals: 4500, bonusPercent: 45 },
 ];
-
-/** The 48-hour deal: twice the middle pack's crystals for the middle pack's price. */
-export const LIMITED_DEAL = {
-  sku: 'limited-48h' as const,
-  crystals: 3000,
-  /** The pack whose price the deal is sold at — its crystals are the «обычно» coin. */
-  pricedAs: 'crystals-m' as const,
-  multiplier: 2,
-};
-
-/** Tracks in the music pack. */
-export const MUSIC_PACK_SIZE = 8;
-export const MUSIC_PACK_SKU: Sku = 'music-8';
 
 export function crystalPack(sku: Sku): CrystalPack | undefined {
   return CRYSTAL_PACKS.find((p) => p.sku === sku);
 }
 
-/** Crystals a sku grants (0 for the music pack, whose goods are tracks). */
+/** Crystals a sku grants. */
 export function crystalsFor(sku: Sku): number {
-  if (sku === LIMITED_DEAL.sku) return LIMITED_DEAL.crystals;
   return crystalPack(sku)?.crystals ?? 0;
 }
 
-/** Which popup sells a sku. */
-export function offerKindOf(sku: Sku): OfferKind {
-  if (sku === MUSIC_PACK_SKU) return 'music';
-  if (sku === LIMITED_DEAL.sku) return 'limited';
-  return 'crystals';
+/**
+ * The real bonus of a pack over the small one's crystals per ruble, in per cent (fractional):
+ * what a label may claim at most. `rubles` gives each sku's price.
+ */
+export function realBonusPercent(pack: CrystalPack, rubles: (sku: CrystalPackSku) => number): number {
+  const base = CRYSTAL_PACKS[0];
+  const baseRate = base.crystals / rubles(base.sku);
+  const rate = pack.crystals / rubles(pack.sku);
+  return (rate / baseRate - 1) * 100;
 }

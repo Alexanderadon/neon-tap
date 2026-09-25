@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NBSP } from '@/shared/lib/format';
-import { STUB_PROCESSING_MS, STUB_PRICES_RUB, StubStore, rubles, type StoreClock } from './stubStore';
+import { STUB_PROCESSING_MS, STUB_PRICES_RUB, StubStore, iapOffFlag, iapStubFlag, rubles, type StoreClock } from './stubStore';
 import { SKUS, isSku } from './types';
 
 function fakeClock() {
@@ -33,23 +33,37 @@ function fakeClock() {
 }
 
 describe('StubStore', () => {
-  it('is available unless the off flag is set', () => {
-    expect(new StubStore({ off: () => false }).available()).toBe(true);
-    expect(new StubStore({ off: () => true }).available()).toBe(false);
+  it('sells only in development or with ?iap=stub; ?iap=off always wins', () => {
+    // a production build without the flag: no fake store on the live site
+    expect(new StubStore({ dev: false, stub: () => false, off: () => false }).available()).toBe(false);
+    expect(new StubStore({ dev: true, stub: () => false, off: () => false }).available()).toBe(true);
+    expect(new StubStore({ dev: false, stub: () => true, off: () => false }).available()).toBe(true);
+    expect(new StubStore({ dev: true, stub: () => true, off: () => true }).available()).toBe(false);
   });
 
-  it('prices every sku as rubles with a no-break space; the deal costs as much as the middle pack', () => {
-    const s = new StubStore({ off: () => false });
+  it('refuses every purchase when it is not available (production without the flag)', async () => {
+    const live = new StubStore({ dev: false, stub: () => false, off: () => false });
+    await expect(live.buy('crystals-m')).resolves.toBe('failed');
+    expect(live.processing).toBeNull();
+  });
+
+  it('knows the ?iap=stub and ?iap=off flags (none in tests)', () => {
+    expect(iapStubFlag()).toBe(false);
+    expect(iapOffFlag()).toBe(false);
+  });
+
+  it('prices every sku as rubles with a no-break space: 49 · 99 · 249 · 499', () => {
+    const s = new StubStore({ off: () => false, dev: true });
     for (const sku of SKUS) {
       expect(s.price(sku)).toBe(`${STUB_PRICES_RUB[sku]}${NBSP}₽`);
     }
     expect(rubles(249)).toBe(`249${NBSP}₽`);
-    expect(STUB_PRICES_RUB['limited-48h']).toBe(STUB_PRICES_RUB['crystals-m']);
+    expect(SKUS.map((sku) => STUB_PRICES_RUB[sku])).toEqual([49, 99, 249, 499]);
   });
 
   it('resolves ok after the processing delay and reports the processing sku meanwhile', async () => {
     const c = fakeClock();
-    const s = new StubStore({ clock: c.clock, off: () => false });
+    const s = new StubStore({ clock: c.clock, off: () => false, dev: true });
     const listener = vi.fn();
     s.subscribe(listener);
     const done = s.buy('crystals-m');
@@ -65,8 +79,8 @@ describe('StubStore', () => {
 
   it('cancel() resolves cancel without waiting', async () => {
     const c = fakeClock();
-    const s = new StubStore({ clock: c.clock, off: () => false });
-    const done = s.buy('music-8');
+    const s = new StubStore({ clock: c.clock, off: () => false, dev: true });
+    const done = s.buy('crystals-xl');
     c.advance(200);
     s.cancel();
     await expect(done).resolves.toBe('cancel');
@@ -76,12 +90,12 @@ describe('StubStore', () => {
 
   it('fails a second purchase while one is processing, and any purchase when unavailable', async () => {
     const c = fakeClock();
-    const s = new StubStore({ clock: c.clock, off: () => false });
+    const s = new StubStore({ clock: c.clock, off: () => false, dev: true });
     const first = s.buy('crystals-s');
     await expect(s.buy('crystals-l')).resolves.toBe('failed');
     c.advance(STUB_PROCESSING_MS);
     await expect(first).resolves.toBe('ok');
-    const off = new StubStore({ clock: c.clock, off: () => true });
+    const off = new StubStore({ clock: c.clock, off: () => true, dev: true });
     await expect(off.buy('crystals-s')).resolves.toBe('failed');
   });
 
