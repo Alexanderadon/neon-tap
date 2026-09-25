@@ -28,9 +28,11 @@ export interface PurchasePaths {
 /**
  * Screens 3 / 6 / 9 / 10 of the shop mockup: with enough crystals the cyan button buys and the ad is
  * the second, dark way; when short, the ad takes the cyan button and there is no crystal button
- * at all; without an ad provider the short state sends the player to earn.
+ * at all; without an ad the short state sends the player to earn. `adEligible` = an ad may open
+ * this very item: only the week's new track in its first 14 days, and only when a provider is
+ * there (`dropState().adEligible && ads.available()`) — road and premium tracks never have an ad path.
  */
-export function purchasePaths(plan: Pick<PurchasePlan, 'affordable'>, adsAvailable: boolean): PurchasePaths {
-  if (plan.affordable) return { primary: 'buy', adRow: adsAvailable };
-  return { primary: adsAvailable ? 'ad' : 'earn', adRow: false };
+export function purchasePaths(plan: Pick<PurchasePlan, 'affordable'>, adEligible: boolean): PurchasePaths {
+  if (plan.affordable) return { primary: 'buy', adRow: adEligible };
+  return { primary: adEligible ? 'ad' : 'earn', adRow: false };
 }

@@ -43,7 +43,7 @@ describe('StubAds', () => {
   it('rewards after AD_SECONDS by default and reports progress on the way', async () => {
     const c = fakeClock();
     const ads = new StubAds({ clock: c.clock, seconds: () => AD_SECONDS });
-    const done = ads.show('shop-track');
+    const done = ads.show('weekly-track');
     expect(ads.playing).toBe(true);
     expect(ads.durationSeconds).toBe(AD_SECONDS);
     c.advance(AD_SECONDS * 500);
@@ -58,7 +58,7 @@ describe('StubAds', () => {
   it('uses the short duration when asked (the ?ads=fast flag)', async () => {
     const c = fakeClock();
     const ads = new StubAds({ clock: c.clock, seconds: () => 3 });
-    const done = ads.show('revive');
+    const done = ads.show('weekly-track');
     c.advance(2999);
     expect(ads.playing).toBe(true);
     c.advance(1);
@@ -70,7 +70,7 @@ describe('StubAds', () => {
     const ads = new StubAds({ clock: c.clock, seconds: () => 30 });
     const listener = vi.fn();
     ads.subscribe(listener);
-    const done = ads.show('revive');
+    const done = ads.show('weekly-track');
     expect(listener).toHaveBeenCalledTimes(1);
     c.advance(1000);
     ads.cancel();
@@ -83,8 +83,8 @@ describe('StubAds', () => {
   it('refuses a second ad while one plays', async () => {
     const c = fakeClock();
     const ads = new StubAds({ clock: c.clock, seconds: () => 30 });
-    const first = ads.show('shop-track');
-    await expect(ads.show('shop-track')).resolves.toBe('failed');
+    const first = ads.show('weekly-track');
+    await expect(ads.show('weekly-track')).resolves.toBe('failed');
     c.advance(30_000);
     await expect(first).resolves.toBe('rewarded');
   });

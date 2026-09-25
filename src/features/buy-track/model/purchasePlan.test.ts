@@ -20,13 +20,21 @@ describe('purchasePlan', () => {
 });
 
 describe('purchasePaths', () => {
-  it('affordable: the cyan button buys, the ad is the second way only when a provider exists', () => {
+  it('affordable: the cyan button buys, the ad is the second way only for an ad-eligible item', () => {
     expect(purchasePaths({ affordable: true }, true)).toEqual({ primary: 'buy', adRow: true });
     expect(purchasePaths({ affordable: true }, false)).toEqual({ primary: 'buy', adRow: false });
   });
 
-  it('short: the ad takes the cyan button; without ads the player is sent to earn', () => {
+  it('short: the ad takes the cyan button only for an ad-eligible item; otherwise the player is sent to earn', () => {
     expect(purchasePaths({ affordable: false }, true)).toEqual({ primary: 'ad', adRow: false });
     expect(purchasePaths({ affordable: false }, false)).toEqual({ primary: 'earn', adRow: false });
+  });
+
+  it('without adEligible (road, premium, a drop past 14 days or no provider) there is no ad anywhere', () => {
+    for (const affordable of [true, false]) {
+      const paths = purchasePaths({ affordable }, false);
+      expect(paths.primary).not.toBe('ad');
+      expect(paths.adRow).toBe(false);
+    }
   });
 });
