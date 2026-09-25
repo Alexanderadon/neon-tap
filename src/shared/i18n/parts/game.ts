@@ -39,7 +39,6 @@ export const game = {
   fileFormats: 'MP3 · OGG · WAV',
   fileStays: 'остаётся у тебя',
   yourTrack: 'Твой трек',
-  readyTag: 'Готово',
   notesLine: '{n} {noun} · {bpm} BPM',
   wrongFormat: 'не тот формат',
   readFailed: 'Не удалось прочитать',

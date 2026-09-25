@@ -7,15 +7,13 @@ export const menu = {
   forCrystals: 'за {n}',
   shopAffordable: 'можно купить: {n}',
   deckSegmentAria: '{title}: к треку',
-  /** The deck's last card «Своя музыка»: the one line under its title. */
+  /** The deck's last card «Моя музыка»: the one line under its title. */
   deckCustomLine: 'твой MP3 — игра сама сделает уровень',
   /** The same line once songs are saved: «3 песни · осталось 0 из 3» / «37 песен · PASS». */
   deckSongsLeft: '{songs} · осталось {left} из {limit}',
   deckSongsPass: '{songs} · PASS',
+  /** «3 песни» (the noun is `libSongsNoun`); the card's primary once songs are saved is «МОЯ МУЗЫКА» (`libTitle`). */
   deckSongs: '{n} {noun}',
-  deckSongNoun: ['песня', 'песни', 'песен'],
-  /** The primary button on the «Своя музыка» card once songs are saved: «МОЯ МУЗЫКА / 3 песни». */
-  deckMyMusic: 'Моя музыка',
   // --- profile ---
   nicknameFor: 'ник для онлайн-рекордов',
   nicknameShort: 'для онлайн-рекордов · 1–16 символов',

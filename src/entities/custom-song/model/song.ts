@@ -5,6 +5,11 @@ import type { NewSong, SongBest, SongMeta } from './types';
 
 /** Saved songs a player without NEON PASS may keep. */
 export const CUSTOM_FREE_LIMIT = 3;
+
+/** Songs that may be saved: three without NEON PASS, no limit with it (`null`). Deleting a song frees its slot. */
+export function songLimit(pass: boolean): number | null {
+  return pass ? null : CUSTOM_FREE_LIMIT;
+}
 /** Files above this size are refused before anything is read. */
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
 /** Decoded songs shorter or longer than this are refused (a level needs a song; 12 minutes of audio is ≈120 MB of memory). */

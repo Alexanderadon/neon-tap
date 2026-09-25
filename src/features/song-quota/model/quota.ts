@@ -1,5 +1,5 @@
 import { freeStorageBytes, isQuotaError, persistStorage } from '@/shared/lib/idb';
-import { CUSTOM_FREE_LIMIT, addSong, savedSongIds, songStorageAvailable, type NewSong } from '@/entities/custom-song';
+import { addSong, savedSongIds, songLimit, songStorageAvailable, type NewSong } from '@/entities/custom-song';
 import { isPassActive } from '@/entities/pass';
 
 /** May a song with this id be added: yes, it is saved already (open it), or every free slot is taken. */
@@ -8,10 +8,8 @@ export type AddCheck = 'ok' | 'duplicate' | 'limit';
 /** How saving ended. `no-room` and `unavailable` play the song once without keeping it. */
 export type SaveOutcome = 'saved' | 'duplicate' | 'limit' | 'no-room' | 'unavailable';
 
-/** Songs that may be saved: three without NEON PASS, no limit with it (`null`). Deleting a song frees its slot. */
-export function songLimit(pass: boolean): number | null {
-  return pass ? null : CUSTOM_FREE_LIMIT;
-}
+/** The slot rule lives with the songs (`entities/custom-song`); re-exported for the feature's callers. */
+export { songLimit };
 
 /** The decision before decoding: a saved id opens that song (even when the slots are full); a new one needs a free slot. */
 export function checkAdd(id: string, savedIds: readonly string[], pass: boolean): AddCheck {

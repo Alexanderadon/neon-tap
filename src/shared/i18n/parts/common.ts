@@ -6,7 +6,8 @@ export const common = {
   retry: 'Ещё раз',
   toMenu: 'В меню',
   settings: 'Настройки',
-  customSong: 'Своя музыка',
+  /** One name for the player's own songs everywhere: the deck's last card, the profile row, the list, the run's sub-line. */
+  customSong: 'Моя музыка',
   back: 'Назад',
   continue: 'Продолжить',
   pause: 'Пауза',
@@ -43,7 +44,6 @@ export const common = {
   settingsVoiceHint: 'нажми, чтобы услышать пример',
   voices: { svetlana: 'Светлана', off: 'Выкл' },
   ms: 'мс',
-  customTitle: 'Своя музыка',
   customAnalyzing: 'Анализ…',
   customStage: {
     decode: 'Декодирование',
@@ -100,7 +100,7 @@ export const common = {
     bought: { title: 'Покупок: {n}', desc: 'Треки, купленные за кристаллы' },
     perfects: { title: 'Точных нот: {n}', desc: 'Идеальных попаданий за всё время' },
     attempts: { title: 'Заходов: {n}', desc: 'Любые попытки, даже провальные' },
-    custom: { title: 'Своя музыка ×{n}', desc: 'Пройди свои песни' },
+    custom: { title: 'Моя музыка ×{n}', desc: 'Пройди свои песни' },
   },
   // --- tutorial ---
   tutorial: 'Обучение',
@@ -116,7 +116,6 @@ export const common = {
   duelPlay: 'Играть',
   duelLater: 'Не сейчас',
   duelLoading: 'Ищу дуэль…',
-  duelMissing: 'Дуэль не найдена или уже закончилась',
   duelWon: 'Ты впереди!',
   duelLost: '{name} пока впереди',
   duelVs: 'против',

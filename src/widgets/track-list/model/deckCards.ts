@@ -5,7 +5,7 @@ import { CATALOG, DROPS, DROP_SCHEDULE, emptyNextWeek } from '@/entities/track';
 export interface DeckLayout {
   /** «Новые треки — по понедельникам» (the next week has no track), or -1 when not shown. */
   slotCard: number;
-  /** «+ Своя музыка», always the last card. */
+  /** «+ Моя музыка», always the last card. */
   customCard: number;
   /** Cards in the deck. */
   size: number;
@@ -26,7 +26,7 @@ const LAYOUT = deckLayout(CATALOG.length, SLOT_WEEK);
 /** The empty-week card «Новые треки — по понедельникам» after the weekly tracks; -1 when the next week has a track or the schedule is over. */
 export const SLOT_CARD = LAYOUT.slotCard;
 
-/** The deck's last card, after the last track (and the empty-week card): «+ Своя музыка» (leads to the song-drop-zone screen). */
+/** The deck's last card, after the last track (and the empty-week card): «+ Моя музыка» (leads to the song-drop-zone screen). */
 export const CUSTOM_CARD = LAYOUT.customCard;
 
 /** Cards in the deck: every catalog track, the empty-week card when shown, then the custom card. */
