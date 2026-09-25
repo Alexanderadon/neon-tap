@@ -11,6 +11,7 @@ export {
   TITLE_MAX,
   songIdOf,
   songLengthProblem,
+  probedTooLong,
   songKey,
   cleanTitle,
   titleFromFileName,

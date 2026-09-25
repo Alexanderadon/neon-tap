@@ -12,7 +12,11 @@ export function songLimit(pass: boolean): number | null {
 }
 /** Files above this size are refused before anything is read. */
 export const MAX_FILE_BYTES = 40 * 1024 * 1024;
-/** Decoded songs shorter or longer than this are refused (a level needs a song; 12 minutes of audio is ≈120 MB of memory). */
+/**
+ * Decoded songs shorter or longer than this are refused. A level needs a song; memory bounds the top:
+ * decoded audio is Float32 per channel — ≈21 MB per stereo minute at 44.1 kHz, ≈23 MB at 48 kHz — so
+ * 12 minutes hold ≈250–280 MB, plus ≈70 MB for the analysis mixdown.
+ */
 export const MIN_DURATION_SEC = 30;
 export const MAX_DURATION_SEC = 12 * 60;
 /** Titles and artists are cut to this many characters. */
@@ -21,6 +25,14 @@ export const TITLE_MAX = 60;
 /** The id of a song file: `custom:` + 20 hex of SHA-256(first 2 MB ‖ size) — renaming the file keeps it. */
 export async function songIdOf(file: Blob): Promise<string> {
   return CUSTOM_ID_PREFIX + (await blobFingerprint(file));
+}
+
+/**
+ * The header's duration (`probeDuration`, before decoding) says the song is too long. A little slack:
+ * a VBR MP3 without a Xing header is estimated, and the exact check follows the decoding anyway.
+ */
+export function probedTooLong(approxSec: number | null): boolean {
+  return approxSec !== null && approxSec > MAX_DURATION_SEC * 1.05;
 }
 
 /** Too short, too long or fine. */

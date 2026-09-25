@@ -2,7 +2,20 @@ import { describe, expect, it } from 'vitest';
 import type { ChartFile } from '@/shared/types/chart';
 import { isCustomId } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
-import { TITLE_MAX, bestOfRun, cleanTitle, mergeBest, newSong, renamedMeta, songIdOf, songKey, songLengthProblem, songTitle, titleFromFileName } from './song';
+import {
+  TITLE_MAX,
+  bestOfRun,
+  cleanTitle,
+  mergeBest,
+  newSong,
+  renamedMeta,
+  songIdOf,
+  songKey,
+  songLengthProblem,
+  songTitle,
+  titleFromFileName,
+  probedTooLong,
+} from './song';
 
 const chart: ChartFile = {
   id: 'custom:old',
@@ -90,6 +103,13 @@ describe('newSong', () => {
     expect(songLengthProblem(30)).toBeNull();
     expect(songLengthProblem(720)).toBeNull();
     expect(songLengthProblem(720.1)).toBe('long');
+  });
+
+  it('refuses a long file by its header before decoding, with slack for an estimated VBR length', () => {
+    expect(probedTooLong(null)).toBe(false);
+    expect(probedTooLong(720)).toBe(false);
+    expect(probedTooLong(750)).toBe(false);
+    expect(probedTooLong(40 * 60)).toBe(true);
   });
 });
 
