@@ -5,5 +5,10 @@ export { useCatalogState, buildCatalogState, lockFor } from './model/useCatalogS
 export type { CatalogState, LockState } from './model/useCatalogState';
 export { usePlayTrack } from './model/usePlayTrack';
 export { initialDeckIndex, startIndex, focusedTrack } from './model/deckStart';
-export { CUSTOM_CARD, isCustomCard, trackIndexOf } from './model/deckCards';
+export { CUSTOM_CARD, SLOT_CARD, SLOT_WEEK, deckLayout, isCustomCard, isSlotCard, slotCoverId, trackIndexOf } from './model/deckCards';
+export type { DeckLayout } from './model/deckCards';
 export { affordableCount, forSaleNow } from './model/shopBadge';
+export { dropLocks, passDropGrants } from './model/dropLocks';
+export type { DropLockContext } from './model/dropLocks';
+export { DROP_SEEN_KEY, markDropSeen, thisWeekDrop, unseenDrop } from './model/dropSeen';
+export { customSongsLine, dropSoonText, songsText } from './lib/deckText';

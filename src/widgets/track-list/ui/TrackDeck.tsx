@@ -5,11 +5,14 @@ import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
 import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, idsAround, prioritizeCovers, trackTint, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
+import { useSongCount } from '@/entities/custom-song';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { writeDeckIndex } from '../model/deckPosition';
-import { DECK_SIZE, isCustomCard, trackIndexOf } from '../model/deckCards';
+import { DECK_SIZE, SLOT_WEEK, isCustomCard, isSlotCard, slotCoverId, trackIndexOf } from '../model/deckCards';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
+import { markDropSeen, unseenDrop } from '../model/dropSeen';
 import { cardGlow } from '../lib/coverGlow';
+import { customSongsLine, dropSoonText } from '../lib/deckText';
 import './track-deck.css';
 
 export interface TrackRef {
@@ -29,18 +32,34 @@ const storage = (): Storage | null => (typeof localStorage === 'undefined' ? nul
 
 /** Finger travel before a press on the stage becomes a drag; below it the press stays a tap on its card. */
 const TAP_SLOP_PX = 6;
+/** How long «Новый трек недели!» stays over the chapter row (as the shop's toast). */
+const TOAST_MS = 2600;
 
 /**
  * The deck: one card per track — cover art edge to edge, title, three stars, the flame and the
- * rank — with the neighbours peeking at the sides, and after the last track the «Своя музыка» card.
- * Above it the chapter row: a gold «ГЛАВА N» (or «РОК-ПАК») tag and one segment per track of the
- * chapter. Swipe (or tap the edge, or use the arrow keys) to flip; tapping the centre card shows
- * what the track is made of. Playing lives in the page's primary button.
+ * rank — with the neighbours peeking at the sides; after the weekly tracks the «Новые треки — по
+ * понедельникам» card while the next week has no track, and last the «Своя музыка» card.
+ * Above it the chapter row: a gold «ГЛАВА N» (or «РОК-ПАК», «ПРЕМИУМ», «НОВИНКИ») tag and one
+ * segment per track of the chapter. Swipe (or tap the edge, or use the arrow keys) to flip; tapping
+ * the centre card shows what the track is made of. Playing lives in the page's primary button.
+ * When the deck opens on a new week's track it says so once («Новый трек недели!»), without an offer.
  */
 export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   const state = useCatalogState();
+  const songs = useSongCount();
   const n = DECK_SIZE;
   const [details, setDetails] = useState(false);
+  // The new week's toast: only when the page opened the deck on this week's drop (see initialDeckIndex), once per drop.
+  const [toast, setToast] = useState<string | null>(() => {
+    const fresh = unseenDrop(CATALOG, state, storage());
+    return fresh && CATALOG[index]?.id === fresh.id ? fresh.id : null;
+  });
+  useEffect(() => {
+    if (!toast) return;
+    markDropSeen(storage(), toast);
+    const id = window.setTimeout(() => setToast(null), TOAST_MS);
+    return () => window.clearTimeout(id);
+  }, [toast]);
   /** Motion lives outside React; `index` follows the centre card and is the only render trigger. */
   const motion = useRef<DeckMotion | null>(null);
   if (!motion.current) motion.current = new DeckMotion(index);
@@ -113,6 +132,7 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
   }, [index, flyTo]);
 
   const custom = isCustomCard(index);
+  const slot = isSlotCard(index);
   const track = CATALOG[trackIndexOf(index)];
   const lock = useMemo(() => lockFor(state, track.id, track.stars), [state, track]);
 
@@ -182,20 +202,20 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
 
   return (
     <section className="deck" aria-label={dict.deckAria}>
-      {/* On the custom card: its own tag, no segments; the tag leads back to chapter 1 (as the last chapter's does). */}
+      {/* On the custom and the empty-week cards: their own tag, no segments; the tag leads back to chapter 1 (as the last chapter's does). */}
       <header className="deck-head">
         <button
           type="button"
           className="deck-chapter"
           onClick={() => {
             sfxUi();
-            go(custom ? 0 : chapter.end % CATALOG.length);
+            go(custom || slot ? 0 : chapter.end % CATALOG.length);
           }}
           aria-label={dict.deckNextChapter}
         >
-          <Tag>{custom ? dict.customSong : chapterTitle(chapter)}</Tag>
+          <Tag>{custom ? dict.customSong : slot ? dict.dropsChapter : chapterTitle(chapter)}</Tag>
         </button>
-        {!custom && (
+        {!custom && !slot && (
           <Segments
             states={chapterTracks.map<SegmentState>((t, i) =>
               chapter.start + i === index ? 'current' : starsForTrack(state.save.tracks[t.id]) > 0 ? 'done' : 'rest',
@@ -206,6 +226,11 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
           />
         )}
       </header>
+      {toast && (
+        <div className="deck-toast" role="status">
+          {dict.dropNewToast}
+        </div>
+      )}
 
       <div
         className="deck-stage"
@@ -219,7 +244,20 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
         {windowCards(index, n).map((i) => {
           const current = i === index;
           const mount = (el: HTMLElement | null) => (el ? cards.current.set(i, el) : cards.current.delete(i));
-          if (isCustomCard(i)) return <CustomCard key="custom-card" mount={mount} current={current} onTap={() => (current ? onPlay?.() : go(i))} />;
+          if (isCustomCard(i)) {
+            return (
+              <CustomCard
+                key="custom-card"
+                mount={mount}
+                current={current}
+                line={customSongsLine(songs, state.pass)}
+                onTap={() => (current ? onPlay?.() : go(i))}
+              />
+            );
+          }
+          // Not playable: a tap on it only brings it to the centre.
+          if (isSlotCard(i))
+            return <SlotCard key="slot-card" week={SLOT_WEEK ?? 0} mount={mount} current={current} onTap={() => (current ? undefined : go(i))} />;
           const t = CATALOG[i];
           return (
             <DeckCard
@@ -233,6 +271,7 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
               crowns={state.save.tracks[t.id]?.crowns ?? 0}
               loop={state.save.tracks[t.id]?.loop ?? 0}
               rank={state.save.tracks[t.id]?.rank}
+              nowMs={state.nowMs}
               details={current && details}
               onTap={() => (current ? setDetails((d) => !d) : go(i))}
             />
@@ -250,14 +289,47 @@ function windowCards(index: number, n: number): number[] {
   return out;
 }
 
-interface CustomCardProps {
+interface SlotCardProps {
+  /** The schedule week with no track yet — seeds the procedural cover. */
+  week: number;
   mount: (el: HTMLElement | null) => void;
   current: boolean;
   onTap: () => void;
 }
 
-/** The last card, «Своя музыка»: the drop zone's placeholder face (a thin note on dark), the title and one line saying what it does. */
-function CustomCard({ mount, current, onTap }: CustomCardProps) {
+/**
+ * «Новые треки — по понедельникам»: the next week has no track yet. A procedural cover (seeded by the
+ * week), dimmed like a locked card, and a promise without a date — no countdown, nothing to play.
+ */
+function SlotCard({ week, mount, current, onTap }: SlotCardProps) {
+  return (
+    <article
+      ref={mount}
+      className={current ? 'deck-card deck-card-slot is-locked is-current' : 'deck-card deck-card-slot is-locked'}
+      aria-hidden={current ? undefined : true}
+      onClick={onTap}
+    >
+      <div className="deck-art" aria-hidden="true">
+        <TrackCover id={slotCoverId(week)} />
+      </div>
+      <div className="deck-text">
+        <h1 className="deck-title">{dict.dropSlotTitle}</h1>
+        <p className="deck-custom-line">{dict.dropSlotLine}</p>
+      </div>
+    </article>
+  );
+}
+
+interface CustomCardProps {
+  mount: (el: HTMLElement | null) => void;
+  current: boolean;
+  /** What it does while nothing is saved, then «3 песни · осталось 0 из 3» / «37 песен · PASS». */
+  line: string;
+  onTap: () => void;
+}
+
+/** The last card, «Своя музыка»: the drop zone's placeholder face (a thin note on dark), the title and one line — what it does, or the saved songs. */
+function CustomCard({ mount, current, line, onTap }: CustomCardProps) {
   return (
     <article
       ref={mount}
@@ -270,7 +342,7 @@ function CustomCard({ mount, current, onTap }: CustomCardProps) {
       </span>
       <div className="deck-text">
         <h1 className="deck-title">{dict.customSong}</h1>
-        <p className="deck-custom-line">{dict.deckCustomLine}</p>
+        <p className="deck-custom-line">{line}</p>
       </div>
     </article>
   );
@@ -290,13 +362,18 @@ interface CardProps {
   daily: boolean;
   best: number;
   rank?: string;
+  /** The page load's clock — a weekly track's «Выйдет через N дн.». */
+  nowMs: number;
   /** Mechanics and genre as a column of dark tags (tap the centre card). */
   details: boolean;
   onTap: () => void;
 }
 
-function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank, details, onTap }: CardProps) {
-  const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', daily && 'is-daily'].filter(Boolean).join(' ');
+function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank, nowMs, details, onTap }: CardProps) {
+  const drop = lock.drop;
+  const cls = ['deck-card', current && 'is-current', lock.locked && 'is-locked', lock.premium && 'is-premium', drop && 'is-drop', daily && 'is-daily']
+    .filter(Boolean)
+    .join(' ');
   // The centre card glows in its cover's accent — the picture's tint (spec §2.5); the neighbours only drop a shadow.
   const style: CSSProperties | undefined = current ? { boxShadow: cardGlow(trackTint(track.id, track.genre)) } : undefined;
   const tags: (string | false)[] = [
@@ -322,6 +399,8 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank
             {dict.dailyTrack}
           </Tag>
         )}
+        {drop?.thisWeek && <Tag shape="flush">{dict.dropThisWeek}</Tag>}
+        {drop?.early && <Tag shape="flush">{dict.dropPassEarly}</Tag>}
         {details && (
           <div className="deck-details" role="region" aria-label={dict.deckDetails}>
             {shown.map((tag) => (
@@ -335,7 +414,9 @@ function DeckCard({ track, mount, current, lock, daily, best, crowns, loop, rank
       {lock.locked && (
         <span className="deck-lock" aria-hidden="true">
           <Icon name="lock" size={32} />
-          {lock.premium ? (
+          {drop?.soon ? (
+            <Chip variant="dark">{dropSoonText(drop, nowMs)}</Chip>
+          ) : lock.premium || drop ? (
             <Chip variant="cy" icon={<CrystalIcon size={16} halo />}>
               {lock.price}
             </Chip>

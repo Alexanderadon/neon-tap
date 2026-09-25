@@ -2,6 +2,7 @@ import { CATALOG, type TrackMeta } from '@/entities/track';
 import { lockFor, type CatalogState, type LockState } from './useCatalogState';
 import { readDeckIndex } from './deckPosition';
 import { trackIndexOf } from './deckCards';
+import { unseenDrop } from './dropSeen';
 
 /** The card to open with: the first playable track without a result, else the daily one, else the first. */
 export function startIndex(state: CatalogState): number {
@@ -11,8 +12,14 @@ export function startIndex(state: CatalogState): number {
   return daily >= 0 ? daily : 0;
 }
 
-/** Where the deck opens: the remembered track, else `startIndex` — never the custom card (a track is what the player came back for). */
+/**
+ * Where the deck opens: once per week on the new weekly track (the deck then shows «Новый трек
+ * недели!»), else the remembered track, else `startIndex` — never the custom card (a track is what
+ * the player came back for).
+ */
 export function initialDeckIndex(state: CatalogState, storage: Pick<Storage, 'getItem'> | null): number {
+  const fresh = unseenDrop(CATALOG, state, storage);
+  if (fresh) return CATALOG.indexOf(fresh);
   return readDeckIndex(storage, CATALOG.length) ?? startIndex(state);
 }
 

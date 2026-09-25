@@ -9,6 +9,13 @@ export const menu = {
   deckSegmentAria: '{title}: к треку',
   /** The deck's last card «Своя музыка»: the one line under its title. */
   deckCustomLine: 'твой MP3 — игра сама сделает уровень',
+  /** The same line once songs are saved: «3 песни · осталось 0 из 3» / «37 песен · PASS». */
+  deckSongsLeft: '{songs} · осталось {left} из {limit}',
+  deckSongsPass: '{songs} · PASS',
+  deckSongs: '{n} {noun}',
+  deckSongNoun: ['песня', 'песни', 'песен'],
+  /** The primary button on the «Своя музыка» card once songs are saved: «МОЯ МУЗЫКА / 3 песни». */
+  deckMyMusic: 'Моя музыка',
   // --- profile ---
   nicknameFor: 'ник для онлайн-рекордов',
   nicknameShort: 'для онлайн-рекордов · 1–16 символов',
