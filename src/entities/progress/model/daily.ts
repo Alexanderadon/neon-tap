@@ -1,9 +1,13 @@
+import { now } from '@/shared/lib/time';
 import type { DailyState, SaveData } from './SaveData';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** Local calendar date as `YYYY-MM-DD` — the daily track changes at local midnight. */
-export function localDateString(d: Date = new Date()): string {
+/**
+ * Local calendar date as `YYYY-MM-DD` — the daily track changes at local midnight. The default is
+ * the game clock (`shared/lib/time` `now()`), the one switch to a server time later.
+ */
+export function localDateString(d: Date = new Date(now())): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
