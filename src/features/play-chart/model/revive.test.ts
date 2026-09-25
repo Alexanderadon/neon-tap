@@ -16,6 +16,7 @@ import {
   reviveAvailable,
   reviveCountdown,
   reviveDigitProgress,
+  reviveKeysLocked,
   reviveReducer,
   reviveStep,
   watchReviveAd,
@@ -132,6 +133,11 @@ describe('second chance availability', () => {
     expect(reviveArmed(1000, 1000)).toBe(false);
     expect(reviveArmed(1000, 1000 + REVIVE_ARM_MS - 1)).toBe(false);
     expect(reviveArmed(1000, 1000 + REVIVE_ARM_MS)).toBe(true);
+  });
+
+  it('the keys wait while the ad plays: R never restarts the run under the ad', () => {
+    expect(reviveKeysLocked(run([OUT_FREE, { type: 'accept' }]).phase)).toBe(true);
+    for (const state of [REVIVE_IDLE, run([OUT_FREE]), run([OUT_PASS, { type: 'accept' }])]) expect(reviveKeysLocked(state.phase)).toBe(false);
   });
 });
 

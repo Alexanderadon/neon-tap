@@ -17,6 +17,7 @@ export {
   REVIVE_RESUME_AT,
   reviveAvailable,
   reviveArmed,
+  reviveKeysLocked,
   reviveAdAction,
   watchReviveAd,
 } from './model/revive';
