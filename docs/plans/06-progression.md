@@ -5,7 +5,7 @@
 - [x] `entities/world` — 4 мира, пороги 0 / 8 / 20 / 38 ★.
 - [x] `widgets/world-map` — карта миров, замки с «нужно N ★», липкий прогресс-бар до следующего мира.
 - [x] `widgets/result-breakdown` — ранг крупно, Perfect/Great/Good/Miss, «до ранга S не хватило N нот», RETRY крупнейшая и в фокусе, хоткей R.
-- [x] `features/voice-feedback` — 16 русских фраз × 2 нейроголоса (Dmitry / Svetlana, выбор в настройках), фолбэк Web Speech API, рейт-лимит 2.5 с. Первая версия на Windows SAPI «Irina» отбракована как робо-голос.
+- [x] `features/voice-feedback` — 16 русских фраз, нейроголос Svetlana (Dmitry убран 2026-09-25; в настройках — голос или «Выкл»), фолбэк Web Speech API, рейт-лимит 2.5 с. Первая версия на Windows SAPI «Irina» отбракована как робо-голос.
 - [x] Рестарт: `R` / кнопка — сброс индексов + `source.start()`, буфер уже в памяти.
 
 ## Отклонение от GDD
