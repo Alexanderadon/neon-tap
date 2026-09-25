@@ -4,8 +4,11 @@ import { App } from './App';
 import { bootAssets } from './boot';
 import { installGestureUnlock } from '@/shared/lib/audio';
 import { initInstallPrompt, installStandaloneGuards, registerServiceWorker } from '@/shared/lib/pwa';
+import { installAppViewport } from '@/shared/lib/viewport';
 import './styles/global.css';
 
+// The app is as tall as the visible viewport (an in-app browser's toolbar must not cover the action zone) — measured before the first render.
+installAppViewport();
 // `beforeinstallprompt` fires once, early — capture it before React mounts.
 initInstallPrompt();
 // Installed app: no pinch / ctrl-wheel zoom, no long-press menus (browser tabs keep them).

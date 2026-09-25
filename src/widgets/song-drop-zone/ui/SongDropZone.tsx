@@ -30,7 +30,8 @@ const baseName = (name: string) => name.replace(/\.[^.]+$/, '') || name;
  * «Своя музыка» (screens-game.html, frames 16–19): the main screen's skeleton with one card —
  * a placeholder («Твой трек», three grey stars) until a file is chosen, the analysis with its
  * stage bar inside the card, then the finished card with the procedural cover, the flame and
- * «ИГРАТЬ». The primary button is the file input; a dropped file works too. Everything stays local.
+ * «ИГРАТЬ». The primary button and the placeholder card open the file input; a dropped file works
+ * too. Everything stays local.
  */
 export function SongDropZone({ onBack }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -103,7 +104,8 @@ export function SongDropZone({ onBack }: Props) {
 
       <div className="dz-stage">
         {state.kind === 'idle' && (
-          <article className="dz-card dz-card-plain">
+          // The placeholder is a second way to the file picker: a big target that no browser toolbar can cover.
+          <button type="button" className="dz-card dz-card-plain dz-card-pick" onClick={choose} aria-label={`${dict.chooseFile} · ${dict.fileFormats}`}>
             <span className="dz-ph" aria-hidden="true">
               <Icon name="note" size={96} strokeWidth={0.5} />
             </span>
@@ -112,13 +114,13 @@ export function SongDropZone({ onBack }: Props) {
                 {dict.readFailed}
               </Tag>
             )}
-            <div className="dz-text">
-              <h1 className="dz-title dz-title-dim">{dict.yourTrack}</h1>
-              <div className="dz-meta">
+            <span className="dz-text">
+              <span className="dz-title dz-title-dim">{dict.yourTrack}</span>
+              <span className="dz-meta">
                 <Stars value={0} size="md" />
-              </div>
-            </div>
-          </article>
+              </span>
+            </span>
+          </button>
         )}
         {state.kind === 'busy' && <BusyCard name={state.name} progress={state.progress} />}
         {song && (
