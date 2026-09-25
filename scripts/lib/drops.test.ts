@@ -1,6 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { formatDropsFile, planDrops, planLines, releaseDates, validateDrops, weeksAhead, type DropsFile, type RegistryTrack } from './drops';
+import {
+  appSchedule,
+  formatAppSchedule,
+  formatDropsFile,
+  planDrops,
+  planLines,
+  releaseDates,
+  validateDrops,
+  weeksAhead,
+  type DropsFile,
+  type RegistryTrack,
+} from './drops';
 
 const START = '2026-10-05';
 const monday = (date: string) => Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) - 3 * 3_600_000;
@@ -115,5 +126,12 @@ describe('the dry run and the file format', () => {
   it('writes the file exactly as it is kept in the repo', () => {
     const raw = readFileSync(new URL('../../assets-src/drops.json', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
     expect(formatDropsFile(JSON.parse(raw) as DropsFile)).toBe(raw);
+  });
+
+  it('keeps the app copy of the schedule in step with drops.json (run assets:charts after editing it)', () => {
+    const file = JSON.parse(readFileSync(new URL('../../assets-src/drops.json', import.meta.url), 'utf8')) as DropsFile;
+    const raw = readFileSync(new URL('../../src/entities/track/model/schedule.json', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+    expect(appSchedule(file)).toEqual({ start: START, weeks: 13 });
+    expect(raw).toBe(formatAppSchedule(appSchedule(file)));
   });
 });

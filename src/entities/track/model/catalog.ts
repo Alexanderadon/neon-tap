@@ -1,5 +1,5 @@
 import catalogJson from './catalog.json';
-import scheduleJson from '../../../../assets-src/drops.json';
+import scheduleJson from './schedule.json';
 import { now } from '@/shared/lib/time';
 import { isDropVisible, releaseMs, type DropSchedule } from './drops';
 import type { TrackMeta } from './types';
@@ -49,8 +49,8 @@ export const PREMIUM_IDS: readonly string[] = split.premiumIds;
 /** Every weekly track in release order, including the ones not in the deck yet. */
 export const DROPS: readonly TrackMeta[] = split.drops;
 
-/** The weekly schedule: the first Monday and the number of slots (`assets-src/drops.json`). */
-export const DROP_SCHEDULE: DropSchedule = { start: scheduleJson.start, weeks: scheduleJson.slots.length };
+/** The weekly schedule: the first Monday and the number of slots (`schedule.json`, generated with `catalog.json`). */
+export const DROP_SCHEDULE: DropSchedule = { start: scheduleJson.start, weeks: scheduleJson.weeks };
 
 /** Any built-in song by id, weekly tracks not yet in the deck included (covers, tints). */
 export function findTrack(id: string): TrackMeta | undefined {
