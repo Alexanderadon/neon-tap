@@ -9,8 +9,8 @@ export const shop = {
   shopEarn: 'Заработать',
   /** Sub-header line next to the «МАГАЗИН» tag (21 characters). */
   shopEarnHint: 'кристаллы — за забеги',
-  /** The not-enough sheet's hint line. */
-  shopEarnHintLong: 'кристаллы дают за забеги и достижения',
+  /** The not-enough sheet's hint line (one line of 13 px: ≤ 320 px on a 360 px screen). */
+  shopEarnHintLong: 'кристаллы — за забеги и достижения',
   /** Condition tag of a star-locked card: «★ ЕЩЁ 3». */
   shopStarsMore: 'ещё {n}',
   /** Coin captions of the purchase sheet. */
