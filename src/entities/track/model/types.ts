@@ -12,6 +12,14 @@ export interface TrackMeta {
   premium?: boolean;
   /** Named pack (`rock`) — a chapter of its own after the numbered ones; absent for the main catalog. */
   pack?: string;
+  /**
+   * Weekly track («Новинка недели», `drop: true` in the registry): outside the road — no star
+   * threshold, never the daily track, its stars do not count — and in the deck only from a week
+   * before `release`. Opened by a rewarded ad (its first 14 days), 150 crystals or NEON PASS.
+   */
+  drop?: boolean;
+  /** A weekly track's release date, `YYYY-MM-DD` — a Monday; it opens at 00:00 Moscow time (from `assets-src/drops.json`). */
+  release?: string;
   /** Picture cover, a path under `public/` (`covers/<id>.webp`); absent → procedural art. */
   cover?: string;
   /** The picture's accent colour (`#rrggbb`) for the play button; absent → the procedural palette's accent. */

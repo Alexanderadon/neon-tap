@@ -44,4 +44,32 @@ describe('chaptersOf', () => {
   it('is empty for an empty catalog', () => {
     expect(chaptersOf([])).toEqual([]);
   });
+
+  it('gives the premium tracks a chapter of their own instead of a short numbered one', () => {
+    const premium = (n: number) => Array.from({ length: n }, () => ({ premium: true }));
+    // The built-in layout: 36 road tracks, 5 premium, the rock pack.
+    const chapters = chaptersOf([...main(36), ...premium(5), ...pack('rock', 3)]);
+    expect(chapters.map((c) => [c.start, c.end, c.kind ?? c.pack ?? c.number])).toEqual([
+      [0, 10, 1],
+      [10, 20, 2],
+      [20, 30, 3],
+      [30, 36, 4],
+      [36, 41, 'premium'],
+      [41, 44, 'rock'],
+    ]);
+    expect(chapterTitle(chapters[4])).toBe('Премиум');
+  });
+
+  it('puts the weekly tracks in «Новинки» after the rock pack, cut by ten', () => {
+    const drop = (n: number) => Array.from({ length: n }, () => ({ drop: true }));
+    const chapters = chaptersOf([...main(3), ...pack('rock', 2), ...drop(13)]);
+    expect(chapters.map((c) => [c.start, c.end, c.kind ?? c.pack ?? c.number])).toEqual([
+      [0, 3, 1],
+      [3, 5, 'rock'],
+      [5, 15, 'drops'],
+      [15, 18, 'drops'],
+    ]);
+    expect(chapterTitle(chapters[2])).toBe('Новинки');
+    expect(chapters[2].pack).toBeUndefined();
+  });
 });
