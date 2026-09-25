@@ -9,7 +9,7 @@
  * Strategies
  *   navigation / index.html      network-first, offline → cached shell
  *   /assets/*  (hashed)          cache-first (precached; anything missing is fetched and kept)
- *   /music /sfx /voice /icons /covers    cache-first, runtime cache with a 200 MB cap, evicted oldest-first
+ *   /music /sfx /voice /icons /covers    cache-first, runtime cache with a 260 MB cap (MEDIA_CAP), evicted oldest-first
  *   /charts                      network-first (charts are regenerated often; a fresh deploy must play fresh), offline → cache
  *   Google Fonts                 cache-first
  *   /api/* and everything else   untouched (network)
