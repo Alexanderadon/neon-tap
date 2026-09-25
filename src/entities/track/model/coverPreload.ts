@@ -23,13 +23,16 @@ export function preloadCover(id: string): Promise<void> {
   const img = new Image();
   img.decoding = 'async';
   img.src = url;
-  const loaded: Promise<unknown> =
-    typeof img.decode === 'function'
-      ? img.decode()
-      : new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
+  // Wait for the bytes only: decode() of a detached image can wait for the next rendered frame, which a
+  // page that is not painting (a background tab) never produces — the boot splash then sat at its cap.
+  // The decode is still started, in the background, so the card paints at once when it mounts.
+  const loaded = new Promise((resolve, reject) => {
+    img.onload = () => {
+      if (typeof img.decode === 'function') void img.decode().catch(() => undefined);
+      resolve(undefined);
+    };
+    img.onerror = reject;
+  });
   const p = loaded
     .catch(() => undefined)
     .then(() => {
