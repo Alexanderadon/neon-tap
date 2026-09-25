@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GOALS, bonusStars, claimGoals, findGoal, goalProgress, grandTotalStars, isGoalDone, nextGoals } from './goals';
+import { GOALS, bonusStars, claimGoals, claimedGoalCount, findGoal, goalProgress, grandTotalStars, isGoalDone, nextGoals } from './goals';
 import { EMPTY_COUNTERS, emptySave, type BestResult, type SaveData } from './SaveData';
 import { addCrystals, creditPaidCrystals, purchaseTrack } from './shop';
 
@@ -123,6 +123,14 @@ describe('achievements', () => {
     // badges do not feed the star total (unlocks stay honest)
     expect(bonusStars(first.save)).toBe(0);
     expect(grandTotalStars({ ...first.save, daily: { date: '', done: false, streak: 0, total: 2 } })).toBe(2);
+  });
+
+  it('counts only the badges of the current list: retired tiers stay in the save but not in «N из 97»', () => {
+    const everything = GOALS.map((x) => x.id);
+    const retired = ['pass-59', 'rankS-45', 'rankS-59', 'genres-15', 'genres-20', 'quest-old'];
+    expect(claimedGoalCount([...everything, ...retired])).toBe(GOALS.length);
+    expect(claimedGoalCount(['pass-1', 'pass-59', 'pass-1'])).toBe(1);
+    expect(claimedGoalCount([])).toBe(0);
   });
 
   it('lists the next unearned tier of every family, in family order', () => {

@@ -19,7 +19,7 @@ export type { BestResult, SaveData, Counters, DailyState } from './model/SaveDat
 export { unlockThreshold, unlockStates, isTrackUnlocked, isOpen, newlyUnlocked, nextUnlock, roadThresholds, ALWAYS_OPEN } from './model/unlocks';
 export type { UnlockContext, UnlockInfo, NextUnlock } from './model/unlocks';
 export { localDateString, dailyTrackId, dailyIndex, isDailyDone } from './model/daily';
-export { GOALS, findGoal, goalProgress, isGoalDone, bonusStars, grandTotalStars, nextGoals } from './model/goals';
+export { GOALS, findGoal, claimedGoalCount, goalProgress, isGoalDone, bonusStars, grandTotalStars, nextGoals } from './model/goals';
 export type { Goal, GoalFamily } from './model/goals';
 export {
   trackPrice,

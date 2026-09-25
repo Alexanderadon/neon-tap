@@ -5,7 +5,7 @@ import { sfxUi } from '@/shared/lib/audio';
 import { store } from '@/shared/lib/iap';
 import { Avatar, Chip, FrameBody, Icon, ObjButton, Panel, Screen, Stars, SubHeader, Tag, useSwipeBack } from '@/shared/ui';
 import { CATALOG, CoverScene, chapterAt, chapterTitle } from '@/entities/track';
-import { GOALS, rankIndex, starsForTrack } from '@/entities/progress';
+import { GOALS, claimedGoalCount, rankIndex, starsForTrack } from '@/entities/progress';
 import { useSongCount } from '@/entities/custom-song';
 import { useSettings } from '@/entities/settings';
 import { avatarArtOf } from '@/entities/avatar';
@@ -241,7 +241,7 @@ function ProfileView({ onNickname, onAvatar, onGoals, onDuels, onOpen }: Profile
   const passed = bests.filter((b) => starsForTrack(b) > 0).length;
   const rankS = bests.filter((b) => rankIndex(b.rank) >= rankIndex('S')).length;
   const combo = state.save.counters.maxCombo;
-  const claimed = state.save.goalsClaimed.length;
+  const claimed = claimedGoalCount(state.save.goalsClaimed);
   const duelsCount = myDuels().length;
   return (
     <div className="profile">

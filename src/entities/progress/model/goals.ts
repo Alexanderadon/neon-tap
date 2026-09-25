@@ -83,6 +83,16 @@ export function findGoal(id: string): Goal | undefined {
   return GOALS.find((g) => g.id === id);
 }
 
+/**
+ * Badges of today's list among the claimed ids («получено N из 97»). `goalsClaimed` also keeps the
+ * ids of retired tiers (pass-59, rankS-45, …): they stay in the save so a rollback never pays them
+ * twice, but they are not counted.
+ */
+export function claimedGoalCount(claimed: readonly string[]): number {
+  const ids = new Set(claimed);
+  return GOALS.filter((g) => ids.has(g.id)).length;
+}
+
 /** Progress clamped to [0, target]. */
 export function goalProgress(goal: Goal, save: SaveData): number {
   return Math.max(0, Math.min(goal.target, goal.progress(save)));

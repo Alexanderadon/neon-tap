@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GOALS, type SaveData } from '@/entities/progress';
-import { familyLadders, orderLadders } from './families';
+import { familyLadders, goalsGotLine, orderLadders } from './families';
 
 const save: SaveData = {
   version: 6,
@@ -36,5 +36,11 @@ describe('achievement ladders', () => {
     const ordered = orderLadders([complete, ...ladders.slice(1)]);
     expect(ordered[ordered.length - 1]).toBe(complete);
     for (let i = 1; i < ordered.length - 1; i++) expect(ordered[i - 1].ratio).toBeGreaterThanOrEqual(ordered[i].ratio);
+  });
+
+  it('never reads more than the list holds: an old save keeps retired ids (pass-59, rankS-59)', () => {
+    const claimed = [...GOALS.map((g) => g.id), 'pass-59', 'rankS-59'];
+    expect(goalsGotLine(claimed)).toBe(`получено ${GOALS.length} из ${GOALS.length}`);
+    expect(goalsGotLine(['pass-1', 'pass-59'])).toBe(`получено 1 из ${GOALS.length}`);
   });
 });
