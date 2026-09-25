@@ -18,8 +18,6 @@ export interface OfferWalletTick {
 }
 
 interface Props {
-  /** Kept for the menu's call site: nothing opens by itself any more (no automatic popups, no timed deals). */
-  auto?: boolean;
   /** An explicit ask (the wallet's «+», the shop's not-enough sheet); acknowledged through `onRequestHandled`. */
   request: OfferKind | null;
   onRequestHandled: () => void;

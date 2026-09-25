@@ -1,9 +1,9 @@
 /**
  * Where a rewarded ad is offered. `'weekly-track'` — the week's new track, during its first 14
- * days after release — is the only placement left (docs/plans/economy-drops-mymusic.md §2.2);
- * `'shop-track'` and `'revive'` are the old ones, removed once nothing calls them.
+ * days after release — is the only placement (docs/plans/economy-drops-mymusic.md §2.2): the shop's
+ * other tracks and the second chance never show an ad.
  */
-export type AdPlacement = 'weekly-track' | 'shop-track' | 'revive';
+export type AdPlacement = 'weekly-track';
 
 /** How a rewarded ad ended: the reward is granted only on `'rewarded'`. */
 export type AdOutcome = 'rewarded' | 'closed' | 'failed';

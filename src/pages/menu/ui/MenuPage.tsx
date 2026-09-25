@@ -216,7 +216,7 @@ export function MenuPage() {
 
       <NicknameDialog open={askName} onSkip={() => setAskName(false)} />
       <AvatarPicker open={askAvatar} onClose={() => setAskAvatar(false)} />
-      <OfferPopups auto request={offer} onRequestHandled={offerHandled} crystalsRef={crystalsRef} onWalletTick={onWalletTick} />
+      <OfferPopups request={offer} onRequestHandled={offerHandled} crystalsRef={crystalsRef} onWalletTick={onWalletTick} />
     </Screen>
   );
 }
