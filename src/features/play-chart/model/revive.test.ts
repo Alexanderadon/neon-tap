@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { AdOutcome, AdPlacement } from '@/shared/lib/ads';
+import * as reviveModule from './revive';
 import {
   REFILL_AT,
   REVIVE_ARM_MS,
@@ -6,17 +8,17 @@ import {
   REVIVE_HEARTS,
   REVIVE_IDLE,
   REVIVE_OFFER_SEC,
-  REVIVE_PRICE,
   REVIVE_RESUME_AT,
   canOfferRevive,
   heartsRefilled,
-  payForRevive,
-  reviveAffordable,
+  reviveAdAction,
   reviveArmed,
+  reviveAvailable,
   reviveCountdown,
   reviveDigitProgress,
-  revivePrice,
   reviveReducer,
+  reviveStep,
+  watchReviveAd,
   type ReviveAction,
   type ReviveState,
 } from './revive';
@@ -25,36 +27,92 @@ function run(actions: ReviveAction[], from: ReviveState = REVIVE_IDLE): ReviveSt
   return actions.reduce(reviveReducer, from);
 }
 
-describe('second chance state machine', () => {
-  it('offers once per run: idle → offer → refill → idle, then never again — no ad phase', () => {
-    expect(run([{ type: 'hearts-out' }])).toEqual({ phase: 'offer', used: false });
-    expect(run([{ type: 'hearts-out' }, { type: 'accept' }])).toEqual({ phase: 'refill', used: true });
-    const done = run([{ type: 'hearts-out' }, { type: 'accept' }, { type: 'resumed' }]);
-    expect(done).toEqual({ phase: 'idle', used: true });
+const OUT_PASS: ReviveAction = { type: 'hearts-out', pass: true };
+const OUT_FREE: ReviveAction = { type: 'hearts-out', pass: false };
+
+/** A provider that records the placement and ends the ad with `outcome` (or throws). */
+function fakeAds(outcome: AdOutcome | Error) {
+  const placements: AdPlacement[] = [];
+  return {
+    placements,
+    show: vi.fn(async (placement: AdPlacement) => {
+      placements.push(placement);
+      if (outcome instanceof Error) throw outcome;
+      return outcome;
+    }),
+  };
+}
+
+describe('second chance with NEON PASS: free, no ad', () => {
+  it('offer → refill → idle, once per run', () => {
+    expect(run([OUT_PASS])).toEqual({ phase: 'offer', used: false, pass: true });
+    expect(run([OUT_PASS, { type: 'accept' }])).toEqual({ phase: 'refill', used: true, pass: true });
+    const done = run([OUT_PASS, { type: 'accept' }, { type: 'resumed' }]);
+    expect(done).toMatchObject({ phase: 'idle', used: true });
     // Hearts run out a second time: no offer.
-    expect(reviveReducer(done, { type: 'hearts-out' })).toBe(done);
+    expect(reviveReducer(done, OUT_PASS)).toBe(done);
   });
 
-  it('declining (button, timeout) spends the second chance without a refill', () => {
-    expect(run([{ type: 'hearts-out' }, { type: 'decline' }])).toEqual({ phase: 'idle', used: true });
-    // a decline during the refill changes nothing: the hearts are already paid for
-    const refill = run([{ type: 'hearts-out' }, { type: 'accept' }]);
-    expect(reviveReducer(refill, { type: 'decline' })).toBe(refill);
+  it('accepting gives the hearts at once — the host never plays an ad', () => {
+    const offer = run([OUT_PASS]);
+    expect(reviveStep(offer, { type: 'accept' }).effect).toBe('revive');
+  });
+});
+
+describe('second chance without NEON PASS: for a rewarded ad', () => {
+  it('offer → ad → (rewarded) refill → idle', () => {
+    const ad = run([OUT_FREE, { type: 'accept' }]);
+    expect(ad).toEqual({ phase: 'ad', used: true, pass: false });
+    expect(reviveReducer(ad, { type: 'rewarded' })).toEqual({ phase: 'refill', used: true, pass: false });
+    expect(run([{ type: 'rewarded' }, { type: 'resumed' }], ad)).toMatchObject({ phase: 'idle', used: true });
   });
 
-  it('ignores actions that do not fit the phase', () => {
-    expect(reviveReducer(REVIVE_IDLE, { type: 'accept' })).toBe(REVIVE_IDLE);
-    expect(reviveReducer(REVIVE_IDLE, { type: 'decline' })).toBe(REVIVE_IDLE);
-    expect(reviveReducer(REVIVE_IDLE, { type: 'resumed' })).toBe(REVIVE_IDLE);
-    const offer = run([{ type: 'hearts-out' }]);
-    expect(reviveReducer(offer, { type: 'resumed' })).toBe(offer);
-    expect(reviveReducer(offer, { type: 'hearts-out' })).toBe(offer);
+  it('accepting starts the ad, and only the reward brings the hearts back', () => {
+    const offer = run([OUT_FREE]);
+    const accepted = reviveStep(offer, { type: 'accept' });
+    expect(accepted.effect).toBe('ad');
+    expect(reviveStep(accepted.state, { type: 'rewarded' })).toEqual({ state: { phase: 'refill', used: true, pass: false }, effect: 'revive' });
   });
 
-  it('restart makes the second chance available again', () => {
-    const spent = run([{ type: 'hearts-out' }, { type: 'decline' }]);
-    expect(reviveReducer(spent, { type: 'restart' })).toEqual(REVIVE_IDLE);
-    expect(run([{ type: 'restart' }, { type: 'hearts-out' }], spent).phase).toBe('offer');
+  it('an ad closed early or failed gives nothing and ends the run', () => {
+    const ad = run([OUT_FREE, { type: 'accept' }]);
+    for (const outcome of ['closed', 'failed'] as const) {
+      const action = reviveAdAction(outcome);
+      expect(action).toEqual({ type: 'decline' });
+      expect(reviveStep(ad, action)).toEqual({ state: { phase: 'idle', used: true, pass: false }, effect: 'fail' });
+    }
+    expect(reviveAdAction('rewarded')).toEqual({ type: 'rewarded' });
+  });
+
+  it('the offer timer stands still while the ad plays: a late timeout changes nothing', () => {
+    const ad = run([OUT_FREE, { type: 'accept' }]);
+    expect(reviveStep(ad, { type: 'timeout' })).toEqual({ state: ad, effect: 'none' });
+    // …while on the offer itself the 5 s running out ends the run
+    expect(reviveStep(run([OUT_FREE]), { type: 'timeout' }).effect).toBe('fail');
+  });
+
+  it('a reward that arrives after a restart is ignored', () => {
+    const restarted = run([OUT_FREE, { type: 'accept' }, { type: 'restart' }]);
+    expect(restarted).toEqual(REVIVE_IDLE);
+    expect(reviveStep(restarted, { type: 'rewarded' })).toEqual({ state: restarted, effect: 'none' });
+  });
+
+  it('plays the ad with the placement "revive" and never rejects', async () => {
+    const rewarded = fakeAds('rewarded');
+    await expect(watchReviveAd(rewarded)).resolves.toEqual({ type: 'rewarded' });
+    expect(rewarded.placements).toEqual(['revive']);
+    await expect(watchReviveAd(fakeAds('closed'))).resolves.toEqual({ type: 'decline' });
+    await expect(watchReviveAd(fakeAds('failed'))).resolves.toEqual({ type: 'decline' });
+    await expect(watchReviveAd(fakeAds(new Error('sdk')))).resolves.toEqual({ type: 'decline' });
+  });
+});
+
+describe('second chance availability', () => {
+  it('exists with NEON PASS or an ad to show; without both it is not offered at all', () => {
+    expect(reviveAvailable(true, false)).toBe(true);
+    expect(reviveAvailable(true, true)).toBe(true);
+    expect(reviveAvailable(false, true)).toBe(true);
+    expect(reviveAvailable(false, false)).toBe(false);
   });
 
   it('canOfferRevive: enabled and unused', () => {
@@ -62,53 +120,54 @@ describe('second chance state machine', () => {
     expect(canOfferRevive(true, true)).toBe(false);
     expect(canOfferRevive(false, false)).toBe(false);
   });
-});
 
-describe('second chance price', () => {
-  it('costs 30 crystals, nothing with NEON PASS', () => {
-    expect(REVIVE_PRICE).toBe(30);
-    expect(revivePrice(false)).toBe(30);
-    expect(revivePrice(true)).toBe(0);
+  it('never costs crystals: no price, no wallet', () => {
+    const names = Object.keys(reviveModule);
+    for (const gone of ['REVIVE_PRICE', 'revivePrice', 'reviveAffordable', 'payForRevive']) expect(names).not.toContain(gone);
   });
 
-  it('exists only with NEON PASS or at least 30 crystals — otherwise it is not offered at all', () => {
-    expect(reviveAffordable(false, 29)).toBe(false);
-    expect(reviveAffordable(false, 30)).toBe(true);
-    expect(reviveAffordable(false, 0)).toBe(false);
-    expect(reviveAffordable(true, 0)).toBe(true);
-  });
-
-  it('takes the tap only once «Продолжить» has risen: a lane tap as the hearts run out pays nothing', () => {
+  it('takes the tap only once the button has risen: a lane tap as the hearts run out starts no ad', () => {
     expect(REVIVE_ARM_MS).toBe(1200);
     expect(reviveArmed(null, 5000)).toBe(false);
     expect(reviveArmed(1000, 1000)).toBe(false);
     expect(reviveArmed(1000, 1000 + REVIVE_ARM_MS - 1)).toBe(false);
     expect(reviveArmed(1000, 1000 + REVIVE_ARM_MS)).toBe(true);
   });
+});
 
-  it('pays 30 crystals through the wallet; with NEON PASS the wallet is not touched', () => {
-    const spend = vi.fn(() => true);
-    expect(payForRevive(false, spend)).toBe(true);
-    expect(spend).toHaveBeenCalledWith(30);
-    const untouched = vi.fn(() => true);
-    expect(payForRevive(true, untouched)).toBe(true);
-    expect(untouched).not.toHaveBeenCalled();
-    // the wallet refused (spent in another tab meanwhile): no second chance
-    expect(payForRevive(false, () => false)).toBe(false);
+describe('second chance state machine', () => {
+  it('declining («К результату», timeout) spends the second chance without a refill', () => {
+    expect(run([OUT_FREE, { type: 'decline' }])).toMatchObject({ phase: 'idle', used: true });
+    expect(reviveStep(run([OUT_PASS]), { type: 'decline' }).effect).toBe('fail');
+    // a decline during the refill changes nothing: the hearts are already given
+    const refill = run([OUT_PASS, { type: 'accept' }]);
+    expect(reviveReducer(refill, { type: 'decline' })).toBe(refill);
   });
 
-  it('with a real wallet: 30 leave the balance once, a short balance pays nothing', () => {
-    let balance = 45;
-    const spend = (n: number) => {
-      if (balance < n) return false;
-      balance -= n;
-      return true;
-    };
-    expect(payForRevive(false, spend)).toBe(true);
-    expect(balance).toBe(15);
-    expect(reviveAffordable(false, balance)).toBe(false);
-    expect(payForRevive(false, spend)).toBe(false);
-    expect(balance).toBe(15);
+  it('ignores actions that do not fit the phase', () => {
+    for (const type of ['accept', 'rewarded', 'decline', 'timeout', 'resumed'] as const) {
+      expect(reviveStep(REVIVE_IDLE, { type })).toEqual({ state: REVIVE_IDLE, effect: 'none' });
+    }
+    const offer = run([OUT_FREE]);
+    expect(reviveReducer(offer, { type: 'resumed' })).toBe(offer);
+    expect(reviveReducer(offer, { type: 'rewarded' })).toBe(offer);
+    expect(reviveReducer(offer, OUT_PASS)).toBe(offer);
+    const ad = run([{ type: 'accept' }], offer);
+    expect(reviveReducer(ad, { type: 'accept' })).toBe(ad);
+    expect(reviveReducer(ad, { type: 'resumed' })).toBe(ad);
+  });
+
+  it('restart makes the second chance available again and never ends the run itself', () => {
+    const spent = run([OUT_FREE, { type: 'decline' }]);
+    expect(reviveReducer(spent, { type: 'restart' })).toEqual(REVIVE_IDLE);
+    expect(run([{ type: 'restart' }, OUT_FREE], spent).phase).toBe('offer');
+    expect(reviveStep(run([OUT_FREE]), { type: 'restart' }).effect).toBe('none');
+    expect(reviveStep(run([OUT_FREE, { type: 'accept' }]), { type: 'restart' }).effect).toBe('none');
+  });
+
+  it('opening the offer and resuming after the count-in ask nothing of the host', () => {
+    expect(reviveStep(REVIVE_IDLE, OUT_FREE).effect).toBe('none');
+    expect(reviveStep(run([OUT_PASS, { type: 'accept' }]), { type: 'resumed' }).effect).toBe('none');
   });
 });
 

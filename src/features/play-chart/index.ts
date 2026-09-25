@@ -8,16 +8,16 @@ export type { GemPick } from './model/gems';
 export { LEVELS } from './model/levels';
 export {
   reviveReducer,
+  reviveStep,
   REVIVE_IDLE,
   REVIVE_OFFER_SEC,
   REVIVE_HEARTS,
-  REVIVE_PRICE,
   REVIVE_ARM_MS,
   REFILL_AT,
   REVIVE_RESUME_AT,
-  revivePrice,
-  reviveAffordable,
+  reviveAvailable,
   reviveArmed,
-  payForRevive,
+  reviveAdAction,
+  watchReviveAd,
 } from './model/revive';
-export type { ReviveState, ReviveAction, RevivePhase } from './model/revive';
+export type { ReviveState, ReviveAction, RevivePhase, ReviveEffect } from './model/revive';
