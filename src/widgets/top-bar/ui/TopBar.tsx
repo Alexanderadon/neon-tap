@@ -28,8 +28,6 @@ interface Props {
   /** Anchors for reward flights — the chips' DOM nodes (`getBoundingClientRect`). */
   crystalsRef?: Ref<HTMLElement>;
   starsRef?: Ref<HTMLElement>;
-  /** `title` = before the player exists (audio gate, welcome): only the game's name, centred. */
-  variant?: 'player' | 'title';
   /** Replaces the identity slot (a back arrow, a screen title) while the wallet stays. */
   left?: ReactNode;
   className?: string;
@@ -44,19 +42,12 @@ const STAR_CHIP_W = 80;
  * and star chips on the right. Reads the nickname and the wallet itself; the result screen passes
  * `from → to` ticks so the counters visibly grow after the loot flies in.
  */
-export function TopBar({ crystals, stars, onCrystalsTap, onTopUp, crystalsRef, starsRef, variant = 'player', left, className }: Props) {
+export function TopBar({ crystals, stars, onCrystalsTap, onTopUp, crystalsRef, starsRef, left, className }: Props) {
   const nickname = useSettings((s) => s.nickname);
   const avatar = useSettings((s) => s.avatar);
   const walletCrystals = useProgress((s) => s.crystals);
   const walletStars = useProgress((s) => grandTotalStars(s, TRACK_IDS));
   const cls = ['topbar', className].filter(Boolean).join(' ');
-  if (variant === 'title') {
-    return (
-      <header className={`${cls} topbar-title`}>
-        <span className="topbar-brand">{dict.appTitle}</span>
-      </header>
-    );
-  }
   const name = nickname || dict.appTitle;
   return (
     <header className={cls}>

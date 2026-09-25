@@ -7,7 +7,7 @@ export type AvatarSize = 32 | 48 | 56 | 96;
 interface Props {
   /** The player's name; the first letter is shown, «?» while there is none. */
   name: string;
-  /** 32 = top bar, rows; 48 = player card, dialogs; 56 = the picker's cells; 96 = the welcome hero. */
+  /** 32 = top bar, rows; 48 = player card, dialogs; 56 = the picker's cells; 96 = a hero (spec size, no screen uses it now). */
   size?: AvatarSize;
   /** `me` = the cyan sphere (the player); `other` = the dark chip face with a light letter (someone else). */
   tone?: 'me' | 'other';

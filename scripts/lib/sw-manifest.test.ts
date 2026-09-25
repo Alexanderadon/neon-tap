@@ -23,7 +23,7 @@ describe('collectPrecache', () => {
       'music/achilles.mp3',
       'charts/catalog.json',
       'sfx/hit-1.mp3',
-      'voice/dmitry/mimo.mp3',
+      'voice/svetlana/mimo.mp3',
       '.well-known/assetlinks.json',
     ]);
     expect(urls).toEqual([

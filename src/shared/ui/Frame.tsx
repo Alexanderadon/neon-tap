@@ -1,10 +1,7 @@
-import type { CSSProperties, FormEvent, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import './frame.css';
 
 interface FrameProps {
-  /** A `form` when the frame submits (the welcome name). */
-  as?: 'div' | 'form';
-  onSubmit?: (e: FormEvent<HTMLFormElement>) => void;
   className?: string;
   children: ReactNode;
 }
@@ -13,20 +10,12 @@ interface FrameProps {
  * The screen frame of every non-game screen (spec §1.4): fixed, one 335 column in 20 px gutters,
  * the top bar at safe-top + 8, the action zone at safe-bottom + 24; scrolls on short viewports.
  */
-export function Frame({ as = 'div', onSubmit, className, children }: FrameProps) {
-  const cls = ['frame', className].filter(Boolean).join(' ');
-  if (as === 'form') {
-    return (
-      <form className={cls} onSubmit={onSubmit}>
-        {children}
-      </form>
-    );
-  }
-  return <div className={cls}>{children}</div>;
+export function Frame({ className, children }: FrameProps) {
+  return <div className={['frame', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
 interface SubProps {
-  /** Gold tag on the left («ШАГ 1 ИЗ 3», «НАСТРОЙКИ»). */
+  /** Gold tag on the left («ЗАДЕРЖКА», «НАСТРОЙКИ»). */
   tag?: ReactNode;
   /** Grey 13 px line after the tag (ellipsis); `right` pushes it to the right edge. */
   text?: ReactNode;
