@@ -105,7 +105,10 @@ const ROAD_TRACKS = CATALOG.filter((t) => t.drop !== true);
 export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRecords, onProfile, onTrack, headerTag, onTopUp }: Props) {
   const save = useProgress((s) => s);
   const stars = grandTotalStars(save, TRACK_IDS);
-  /** The clock of this visit: a weekly track's ad window does not close under the finger. */
+  /**
+   * The clock of this visit: a weekly track's ad window does not close under the finger. The same
+   * `dropState` as the menu's badge (`forSale`), read at the visit instead of the menu's last save.
+   */
   const [nowMs] = useState(now);
   const live = useMemo(
     () =>

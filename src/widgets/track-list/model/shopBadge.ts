@@ -20,7 +20,7 @@ export function forSaleNow(
   for (const track of catalog) {
     const drop = state.drops?.get(track.id);
     if (drop) {
-      if (!drop.open && !drop.soon) {
+      if (drop.forSale) {
         drops.push({ id: track.id, price: drop.price, drop, info: { id: track.id, unlocked: false, need: 0, premium: false, purchased: false } });
       }
       continue;

@@ -29,11 +29,15 @@ export interface CatalogState {
   streak: number;
   /** Unlock info by track id (road and premium tracks only — weekly tracks are in `drops`). */
   unlocks: ReadonlyMap<string, UnlockInfo>;
-  /** The lock of every weekly track by id, as of the page load's clock. */
+  /** The lock of every weekly track by id, as of `nowMs`. */
   drops: ReadonlyMap<string, DropState>;
   /** NEON PASS is active: weekly tracks open a week early and are granted. */
   pass: boolean;
-  /** The clock the weekly locks were computed with (ms). */
+  /**
+   * The clock the weekly locks were computed with (ms): read when the state is built — on every save
+   * change, so a menu left open past Monday 00:00 Moscow catches up at the next tap that saves. The
+   * deck itself (which drops are in view) is fixed per page load (`CATALOG`).
+   */
   nowMs: number;
 }
 

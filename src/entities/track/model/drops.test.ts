@@ -86,7 +86,7 @@ describe('dropState', () => {
 
   it('soon: not out and no PASS — locked, no ad, visible from a week before', () => {
     const s = dropState(track, { ...base, nowMs: T0 - 3 * DAY_MS });
-    expect(s).toMatchObject({ open: false, soon: true, adEligible: false, thisWeek: false, early: false, price: DROP_PRICE, releaseAt: T0 });
+    expect(s).toMatchObject({ open: false, soon: true, forSale: false, adEligible: false, thisWeek: false, early: false, price: DROP_PRICE, releaseAt: T0 });
     expect(isDropVisible(track, T0 - 7 * DAY_MS)).toBe(true);
     expect(isDropVisible(track, T0 - 7 * DAY_MS - 1)).toBe(false);
   });
@@ -101,12 +101,12 @@ describe('dropState', () => {
     expect(dropState(track, { ...base, nowMs: T0 }).adEligible).toBe(true);
     expect(dropState(track, { ...base, nowMs: T0 + 14 * DAY_MS - 1 }).adEligible).toBe(true);
     const late = dropState(track, { ...base, nowMs: T0 + 14 * DAY_MS });
-    expect(late).toMatchObject({ adEligible: false, open: false, soon: false, price: 150 });
+    expect(late).toMatchObject({ adEligible: false, open: false, soon: false, forSale: true, price: 150 });
     expect(dropState(track, { ...base, nowMs: T0 + WEEK_MS }).thisWeek).toBe(false);
   });
 
   it('owned or unlock-all is open, never offered an ad', () => {
-    expect(dropState(track, { ...base, owned: true, nowMs: T0 + DAY_MS })).toMatchObject({ open: true, adEligible: false, soon: false });
+    expect(dropState(track, { ...base, owned: true, nowMs: T0 + DAY_MS })).toMatchObject({ open: true, adEligible: false, soon: false, forSale: false });
     expect(dropState(track, { ...base, owned: true, nowMs: T0 - DAY_MS })).toMatchObject({ open: true, soon: false, early: false });
     expect(dropState(track, { ...base, unlockAll: true, nowMs: T0 - DAY_MS })).toMatchObject({ open: true, soon: false });
   });

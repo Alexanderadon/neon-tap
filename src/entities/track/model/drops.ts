@@ -99,6 +99,8 @@ export interface DropState {
   open: boolean;
   /** Not out yet and not open: locked, neither an ad nor crystals can open it. */
   soon: boolean;
+  /** On sale for crystals: out and not open (neither owned nor opened by PASS / unlock-all). */
+  forSale: boolean;
   /** A rewarded ad may open it: not open, released, within its first 14 days (the widget also asks `ads.available()`). */
   adEligible: boolean;
   /** Crystals to buy it once released. */
@@ -120,6 +122,7 @@ export function dropState(track: { release?: string }, ctx: DropContext): DropSt
   return {
     open,
     soon: !open && !released,
+    forSale: !open && released,
     adEligible: !open && released && ctx.nowMs < releaseAt + DROP_AD_MS,
     price: DROP_PRICE,
     releaseAt,
