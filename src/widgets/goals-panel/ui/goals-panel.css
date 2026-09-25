@@ -87,6 +87,12 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+/* The hint under the strip wraps on a narrow phone instead of losing its end. */
+.goals-cal-hint {
+  height: auto;
+  white-space: normal;
+  text-wrap: balance;
+}
 .goal-cal {
   height: 88px;
 }

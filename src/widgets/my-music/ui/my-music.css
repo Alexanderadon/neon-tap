@@ -79,9 +79,13 @@
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
+/* Hints longer than the 335 column (the iOS home-screen line) wrap instead of losing their end to an ellipsis. */
 .mm-note {
   flex: none;
+  height: auto;
   margin: 8px 0;
+  white-space: normal;
+  text-wrap: balance;
 }
 .mm-dock {
   padding-top: 16px;
