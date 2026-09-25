@@ -44,7 +44,18 @@ export function idbRepo(name: string = SONGS_DB): SongRepo {
         throw err;
       }
       const done = transactionDone(t);
-      const read = issue(t);
+      let read: () => T;
+      try {
+        read = issue(t);
+      } catch (err) {
+        done.catch(() => undefined);
+        try {
+          t.abort();
+        } catch {
+          /* already finished */
+        }
+        throw err;
+      }
       await done;
       return read();
     }
