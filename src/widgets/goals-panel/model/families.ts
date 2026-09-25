@@ -1,5 +1,5 @@
 import { dict, fmt } from '@/shared/i18n';
-import { GOALS, goalProgress, isGoalDone, type Goal, type GoalFamily, type SaveData } from '@/entities/progress';
+import { GOALS, claimedGoalCount, goalProgress, isGoalDone, type Goal, type GoalFamily, type SaveData } from '@/entities/progress';
 
 /** One family of achievements as a ladder: which tier is next and how far along it is. */
 export interface FamilyLadder {
@@ -44,7 +44,7 @@ export function orderLadders(ladders: readonly FamilyLadder[]): FamilyLadder[] {
   });
 }
 
-/** «получено 29 из 100» for the sub-header. */
+/** «получено 29 из 97» for the sub-header (retired tiers still in the save are not counted). */
 export function goalsGotLine(claimed: readonly string[]): string {
-  return fmt(dict.goalsGot, { done: claimed.length, total: GOALS.length });
+  return fmt(dict.goalsGot, { done: claimedGoalCount(claimed), total: GOALS.length });
 }
