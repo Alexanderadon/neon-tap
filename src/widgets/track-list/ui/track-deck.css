@@ -261,6 +261,28 @@
   text-transform: uppercase;
   color: var(--gold);
 }
+/* The custom card (the deck's last): the drop zone's placeholder face — dark, a thin 96 px note in the middle — and two lines of w55 where a track has its stars. */
+.deck-card-custom {
+  background: linear-gradient(180deg, #0b0d16, #23252f);
+}
+.deck-custom-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--w30);
+}
+.deck-custom-line {
+  display: -webkit-box;
+  height: 32px;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font: var(--t-13);
+  color: var(--w55);
+  white-space: normal;
+}
 /* Rank letter 20/900: white with a black underside; S / SS in gold with the dark-orange underside and a soft glow. */
 .deck-rank {
   margin-left: auto;

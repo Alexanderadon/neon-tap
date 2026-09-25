@@ -15,6 +15,8 @@ interface Props {
   doors: readonly [Door, Door, Door];
   track: TrackMeta;
   lock: LockState;
+  /** The deck's «Своя музыка» card is focused: the primary is «ВЫБРАТЬ ФАЙЛ» (the custom-song screen) instead of a track's. */
+  custom: boolean;
   /** How many stars the player has (the locked sub-line «★ 22 из 25»). */
   stars: number;
   busy: boolean;
@@ -32,11 +34,27 @@ const DOOR_LABEL: Record<Door['key'], string> = { shop: dict.shop, records: dict
 /**
  * The bottom action zone, identical on every menu screen: three object buttons (48) and the
  * 64 px primary — «ИГРАТЬ / track» with the play disc, or «ОТКРЫТЬ» with a lock while the
- * focused track is closed (a premium track leads to the shop instead).
+ * focused track is closed (a premium track leads to the shop instead), or «ВЫБРАТЬ ФАЙЛ» on the
+ * deck's «Своя музыка» card.
  */
-export function MenuDock({ doors, track, lock, stars, busy, onPlay }: Props) {
+export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay }: Props) {
   let primary: ReactNode;
-  if (lock.locked && lock.premium) {
+  if (custom) {
+    primary = (
+      <PrimaryAction
+        lead={
+          <Disc>
+            <Icon name="file" size={24} />
+          </Disc>
+        }
+        label={dict.chooseFile}
+        sub={dict.fileFormats}
+        beat={!busy}
+        disabled={busy}
+        onClick={onPlay}
+      />
+    );
+  } else if (lock.locked && lock.premium) {
     primary = (
       <PrimaryAction
         lead={
