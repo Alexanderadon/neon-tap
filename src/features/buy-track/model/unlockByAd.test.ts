@@ -27,7 +27,7 @@ describe('watchAdForTrack', () => {
   it('unlocks the track only when the ad is rewarded, persisting it exactly like a purchase (price 0)', async () => {
     const h = harness('rewarded');
     await expect(watchAdForTrack('t7', h.deps)).resolves.toEqual({ outcome: 'rewarded', unlocked: true });
-    expect(h.shown).toEqual(['shop-track']);
+    expect(h.shown).toEqual(['weekly-track']);
     expect(h.save().purchased).toEqual(['t7']);
     expect(h.save().crystals).toBe(0);
   });

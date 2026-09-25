@@ -27,7 +27,8 @@ const FONT_CACHE = 'neon-fonts-v1';
 const KEEP_CACHES = new Set([SHELL_CACHE, MEDIA_CACHE, FONT_CACHE]);
 /** Synthetic entry inside MEDIA_CACHE holding `{ entries: [{ url, size, at }] }` in insertion order. */
 const INDEX_KEY = '/__neon-media-index__';
-const MEDIA_CAP = 200 * 1024 * 1024;
+/** 44 tracks and their covers plus 13 weekly ones as they come out; the weekly tracks are never pre-cached. */
+const MEDIA_CAP = 260 * 1024 * 1024;
 const MEDIA_PREFIXES = ['/music/', '/sfx/', '/voice/', '/icons/', '/covers/'];
 const CHART_PREFIXES = ['/charts/'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
