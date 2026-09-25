@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { customSongsLine, dropSoonText, songsText } from './deckText';
 
-const DAY = 86_400_000;
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
 const T0 = Date.UTC(2026, 9, 4, 21);
 
 describe('deck text', () => {
-  it('says when a drop comes out in whole days, «завтра» for the last one', () => {
-    expect(dropSoonText({ releaseAt: T0 }, T0 - 3 * 3_600_000)).toBe('Выйдет завтра');
-    expect(dropSoonText({ releaseAt: T0 }, T0 - DAY)).toBe('Выйдет завтра');
-    expect(dropSoonText({ releaseAt: T0 }, T0 - 2.5 * DAY)).toBe('Выйдет через 3 дн.');
-    expect(dropSoonText({ releaseAt: T0 }, T0 - 7 * DAY)).toBe('Выйдет через 7 дн.');
+  it('says when a drop comes out in calendar days: «сегодня», «завтра», «через N дн.»', () => {
+    const moscow = () => 3 * HOUR;
+    expect(dropSoonText({ releaseAt: T0 }, T0 - 3 * HOUR, moscow)).toBe('Выйдет завтра');
+    expect(dropSoonText({ releaseAt: T0 }, T0 - DAY, moscow)).toBe('Выйдет завтра');
+    expect(dropSoonText({ releaseAt: T0 }, T0 - 2.5 * DAY, moscow)).toBe('Выйдет через 3 дн.');
+    expect(dropSoonText({ releaseAt: T0 }, T0 - 7 * DAY, moscow)).toBe('Выйдет через 7 дн.');
+    // Vladivostok (UTC+10): Monday 03:00 local, the drop opens at 07:00.
+    expect(dropSoonText({ releaseAt: T0 }, T0 - 4 * HOUR, () => 10 * HOUR)).toBe('Выйдет сегодня');
   });
 
   it('counts the saved songs on the custom card: the free limit, or PASS', () => {

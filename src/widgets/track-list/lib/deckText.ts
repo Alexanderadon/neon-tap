@@ -2,10 +2,14 @@ import { dict, fmt, plural } from '@/shared/i18n';
 import { daysUntil, type DropState } from '@/entities/track';
 import { CUSTOM_FREE_LIMIT } from '@/entities/custom-song';
 
-/** A drop not out yet: «Выйдет завтра» / «Выйдет через 3 дн.» — whole days to Monday 00:00 Moscow, no clock. */
-export function dropSoonText(drop: Pick<DropState, 'releaseAt'>, nowMs: number): string {
-  const days = daysUntil(drop.releaseAt, nowMs);
-  return days <= 1 ? dict.dropSoonTomorrow : fmt(dict.dropSoonDays, { n: days });
+/**
+ * A drop not out yet: «Выйдет сегодня» / «Выйдет завтра» / «Выйдет через 3 дн.» — calendar days on
+ * the player's clock to the day Monday 00:00 Moscow falls on there, no countdown. `offsetMs` for tests.
+ */
+export function dropSoonText(drop: Pick<DropState, 'releaseAt'>, nowMs: number, offsetMs?: (ms: number) => number): string {
+  const days = daysUntil(drop.releaseAt, nowMs, offsetMs);
+  if (days <= 0) return dict.dropSoonToday;
+  return days === 1 ? dict.dropSoonTomorrow : fmt(dict.dropSoonDays, { n: days });
 }
 
 /** «N песен» for the saved-song count. */

@@ -111,12 +111,25 @@ describe('dropState', () => {
     expect(dropState(track, { ...base, unlockAll: true, nowMs: T0 - DAY_MS })).toMatchObject({ open: true, soon: false });
   });
 
-  it('counts whole days to the release: 1 is «завтра»', () => {
-    expect(daysUntil(T0, T0 - 14 * HOUR)).toBe(1);
-    expect(daysUntil(T0, T0 - DAY_MS)).toBe(1);
-    expect(daysUntil(T0, T0 - DAY_MS - 1)).toBe(2);
-    expect(daysUntil(T0, T0 - 6.5 * DAY_MS)).toBe(7);
-    expect(daysUntil(T0, T0)).toBe(0);
-    expect(daysUntil(Number.POSITIVE_INFINITY, T0)).toBe(Number.POSITIVE_INFINITY);
+  it('counts calendar days on the player clock to the release: 1 is «завтра», 0 «сегодня»', () => {
+    const moscow = () => 3 * HOUR;
+    expect(daysUntil(T0, T0 - 14 * HOUR, moscow)).toBe(1);
+    expect(daysUntil(T0, T0 - 1, moscow)).toBe(1);
+    expect(daysUntil(T0, T0 - DAY_MS, moscow)).toBe(1);
+    expect(daysUntil(T0, T0 - DAY_MS - 1, moscow)).toBe(2);
+    expect(daysUntil(T0, T0 - 6.5 * DAY_MS, moscow)).toBe(7);
+    expect(daysUntil(T0, T0, moscow)).toBe(0);
+    expect(daysUntil(Number.POSITIVE_INFINITY, T0, moscow)).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it('follows the local calendar east and west of Moscow', () => {
+    // Vladivostok, UTC+10: the drop opens on Monday at 07:00 local time.
+    const vladivostok = () => 10 * HOUR;
+    expect(daysUntil(T0, T0 - 25 * HOUR, vladivostok)).toBe(1); // Sunday 06:00 — «завтра», not «через 2 дн.»
+    expect(daysUntil(T0, T0 - 4 * HOUR, vladivostok)).toBe(0); // Monday 03:00 — «сегодня»
+    // Kaliningrad, UTC+2: the drop opens on Sunday at 23:00 local time.
+    const kaliningrad = () => 2 * HOUR;
+    expect(daysUntil(T0, T0 - 11 * HOUR, kaliningrad)).toBe(0); // Sunday 12:00 — «сегодня»
+    expect(daysUntil(T0, T0 - 23.5 * HOUR, kaliningrad)).toBe(1); // Saturday 23:30 — «завтра»
   });
 });
