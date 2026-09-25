@@ -1,4 +1,4 @@
-import { OFFSET_RANGE_MS } from '@/shared/config/constants';
+import { CALIBRATION_VERSION, OFFSET_RANGE_MS } from '@/shared/config/constants';
 import { sanitizeAvatar } from '@/shared/config/avatars';
 import { clamp } from '@/shared/lib/math';
 import { createStore, useStore } from '@/shared/lib/store/createStore';
@@ -17,7 +17,7 @@ export interface Settings {
   voiceVolume: number;
   voice: VoiceSetting;
   calibrated: boolean;
-  /** Bumped when calibration must be redone (e.g. after the mobile-audio fix). */
+  /** The calibration version the saved offset was made with; an older one is dropped on load (see CALIBRATION_VERSION). */
   calibrationVersion: number;
   debugOverlay: boolean;
   /** The interactive tutorial was finished or skipped once (it opens itself on first launch). */
@@ -55,7 +55,7 @@ const DEFAULTS: Settings = {
   voiceVolume: 0.6,
   voice: 'svetlana',
   calibrated: false,
-  calibrationVersion: 0,
+  calibrationVersion: CALIBRATION_VERSION, // a fresh install has no stale offset to drop
   debugOverlay: false,
   tutorialDone: false,
   nickname: '',
@@ -88,9 +88,12 @@ function load(): Settings {
 }
 
 function sanitize(s: Settings): Settings {
+  // An offset from an older calibration double-counts the device latency: drop it, the auto-offset re-learns it in a run.
+  const stale = s.calibrationVersion < CALIBRATION_VERSION;
   return {
     ...s,
-    audioOffsetMs: clamp(Math.round(s.audioOffsetMs), OFFSET_RANGE_MS.min, OFFSET_RANGE_MS.max),
+    audioOffsetMs: stale ? 0 : clamp(Math.round(s.audioOffsetMs), OFFSET_RANGE_MS.min, OFFSET_RANGE_MS.max),
+    calibrationVersion: stale ? CALIBRATION_VERSION : s.calibrationVersion,
     musicVolume: clamp(s.musicVolume, 0, 1),
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),
