@@ -3,8 +3,8 @@ export interface ProbeElement {
   preload: string;
   src: string;
   readonly duration: number;
-  onloadedmetadata: (() => void) | null;
-  onerror: (() => void) | null;
+  onloadedmetadata: ((ev: Event) => void) | null;
+  onerror: ((ev: Event) => void) | null;
   removeAttribute(name: string): void;
   load(): void;
 }

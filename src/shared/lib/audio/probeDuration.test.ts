@@ -16,10 +16,10 @@ function fakeElement(answer: { duration?: number; error?: boolean; never?: boole
     set src(_url: string) {
       if (answer.never) return;
       queueMicrotask(() => {
-        if (answer.error) el.onerror?.();
+        if (answer.error) el.onerror?.(new Event('error'));
         else {
           Object.defineProperty(el, 'duration', { value: answer.duration ?? Number.NaN });
-          el.onloadedmetadata?.();
+          el.onloadedmetadata?.(new Event('loadedmetadata'));
         }
       });
     },
