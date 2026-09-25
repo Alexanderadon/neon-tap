@@ -5,8 +5,7 @@
  * - `'revive'` — the second chance when the hearts run out, once per run, for a player without
  *   NEON PASS (with PASS it is free and shows no ad; it never costs crystals).
  */
-export const AD_PLACEMENTS = ['weekly-track', 'revive'] as const;
-export type AdPlacement = (typeof AD_PLACEMENTS)[number];
+export type AdPlacement = 'weekly-track' | 'revive';
 
 /** How a rewarded ad ended: the reward is granted only on `'rewarded'`. */
 export type AdOutcome = 'rewarded' | 'closed' | 'failed';

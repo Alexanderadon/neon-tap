@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { audioEngine, loadSong, preloadSfx, sfxUi, waitForAudioUnlock } from '@/shared/lib/audio';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
-import { ads, stubAds } from '@/shared/lib/ads';
+import { ads, isStubAds, stubAds, useStubAdProgress } from '@/shared/lib/ads';
 import { navigate } from '@/shared/lib/router';
 import { needsRotateHint } from '@/shared/lib/viewport';
 import { dict, fmt } from '@/shared/i18n';
@@ -50,9 +50,6 @@ import { reviveButton } from '../model/reviveButton';
 import './game-canvas.css';
 
 export type GameCanvasMode = 'play' | 'tutorial';
-
-/** The development / `?ads=fast` build: the timer stub plays, and the frame shows its seconds and can close it. A real network shows its own player. */
-const STUB_ADS = ads === stubAds;
 
 interface Props {
   chart: ChartFile;
@@ -335,7 +332,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     const phase = reviveRef.current.phase;
     if (phase === 'ad') {
       // «К результату» over the stub's ad closes it: the ad ends 'closed' and nothing is given. A real network closes its own player.
-      if (STUB_ADS) stubAds.cancel();
+      if (isStubAds) stubAds.cancel();
       return;
     }
     // «К результату» rises with the frame too: a lane tap as the last heart goes must not throw the second chance away unseen.
@@ -359,7 +356,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     return () => {
       live = false;
       // Restarted or left mid-ad: the stub stops too — its late end speaks for no run.
-      if (STUB_ADS) stubAds.cancel();
+      if (isStubAds) stubAds.cancel();
     };
   }, [revive.phase, stepRevive]);
 
@@ -586,24 +583,14 @@ interface ReviveProps {
  */
 function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
   const [left, setLeft] = useState(REVIVE_OFFER_SEC);
-  const [ad, setAd] = useState({ progress: 0, left: 0 });
+  // The development / `?ads=fast` build: the stub's seconds in the waiting button. A real network shows its own player.
+  const ad = useStubAdProgress(stubAds, phase === 'ad' && isStubAds);
   useEffect(() => {
     if (phase !== 'offer') return;
     setLeft(REVIVE_OFFER_SEC);
     const started = performance.now();
     const t = window.setInterval(() => setLeft(Math.max(0, REVIVE_OFFER_SEC - Math.floor((performance.now() - started) / 1000))), 200);
     return () => window.clearInterval(t);
-  }, [phase]);
-  useEffect(() => {
-    if (phase !== 'ad' || !STUB_ADS) return;
-    const read = () => setAd({ progress: stubAds.progress(), left: Math.ceil(stubAds.remainingSeconds()) });
-    read();
-    const t = window.setInterval(read, 200);
-    const off = stubAds.subscribe(read);
-    return () => {
-      window.clearInterval(t);
-      off();
-    };
   }, [phase]);
   const refill = phase === 'refill';
   const button = reviveButton(phase === 'ad' ? 'ad' : 'offer', pass);
@@ -653,7 +640,7 @@ function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
         {!refill && (
           <ActionZone className="game-bottom">
             <Trio one className="game-trio">
-              <ObjButton icon={<Icon name="arrow" />} label={dict.toResult} onClick={onDecline} disabled={phase === 'ad' && !STUB_ADS} />
+              <ObjButton icon={<Icon name="arrow" />} label={dict.toResult} onClick={onDecline} disabled={phase === 'ad' && !isStubAds} />
             </Trio>
             <PrimaryAction
               tone={button.locked ? 'locked' : 'cyan'}
@@ -669,7 +656,7 @@ function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
               disabled={button.locked}
               icon={
                 phase === 'ad' ? (
-                  STUB_ADS ? (
+                  isStubAds ? (
                     <RingCountdown size={40} seconds={1} progress={ad.progress} className="game-ring game-ring-dim" track>
                       {ad.left}
                     </RingCountdown>

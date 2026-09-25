@@ -21,7 +21,8 @@ export interface AdsEnv {
 /**
  * The provider for this build: the timer stub only in development or with `?ads=fast` — on the
  * live site without an SDK there is no ad at all (a 30-second timer would hand out every weekly
- * track for nothing).
+ * track and every second chance for nothing); without NEON PASS the second chance is then not
+ * offered.
  */
 export function pickAds(env: AdsEnv, stub: StubAds): RewardedAd {
   return env.dev || env.fast ? stub : new NoAds();

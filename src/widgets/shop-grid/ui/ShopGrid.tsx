@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { dict, fmt } from '@/shared/i18n';
-import { ads, stubAds } from '@/shared/lib/ads';
+import { ads, isStubAds, stubAds } from '@/shared/lib/ads';
 import { audioEngine, loadSong, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
 import { navigate } from '@/shared/lib/router';
 import { now } from '@/shared/lib/time';
@@ -319,7 +319,7 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
   }, [sheet, stopPreview]);
   const closeAd = useCallback(() => {
     // The stub resolves 'closed' (no reward); a real provider shows its own confirmation and closes itself.
-    if (ads === stubAds) stubAds.cancel();
+    if (isStubAds) stubAds.cancel();
   }, []);
 
   const earn = useCallback(() => {
@@ -452,7 +452,7 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
         />
       )}
       {/* The stub's own frame; a real network shows its own player. */}
-      {view === 'ad' && adTrack && ads === stubAds && <AdScreen track={adTrack} onClose={closeAd} />}
+      {view === 'ad' && adTrack && isStubAds && <AdScreen track={adTrack} onClose={closeAd} />}
       {flight && <CrystalFlight path={flight} onDone={endFlight} />}
     </div>
   );

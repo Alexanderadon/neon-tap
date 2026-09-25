@@ -1,11 +1,8 @@
-import { useEffect, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
-import { stubAds } from '@/shared/lib/ads';
+import { stubAds, useStubAdProgress } from '@/shared/lib/ads';
 import { Disc, Icon, Line, Panel, PrimaryAction, RingCountdown } from '@/shared/ui';
 import { TrackCover, type TrackMeta } from '@/entities/track';
 
-/** How often the ring and the seconds refresh while the stub plays. */
-const TICK_MS = 100;
 /** RingCountdown 144 around the 120 cover: r 66, stroke 4 → the SVG box is 136 (spec «RingCountdown»). */
 const RING_BOX = 136;
 const RING_STROKE = 4;
@@ -23,18 +20,8 @@ interface Props {
  * секунд» button that turns cyan when the ring is done. The stub provider drives the ring.
  */
 export function AdScreen({ track, onClose }: Props) {
-  const [state, setState] = useState(() => ({ progress: stubAds.progress(), left: Math.ceil(stubAds.remainingSeconds()) }));
-  useEffect(() => {
-    const read = () => setState({ progress: stubAds.progress(), left: Math.ceil(stubAds.remainingSeconds()) });
-    read();
-    const id = window.setInterval(read, TICK_MS);
-    const off = stubAds.subscribe(read);
-    return () => {
-      window.clearInterval(id);
-      off();
-    };
-  }, []);
-  const done = !stubAds.playing || state.progress >= 1;
+  const state = useStubAdProgress(stubAds);
+  const done = !state.playing || state.progress >= 1;
   return (
     <div className="ad-root" role="dialog" aria-modal="true" aria-label={dict.shopAdTag}>
       <div className="ad-col">
