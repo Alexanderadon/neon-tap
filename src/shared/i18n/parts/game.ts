@@ -55,12 +55,15 @@ export const game = {
   /**
    * Without NEON PASS the primary button says it is an ad and what it gives (Yandex Games 4.5.1): «СМОТРЕТЬ /
    * рекламу · +5 сердец». Its 20 px caps label fits about ten letters at 360 px, so «рекламу» goes to the sub
-   * line; the sub line has about 208 px there (≈ 21 letters) — «с этого же места» stays in the panel line above.
+   * line; the sub line has about 208 px there — «с этого же места» stays in the panel line above.
    */
   reviveWatchAd: 'Смотреть',
   reviveWatchAdSub: 'рекламу · +5 сердец',
-  /** With NEON PASS: «ПРОДОЛЖИТЬ / бесплатно с NEON PASS» (the label is `continue`), no ad. */
-  reviveFreePass: 'бесплатно с NEON PASS',
+  /**
+   * With NEON PASS: «ПРОДОЛЖИТЬ / бесплатно с PASS» (the label is `continue`), no ad. Not «с NEON PASS»: the
+   * wide Latin caps would bring the line to the edge of its 208 px (see reviveButton.test.ts).
+   */
+  reviveFreePass: 'бесплатно с PASS',
   /** While the rewarded ad plays: the waiting button «РЕКЛАМА / сердца после ролика» with the seconds in the ring. */
   reviveAdPlaying: 'Реклама',
   reviveAdPlayingSub: 'сердца после ролика',

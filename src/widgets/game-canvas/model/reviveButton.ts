@@ -14,7 +14,7 @@ export interface ReviveButton {
 /**
  * The primary button of the second chance. Without NEON PASS it says it is an ad and what it gives
  * before anything plays (Yandex Games 4.5.1: a rewarded ad is never a surprise) — «СМОТРЕТЬ / рекламу
- * · +5 сердец»; with PASS it is free and plays nothing — «ПРОДОЛЖИТЬ / бесплатно с NEON PASS». While
+ * · +5 сердец»; with PASS it is free and plays nothing — «ПРОДОЛЖИТЬ / бесплатно с PASS». While
  * the ad plays it waits: «РЕКЛАМА / сердца после ролика».
  */
 export function reviveButton(phase: 'offer' | 'ad', pass: boolean): ReviveButton {

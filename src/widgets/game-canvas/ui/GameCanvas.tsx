@@ -574,7 +574,7 @@ interface ReviveProps {
 /**
  * The second-chance offer (frame 20): five empty hearts in a panel with «+5 сердец · с этого же
  * места», «СЕРДЦА КОНЧИЛИСЬ», the primary button with a 5 s ring — «СМОТРЕТЬ / рекламу · +5 сердец»,
- * or «ПРОДОЛЖИТЬ / бесплатно с NEON PASS» — and «К результату». It only opens with NEON PASS or an ad
+ * or «ПРОДОЛЖИТЬ / бесплатно с PASS» — and «К результату». It only opens with NEON PASS or an ad
  * to show. The primary button is not focused (Space is the circle key); both buttons take a tap only
  * once they have risen (`REVIVE_ARM_MS`). While the ad plays the button waits, locked, with the stub's seconds in
  * its ring (a real network covers the frame with its own player), and «К результату» closes the stub
