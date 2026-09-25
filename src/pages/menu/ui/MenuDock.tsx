@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { ActionZone, CrystalIcon, Disc, Icon, ObjButton, PrimaryAction, Trio } from '@/shared/ui';
 import { trackTint, type TrackMeta } from '@/entities/track';
-import type { LockState } from '@/widgets/track-list';
+import { dropSoonText, songsText, type LockState } from '@/widgets/track-list';
 
 /** One of the three doors in the bottom row; the door the player stands in becomes «В меню». */
 export interface Door {
@@ -21,6 +21,12 @@ interface Props {
   stars: number;
   busy: boolean;
   onPlay: () => void;
+  /** The deck's «Новые треки — по понедельникам» card is focused: nothing to play, a disabled «СКОРО». */
+  slot?: boolean;
+  /** Saved songs: on the «Своя музыка» card the primary becomes «МОЯ МУЗЫКА / 3 песни» once there is one. */
+  songs?: number;
+  /** The page load's clock — «Выйдет через N дн.» under a weekly track's «СКОРО». */
+  nowMs?: number;
 }
 
 const DOOR_ICON: Record<Door['key'], ReactNode> = {
@@ -34,12 +40,28 @@ const DOOR_LABEL: Record<Door['key'], string> = { shop: dict.shop, records: dict
 /**
  * The bottom action zone, identical on every menu screen: three object buttons (48) and the
  * 64 px primary — «ИГРАТЬ / track» with the play disc, or «ОТКРЫТЬ» with a lock while the
- * focused track is closed (a premium track leads to the shop instead), or «ВЫБРАТЬ ФАЙЛ» on the
- * deck's «Своя музыка» card.
+ * focused track is closed (a premium or weekly track leads to the shop instead), a disabled
+ * «СКОРО» on a weekly track not out yet and on the empty-week card, or «ВЫБРАТЬ ФАЙЛ» on the
+ * deck's «Своя музыка» card («МОЯ МУЗЫКА / N песен» once songs are saved).
  */
-export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay }: Props) {
+export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay, slot = false, songs = 0, nowMs = 0 }: Props) {
   let primary: ReactNode;
-  if (custom) {
+  if (custom && songs > 0) {
+    primary = (
+      <PrimaryAction
+        lead={
+          <Disc>
+            <Icon name="note" size={24} />
+          </Disc>
+        }
+        label={dict.deckMyMusic}
+        sub={songsText(songs)}
+        beat={!busy}
+        disabled={busy}
+        onClick={onPlay}
+      />
+    );
+  } else if (custom) {
     primary = (
       <PrimaryAction
         lead={
@@ -54,7 +76,22 @@ export function MenuDock({ doors, track, lock, custom, stars, busy, onPlay }: Pr
         onClick={onPlay}
       />
     );
-  } else if (lock.locked && lock.premium) {
+  } else if (slot || (lock.locked && lock.drop?.soon)) {
+    primary = (
+      <PrimaryAction
+        tone="locked"
+        lead={
+          <Disc>
+            <Icon name="lock" size={24} />
+          </Disc>
+        }
+        label={dict.dropSoon}
+        sub={slot || !lock.drop ? dict.dropSlotLine : dropSoonText(lock.drop, nowMs)}
+        disabled
+        aria-label={slot ? `${dict.dropSlotTitle} · ${dict.dropSlotLine}` : `${dict.dropSoon} · ${track.title}`}
+      />
+    );
+  } else if (lock.locked && (lock.premium || lock.drop)) {
     primary = (
       <PrimaryAction
         lead={

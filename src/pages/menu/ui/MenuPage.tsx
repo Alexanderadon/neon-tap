@@ -6,6 +6,7 @@ import { store } from '@/shared/lib/iap';
 import { Avatar, Chip, FrameBody, Icon, ObjButton, Panel, Screen, Stars, SubHeader, Tag, useSwipeBack } from '@/shared/ui';
 import { CATALOG, CoverScene, chapterAt, chapterTitle } from '@/entities/track';
 import { GOALS, rankIndex, starsForTrack } from '@/entities/progress';
+import { useSongCount } from '@/entities/custom-song';
 import { useSettings } from '@/entities/settings';
 import { avatarArtOf } from '@/entities/avatar';
 import { myDuels } from '@/entities/duel';
@@ -18,7 +19,11 @@ import {
   focusedTrack,
   initialDeckIndex,
   isCustomCard,
+  isSlotCard,
+  passDropGrants,
+  slotCoverId,
   CUSTOM_CARD,
+  SLOT_WEEK,
   trackIndexOf,
   useCatalogState,
   useDeckRadio,
@@ -29,6 +34,7 @@ import { DuelList, useMyDuels } from '@/widgets/duel-list';
 import { HistoryPanel } from '@/widgets/history-panel';
 import { NicknameDialog } from '@/features/submit-score';
 import { AvatarPicker } from '@/features/choose-avatar';
+import { grantTracks } from '@/features/buy-track';
 import { MenuDock, type Door } from './MenuDock';
 import './menu.css';
 
@@ -49,11 +55,12 @@ const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS a
  * focused track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
  * nickname question and the avatar picker are the overlays (a dialog over the dimmed screen). Other screens open a
  * view or focus a track through the route params (`navigate('menu', { view: 'records', track })`).
- * The offer popups (GDD «Донат») rise here by schedule — the 48-hour deal, the music pack — and
- * the crystal packs open from the wallet's «+».
+ * The crystal packs open from the wallet's «+» (nothing rises by itself). While NEON PASS is on,
+ * every weekly track in the deck is written to the player's tracks when the menu opens.
  */
 export function MenuPage() {
   const state = useCatalogState();
+  const songs = useSongCount();
   const params = useRouteParams();
   const [index, setIndex] = useState(() => {
     // Back from the custom-song screen: the deck opens on its «Своя музыка» card.
@@ -65,12 +72,18 @@ export function MenuPage() {
   const [askName, setAskName] = useState(false);
   const [askAvatar, setAskAvatar] = useState(false);
   const { busy, play } = usePlayTrack();
-  // The deck's last card is «Своя музыка», not a track: the views that need one show the last track.
+  // The deck's last card is «Своя музыка» and the empty-week card is a promise, not a track: the views that need one show the last track.
   const custom = isCustomCard(index);
+  const slot = isSlotCard(index);
   const { track, lock } = focusedTrack(state, index);
   const badge = affordableCount(state);
-  // The radio: the focused song, quietly, while the menu is up and no song is being started (silent on the custom card).
-  useDeckRadio(custom ? undefined : track.id, busy === null);
+  // The radio: the focused song, quietly, while the menu is up and no song is being started (silent on the custom and empty-week cards).
+  useDeckRadio(custom || slot ? undefined : track.id, busy === null);
+  // NEON PASS: the weekly tracks in the deck become the player's for good (price 0 — they stay after the pass).
+  const passGrants = passDropGrants(CATALOG, state.save.purchased, state.pass).join(' ');
+  useEffect(() => {
+    if (passGrants) grantTracks(passGrants.split(' '));
+  }, [passGrants]);
 
   // Offers: an explicit ask from the wallet's «+», and the wallet tick after a purchase (the crystals fly into the chip).
   const [offer, setOffer] = useState<OfferKind | null>(null);
@@ -106,18 +119,23 @@ export function MenuPage() {
     sfxUi();
     navigate(screen);
   };
-  /** The primary action: play `id` (a duel's track) or the focused card — the custom card opens the custom-song screen. */
+  /**
+   * The primary action: play `id` (a duel's track) or the focused card — the custom card opens the
+   * custom-song screen, the empty-week card does nothing, a locked premium or weekly track (out
+   * already) leads to the shop.
+   */
   const onPlay = (id?: string) => {
     if (busy) return;
     if (id === undefined && custom) {
       open('custom');
       return;
     }
+    if (id === undefined && slot) return;
     sfxUi();
     const target = id ?? track.id;
     const l = target === track.id ? lock : null;
     if (l?.locked) {
-      if (l.premium) navigate('shop');
+      if (l.premium || (l.drop && !l.drop.soon)) navigate('shop');
       return;
     }
     void play(target);
@@ -139,7 +157,7 @@ export function MenuPage() {
 
   return (
     <Screen frame className="menu">
-      <CoverScene id={custom ? undefined : track.id} genre={custom ? undefined : track.genre} />
+      <CoverScene id={custom ? undefined : slot ? slotCoverId(SLOT_WEEK ?? 0) : track.id} genre={custom || slot ? undefined : track.genre} />
       <TopBar onCrystalsTap={() => open('shop')} onTopUp={store.available() ? topUp : undefined} crystalsRef={crystalsRef} crystals={tick ?? undefined} />
 
       {view === 'deck' && <TrackDeck index={index} onIndexChange={setIndex} onPlay={() => onPlay()} />}
@@ -183,7 +201,18 @@ export function MenuPage() {
 
       {view === 'duels' && <DuelsView onPlay={onPlay} />}
 
-      <MenuDock doors={doors[view]} track={track} lock={lock} custom={custom} stars={state.stars} busy={busy !== null} onPlay={() => onPlay()} />
+      <MenuDock
+        doors={doors[view]}
+        track={track}
+        lock={lock}
+        custom={custom}
+        slot={slot}
+        songs={songs}
+        nowMs={state.nowMs}
+        stars={state.stars}
+        busy={busy !== null}
+        onPlay={() => onPlay()}
+      />
 
       <NicknameDialog open={askName} onSkip={() => setAskName(false)} />
       <AvatarPicker open={askAvatar} onClose={() => setAskAvatar(false)} />
@@ -203,6 +232,7 @@ interface ProfileProps {
 /** Profile: the player card (tap → nickname), the avatar row (tap → the picker), five wide doors, the licenses line. */
 function ProfileView({ onNickname, onAvatar, onGoals, onDuels, onOpen }: ProfileProps) {
   const state = useCatalogState();
+  const songs = useSongCount();
   const nickname = useSettings((s) => s.nickname);
   const avatar = useSettings((s) => s.avatar);
   const art = avatarArtOf(avatar);
@@ -265,7 +295,13 @@ function ProfileView({ onNickname, onAvatar, onGoals, onDuels, onOpen }: Profile
           }
         />
         <ObjButton wide icon={<Icon name="duel" />} label={dict.duelsTitle} onClick={onDuels} end={<Chip>{duelsCount}</Chip>} />
-        <ObjButton wide icon={<Icon name="note" />} label={dict.customSong} onClick={() => onOpen('custom')} end={<Icon name="chevron" />} />
+        <ObjButton
+          wide
+          icon={<Icon name="note" />}
+          label={dict.customSong}
+          onClick={() => onOpen('custom')}
+          end={songs > 0 ? <Chip>{songs}</Chip> : <Icon name="chevron" />}
+        />
         <ObjButton
           wide
           icon={<Icon name="book" />}
