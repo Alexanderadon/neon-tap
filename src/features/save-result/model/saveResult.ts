@@ -13,6 +13,7 @@ import { recordAttempt } from '@/entities/history';
 import { TRACK_IDS } from '@/entities/track';
 import { sessionStore, setSessionResult, type ChartSource, type ResultMeta } from '@/entities/play-session';
 import type { PlayResult } from '@/entities/score';
+import { customResultMeta } from './customResult';
 
 const NO_META: ResultMeta = { newRecord: false, starsBefore: 0, starsAfter: 0 };
 
@@ -59,7 +60,7 @@ export function saveResult(result: PlayResult, source: ChartSource, now: Date = 
 
   let meta: ResultMeta;
   if (source !== 'catalog') {
-    meta = { ...NO_META };
+    meta = customResultMeta(result, now.getTime());
   } else {
     const before = progressStore.get().tracks[result.trackId];
     const starsBefore = starsForTrack(before);
