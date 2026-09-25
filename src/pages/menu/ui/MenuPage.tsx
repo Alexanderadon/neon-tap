@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { dict, fmt, plural } from '@/shared/i18n';
 import { navigate, useRouteParams } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { store } from '@/shared/lib/iap';
+import { packsVisible } from '@/shared/lib/iap';
 import { Avatar, Chip, FrameBody, Icon, ObjButton, Panel, Screen, Stars, SubHeader, Tag, useSwipeBack } from '@/shared/ui';
 import { CATALOG, CoverScene, chapterAt, chapterTitle } from '@/entities/track';
 import { GOALS, claimedGoalCount, rankIndex, starsForTrack } from '@/entities/progress';
@@ -164,7 +164,7 @@ export function MenuPage() {
   return (
     <Screen frame className="menu">
       <CoverScene id={custom ? undefined : slot ? slotCoverId(SLOT_WEEK ?? 0) : track.id} genre={custom || slot ? undefined : track.genre} />
-      <TopBar onCrystalsTap={() => open('shop')} onTopUp={store.available() ? topUp : undefined} crystalsRef={crystalsRef} crystals={tick ?? undefined} />
+      <TopBar onCrystalsTap={() => open('shop')} onTopUp={packsVisible() ? topUp : undefined} crystalsRef={crystalsRef} crystals={tick ?? undefined} />
 
       {view === 'deck' && <TrackDeck index={index} onIndexChange={setIndex} onPlay={() => onPlay()} />}
 

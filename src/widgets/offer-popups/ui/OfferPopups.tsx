@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { dict } from '@/shared/i18n';
-import { store } from '@/shared/lib/iap';
+import { packsVisible } from '@/shared/lib/iap';
 import { sfxGem } from '@/shared/lib/audio';
 import { centreOf } from '@/shared/lib/viewport';
 import { CrystalFlight, CrystalIcon, Icon, type FlightPath } from '@/shared/ui';
@@ -38,14 +38,14 @@ function reducedMotion(): boolean {
 /**
  * The host of the crystal packs sheet: it opens only when asked (the wallet's «+», the shop's
  * not-enough sheet) — never by itself, with no timers and no «only today» — plus the success toast
- * and the crystals' flight into the wallet chip. Nothing is offered when the store is unavailable.
+ * and the crystals' flight into the wallet chip. Hidden only with `?iap=off`; without billing the packs are shown with «Оплата скоро».
  */
 export function OfferPopups({ request, onRequestHandled, crystalsRef, onWalletTick }: Props) {
   const [active, setActive] = useState<OfferKind | null>(null);
   const [toast, setToast] = useState<{ text: string; icon: 'crystal' | 'cross' } | null>(null);
   const [flight, setFlight] = useState<FlightPath | null>(null);
   const primaryRef = useRef<HTMLDivElement>(null);
-  const available = store.available();
+  const available = packsVisible();
 
   // Explicit asks.
   useEffect(() => {
