@@ -85,7 +85,21 @@ export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins,
       <div className="sheet-actions">
         <ObjButton icon={<Icon name="cross" size={20} />} label={dict.offerNotNow} onClick={close} />
         <div className="sheet-primary" ref={primaryRef}>
-          {busy ? (
+          {!store.available() ? (
+            // No billing connected yet (the live web build): the packs are on show, buying is not.
+            <PrimaryAction
+              tone="locked"
+              lead={
+                <Disc>
+                  <Icon name="hourglass" size={24} />
+                </Disc>
+              }
+              label={dict.offerSoon}
+              sub={dict.offerSoonSub}
+              icon={null}
+              disabled
+            />
+          ) : busy ? (
             <PrimaryAction
               tone="locked"
               lead={

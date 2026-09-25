@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { navigate } from '@/shared/lib/router';
 import { sfxUi } from '@/shared/lib/audio';
-import { store } from '@/shared/lib/iap';
+import { packsVisible } from '@/shared/lib/iap';
 import { Screen } from '@/shared/ui';
 import { CoverScene } from '@/entities/track';
 import type { OfferKind } from '@/entities/offers';
@@ -49,7 +49,7 @@ export function ShopPage() {
     sfxUi();
     setOffer('crystals');
   }, []);
-  const selling = store.available();
+  const selling = packsVisible();
   // The last own song's decoded buffer is not needed in the shop (its previews decode catalog songs): let it go.
   useEffect(() => {
     releaseSongBuffer();

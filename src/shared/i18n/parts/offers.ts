@@ -20,6 +20,9 @@ export const offers = {
   // --- toasts ---
   offerCrystalsGot: 'Кристаллы получены',
   offerFailed: 'Оплата не прошла',
+  /** The pack sheet's button while no billing is connected (the live web build). */
+  offerSoon: 'Оплата скоро',
+  offerSoonSub: 'кристаллы пока — за забеги',
   // --- ways in ---
   /** The not-enough sheet's row and the wallet chip's «+». */
   offerTopUp: 'Пополнить',
