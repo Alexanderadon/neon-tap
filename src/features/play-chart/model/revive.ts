@@ -7,6 +7,11 @@
 
 /** Seconds the offer stays open (the RingCountdown in the primary button). */
 export const REVIVE_OFFER_SEC = 5;
+/**
+ * «Продолжить» takes a tap only after it has risen (0.8 s delay + 0.4 s rise, game-canvas.css): the
+ * frame opens while the fingers are still hitting the lanes, and a stray tap must never spend crystals.
+ */
+export const REVIVE_ARM_MS = 1200;
 /** Hearts given back. */
 export const REVIVE_HEARTS = 5;
 /** Crystals the second chance costs; NEON PASS makes it free. */
@@ -58,7 +63,12 @@ export function revivePrice(pass: boolean): number {
 
 /** The second chance exists for this player right now: NEON PASS, or enough crystals to pay for it. */
 export function reviveAffordable(pass: boolean, crystals: number): boolean {
-  return pass || crystals >= REVIVE_PRICE;
+  return crystals >= revivePrice(pass);
+}
+
+/** «Продолжить» is armed: the offer opened at `offerAt` (ms, the same clock as `nowMs`) at least `REVIVE_ARM_MS` ago. */
+export function reviveArmed(offerAt: number | null, nowMs: number): boolean {
+  return offerAt !== null && nowMs - offerAt >= REVIVE_ARM_MS;
 }
 
 /**

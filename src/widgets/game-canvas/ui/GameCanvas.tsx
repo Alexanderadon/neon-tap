@@ -33,9 +33,10 @@ import {
   REFILL_AT,
   REVIVE_IDLE,
   REVIVE_OFFER_SEC,
-  REVIVE_PRICE,
   payForRevive,
   reviveAffordable,
+  reviveArmed,
+  revivePrice,
   reviveReducer,
   type SessionEvent,
 } from '@/features/play-chart';
@@ -95,6 +96,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   const [paused, setPaused] = useState<Snapshot | null>(null);
   const [fail, setFail] = useState<{ stars: number; crowns: number; finale: boolean } | null>(null);
   const [revive, dispatch] = useReducer(reviveReducer, REVIVE_IDLE);
+  /** When the second-chance offer opened (performance.now()): «Продолжить» is not armed before it has risen. */
+  const offerAtRef = useRef<number | null>(null);
   const [muted, setMuted] = useState(false);
   // Latest host callbacks without re-creating the session when the parent re-renders.
   const hostRef = useRef({ onEvent, onTime, onExit });
@@ -147,6 +150,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           break;
         case 'hearts-out':
           setPaused(null);
+          offerAtRef.current = performance.now();
           dispatch({ type: 'hearts-out' });
           break;
         case 'revive':
@@ -302,6 +306,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   const acceptRevive = () => {
     const s = sessionRef.current;
     if (!s || !s.isHeartsOut || revive.phase !== 'offer') return;
+    // A tap while the button is still rising is the finger that was hitting the lanes: it pays nothing.
+    if (!reviveArmed(offerAtRef.current, performance.now())) return;
     sfxUi();
     // The wallet may have changed in another tab since the offer opened: nothing paid, no hearts.
     if (!payForRevive(isPassActive(), spendCrystals)) {
@@ -530,7 +536,8 @@ interface ReviveProps {
 /**
  * The second-chance offer (frame 20): five empty hearts in a panel, «СЕРДЦА КОНЧИЛИСЬ», «ПРОДОЛЖИТЬ
  * · +5 сердец · 30 кристаллов» (free with NEON PASS) with a 5 s ring, «К результату». It only opens
- * when the wallet can pay. After «Продолжить» (frame 21) the hearts pop back with sparks and the
+ * when the wallet can pay. «Продолжить» is not focused (Space is the circle key) and takes a tap only
+ * once it has risen (`REVIVE_ARM_MS`). After «Продолжить» (frame 21) the hearts pop back with sparks and the
  * canvas counts «3 / 2 / 1» under a light veil.
  */
 function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
@@ -543,7 +550,8 @@ function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
     return () => window.clearInterval(t);
   }, [phase]);
   const refill = phase === 'refill';
-  const price = pass ? dict.reviveFree : fmt(dict.revivePrice, { n: REVIVE_PRICE, noun: plural(REVIVE_PRICE, dict.crystalsNoun) });
+  const cost = revivePrice(pass);
+  const price = cost === 0 ? dict.reviveFree : fmt(dict.revivePrice, { n: cost, noun: plural(cost, dict.crystalsNoun) });
   return (
     <div className={refill ? 'game-frame game-revive game-revive-fill' : 'game-shade game-frame game-revive'} aria-live="polite">
       <div className="game-col">
@@ -602,7 +610,6 @@ function ReviveFrame({ phase, pass, tint, onAccept, onDecline }: ReviveProps) {
               tint={tint}
               sub={fmt(dict.reviveSubPrice, { price })}
               beat
-              autoFocus
               icon={
                 <RingCountdown size={40} seconds={REVIVE_OFFER_SEC} className="game-ring" track>
                   {left}

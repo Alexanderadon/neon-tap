@@ -12,10 +12,12 @@ export {
   REVIVE_OFFER_SEC,
   REVIVE_HEARTS,
   REVIVE_PRICE,
+  REVIVE_ARM_MS,
   REFILL_AT,
   REVIVE_RESUME_AT,
   revivePrice,
   reviveAffordable,
+  reviveArmed,
   payForRevive,
 } from './model/revive';
 export type { ReviveState, ReviveAction, RevivePhase } from './model/revive';

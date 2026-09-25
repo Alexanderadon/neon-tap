@@ -1367,8 +1367,9 @@ export class Renderer {
   }
 
   /**
-   * After «Продолжить» is paid (frame 21; 30 crystals, free with NEON PASS, never an ad): the field stays frozen under a .28 veil, the HUD hearts pop
-   * back one by one (drawn by drawHud from `revive`), then «3 / 2 / 1» with the gold «ПОЕХАЛИ» tag.
+   * After «Продолжить» is paid (frame 21; 30 crystals, free with NEON PASS, never an ad): the field
+   * stays frozen under a .28 veil, the HUD hearts pop back one by one (drawn by drawHud from
+   * `revive`), then «3 / 2 / 1» with the gold «ПОЕХАЛИ» tag.
    */
   private drawRevive(age: number): void {
     const ctx = this.ctx;
