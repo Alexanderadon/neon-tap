@@ -55,6 +55,18 @@ export const GENRES = [
 ] as const;
 export type Genre = (typeof GENRES)[number];
 
+/**
+ * Ids of the player's own songs start with this prefix («Моя музыка»: `custom:` + 20 hex of the
+ * file's fingerprint). The colon never passes the server's track id pattern, so such a run can
+ * never reach the online table or a duel even if a client check is missed.
+ */
+export const CUSTOM_ID_PREFIX = 'custom:';
+
+/** The id belongs to a player's own song, not to the built-in catalog. */
+export function isCustomId(id: string | null | undefined): boolean {
+  return typeof id === 'string' && id.startsWith(CUSTOM_ID_PREFIX);
+}
+
 export interface ChartFile {
   id: string;
   title: string;
