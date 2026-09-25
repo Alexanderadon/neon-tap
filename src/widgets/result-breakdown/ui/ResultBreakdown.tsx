@@ -257,7 +257,8 @@ export function ResultBreakdown({
 
       <ActionZone className="result-actions">
         <Trio className="result-trio">
-          {failed ? (
+          {/* The primary is «ЕЩЁ РАЗ» after a fail and without «Дальше» (an own song, the last track): the trio does not repeat it. */}
+          {failed || !primaryNext ? (
             <>
               <ObjButton icon={<Icon name="home" />} label={dict.toMenu} onClick={() => navigate('menu')} />
               <ObjButton
