@@ -1,9 +1,9 @@
 import { useState, type RefObject } from 'react';
-import { dict, fmt } from '@/shared/i18n';
+import { dict, fmt, plural } from '@/shared/i18n';
 import { store } from '@/shared/lib/iap';
 import { formatCount } from '@/shared/lib/format';
 import { sfxUi } from '@/shared/lib/audio';
-import { Coin, CrystalIcon, Tag } from '@/shared/ui';
+import { Coin, Tag } from '@/shared/ui';
 import { CRYSTAL_PACKS, type CrystalPackSku } from '@/entities/offers';
 import type { BuyOfferResult } from '@/features/buy-offer';
 import { OfferSheet } from './OfferSheet';
@@ -15,16 +15,10 @@ interface Props {
   primaryRef: RefObject<HTMLDivElement>;
 }
 
-const crystalIcon = (
-  <span className="offer-cy">
-    <CrystalIcon size={20} />
-  </span>
-);
-
 /**
- * The regular crystals popup («КРИСТАЛЛЫ»): three piles, the three packs as pressable coins
- * (500 · 1 500 · 4 000 with their prices), the chosen pack's bonus on the benefit line, its price
- * on the button. Never automatic — the wallet's «+» and the shop's not-enough state open it.
+ * The crystals sheet («КРИСТАЛЛЫ»): the piles, the four packs as pressable coins (300 · 700 ·
+ * 2 000 · 4 500 in cyan with their prices), the chosen pack's bonus on the benefit line, its price
+ * on the button. Never automatic — the wallet's «+» and the shop's not-enough sheet open it.
  */
 export function CrystalsOffer({ onClose, onResult, primaryRef }: Props) {
   const [sku, setSku] = useState<CrystalPackSku>('crystals-m');
@@ -47,6 +41,7 @@ export function CrystalsOffer({ onClose, onResult, primaryRef }: Props) {
               type="button"
               role="radio"
               aria-checked={p.sku === sku}
+              aria-label={fmt(dict.offerPackAria, { n: formatCount(p.crystals), noun: plural(p.crystals, dict.crystalsNoun), price: store.price(p.sku) })}
               className={p.sku === sku ? 'offer-pick offer-pick-on' : 'offer-pick'}
               onClick={() => {
                 if (p.sku === sku) return;
@@ -54,7 +49,8 @@ export function CrystalsOffer({ onClose, onResult, primaryRef }: Props) {
                 setSku(p.sku);
               }}
             >
-              <Coin icon={crystalIcon} value={formatCount(p.crystals)} caption={store.price(p.sku)} tone="cy" />
+              {/* Four in a row leave no room for the crystal glyph: the cyan value says «crystals». */}
+              <Coin value={formatCount(p.crystals)} caption={store.price(p.sku)} tone="cy" />
             </button>
           ))}
         </div>

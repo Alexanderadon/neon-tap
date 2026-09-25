@@ -16,12 +16,10 @@ interface Props {
   placeholder: ReactNode;
   /** The gold headline tag(s). */
   tags: ReactNode;
-  /** One line of benefit («+25 % кристаллов»). */
+  /** One line of benefit («+15 % кристаллов»). */
   benefit: ReactNode;
-  /** The coins row (value, price in crystals, …). */
+  /** The coins row (the packs to pick from). */
   coins: ReactNode;
-  /** An optional line under the coins (the deal's countdown). */
-  note?: ReactNode;
   /** Aria name of the dialog (the tags are decorative caps). */
   title: string;
   onClose: () => void;
@@ -32,11 +30,11 @@ interface Props {
 }
 
 /**
- * The one sheet style of every offer: hero 335 × 180 · gold tag · benefit line · coins ·
- * [note] · «Не сейчас» · «КУПИТЬ · 249 ₽». The primary turns into a dark «ОПЛАТА…» while the
- * store processes; «Не сейчас», the veil, Escape and the back swipe close it (and cancel the stub).
+ * The one sheet style of an offer: hero 335 × 180 · gold tag · benefit line · coins ·
+ * «Не сейчас» · «КУПИТЬ · 99 ₽». The primary turns into a dark «ОПЛАТА…» while the store
+ * processes; «Не сейчас», the veil, Escape and the back swipe close it (and cancel the stub).
  */
-export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins, note, title, onClose, onResult, primaryRef }: Props) {
+export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins, title, onClose, onResult, primaryRef }: Props) {
   const titleId = useId();
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
@@ -69,7 +67,7 @@ export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins,
     sfxUi();
     setBusy(true);
     const result = await buyOffer(sku);
-    // The grant may unmount this sheet before the promise settles (the music pack becomes owned): the host still hears the result.
+    // The sheet may be gone before the promise settles: the host still hears the result.
     if (mounted.current) setBusy(false);
     onResult(result);
   }, [busy, sku, onResult]);
@@ -83,7 +81,6 @@ export function OfferSheet({ kind, sku, hero, placeholder, tags, benefit, coins,
       <div className="offer-tags">{tags}</div>
       <div className="offer-benefit">{benefit}</div>
       <div className="offer-coins">{coins}</div>
-      {note !== undefined && <div className="offer-note">{note}</div>}
       <div className="sheet-actions">
         <ObjButton icon={<Icon name="cross" size={20} />} label={dict.offerNotNow} onClick={close} />
         <div className="sheet-primary" ref={primaryRef}>

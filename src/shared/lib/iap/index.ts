@@ -1,7 +1,8 @@
 /**
  * In-app purchases (GDD «Донат»). The billing provider is not chosen yet: `store` is the stub that
- * resolves `'ok'` after 1.5 s of fake processing and shows placeholder ruble prices; `?iap=off`
- * makes it unavailable so the offers disappear.
+ * resolves `'ok'` after 1.5 s of fake processing and shows placeholder ruble prices — only in
+ * development or with `?iap=stub`. On the live site it is unavailable (no crystals are sold, the
+ * wallet has no «+»); `?iap=off` hides it in development too.
  *
  * Plugging in a real provider (Capacitor + Google Play / App Store):
  *   1. implement `Store` next to `StubStore` — `available()` = billing connected and the products
@@ -17,7 +18,7 @@ import type { Store } from './types';
 export type { BuyOutcome, Sku, Store } from './types';
 export { SKUS, isSku } from './types';
 export type { StoreClock } from './stubStore';
-export { StubStore, STUB_PROCESSING_MS, STUB_PRICES_RUB, rubles, iapOffFlag } from './stubStore';
+export { StubStore, STUB_PROCESSING_MS, STUB_PRICES_RUB, rubles, iapOffFlag, iapStubFlag } from './stubStore';
 
 /** The stub instance — the buy button reads `stubStore.processing` / `subscribe()` while it lasts. */
 export const stubStore = new StubStore();
