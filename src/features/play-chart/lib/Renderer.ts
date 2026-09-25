@@ -174,7 +174,18 @@ const BEAT_SEC = 0.3;
 /** Equaliser smoothing (per second): fast attack, slow release. */
 const SPECTRUM_ATTACK = 28;
 const SPECTRUM_RELEASE = 5;
-const SPECTRUM_MAX_ALPHA = 0.35;
+/** The skyline stays under the notes: bars up to 0.3 of the hit line's height, alpha ≤ this. */
+const SPECTRUM_MAX_ALPHA = 0.18;
+const SPECTRUM_MAX_H = 0.3;
+/** Beat ring strength (its own knob: the skyline was dimmed, the ring was not). */
+const BEAT_RING_ALPHA = 0.35;
+/**
+ * Notes fade in under the HUD (it fills ~0–172 px below the safe top): hidden above safeTop + FROM,
+ * whole from safeTop + TO. Hold-type bodies cross the zone in BANDS clipped bands of rising alpha.
+ */
+const NOTE_FADE_FROM = 96;
+const NOTE_FADE_TO = 160;
+const NOTE_FADE_BANDS = 8;
 const RING_SPRITE_RADIUS = 64;
 const HAZE_RADIUS = 96;
 const GRID_LINES = 7;
@@ -503,7 +514,7 @@ export class Renderer {
     // Background layer sprites — sized once here, only scaled with drawImage per frame.
     const { accent, glow } = this.theme;
     this.barW = base.laneAreaWidth / SPECTRUM_BANDS;
-    this.barMaxH = base.hitY * 0.6;
+    this.barMaxH = base.hitY * SPECTRUM_MAX_H;
     this.barAccent = renderGlowBar(accent, this.barW, this.barMaxH, this.dpr);
     this.barGlow = renderGlowBar(glow, this.barW, this.barMaxH, this.dpr);
     this.ringAccent = renderGlowRing(accent, RING_SPRITE_RADIUS, this.dpr);
@@ -559,7 +570,7 @@ export class Renderer {
       layout,
       staticLayer: this.buildStaticLayer(layout),
       noteSprites: colors.map((c) => renderNoteSprite(c, bodyW, noteHeight, this.dpr)),
-      holdSprites: colors.map((c) => renderNoteSprite(c, bodyW * 0.5, noteHeight * 0.6, this.dpr)),
+      holdSprites: colors.map((c) => renderNoteSprite(c, bodyW * 0.6, noteHeight * 0.6, this.dpr)),
       beams: colors.map((c) => renderBeam(hexToRgba(c, 0.55), laneWidth, hitY, this.dpr)),
       spells: { slow: renderSpell('slow', spellSize, this.dpr), heart: renderSpell('heart', spellSize, this.dpr) },
       gem: renderCrystal(GEM_COLOR, gemSize, this.dpr),
@@ -630,7 +641,9 @@ export class Renderer {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const keys = KEY_LABELS[lanes] ?? [];
-      for (let i = 0; i < lanes; i++) ctx.fillText(keys[i] ?? '', laneX + (i + 0.5) * laneWidth, hitY + noteHeight * 1.6);
+      // Under the receptor; a short window centres them in what is left below it instead.
+      const keyY = Math.min(hitY + noteHeight * 1.6, (hitY + noteHeight / 2 + height) / 2);
+      for (let i = 0; i < lanes; i++) ctx.fillText(keys[i] ?? '', laneX + (i + 0.5) * laneWidth, keyY);
     }
 
     const v = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.35, width / 2, height / 2, Math.max(width, height) * 0.75);
@@ -1116,8 +1129,10 @@ export class Renderer {
           continue;
         }
       }
-      if (y < -60 || y > height + 60) continue;
-      if (n.state === NoteState.Missed) ctx.globalAlpha = 0.3;
+      const fade = this.fadeIn(y);
+      if (fade <= 0 || y > height + 60) continue;
+      const alpha = (n.state === NoteState.Missed ? 0.3 : 1) * fade;
+      ctx.globalAlpha = alpha;
       if (n.kind === 'slow' || n.kind === 'heart') {
         const sp = set.spells[n.kind];
         const bob = 1 + 0.06 * Math.sin(s.songTime * 6 + i);
@@ -1135,7 +1150,7 @@ export class Renderer {
         ctx.rotate(spin * 0.6 + i);
         ctx.drawImage(sp.canvas, (-sp.width / 2) * bob, (-sp.height / 2) * bob, sp.width * bob, sp.height * bob);
         ctx.restore();
-        if (sparkTick && n.state === NoteState.Pending && this.fxLevel === 'full' && y > 0) {
+        if (sparkTick && n.state === NoteState.Pending && this.fxLevel === 'full' && fade >= 1) {
           this.particles.emit(cx, y - set.layout.noteHeight * 0.6, n.gem > 1 ? 2 : 1, GEM_DOT, 70, 2.5, 0.4);
         }
       } else {
@@ -1143,9 +1158,9 @@ export class Renderer {
         // The faint "ghost" above a pending tile is skipped when the previous tile of the lane is right there — in a
         // fast stream the ghost would fuse two tiles into one blob.
         if (n.state === NoteState.Pending && (ghostY[n.lane] === undefined || ghostY[n.lane] - y > set.layout.noteHeight * 2.2)) {
-          ctx.globalAlpha = 0.18;
+          ctx.globalAlpha = 0.18 * alpha;
           ctx.drawImage(sp.canvas, cx - sp.width / 2, y - sp.height / 2 - set.layout.noteHeight * 0.9, sp.width, sp.height);
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = alpha;
         }
         ghostY[n.lane] = y;
         ctx.drawImage(sp.canvas, cx - sp.width / 2, y - sp.height / 2, sp.width, sp.height);
@@ -1391,12 +1406,12 @@ export class Renderer {
     const e = 1 - (1 - a) * (1 - a);
     const size = laneAreaWidth * (0.2 + 0.75 * e);
     const sp = this.beatStrength >= 1 ? this.ringGlow : this.ringAccent;
-    ctx.globalAlpha = SPECTRUM_MAX_ALPHA * k;
+    ctx.globalAlpha = BEAT_RING_ALPHA * k;
     ctx.drawImage(sp.canvas, cx - size / 2, hitY - size / 2, size, size);
     ctx.globalAlpha = 1;
   }
 
-  /** Spectrum skyline: 32 mirrored bars rising from the hit line, bass in the middle, alpha ≤ 0.35. */
+  /** Spectrum skyline: 32 mirrored bars rising from the hit line, bass in the middle, alpha ≤ SPECTRUM_MAX_ALPHA. */
   private drawSpectrum(L: Layout): void {
     const ctx = this.ctx;
     const { laneX, hitY } = L;
@@ -1493,34 +1508,78 @@ export class Renderer {
     const top = Math.max(-40, yEnd);
     const bottom = n.state === NoteState.Holding ? set.layout.hitY : Math.min(height + 40, y);
     if (bottom <= top) return;
-    const color = this.laneColors[n.lane % this.laneColors.length];
-    ctx.globalAlpha = n.state === NoteState.Missed ? 0.25 : 0.55;
-    ctx.fillStyle = color;
-    if (n.kind === 'roll') {
-      // Striped body: one stripe per required tap.
-      const stripes = Math.max(2, n.extra);
-      const h = (bottom - top) / stripes;
-      for (let k = 0; k < stripes; k++) {
-        ctx.globalAlpha = (k % 2 ? 0.3 : 0.6) * (n.state === NoteState.Missed ? 0.4 : 1);
-        ctx.fillRect(cx - lw * 0.22, top + k * h + 1, lw * 0.44, Math.max(1, h - 2));
+    const missed = n.state === NoteState.Missed;
+    ctx.fillStyle = this.laneColors[n.lane % this.laneColors.length];
+    // Under the HUD the body fades in band by band (see fadePass).
+    const passes = this.fadePasses(top);
+    for (let p = 0; p < passes; p++) {
+      const f = this.fadePass(p, passes, top, bottom);
+      if (f <= 0) continue;
+      if (n.kind === 'roll') {
+        // Striped body: one stripe per required tap.
+        const stripes = Math.max(2, n.extra);
+        const h = (bottom - top) / stripes;
+        for (let k = 0; k < stripes; k++) {
+          ctx.globalAlpha = (k % 2 ? 0.3 : 0.6) * (missed ? 0.4 : 1) * f;
+          ctx.fillRect(cx - lw * 0.22, top + k * h + 1, lw * 0.44, Math.max(1, h - 2));
+        }
+      } else {
+        ctx.globalAlpha = (missed ? 0.25 : 0.55) * f;
+        ctx.fillRect(cx - lw * 0.18, top, lw * 0.36, bottom - top);
       }
-      if (n.state === NoteState.Holding) {
-        const size = Math.round(set.layout.noteHeight * 0.8);
-        const ry = set.layout.hitY - set.layout.noteHeight * 2.2;
-        ctx.globalAlpha = 1;
-        ctx.font = `900 ${size}px ${FONT}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${Math.min(n.taps, n.extra)}/${n.extra}`, cx, ry + Math.sin(s.songTime * 20) * 2);
-        this.rollTop = Math.min(this.rollTop, ry - size / 2 - 2);
-      }
-    } else {
-      ctx.fillRect(cx - lw * 0.18, top, lw * 0.36, bottom - top);
+      if (passes > 1) ctx.restore();
+    }
+    if (n.kind === 'roll' && n.state === NoteState.Holding) {
+      const size = Math.round(set.layout.noteHeight * 0.8);
+      const ry = set.layout.hitY - set.layout.noteHeight * 2.2;
+      ctx.globalAlpha = 1;
+      ctx.font = `900 ${size}px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${Math.min(n.taps, n.extra)}/${n.extra}`, cx, ry + Math.sin(s.songTime * 20) * 2);
+      this.rollTop = Math.min(this.rollTop, ry - size / 2 - 2);
+    }
+    const tail = this.fadeIn(yEnd);
+    if (tail > 0) {
+      const hs = set.holdSprites[n.lane];
+      ctx.globalAlpha = tail;
+      ctx.drawImage(hs.canvas, cx - hs.width / 2, yEnd - hs.height / 2, hs.width, hs.height);
     }
     ctx.globalAlpha = 1;
-    const hs = set.holdSprites[n.lane];
-    ctx.drawImage(hs.canvas, cx - hs.width / 2, yEnd - hs.height / 2, hs.width, hs.height);
+  }
+
+  /** Fade-in under the HUD, 0..1: hidden above safeTop + NOTE_FADE_FROM, whole from safeTop + NOTE_FADE_TO. */
+  private fadeIn(y: number): number {
+    const t = (y - this.safeTop - NOTE_FADE_FROM) / (NOTE_FADE_TO - NOTE_FADE_FROM);
+    return t <= 0 ? 0 : t >= 1 ? 1 : t;
+  }
+
+  /** Passes over a hold-type body whose top edge is `top`: one when it is wholly below the fade zone, else the part below it plus a pass per band. */
+  private fadePasses(top: number): number {
+    return top >= this.safeTop + NOTE_FADE_TO ? 1 : NOTE_FADE_BANDS + 1;
+  }
+
+  /**
+   * Pass `p` of `passes` over a body spanning top..bottom. With several passes it clips to the part below
+   * the fade zone (p = 0) or to band p of the zone — save() here, restore() by the caller — and returns
+   * the pass's alpha factor; 0 = nothing of the body there, no clip set. Clip rects, not a gradient mask:
+   * nothing is allocated per frame.
+   */
+  private fadePass(p: number, passes: number, top: number, bottom: number): number {
+    if (passes === 1) return 1;
+    const zoneTop = this.safeTop + NOTE_FADE_FROM;
+    const zoneBottom = this.safeTop + NOTE_FADE_TO;
+    const band = (zoneBottom - zoneTop) / NOTE_FADE_BANDS;
+    const y0 = p === 0 ? zoneBottom : zoneTop + (p - 1) * band;
+    const y1 = p === 0 ? bottom : y0 + band;
+    if (y1 <= Math.max(y0, top) || y0 >= bottom) return 0;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, y0, this.width, y1 - y0);
+    ctx.clip();
+    return p === 0 ? 1 : (p - 0.5) / NOTE_FADE_BANDS;
   }
 
   private drawSlideBody(set: LaneSet, n: PooledNote, cx: number, y: number, yEnd: number, s: FrameState): void {
@@ -1533,39 +1592,51 @@ export class Renderer {
     const grad = ctx.createLinearGradient(cx, y, x1, yEnd);
     grad.addColorStop(0, hexToRgba(color, 0.6));
     grad.addColorStop(1, hexToRgba(endColor, 0.6));
-    ctx.globalAlpha = n.state === NoteState.Missed ? 0.25 : 1;
+    const base = n.state === NoteState.Missed ? 0.25 : 1;
     ctx.fillStyle = grad;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 2;
     // Clip the body at the hit line while holding (the part already travelled is gone).
     const yStart = n.state === NoteState.Holding ? L.hitY : y;
     const xStart = n.state === NoteState.Holding ? this.slideX(set, n, s.songTime) : cx;
-    ctx.beginPath();
-    ctx.moveTo(xStart - w, yStart);
-    ctx.lineTo(xStart + w, yStart);
-    ctx.lineTo(x1 + w, yEnd);
-    ctx.lineTo(x1 - w, yEnd);
-    ctx.closePath();
-    ctx.fill();
-    // Direction chevrons.
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = 2;
     const dx = x1 - xStart;
     const dy = yEnd - yStart;
     const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
     const steps = Math.max(1, Math.floor(len / 28));
-    for (let k = 1; k <= steps; k++) {
-      const px = xStart + (dx * k) / (steps + 1);
-      const py = yStart + (dy * k) / (steps + 1);
-      const ux = dx / len;
-      const uy = dy / len;
+    // Under the HUD the body fades in band by band (see fadePass).
+    const passes = this.fadePasses(yEnd);
+    for (let p = 0; p < passes; p++) {
+      const f = this.fadePass(p, passes, yEnd, yStart);
+      if (f <= 0) continue;
+      ctx.globalAlpha = base * f;
       ctx.beginPath();
-      ctx.moveTo(px - ux * 6 + uy * 5, py - uy * 6 - ux * 5);
-      ctx.lineTo(px, py);
-      ctx.lineTo(px - ux * 6 - uy * 5, py - uy * 6 + ux * 5);
-      ctx.stroke();
+      ctx.moveTo(xStart - w, yStart);
+      ctx.lineTo(xStart + w, yStart);
+      ctx.lineTo(x1 + w, yEnd);
+      ctx.lineTo(x1 - w, yEnd);
+      ctx.closePath();
+      ctx.fill();
+      // Direction chevrons.
+      for (let k = 1; k <= steps; k++) {
+        const px = xStart + (dx * k) / (steps + 1);
+        const py = yStart + (dy * k) / (steps + 1);
+        ctx.beginPath();
+        ctx.moveTo(px - ux * 6 + uy * 5, py - uy * 6 - ux * 5);
+        ctx.lineTo(px, py);
+        ctx.lineTo(px - ux * 6 - uy * 5, py - uy * 6 + ux * 5);
+        ctx.stroke();
+      }
+      if (passes > 1) ctx.restore();
+    }
+    const tail = this.fadeIn(yEnd);
+    if (tail > 0) {
+      const hs = set.holdSprites[n.extra];
+      ctx.globalAlpha = tail;
+      ctx.drawImage(hs.canvas, x1 - hs.width / 2, yEnd - hs.height / 2, hs.width, hs.height);
     }
     ctx.globalAlpha = 1;
-    const hs = set.holdSprites[n.extra];
-    ctx.drawImage(hs.canvas, x1 - hs.width / 2, yEnd - hs.height / 2, hs.width, hs.height);
     if (n.state === NoteState.Holding) {
       // The finger marker: where the slide currently is on the hit line.
       const dot = this.glowDots[n.lane % this.laneColors.length];

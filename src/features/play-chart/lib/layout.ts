@@ -27,7 +27,8 @@ export function computeLayout(width: number, height: number, touch: boolean, lan
   const laneAreaWidth = lanes === 1 ? Math.min(fullArea, SINGLE_LANE_MAX_WIDTH) : fullArea;
   const laneWidth = laneAreaWidth / lanes;
   const hitY = Math.round(height * (touch ? 0.8 : 0.86));
-  const noteHeight = Math.round(Math.min(34, Math.max(14, laneWidth * 0.26)));
+  // A tile, not a strip: about 27 / 33 / 40 px on 5 / 4 / 3 lanes of a 390 px phone.
+  const noteHeight = Math.round(Math.min(40, Math.max(24, laneWidth * 0.34)));
   return {
     width,
     height,

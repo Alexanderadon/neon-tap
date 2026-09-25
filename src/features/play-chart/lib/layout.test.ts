@@ -8,7 +8,28 @@ describe('layout', () => {
       const l = computeLayout(800, 450, false, n);
       expect(l.lanes).toBe(n);
       expect(l.laneWidth * n).toBeCloseTo(l.laneAreaWidth);
-      expect(l.noteHeight).toBeGreaterThanOrEqual(14);
+      expect(l.noteHeight).toBeGreaterThanOrEqual(24);
+      expect(l.noteHeight).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it('notes are tiles, not strips: about 27 / 33 / 40 px on 5 / 4 / 3 lanes of a 390 px phone, 24–40 px everywhere', () => {
+    expect([5, 4, 3].map((n) => computeLayout(390, 844, true, n).noteHeight)).toEqual([27, 33, 40]);
+    // Six lanes on the narrowest phone still get the 24 px floor.
+    expect(computeLayout(320, 568, true, 6).noteHeight).toBe(24);
+    for (const [w, h, touch] of [
+      [320, 568, true],
+      [375, 812, true],
+      [844, 390, true],
+      [1440, 900, false],
+    ] as const) {
+      for (let n = MIN_LANES; n <= MAX_LANES; n++) {
+        const L = computeLayout(w, h, touch, n);
+        expect(L.noteHeight).toBeGreaterThanOrEqual(24);
+        expect(L.noteHeight).toBeLessThanOrEqual(40);
+        // A tile never gets taller than its lane is wide.
+        expect(L.noteHeight).toBeLessThanOrEqual(L.laneWidth);
+      }
     }
   });
 
@@ -30,7 +51,7 @@ describe('layout', () => {
       expect(L.laneX).toBeGreaterThan(0);
       // Never narrower than the same screen's 4-lane column.
       expect(L.laneAreaWidth).toBeLessThanOrEqual(computeLayout(w, h, touch, 4).laneAreaWidth);
-      expect(L.noteHeight).toBe(34);
+      expect(L.noteHeight).toBe(40);
     }
     // A screen narrower than the cap keeps the full width.
     expect(computeLayout(200, 400, true, 1).laneAreaWidth).toBe(200);
