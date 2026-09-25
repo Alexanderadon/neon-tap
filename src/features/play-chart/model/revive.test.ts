@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   REFILL_AT,
+  REVIVE_ARM_MS,
   REVIVE_COUNT_START,
   REVIVE_HEARTS,
   REVIVE_IDLE,
@@ -11,6 +12,7 @@ import {
   heartsRefilled,
   payForRevive,
   reviveAffordable,
+  reviveArmed,
   reviveCountdown,
   reviveDigitProgress,
   revivePrice,
@@ -74,6 +76,14 @@ describe('second chance price', () => {
     expect(reviveAffordable(false, 30)).toBe(true);
     expect(reviveAffordable(false, 0)).toBe(false);
     expect(reviveAffordable(true, 0)).toBe(true);
+  });
+
+  it('takes the tap only once «Продолжить» has risen: a lane tap as the hearts run out pays nothing', () => {
+    expect(REVIVE_ARM_MS).toBe(1200);
+    expect(reviveArmed(null, 5000)).toBe(false);
+    expect(reviveArmed(1000, 1000)).toBe(false);
+    expect(reviveArmed(1000, 1000 + REVIVE_ARM_MS - 1)).toBe(false);
+    expect(reviveArmed(1000, 1000 + REVIVE_ARM_MS)).toBe(true);
   });
 
   it('pays 30 crystals through the wallet; with NEON PASS the wallet is not touched', () => {
