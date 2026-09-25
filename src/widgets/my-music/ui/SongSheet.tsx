@@ -28,7 +28,10 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
   const [stage, setStage] = useState<Stage>(confirmDelete ? 'delete' : 'details');
   const [draft, setDraft] = useState(song?.title ?? '');
   const [working, setWorking] = useState(false);
+  /** The last rename / delete failed in the storage: one calm line, the stage stays so the tap can be repeated. */
+  const [failed, setFailed] = useState(false);
   const primaryRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -38,8 +41,10 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // The details focus «ИГРАТЬ»; the delete confirmation focuses «Отмена» — a double Enter never deletes a song and its record.
   useEffect(() => {
-    if (stage !== 'rename') primaryRef.current?.focus();
+    if (stage === 'details') primaryRef.current?.focus();
+    else if (stage === 'delete') cancelRef.current?.focus();
   }, [stage]);
 
   // Deleted meanwhile (another tab refreshed the list): nothing left to show.
@@ -51,6 +56,7 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
 
   const back = () => {
     sfxUi();
+    setFailed(false);
     if (confirmDelete && stage === 'delete') onClose();
     else setStage('details');
   };
@@ -59,7 +65,16 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
     if (working || !draft.trim()) return;
     sfxUi();
     setWorking(true);
-    await renameSong(song.id, draft).catch((err: unknown) => console.warn('songs: rename failed', err));
+    setFailed(false);
+    try {
+      // false: the song is gone (another tab) — the sheet closes by itself.
+      await renameSong(song.id, draft);
+    } catch (err) {
+      console.warn('songs: rename failed', err);
+      setWorking(false);
+      setFailed(true);
+      return;
+    }
     setWorking(false);
     setStage('details');
   };
@@ -68,12 +83,14 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
     if (working) return;
     sfxUi();
     setWorking(true);
+    setFailed(false);
     try {
       await removeSong(song.id);
       onDeleted();
     } catch (err) {
       console.warn('songs: delete failed', err);
       setWorking(false);
+      setFailed(true);
     }
   };
 
@@ -97,11 +114,15 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
           autoFocus
           autoComplete="off"
           enterKeyHint="done"
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setFailed(false);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') void saveName();
           }}
         />
+        {failed && <Line className="mm-sheet-line">{dict.libSaveFailed}</Line>}
         <div className="sheet-actions">
           <ObjButton icon={<Icon name="cross" size={20} />} label={dict.libCancel} onClick={back} />
           <PrimaryAction
@@ -128,10 +149,10 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
         </h2>
         {cover}
         <h3 className="mm-sheet-h2">{song.title}</h3>
+        {failed && <Line className="mm-sheet-line">{dict.libSaveFailed}</Line>}
         <div className="sheet-actions">
-          <ObjButton icon={<Icon name="cross" size={20} />} label={dict.libCancel} onClick={back} />
+          <ObjButton ref={cancelRef} icon={<Icon name="cross" size={20} />} label={dict.libCancel} onClick={back} />
           <PrimaryAction
-            ref={primaryRef}
             tone="danger"
             lead={
               <Disc>

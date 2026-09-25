@@ -6,6 +6,8 @@ export const library = {
   libCountFree: '{n} из {max}',
   /** «37 песен · PASS» — no limit with NEON PASS. */
   libCountPass: '{n} {noun} · PASS',
+  /** More songs than free slots (kept after NEON PASS ended): «5 песен · мест: 3». */
+  libCountOver: '{n} {noun} · мест: {max}',
   libSongsNoun: ['песня', 'песни', 'песен'],
   libSearchPlaceholder: 'Название или исполнитель',
   libSearchAria: 'Поиск по песням',
@@ -34,9 +36,16 @@ export const library = {
   libDeleteSub: 'рекорд пропадёт',
   libCancel: 'Отмена',
   libClose: 'Закрыть',
+  /** Rename or delete failed in the storage (the sheet stays, the tap can be repeated). */
+  libSaveFailed: 'Не получилось — попробуй ещё раз',
+  /** The song was deleted in another tab meanwhile. */
+  libSongGone: 'Песня уже удалена',
   // --- the free slots ---
   libLimitTitle: 'Три песни уже твои!',
   libLimitLine: 'Чтобы добавить новую, удали одну из них',
+  /** The same sheet when there are more songs than slots (kept after NEON PASS ended). */
+  libLimitFullTitle: 'Все места заняты',
+  libLimitOverLine: 'Без NEON PASS мест три — удали лишние',
   libLimitPass: 'С NEON PASS — без лимита (скоро)',
   libLimitFree: 'Освободить место',
   libLimitFreeSub: 'выбери песню для удаления',
@@ -49,6 +58,8 @@ export const library = {
   libSavedTag: 'Сохранено',
   libAlreadyTag: 'Уже в твоей музыке',
   libOnceTag: 'Без сохранения',
+  /** After a song is saved the file button picks another file (the saved one stays): not «Заменить». */
+  libOtherFile: 'Ещё файл',
   libNoRoom: 'Места мало — удали старые песни',
   libNoStorage: 'Сохранение недоступно',
 } as const;
