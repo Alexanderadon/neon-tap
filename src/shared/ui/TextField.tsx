@@ -9,7 +9,7 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'className'> &
 /**
  * TextField 48 (screens-onboard notes): dark 3D face, 2 px underside, 15/700 text, placeholder w30;
  * focus = 2 px cyan inset ring. A plain `<input>` so the phone keyboard, autocomplete and
- * `enterKeyHint` all work as usual. Shared by the welcome screen, the nickname dialog and the settings panel.
+ * `enterKeyHint` all work as usual. Shared by the nickname dialog and the settings panel.
  */
 export const TextField = forwardRef<HTMLInputElement, Props>(function TextField({ className, ...rest }, ref) {
   return <input ref={ref} type="text" className={['field', className].filter(Boolean).join(' ')} {...rest} />;

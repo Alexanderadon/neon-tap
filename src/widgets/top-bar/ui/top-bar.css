@@ -12,14 +12,6 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.topbar-title {
-  justify-content: center;
-}
-.topbar-brand {
-  font: var(--t-20);
-  letter-spacing: var(--track-title);
-  color: #fff;
-}
 .topbar-who {
   display: flex;
   align-items: center;

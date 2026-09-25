@@ -13,7 +13,7 @@ interface Props {
   className?: string;
 }
 
-/** Progress segments 8 px, r 999, gap 4, `flex: 1` each (chapter row, first-launch steps, goal tiers). */
+/** Progress segments 8 px, r 999, gap 4, `flex: 1` each (chapter row, tutorial steps, goal tiers). */
 export function Segments({ states, onSelect, labels, className, ...rest }: Props) {
   const cls = ['segs', className].filter(Boolean).join(' ');
   const segClass = (s: SegmentState) => (s === 'done' ? 'seg seg-done' : s === 'current' ? 'seg seg-cur' : 'seg');

@@ -23,7 +23,7 @@ interface Props {
 }
 
 /**
- * The nickname field + Save, shared by the welcome screen and the result-screen dialog: a 48 px
+ * The nickname field + Save inside NicknameDialog (result, records, duels, profile): a 48 px
  * text field in the dark object material (cyan rim when focused), the hint, the 64 px primary
  * «СОХРАНИТЬ» (dark and still while the field is empty, cyan and breathing once a name is in).
  */

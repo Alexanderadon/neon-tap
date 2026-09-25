@@ -3,7 +3,7 @@ import type { OfferKind } from '@/entities/offers';
 export interface AutoOfferInput {
   /** `store.available()`. */
   available: boolean;
-  /** A first-launch step (name, calibration, tutorial) is still pending — nothing pops over it. */
+  /** The first-launch tutorial is still pending — nothing pops over it. */
   firstLaunchPending: boolean;
   /** The 48-hour window is open right now. */
   limitedActive: boolean;

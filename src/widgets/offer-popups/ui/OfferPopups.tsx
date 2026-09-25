@@ -57,7 +57,7 @@ function reducedMotion(): boolean {
 /**
  * The host of the offer popups: one sheet at a time, the success toast and the crystals' flight
  * into the wallet chip. Nothing is offered when the store is unavailable, and the automatic
- * popups never rise over the first-launch flow (name → calibration → tutorial).
+ * popups never rise over the first-launch tutorial.
  */
 export function OfferPopups({ auto = false, request, onRequestHandled, crystalsRef, onWalletTick }: Props) {
   const [active, setActive] = useState<OfferKind | null>(null);

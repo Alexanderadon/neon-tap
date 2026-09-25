@@ -172,8 +172,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         const song = audioBuffer ?? loadSong(`${import.meta.env.BASE_URL}${chart.audio}`, { onProgress: (f) => !cancelled && setLoadPct(Math.round(f * 100)) });
         const [buffer] = await Promise.all([song, preloadSfx(), voice.preload()]);
         if (cancelled || !canvasRef.current) return;
-        // Sound needs one tap on the page. A run reached without any (a first-launch step that opened on
-        // its own) waits for it instead of starting silent with a frozen clock.
+        // Sound needs one tap on the page. A run reached without any (the first-launch tutorial opens
+        // on its own) waits for it instead of starting silent with a frozen clock.
         if (audioEngine.context?.state !== 'running') {
           setStatus('tap');
           await waitForAudioUnlock();
