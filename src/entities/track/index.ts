@@ -3,6 +3,7 @@ export type { TrackMeta } from './model/types';
 export { CHAPTERS, CHAPTER_SIZE, chapterAt, chapterTitle, chaptersOf } from './model/chapters';
 export type { Chapter } from './model/chapters';
 export { loadChart } from './api/loadChart';
+export { preloadCover, prioritizeCovers, idsAround } from './model/coverPreload';
 export { TrackCover } from './ui/TrackCover';
 export type { TrackCoverProps } from './ui/TrackCover';
 export { coverImage, coverSpec, trackTint, COVER_PALETTES, DEFAULT_GENRE, isGenre } from './model/cover';

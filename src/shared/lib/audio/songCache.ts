@@ -1,0 +1,68 @@
+import { audioEngine } from './AudioEngine';
+
+/** Decoded songs are big (about 10 MB of memory per stereo minute): only the latest one is kept. */
+const KEEP = 1;
+/** The download is most of the wait; decoding takes the last stretch of the bar. */
+const DOWNLOAD_SHARE = 0.95;
+
+interface Pending {
+  promise: Promise<AudioBuffer>;
+  ctrl: AbortController;
+  background: boolean;
+  listeners: Set<(fraction: number) => void>;
+}
+
+const decoded = new Map<string, AudioBuffer>();
+const pending = new Map<string, Pending>();
+
+export interface SongLoadOptions {
+  /** A load nobody waits for (the menu radio): the first foreground load of another song cancels it. */
+  background?: boolean;
+  /** 0..1 while the song downloads and decodes. */
+  onProgress?: (fraction: number) => void;
+}
+
+/**
+ * A song as a decoded buffer, shared by the menu radio, the shop preview and the game — so the song
+ * the radio is playing is already decoded when PLAY is pressed, and one song is never downloaded
+ * twice at once. A foreground load cancels background loads of other songs: on a phone they would
+ * share the bandwidth with the song the player is waiting for.
+ */
+export function loadSong(url: string, opts: SongLoadOptions = {}): Promise<AudioBuffer> {
+  const hit = decoded.get(url);
+  if (hit) {
+    opts.onProgress?.(1);
+    return Promise.resolve(hit);
+  }
+  if (!opts.background) {
+    for (const [other, p] of pending) {
+      if (other !== url && p.background) {
+        p.ctrl.abort();
+        pending.delete(other);
+      }
+    }
+  }
+  let entry = pending.get(url);
+  if (!entry) {
+    const ctrl = new AbortController();
+    const listeners = new Set<(fraction: number) => void>();
+    const tell = (f: number) => listeners.forEach((l) => l(f));
+    const promise: Promise<AudioBuffer> = audioEngine
+      .loadUrl(url, { signal: ctrl.signal, onProgress: (loaded, total) => total > 0 && tell((loaded / total) * DOWNLOAD_SHARE) })
+      .then((buffer) => {
+        decoded.set(url, buffer);
+        while (decoded.size > KEEP) decoded.delete(decoded.keys().next().value!);
+        tell(1);
+        return buffer;
+      })
+      .finally(() => {
+        if (pending.get(url)?.promise === promise) pending.delete(url);
+      });
+    entry = { promise, ctrl, background: opts.background === true, listeners };
+    pending.set(url, entry);
+  } else if (!opts.background) {
+    entry.background = false;
+  }
+  if (opts.onProgress) entry.listeners.add(opts.onProgress);
+  return entry.promise;
+}

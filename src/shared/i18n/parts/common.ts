@@ -14,6 +14,8 @@ export const common = {
   restart: 'Заново',
   exit: 'Выйти',
   loading: 'Загрузка…',
+  /** The game's loading tag while the song downloads. */
+  loadingPercent: 'Загрузка {n} %',
   totalStars: 'Всего звёзд',
   tagLanes: 'смена полос',
   tagCircles: 'круги',
@@ -52,7 +54,6 @@ export const common = {
   },
   failed: 'ПРОВАЛ',
   failedHint: 'сердца кончились — попробуй ещё раз',
-  audioGateTitle: 'Включить звук',
   licenses: 'Лицензии',
   getReady: 'Приготовься',
   paused: 'Пауза',

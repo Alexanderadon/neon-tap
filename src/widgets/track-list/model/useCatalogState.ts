@@ -31,26 +31,29 @@ export interface CatalogState {
 /** Everything the hero and the reel share: the save, the star total, the daily track, unlocks. */
 export function useCatalogState(): CatalogState {
   const save = useProgress((s) => s);
-  return useMemo(() => {
-    const trackStars = totalStars(save, TRACK_IDS);
-    const bonus = bonusStars(save);
-    const stars = trackStars + bonus;
-    const today = localDateString();
-    const dailyId = dailyTrackId(today, TRACK_IDS);
-    const list = unlockStates(TRACK_IDS, { stars, dailyId, unlockAll: unlockAllActive(), purchased: save.purchased, premium: PREMIUM_IDS });
-    const unlocks = new Map(list.map((u) => [u.id, u]));
-    return {
-      save,
-      stars,
-      trackStars,
-      bonus,
-      maxTrackStars: CATALOG.length * 3,
-      dailyId,
-      dailyDone: isDailyDone(save.daily, today),
-      streak: save.daily.streak,
-      unlocks,
-    };
-  }, [save]);
+  return useMemo(() => buildCatalogState(save), [save]);
+}
+
+/** The catalog state of a save — the hook's value, also for code outside React (the boot loader). */
+export function buildCatalogState(save: SaveData): CatalogState {
+  const trackStars = totalStars(save, TRACK_IDS);
+  const bonus = bonusStars(save);
+  const stars = trackStars + bonus;
+  const today = localDateString();
+  const dailyId = dailyTrackId(today, TRACK_IDS);
+  const list = unlockStates(TRACK_IDS, { stars, dailyId, unlockAll: unlockAllActive(), purchased: save.purchased, premium: PREMIUM_IDS });
+  const unlocks = new Map(list.map((u) => [u.id, u]));
+  return {
+    save,
+    stars,
+    trackStars,
+    bonus,
+    maxTrackStars: CATALOG.length * 3,
+    dailyId,
+    dailyDone: isDailyDone(save.daily, today),
+    streak: save.daily.streak,
+    unlocks,
+  };
 }
 
 export interface LockState {

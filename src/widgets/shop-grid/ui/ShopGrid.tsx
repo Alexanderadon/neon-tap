@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { ads, stubAds } from '@/shared/lib/ads';
-import { audioEngine, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
+import { audioEngine, loadSong, sfxGem, sfxMilestone, sfxUi } from '@/shared/lib/audio';
 import { navigate } from '@/shared/lib/router';
 import { centreOf } from '@/shared/lib/viewport';
 import type { Genre } from '@/shared/types/chart';
@@ -194,7 +194,7 @@ export function ShopGrid({ crystalsRef, onSceneTrack, onWalletTick, onBack, onRe
       setPreviewing(track.id);
       try {
         await audioEngine.ensureContext();
-        const buffer = await audioEngine.loadUrl(`${import.meta.env.BASE_URL}music/${track.id}.mp3`);
+        const buffer = await loadSong(`${import.meta.env.BASE_URL}music/${track.id}.mp3`);
         if (token !== previewToken.current) return;
         audioEngine.preview(buffer, buffer.duration * PREVIEW_AT, PREVIEW_SEC, () => {
           if (token === previewToken.current) setPreviewing(null);

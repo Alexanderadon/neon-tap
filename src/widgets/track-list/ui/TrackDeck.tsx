@@ -3,7 +3,7 @@ import { dict, fmt } from '@/shared/i18n';
 import { audioEngine, sfxSwipe, sfxUi } from '@/shared/lib/audio';
 import { velocityOf } from '@/shared/lib/input/gestures';
 import { Chip, CrystalIcon, Difficulty, Icon, Segments, Stars, Tag, type SegmentState } from '@/shared/ui';
-import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, trackTint, type TrackMeta } from '@/entities/track';
+import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, idsAround, prioritizeCovers, trackTint, type TrackMeta } from '@/entities/track';
 import { starsForTrack } from '@/entities/progress';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
 import { writeDeckIndex } from '../model/deckPosition';
@@ -94,6 +94,11 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
     [tick],
   );
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  // Keep the pictures ahead of the swipe: the nearest cards first, then the rest of the deck.
+  useEffect(() => {
+    const ids = CATALOG.map((t) => t.id);
+    prioritizeCovers(idsAround(ids, index, ids.length));
+  }, [index]);
   // New cards mount (the window slid): place them before the browser paints.
   useLayoutEffect(paint, [index, paint]);
   // The page moved the index itself (not via a swipe): fly there.

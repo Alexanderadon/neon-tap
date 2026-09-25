@@ -14,7 +14,7 @@
 | Мультитач | `shared/lib/input/PointerLanes.ts` (+ тесты), `Input.ts` | Чистый модуль «указатель → полоса»: два пальца на разных полосах независимы; два пальца на одной полосе — одно нажатие, отпускание по последнему; слайд (`pointermove` в соседнюю зону) = release старой + press новой с `viaMove`; `pointercancel` == `pointerup`; палец, опустившийся мимо поля, игнорируется |
 | Ориентация | `shared/lib/viewport/orientation.ts` (`needsRotateHint`), `widgets/orientation-hint` | Оверлей «Поверни телефон» на тач-устройстве в ландшафте при высоте `< 500 px`; игра при этом ставится на паузу (`GameCanvas.onResize`); кнопка «Всё равно продолжить». Десктоп и планшеты (высота ≥ 500) не затрагиваются |
 | Экономный режим | `Renderer.fxLevel` / `setFxLevel()`, `ParticlePool.emitScale`, `shared/lib/render/LowFpsDetector.ts`, `settingsStore.fxMode`, `SettingsPanel` | `low`: частиц вдвое меньше, без искр холдов, без басового зума и ударных волн порогов комбо. Настройка `Экономный режим` = авто / вкл / выкл (`fxMode`, дефолт `auto`, санитизируется). `auto`: если средний FPS `< 45` в течение 3 с после отсчёта — переключение в `low` один раз, строка `fx low·auto` в дебаг-оверлее и `console.info` |
-| Аудио iOS/Android | `shared/lib/audio/unlock.ts`, `AudioEngine.ensureContext`, `widgets/audio-gate`, `GameCanvas.onVisibility` | см. §3 |
+| Аудио iOS/Android | `shared/lib/audio/unlock.ts` (`installGestureUnlock`), `AudioEngine.ensureContext`, `GameCanvas.onVisibility` | см. §3 |
 | PWA | `public/manifest.webmanifest`, `public/icons/*`, `index.html` | `display: standalone`, `orientation: portrait`, `theme_color/background_color #05060a`, SVG-иконка + PNG 192/512/maskable-512 + apple-touch-icon 180 (PNG сгенерированы из того же дизайна скриптом на чистом Node, без зависимостей); `<link rel="manifest">`, `theme-color`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style=black-translucent`. Service worker, установка и офлайн добавлены потоком «pwa» (`public/sw.js`, `widgets/install-banner`, `widgets/update-toast`, `docs/plans/10-pwa.md`) |
 
 Тесты: `PointerLanes.test.ts` (10), `LowFpsDetector.test.ts` (6), `orientation.test.ts` (5),
@@ -43,16 +43,16 @@
 
 ## 3. Аудио на iOS / Android — код-ревью
 
-Цепочка разблокировки (`unlockAudio`, вызывается синхронно из клика по гейту или `keydown`):
+Цепочка разблокировки (`unlockAudio`, вызывается синхронно из первого касания или `keydown` — `installGestureUnlock`):
 
-1. `audioEngine.ensureContext()` — создаёт `AudioContext({latencyHint: 'interactive'})` и вызывает `resume()` **внутри жеста**. `resume()` обёрнут в `try/catch`: на iOS в состоянии `interrupted` и при автоплей-политике Chrome он может отклониться — это не фатально, гейт просто остаётся.
+1. `audioEngine.ensureContext()` — создаёт `AudioContext({latencyHint: 'interactive'})` и вызывает `resume()` **внутри жеста**. `resume()` обёрнут в `try/catch`: на iOS в состоянии `interrupted` и при автоплей-политике Chrome он может отклониться — это не фатально: `ensureContext` ждёт `resume()` не дольше 400 мс, следующее касание возобновит контекст.
 2. Одно-сэмпловый `BufferSource` (классический анлок iOS Safari).
 3. Зацикленный тихий `<audio>` (WAV data-URI, `playsinline`) — переводит аудио-сессию iOS в режим `playback`, чтобы Web Audio было слышно при включённом боковом переключателе «без звука».
 4. Подписка на `statechange`, `visibilitychange`, `pageshow`, `focus` → `syncAudioUnlockState()`: стор `audioUnlockStore.unlocked = ctx.state === 'running'`. iOS не всегда шлёт `statechange` для нестандартного состояния `interrupted` (звонок, Siri, переключение приложений), поэтому состояние перечитывается при каждом возврате на страницу.
-5. `AudioGate` рендерится, пока `unlocked == false` → после прерывания гейт **появляется снова**, следующий тап снова проходит шаги 1–3.
-6. `GameCanvas.onVisibility`: при уходе — `session.pause()`; при возврате — `ensureContext()` (попытка тихо возобновить; если браузер требует жест — гейт уже виден).
+5. Экрана звука нет: `installGestureUnlock` слушает касания на `window` (фаза захвата) и проходит шаги 1–3 на первом касании и на первом касании после прерывания; забег без единого касания ждёт его с ярлыком «Коснись экрана».
+6. `GameCanvas.onVisibility`: при уходе — `session.pause()`; при возврате — `ensureContext()` (попытка тихо возобновить; если браузер требует жест — его даст касание «Продолжить» в паузе).
 
-Метроном калибровки и SFX после анлока: `CalibrationMeter.start()` вызывает `ensureContext()` и `preloadSfx()` до планирования кликов; `sfxClick(when)` планирует сэмпл `metronome` / `metronome-accent` на аудиочасах через `SampleBank` в `sfxGain → master → destination`; если сэмпл не загрузился — синтезированный фолбэк `fallbackTone` на тех же часах. Гейт стоит в `App` поверх всех экранов, так что на экран калибровки нельзя попасть с неразблокированным контекстом; громкости (`setVolumes`) применяются в гейте сразу после анлока.
+Метроном калибровки и SFX после анлока: `CalibrationMeter.start()` вызывает `ensureContext()` и `preloadSfx()` до планирования кликов; `sfxClick(when)` планирует сэмпл `metronome` / `metronome-accent` на аудиочасах через `SampleBank` в `sfxGain → master → destination`; если сэмпл не загрузился — синтезированный фолбэк `fallbackTone` на тех же часах. Калибровка запускается кнопкой (это и есть жест); громкости (`setVolumes`) и голос применяются при загрузке (`src/app/boot.ts`), до любого касания.
 
 Что **нельзя** проверить без устройства — см. §4.
 

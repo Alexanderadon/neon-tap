@@ -12,7 +12,6 @@ import { DuelPage } from '@/pages/duel';
 import { duelIdFromUrl } from '@/shared/api/duels';
 import { ShopPage } from '@/pages/shop';
 import { WelcomePage } from '@/pages/welcome';
-import { AudioGate } from '@/widgets/audio-gate';
 import { OrientationHint } from '@/widgets/orientation-hint';
 import { InstallBanner } from '@/widgets/install-banner';
 import { UpdateToast } from '@/widgets/update-toast';
@@ -65,9 +64,9 @@ export function App() {
       page = <MenuPage key={key} />;
   }
 
-  // The audio gate sits above every screen: the first tap unlocks sound (mobile autoplay policy)
-  // and it comes back whenever the AudioContext gets suspended. PWA banners never cover the
-  // play field: the install banner lives on the menu, the update toast hides during a run.
+  // Sound needs no screen of its own: the first tap anywhere unlocks it (src/app/main.tsx). PWA
+  // banners never cover the play field: the install banner lives on the menu, the update toast
+  // hides during a run.
   const playing = screen === 'game' || screen === 'tutorial';
   return (
     <>
@@ -75,7 +74,6 @@ export function App() {
       <OrientationHint />
       <InstallBanner active={screen === 'menu'} />
       <UpdateToast suppressed={playing} />
-      <AudioGate />
     </>
   );
 }

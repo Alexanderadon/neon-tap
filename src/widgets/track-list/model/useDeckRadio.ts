@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { audioEngine, useAudioUnlocked } from '@/shared/lib/audio';
+import { audioEngine, loadSong, useAudioUnlocked } from '@/shared/lib/audio';
 
 /** The radio's loudness relative to the game's music volume. */
 export const RADIO_LEVEL = 0.12;
@@ -7,21 +7,9 @@ export const RADIO_LEVEL = 0.12;
 const RADIO_AT = 1 / 3;
 /** The deck must rest on a card this long before its song starts (a flick across cards plays nothing). */
 const SETTLE_MS = 450;
-/** Decoded songs kept for flipping back and forth. */
-const KEEP = 4;
-
-const buffers = new Map<string, AudioBuffer>();
-async function load(id: string): Promise<AudioBuffer> {
-  const hit = buffers.get(id);
-  if (hit) {
-    buffers.delete(id);
-    buffers.set(id, hit);
-    return hit;
-  }
-  const buffer = await audioEngine.loadUrl(`${import.meta.env.BASE_URL}music/${id}.mp3`);
-  buffers.set(id, buffer);
-  while (buffers.size > KEEP) buffers.delete(buffers.keys().next().value!);
-  return buffer;
+/** The focused card's song through the shared cache: when PLAY is pressed on it, the game finds it decoded. */
+function load(id: string): Promise<AudioBuffer> {
+  return loadSong(`${import.meta.env.BASE_URL}music/${id}.mp3`, { background: true });
 }
 
 /**

@@ -1,6 +1,6 @@
-import { createElement, useMemo, type CSSProperties, type ReactElement } from 'react';
+import { createElement, useMemo, useState, type CSSProperties, type ReactElement } from 'react';
 import type { Genre } from '@/shared/types/chart';
-import { coverImage, coverSpec, type CoverShape } from '../model/cover';
+import { coverImage, coverSpec, trackTint, type CoverShape } from '../model/cover';
 import './track-cover.css';
 
 export interface TrackCoverProps {
@@ -20,18 +20,29 @@ export interface TrackCoverProps {
  * same `id` + `genre` → identical markup, so it can be shown on the track card and on the result
  * screen. Renders fine from 48 px to 240 px.
  */
+/** Pictures that failed to load this session: their boxes show the procedural art instead. */
+const broken = new Set<string>();
+
 export function TrackCover({ id, genre, size, title, className }: TrackCoverProps): ReactElement {
   const spec = useMemo(() => coverSpec(id, genre), [id, genre]);
   const gid = `cg-${spec.seed.toString(36)}`;
   const style: CSSProperties | undefined = size !== undefined ? { width: size, height: size } : undefined;
-  const picture = coverImage(id);
+  const [, setFailures] = useState(0);
+  const picture = broken.has(id) ? null : coverImage(id);
   if (picture) {
+    // Until the picture paints, the box shows the track's colour fading into the page — never an empty black card.
+    const tint = trackTint(id, genre);
+    const backdrop = /^#[0-9a-f]{6}$/i.test(tint) ? `linear-gradient(160deg, ${tint}59, #05060a 78%)` : undefined;
     return (
       <img
         src={picture}
         alt={title ?? id}
         className={className ? `track-cover track-cover-img ${className}` : 'track-cover track-cover-img'}
-        style={style}
+        style={backdrop ? { ...style, background: backdrop } : style}
+        onError={() => {
+          broken.add(id);
+          setFailures((n) => n + 1);
+        }}
         data-genre={spec.genre}
         draggable={false}
         decoding="async"

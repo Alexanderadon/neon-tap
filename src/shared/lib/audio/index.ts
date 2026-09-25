@@ -8,4 +8,6 @@ export type { BandLayout } from './spectrum';
 export { SampleBank } from './SampleBank';
 export type { PlayOptions } from './SampleBank';
 export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxGem, sfxTick, sfxRank, sfxUi, sfxLanes, sfxSwipe } from './sfx';
-export { unlockAudio, useAudioUnlocked, audioUnlockStore } from './unlock';
+export { unlockAudio, useAudioUnlocked, audioUnlockStore, installGestureUnlock, waitForAudioUnlock } from './unlock';
+export { loadSong } from './songCache';
+export type { SongLoadOptions } from './songCache';
