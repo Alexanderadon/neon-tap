@@ -1,6 +1,8 @@
 /*
  * SongDropZone (SongDropZone.tsx): the main screen's skeleton under the top bar — sub row (tag +
- * short text), a 420 px stage with one card 292 × 420, the bottom action zone. One 335 px column.
+ * short text), a stage with one 292 × 420 card, the bottom action zone. One 335 px column. Like the
+ * deck, the card shrinks (ratio kept) on short viewports so the action zone stays in sight; below
+ * the stage's minimum the frame scrolls.
  */
 .dz {
   display: flex;
@@ -14,26 +16,52 @@
 }
 .dz-stage {
   position: relative;
+  display: flex;
+  justify-content: center;
   width: 100%;
-  height: 420px;
+  flex: 1 1 0;
+  min-height: 240px;
+  max-height: 420px;
   margin-top: 32px;
-  flex: none;
 }
 .dz-card {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 292px;
-  height: 420px;
-  margin-left: -146px;
+  position: relative;
+  display: block;
+  flex: none;
+  height: min(100%, calc(78vw * 420 / 292));
+  aspect-ratio: 292 / 420;
+  padding: 0;
+  border: 0;
   border-radius: var(--r-24);
   overflow: hidden;
   background: var(--panel);
   box-shadow: var(--sh-card);
+  font: inherit;
+  color: inherit;
+  text-align: left;
 }
 /* The placeholder: a plain dark face with a 96 px note in the middle. */
 .dz-card-plain {
   background: linear-gradient(180deg, #0b0d16, #23252f);
+}
+/* The placeholder is a button (the file picker): it presses in like an object and shows keyboard focus. */
+.dz-card-pick {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s var(--ease-out);
+}
+.dz-card-pick:active {
+  transform: scale(0.98);
+}
+.dz-card-pick:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dz-card-pick {
+    transition: none;
+  }
 }
 .dz-card-ready {
   box-shadow:
@@ -47,13 +75,14 @@
   place-items: center;
   color: var(--w30);
 }
+/* The cover is square; the portrait card shows it as tall as the card and crops the sides. */
 .dz-art {
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 50%;
-  width: 420px;
-  height: 420px;
-  margin-left: -210px;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
 }
 .dz-art > svg {
   width: 100%;
@@ -81,6 +110,7 @@
   z-index: 2;
 }
 .dz-title {
+  display: block;
   margin: 0 0 8px;
   font: var(--t-20);
   letter-spacing: var(--track-title);

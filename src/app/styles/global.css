@@ -100,24 +100,27 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+  /* The visible viewport: src/shared/lib/viewport/appViewport.ts writes the measured px on <html>; these hold until it runs. */
+  --app-top: 0px;
+  --app-h: 100vh;
+}
+@supports (height: 100dvh) {
+  :root {
+    --app-h: 100dvh;
+  }
 }
 * {
   box-sizing: border-box;
 }
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-}
 html {
+  height: 100%;
   /* The page itself never scrolls (screens scroll inside .screen): kills pull-to-refresh and rubber-banding. */
   overflow: hidden;
   overscroll-behavior: none;
 }
 body {
-  height: 100vh;
-  height: 100dvh;
+  height: var(--app-h);
+  margin: 0;
   overflow: hidden;
   background: var(--c-bg);
   color: #fff;
@@ -134,9 +137,18 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-touch-callout: none;
 }
+/*
+ * #root is the visible viewport, and `contain: layout` makes it the containing block of every
+ * `position: fixed` layer inside (screens, frames, sheets, dialogs, toasts): an `inset: 0` layer
+ * ends where an in-app browser's toolbar begins, so each screen's action zone stays in sight.
+ */
 #root {
-  height: 100vh;
-  height: 100dvh;
+  position: fixed;
+  top: var(--app-top);
+  left: 0;
+  right: 0;
+  height: var(--app-h);
+  contain: layout;
 }
 button,
 [role='button'],

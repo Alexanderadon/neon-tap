@@ -1,7 +1,8 @@
 /*
  * Frame (Frame.tsx): the screen skeleton (spec §1.4) — one 335 column in 20 px gutters, the top
  * bar at safe-top + 8, the sub-header 24 at +16, the body from +32, the action zone (trio 48 · 16 ·
- * primary 64) at safe-bottom + 24. The frame scrolls on short viewports.
+ * primary 64) at safe-bottom + 24. The frame scrolls on short viewports. `inset: 0` is the visible
+ * viewport: #root is the containing block of fixed layers (global.css), kept clear of a browser's toolbar.
  */
 .frame {
   position: fixed;
