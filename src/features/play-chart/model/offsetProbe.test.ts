@@ -81,6 +81,22 @@ describe('OffsetProbe', () => {
     expect(probe.settled()).toBeCloseTo(0.2, 3);
   });
 
+  it('in a run, measures a neighbour from its end: a roll drumming up to 0.2 s before a tap, a slide arriving in its lane', () => {
+    // A roll on lane 0 from 10 s to 12 s (its taps run to its end), then a tap 0.2 s later: a roll tap there is no sample for it.
+    const roll: ProbeNote = { time: 10, lane: 0, lanes: 4, kind: 'roll', duration: 2, extra: 6 };
+    const afterRoll: ProbeNote = { time: 12.2, lane: 0, lanes: 4, kind: null };
+    // A slide from lane 2 into lane 3 over 20–21 s, and a tap on lane 3 at 21.2 s: the arriving press is the slide's.
+    const slide: ProbeNote = { time: 20, lane: 2, lanes: 4, kind: 'slide', duration: 1, extra: 3 };
+    const afterSlide: ProbeNote = { time: 21.2, lane: 3, lanes: 4, kind: null };
+    // Far from everything: counts.
+    const lone: ProbeNote = { time: 30, lane: 3, lanes: 4, kind: null };
+    const probe = new OffsetProbe([roll, afterRoll, slide, afterSlide, lone], 'all-lanes');
+    expect(probe.press(0, 12.05, 1, 0)).toBe(false);
+    expect(probe.press(3, 21.0, 1, 0)).toBe(false);
+    expect(probe.press(3, 30.2, 1, 0)).toBe(true);
+    expect(probe.count).toBe(1);
+  });
+
   it('lets the same notes give samples again on the next pass', () => {
     const notes = taps(4, 1);
     const probe = new OffsetProbe(notes, 'single-lane');

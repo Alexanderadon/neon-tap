@@ -106,7 +106,7 @@ export function CalibrationMeter({ onDone }: Props) {
 
   const save = () => {
     sfxUi();
-    updateSettings({ audioOffsetMs: offsetMs, calibrated: true, calibrationVersion: CALIBRATION_VERSION });
+    updateSettings({ audioOffsetMs: offsetMs, calibrated: true, offsetManual: true, calibrationVersion: CALIBRATION_VERSION });
     onDone();
   };
   const skip = () => {
