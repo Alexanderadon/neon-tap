@@ -23,18 +23,24 @@ interface Props {
   progress: number;
   /** Finger hints instead of key hints. */
   touch: boolean;
+  /**
+   * `tutorial` (default): right under the HUD chip line — the tutorial has no state row. `run`: a first-meeting card
+   * in a run sits under the state row (hearts, level stars, crystals, the slow bar), which must stay in sight.
+   */
+  placement?: 'tutorial' | 'run';
 }
 
 /**
  * The caption card (screens-game.html, frames 12–13) — the tutorial's steps and, in a run, the first
- * meeting of a mechanic: a 335 × 112 Panel under the HUD chip line — a 56 px disc with the mechanic's
- * icon, the title 20/700 and the hint 13, and the bar 8 px in the gold face; the tag rides on the
- * panel's top edge. No buttons. Pointer events pass through, so the canvas keeps receiving taps.
+ * meeting of a mechanic: a 335 × 112 Panel under the HUD chip line (in a run, under the state row) — a 56 px
+ * disc with the mechanic's icon, the title 20/700 and the hint 13, and the bar 8 px in the gold face; the tag
+ * rides on the panel's top edge. No buttons. Pointer events pass through, so the canvas keeps receiving taps.
  */
-export function CaptionCard({ step, tag, gold = false, progress, touch }: Props) {
-  if (!step) return <div className="tut" aria-live="polite" />;
+export function CaptionCard({ step, tag, gold = false, progress, touch, placement = 'tutorial' }: Props) {
+  const cls = placement === 'run' ? 'tut tut-run' : 'tut';
+  if (!step) return <div className={cls} aria-live="polite" />;
   return (
-    <div className="tut" aria-live="polite">
+    <div className={cls} aria-live="polite">
       <div className="tut-wrap" key={step.id}>
         <div className="tut-step">{gold ? <Tag className="tut-step-great">{tag}</Tag> : <Tag variant="dark">{tag}</Tag>}</div>
         <Panel className="tut-card" aria-label={step.title}>

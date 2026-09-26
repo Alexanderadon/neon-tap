@@ -131,7 +131,7 @@ export interface FrameState {
   start: number;
   /** Real seconds left to the note that ends a long empty stretch while its «3 · 2 · 1» runs, else -1. */
   gapLeft: number;
-  /** A caption card (DOM) covers the state row: the combo steps down to its tutorial place under the card. */
+  /** A first-meeting card (DOM) sits under the state row: the combo steps down under the card. */
   caption: boolean;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
@@ -220,6 +220,8 @@ const HUD_ROW2_Y = 66;
 const HUD_SLOW_TOP = 86;
 const HUD_COMBO_TOP = 110;
 const HUD_COMBO_TOP_TUTORIAL = 206;
+/** A first-meeting card in a run sits 42 px lower than the tutorial's (under the state row): the combo steps down with it. */
+const HUD_COMBO_TOP_MEET = HUD_COMBO_TOP_TUTORIAL + 42;
 const HUD_MILESTONE_TOP = 182;
 const HUD_LANES_TOP = 252;
 const HUD_COUNT_CENTER = 300;
@@ -1006,9 +1008,9 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  /** Top of the 64 px combo block: under the state row (or, in the tutorial, under the caption card). */
-  private comboTop(tutorial: boolean): number {
-    return this.safeTop + (tutorial ? HUD_COMBO_TOP_TUTORIAL : HUD_COMBO_TOP);
+  /** Top of the 64 px combo block: under the state row — in the tutorial under its caption card, in a run under a first-meeting card. */
+  private comboTop(tutorial: boolean, caption: boolean): number {
+    return this.safeTop + (tutorial ? HUD_COMBO_TOP_TUTORIAL : caption ? HUD_COMBO_TOP_MEET : HUD_COMBO_TOP);
   }
 
   /** Centre of the combo number (the break burst's origin). */
@@ -2171,7 +2173,7 @@ export class Renderer {
     }
 
     // Combo: 44/900 in the score material (white; gold only while it burns, from COMBO_HEAT_AT[0]), «КОМБО» 11 under it. Pop 1 → 1.1 → 1 on a hit; on a break the number ticks out.
-    const comboTop = this.comboTop(tutorial || s.caption);
+    const comboTop = this.comboTop(tutorial, s.caption);
     if (s.combo >= 2 && !this.starShow) {
       const pop = s.comboAge < 0.35 ? Math.sin((Math.PI * s.comboAge) / 0.35) : 0;
       // A milestone: the number leaps to 1.6× and settles with a bounce.

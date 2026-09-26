@@ -482,7 +482,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       )}
       {hudVisible && overlay}
       {hudVisible && meet && !tutorial && (
-        <CaptionCard step={meetCard(meet)} tag={dict.meetTag} progress={meetProgress(meet, meetTime)} touch={touchRef.current} />
+        <CaptionCard step={meetCard(meet)} tag={dict.meetTag} progress={meetProgress(meet, meetTime)} touch={touchRef.current} placement="run" />
       )}
 
       {(status === 'loading' || status === 'tap') &&
