@@ -310,3 +310,43 @@ describe('NoteManager', () => {
     });
   });
 });
+
+describe('NoteManager.rearmFrom (a tutorial step replays)', () => {
+  it('arms every note from the rewind point again and puts the open ones before it away unjudged', () => {
+    const { nm, events } = make([
+      [1, 0],
+      [2, 0, 3],
+      [5, 0],
+      [6, 1],
+    ]);
+    expect(nm.press(0, 1)).toBe('perfect');
+    expect(nm.press(0, 2)).toBe('perfect'); // the hold is running
+    nm.update(7, held); // the hold ends, 5 and 6 go by missed
+    expect(nm.pool[2].state).toBe(NoteState.Missed);
+    const before = events.length;
+    nm.rearmFrom(4);
+    expect(nm.pool[0].state).toBe(NoteState.Hit);
+    expect([nm.pool[2].state, nm.pool[3].state]).toEqual([NoteState.Pending, NoteState.Pending]);
+    expect(nm.pool[2].judgement).toBeNull();
+    expect(nm.firstActive).toBe(2);
+    // The replayed notes are judged afresh; nothing was emitted for the rewind itself.
+    expect(events.length).toBe(before);
+    expect(nm.press(0, 5.02)).toBe('perfect');
+    expect(nm.press(1, 6)).toBe('perfect');
+  });
+
+  it('closes a hold still running across the rewind point without a verdict', () => {
+    const { nm, events } = make([
+      [1, 0, 4],
+      [8, 0],
+    ]);
+    nm.press(0, 1);
+    nm.update(2, held);
+    expect(nm.pool[0].state).toBe(NoteState.Holding);
+    nm.rearmFrom(1.5);
+    nm.update(6, notHeld);
+    expect(nm.pool[0].state).toBe(NoteState.Released);
+    expect(events.filter((e) => e.tail)).toHaveLength(0);
+    expect(nm.press(0, 8)).toBe('perfect');
+  });
+});

@@ -193,6 +193,36 @@ export class NoteManager {
   }
 
   /**
+   * Rewind (a tutorial step plays once more): every note from `songTime` on is pending again, the ones
+   * before it that were still open are put away unjudged, and the lane cursors restart at the first note
+   * from there. Crystals stay where they were.
+   */
+  rearmFrom(songTime: number): void {
+    let first = this.count;
+    for (let i = 0; i < this.count; i++) {
+      const n = this.pool[i];
+      if (n.time >= songTime) {
+        if (i < first) first = i;
+        n.state = NoteState.Pending;
+        n.judgement = null;
+        n.tailJudgement = null;
+        n.hitDelta = 0;
+        n.taps = 0;
+        n.spin = 0;
+        n.armed = false;
+        n.assisted = false;
+      } else if (n.state === NoteState.Pending || n.state === NoteState.Holding) n.state = NoteState.Released;
+    }
+    for (let b = 0; b < INPUT_SLOTS; b++) {
+      const list = this.laneNotes[b];
+      let c = 0;
+      while (c < this.laneLen[b] && this.pool[list[c]].time < songTime) c++;
+      this.laneCursor[b] = c;
+    }
+    this.firstActive = first;
+  }
+
+  /**
    * Mark this run's crystals: `picks` are indexes into the loaded (sorted) note list with the
    * crystal value each carries. Every other note is cleared. Judgement is untouched — a gem is a
    * plain tap that happens to pay out when hit.

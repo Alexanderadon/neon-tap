@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode } from 'react';
 import { audioEngine, loadSong, preloadSfx, sfxUi, waitForAudioUnlock } from '@/shared/lib/audio';
 import { formatAccuracy, formatScore } from '@/shared/lib/format';
 import { ads, isStubAds, stubAds, useStubAdProgress } from '@/shared/lib/ads';
@@ -76,6 +76,11 @@ interface Props {
   chapter?: string;
   /** HUD-level chrome of the host page (the tutorial caption card): lives over the field, hidden with the HUD under the pause / fail frames. */
   overlay?: ReactNode;
+  /**
+   * Filled with the running session's rewind while it plays (`GameSession.rewind`: the song jumps back
+   * to a song time, the notes from there armed again — a tutorial step replays), null otherwise.
+   */
+  rewindRef?: MutableRefObject<((songTime: number) => void) | null>;
 }
 
 interface Snapshot {
@@ -92,7 +97,7 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
  * menu, loading / error, the fail frame, and the second-chance offer — for a rewarded ad, free with
  * NEON PASS, never for crystals (spec: screens-game.html).
  */
-export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay }: Props) {
+export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent, onTime, onExit, header, chapter, overlay, rewindRef }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const [status, setStatus] = useState<'loading' | 'tap' | 'ready' | 'error'>('loading');
@@ -211,8 +216,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           updateSettings({ audioOffsetMs: e.offsetMs, offsetLearned: true });
           break;
         case 'finish':
+          if (tutorial) break; // the tutorial page decides what happens next (and saves the learned offset)
           if (e.autoOffsetMs !== null) updateSettings({ audioOffsetMs: e.autoOffsetMs });
-          if (tutorial) break; // the tutorial page decides what happens next
           saveResult(e.result, source);
           navigate('result');
           break;
@@ -273,6 +278,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           },
         });
         sessionRef.current = session;
+        const live = session;
+        if (rewindRef) rewindRef.current = (t) => live.rewind(t);
         setStatus('ready');
         session.start();
         // Dev hook for automated checks: `?nofail=1` exposes the session on window.
@@ -340,8 +347,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
       document.removeEventListener('touchmove', stopMultiTouch);
       session?.destroy();
       sessionRef.current = null;
+      if (rewindRef) rewindRef.current = null;
     };
-  }, [chart, source, audioBuffer, mode, tutorial, attempt, stepRevive]);
+  }, [chart, source, audioBuffer, mode, tutorial, attempt, stepRevive, rewindRef]);
 
   const exit = useCallback(() => (hostRef.current.onExit ? hostRef.current.onExit() : navigate('menu')), []);
 
