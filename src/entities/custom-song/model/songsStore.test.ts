@@ -8,6 +8,7 @@ import {
   loadSongData,
   removeSong,
   renameSong,
+  replaceSongChart,
   saveBest,
   setSongRepo,
   songStorageAvailable,
@@ -71,6 +72,30 @@ describe('songsStore', () => {
     await removeSong('custom:a');
     expect(songsStore.get().songs).toHaveLength(0);
     expect(await loadSongData('custom:a')).toBeNull();
+  });
+
+  it('«Сложнее» replaces the chart and the stars of its meta in one step, keeping the title and the record', async () => {
+    const repo = memoryRepo([testSong('custom:a', { stars: 2, title: 'Моя' })]);
+    await setSongRepo(repo);
+    await saveBest('custom:a', best(400));
+    const harder = testSong('custom:a', { stars: 3, title: 'old name' }).chart;
+    harder.chart.notes = [
+      [1, 0],
+      [2, 1],
+      [3, 2],
+    ];
+    expect(await replaceSongChart('custom:a', harder, 2)).toBe(true);
+    expect(findSong('custom:a')).toMatchObject({ stars: 3, notes: 3, generatorVersion: 2, title: 'Моя' });
+    expect(findSong('custom:a')?.best?.score).toBe(400);
+    const data = await loadSongData('custom:a');
+    expect(data?.chart.chart.stars).toBe(3);
+    expect(data?.meta.stars).toBe(3);
+    expect(data?.chart.title).toBe('Моя');
+    // Deleted meanwhile (another tab): nothing is written and the list forgets it.
+    await repo.remove('custom:a');
+    expect(await replaceSongChart('custom:a', harder, 2)).toBe(false);
+    expect(findSong('custom:a')).toBeUndefined();
+    expect(await repo.chart('custom:a')).toBeUndefined();
   });
 
   it('writes the play time and the record in memory at once and to the repo after', async () => {

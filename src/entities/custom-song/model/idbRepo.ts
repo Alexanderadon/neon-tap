@@ -125,6 +125,20 @@ export function idbRepo(name: string = SONGS_DB): SongRepo {
         };
         return () => next;
       }),
+    replaceChart: (id, chart, patch) =>
+      tx([META, CHARTS], 'readwrite', (t) => {
+        let next: SongMeta | undefined;
+        const store = t.objectStore(META);
+        const r = store.get(id);
+        r.onsuccess = () => {
+          const prev = r.result as SongMeta | undefined;
+          if (!prev) return;
+          next = { ...prev, ...patch, id };
+          store.put(next);
+          t.objectStore(CHARTS).put(chart, id);
+        };
+        return () => next;
+      }),
     remove: (id) =>
       tx(ALL, 'readwrite', (t) => {
         for (const s of ALL) t.objectStore(s).delete(id);

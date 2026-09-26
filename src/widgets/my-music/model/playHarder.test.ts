@@ -5,7 +5,10 @@ const song = { meta: { title: 'Моя песня', artist: 'Я' }, chart: {}, au
 let stored: typeof song | null = song;
 
 vi.mock('@/shared/lib/audio', () => ({ audioEngine: { ensureContext: async () => log.push('context') } }));
-vi.mock('@/entities/custom-song', () => ({ loadSongData: async () => (log.push('load'), stored) }));
+vi.mock('@/entities/custom-song', () => ({
+  loadSongData: async () => (log.push('load'), stored),
+  replaceSongChart: async (_id: string, chart: { stars: number }) => (log.push(`save ★${chart.stars}`), true),
+}));
 vi.mock('@/features/play-custom', () => ({
   releaseSongBuffer: () => log.push('release'),
   playGeneratedSong: (chart: { stars: number }, _buffer: unknown, saved: boolean) => log.push(`play ★${chart.stars} saved=${saved}`),
@@ -16,6 +19,7 @@ vi.mock('@/features/generate-chart', () => ({
     log.push(`compose ${who.title} ★${fit.targetStars}`),
     { chart: { stars: fit.targetStars } }
   ),
+  GENERATOR_VERSION: 2,
 }));
 
 const { playHarder } = await import('./playHarder');
@@ -27,9 +31,9 @@ describe('«Сложнее» on an own song', () => {
     stored = song;
   });
 
-  it('lets the last buffer go, decodes the saved file once, composes at the asked ★ and plays it as a saved song', async () => {
+  it('lets the last buffer go, decodes the saved file once, composes at the asked ★, saves it as the chart of the song and plays it', async () => {
     expect(await playHarder('custom:1', 4, deps())).toBe('ok');
-    expect(log).toEqual(['context', 'release', 'load', 'decode', 'compose Моя песня ★4', 'play ★4 saved=true']);
+    expect(log).toEqual(['context', 'release', 'load', 'decode', 'compose Моя песня ★4', 'save ★4', 'play ★4 saved=true']);
   });
 
   it('says so when the song is gone, and plays nothing once the sheet let go', async () => {
