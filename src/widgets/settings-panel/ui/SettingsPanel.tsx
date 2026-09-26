@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { dict } from '@/shared/i18n';
+import { hasDevFlag } from '@/shared/config/devFlags';
 import { audioEngine, preloadSfx, sfxHit, sfxMiss } from '@/shared/lib/audio';
 import { Avatar, Icon, Line, ObjButton, Panel, SliderRow, Tag, TextField, Toggle, Trio, type IconName } from '@/shared/ui';
 import { FX_MODES, NICKNAME_MAX, sanitizeNickname, updateSettings, useSettings, type FxMode, type VoiceSetting } from '@/entities/settings';
@@ -12,13 +13,33 @@ const VOICE_ICON: Record<VoiceSetting, IconName> = { svetlana: 'bubble', off: 's
 const FX_ICON: Record<FxMode, IconName> = { auto: 'gauge', on: 'battery', off: 'bolt' };
 
 /**
- * The scrolling column of settings panels (screens-onboard C6), gap 8: volumes (three SliderRows —
- * releasing «Эффекты» plays the preview), the narrator voice (two object buttons: Svetlana · off)
- * and the economy mode (three), the nickname with its avatar letter, the tutorial state, the FPS toggle.
- * Every change applies at once through `updateSettings`; the store keys are untouched.
+ * `?debug` in the page address. The dev flags (shared/config/devFlags) take it off the address bar
+ * once it is one of theirs; until then it stays there for the session and is read here.
  */
-export function SettingsPanel() {
+function debugRequested(): boolean {
+  if (hasDevFlag('debug')) return true;
+  try {
+    return typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
+  } catch {
+    return false;
+  }
+}
+
+interface Props {
+  /** The wide «Подстройка» row (the latency screen); no row without it. */
+  onCalibrate?: () => void;
+}
+
+/**
+ * The scrolling column of settings panels (screens-onboard C6), gap 8: volumes (three SliderRows —
+ * releasing «Эффекты» plays the preview), the wide «Подстройка» row (the latency screen), the narrator
+ * voice (two object buttons: Svetlana · off) and the economy mode (three), the nickname with its avatar
+ * letter, the tutorial state; the FPS toggle only for a developer — with `?debug`, or while it is on
+ * (so it can be turned off). Every change applies at once through `updateSettings`; the store keys are untouched.
+ */
+export function SettingsPanel({ onCalibrate }: Props) {
   const s = useSettings((x) => x);
+  const [debug] = useState(debugRequested);
 
   const setVolume = (key: 'musicVolume' | 'sfxVolume' | 'voiceVolume', v: number) => {
     updateSettings({ [key]: v });
@@ -55,6 +76,8 @@ export function SettingsPanel() {
         <SliderRow label={dict.settingsVolumeSfx} value={s.sfxVolume} onChange={(v) => setVolume('sfxVolume', v)} onRelease={() => void previewSfx()} />
         <SliderRow label={dict.settingsVolumeVoice} value={s.voiceVolume} onChange={(v) => setVolume('voiceVolume', v)} />
       </Panel>
+
+      {onCalibrate && <ObjButton wide icon={<Icon name="metro" />} label={dict.calibShort} end={<Icon name="chevron" />} onClick={onCalibrate} />}
 
       <Panel label={dict.settingsVoice}>
         <Trio role="radiogroup" aria-label={dict.settingsVoice} className="settings-duo">
@@ -101,15 +124,17 @@ export function SettingsPanel() {
         </div>
       </Panel>
 
-      <Panel>
-        <div className="settings-rowl">
-          <span className="settings-rowl-text">
-            <span className="settings-rowl-title">{dict.showFps}</span>
-            <Line className="settings-line-left">{dict.forDev}</Line>
-          </span>
-          <Toggle checked={s.debugOverlay} onChange={(on) => updateSettings({ debugOverlay: on })} aria-label={dict.showFps} />
-        </div>
-      </Panel>
+      {(debug || s.debugOverlay) && (
+        <Panel>
+          <div className="settings-rowl">
+            <span className="settings-rowl-text">
+              <span className="settings-rowl-title">{dict.showFps}</span>
+              <Line className="settings-line-left">{dict.forDev}</Line>
+            </span>
+            <Toggle checked={s.debugOverlay} onChange={(on) => updateSettings({ debugOverlay: on })} aria-label={dict.showFps} />
+          </div>
+        </Panel>
+      )}
     </div>
   );
 }
