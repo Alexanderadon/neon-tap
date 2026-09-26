@@ -64,4 +64,6 @@ export const library = {
   libOtherFile: 'Ещё файл',
   libNoRoom: 'Места мало — удали старые песни',
   libNoStorage: 'Сохранение недоступно',
+  /** The song sheet's row: the song composed again one ★ harder, from its saved file, and played at once. */
+  libHarder: 'Сложнее · ★{n}',
 } as const;

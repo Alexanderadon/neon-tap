@@ -1,8 +1,9 @@
 /// <reference lib="webworker" />
-import { analyzeSong, composeChart } from '@/shared/lib/analysis';
+import { analyzeSong } from '@/shared/lib/analysis';
 import type { ChartLevel } from '@/shared/types/chart';
+import { composeForPlayer, type PlayerFit } from './composeForPlayer';
 
-export interface AnalysisRequest {
+export interface AnalysisRequest extends PlayerFit {
   samples: Float32Array;
   sampleRate: number;
 }
@@ -18,11 +19,10 @@ const post = (m: AnalysisMessage) => (self as unknown as Worker).postMessage(m);
 
 self.onmessage = (e: MessageEvent<AnalysisRequest>) => {
   try {
-    const { samples, sampleRate } = e.data;
+    const { samples, sampleRate, maxStars, targetStars } = e.data;
     const analysis = analyzeSong(samples, sampleRate, (stage, fraction) => post({ type: 'progress', stage, fraction }));
     post({ type: 'progress', stage: 'charts', fraction: 0 });
-    let phrases: number[] = [];
-    const chart = composeChart(analysis, { onTrace: (t) => (phrases = t.levels) });
+    const { chart, phrases } = composeForPlayer(analysis, { maxStars, targetStars });
     post({
       type: 'done',
       bpm: analysis.bpm,

@@ -1,10 +1,15 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { dict, fmt } from '@/shared/i18n';
 import { sfxUi } from '@/shared/lib/audio';
-import { Coin, Disc, FlameIcon, Icon, Line, ObjButton, PrimaryAction, Sheet, TextField, Thumb, difficultyColor } from '@/shared/ui';
-import { TITLE_MAX, removeSong, renameSong, useSong, type SongMeta } from '@/entities/custom-song';
+import { MAX_STARS } from '@/shared/lib/analysis';
+import { navigate } from '@/shared/lib/router';
+import { Coin, Disc, FlameIcon, Icon, Line, ObjButton, PrimaryAction, ProgressBar, Sheet, TextField, Thumb, difficultyColor } from '@/shared/ui';
+import { TITLE_MAX, refreshSongs, removeSong, renameSong, useSong, type SongMeta } from '@/entities/custom-song';
 import { formatClock } from '@/entities/score';
 import { TrackCover } from '@/entities/track';
+import { progressFraction, type GenerateProgress } from '@/features/generate-chart';
+import { releaseSongBuffer } from '@/features/play-custom';
+import { playHarder } from '../model/playHarder';
 
 interface Props {
   id: string;
@@ -15,12 +20,14 @@ interface Props {
   onClose: () => void;
 }
 
-type Stage = 'details' | 'rename' | 'delete';
+type Stage = 'details' | 'rename' | 'delete' | 'harder';
 
 /**
  * The song's sheet («⋯»): the cover 96, the artist, three coins (BPM · длина · сложность), the
- * date it was added, «Переименовать» and «Удалить», then «Закрыть» and «ИГРАТЬ». Rename edits the
- * title in place; delete asks once more («рекорд пропадёт»).
+ * date it was added, «Сложнее · ★N+1» (below ★6), «Переименовать» and «Удалить», then «Закрыть»
+ * and «ИГРАТЬ». Rename edits the title in place; delete asks once more («рекорд пропадёт»);
+ * «Сложнее» composes the song again from its saved file one ★ up — the analysis bar in the sheet —
+ * and opens the run.
  */
 export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClose }: Props) {
   const song = useSong(id);
@@ -30,8 +37,19 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
   const [working, setWorking] = useState(false);
   /** The last rename / delete failed in the storage: one calm line, the stage stays so the tap can be repeated. */
   const [failed, setFailed] = useState(false);
+  /** «Сложнее»: the analysis as it goes. */
+  const [harder, setHarder] = useState<GenerateProgress>({ stage: 'decode', fraction: 0 });
+  const harderRun = useRef(0);
+  const mounted = useRef(true);
   const primaryRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -41,10 +59,10 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // The details focus «ИГРАТЬ»; the delete confirmation focuses «Отмена» — a double Enter never deletes a song and its record.
+  // The details focus «ИГРАТЬ»; the delete confirmation and «Сложнее» focus «Отмена» — a double Enter never deletes a song and its record.
   useEffect(() => {
     if (stage === 'details') primaryRef.current?.focus();
-    else if (stage === 'delete') cancelRef.current?.focus();
+    else if (stage === 'delete' || stage === 'harder') cancelRef.current?.focus();
   }, [stage]);
 
   // Deleted meanwhile (another tab refreshed the list): nothing left to show.
@@ -94,11 +112,72 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
     }
   };
 
+  /** One ★ up from the saved chart («Сложнее» is offered below ★6). */
+  const harderStars = Math.min(MAX_STARS, song.stars + 1);
+  const startHarder = async () => {
+    if (working) return;
+    sfxUi();
+    const run = ++harderRun.current;
+    const live = () => mounted.current && harderRun.current === run;
+    setFailed(false);
+    setWorking(true);
+    setHarder({ stage: 'decode', fraction: 0 });
+    setStage('harder');
+    const outcome = await playHarder(song.id, harderStars, {
+      onProgress: (p) => {
+        if (live()) setHarder(p);
+      },
+      // Left meanwhile (the top bar): the song does not open the game over another screen, and its buffer goes.
+      go: () => (mounted.current ? navigate('game') : releaseSongBuffer()),
+      live,
+    });
+    if (outcome === 'ok' || !live()) return;
+    setWorking(false);
+    setStage('details');
+    // Deleted in another tab: the list forgets it and the sheet closes by itself.
+    if (outcome === 'missing') void refreshSongs();
+    else setFailed(true);
+  };
+  const cancelHarder = () => {
+    sfxUi();
+    harderRun.current++;
+    setWorking(false);
+    setStage('details');
+  };
+
   const cover = (
     <div className="mm-sheet-cover" aria-hidden="true">
       <TrackCover id={song.id} title={song.title} />
     </div>
   );
+
+  if (stage === 'harder') {
+    const value = progressFraction(harder);
+    return (
+      <Sheet titleId={titleId} onClose={onClose}>
+        <h2 id={titleId} className="sheet-h1">
+          {fmt(dict.libHarder, { n: harderStars })}
+        </h2>
+        {cover}
+        <h3 className="mm-sheet-h2">{song.title}</h3>
+        <ProgressBar className="mm-sheet-bar" tone="cyan" value={value} label={dict.customStage[harder.stage]} right={`${Math.round(value * 100)} %`} />
+        <div className="sheet-actions">
+          <ObjButton ref={cancelRef} icon={<Icon name="cross" size={20} />} label={dict.libCancel} onClick={cancelHarder} />
+          <PrimaryAction
+            tone="locked"
+            lead={
+              <Disc>
+                <Icon name="hourglass" />
+              </Disc>
+            }
+            label={dict.analysisWord}
+            sub={dict.customStage[harder.stage].toLowerCase()}
+            disabled
+          />
+        </div>
+      </Sheet>
+    );
+  }
 
   if (stage === 'rename') {
     return (
@@ -186,8 +265,17 @@ export function SongSheet({ id, confirmDelete = false, onPlay, onDeleted, onClos
         <Coin value={formatClock(song.durationSec)} caption={dict.libLength} />
         <Coin icon={<FlameIcon color={difficultyColor(song.stars)} size={20} />} value={song.stars} caption={dict.libLevel} />
       </div>
-      <Line className="mm-sheet-line">{fmt(dict.libAddedOn, { date: added })}</Line>
+      <Line className="mm-sheet-line">{failed ? dict.readFailed : fmt(dict.libAddedOn, { date: added })}</Line>
       <div className="mm-sheet-rows">
+        {song.stars < MAX_STARS && (
+          <ObjButton
+            wide
+            icon={<Icon name="bolt" />}
+            label={fmt(dict.libHarder, { n: harderStars })}
+            end={<Icon name="chevron" />}
+            onClick={() => void startHarder()}
+          />
+        )}
         <ObjButton
           wide
           icon={<Icon name="bubble" />}
