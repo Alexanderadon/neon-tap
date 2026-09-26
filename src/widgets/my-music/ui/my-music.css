@@ -140,6 +140,11 @@
   width: 100%;
   margin-top: 16px;
 }
+/* «Сложнее»: the analysis bar under the title while the song is composed again. */
+.mm-sheet-bar {
+  width: 100%;
+  margin-top: 16px;
+}
 .mm-rename {
   width: 100%;
   margin-top: 24px;

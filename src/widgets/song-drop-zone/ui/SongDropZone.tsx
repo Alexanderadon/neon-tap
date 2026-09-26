@@ -19,7 +19,17 @@ import {
   type SongMeta,
 } from '@/entities/custom-song';
 import { usePassActive } from '@/entities/pass';
-import { GENERATOR_VERSION, chartFromBuffer, decodeSongFile, isWeakRhythm, type GenerateProgress, type GeneratedSong } from '@/features/generate-chart';
+import { progressStore } from '@/entities/progress';
+import {
+  GENERATOR_VERSION,
+  chartFromBuffer,
+  decodeSongFile,
+  isWeakRhythm,
+  progressFraction,
+  skillStars,
+  type GenerateProgress,
+  type GeneratedSong,
+} from '@/features/generate-chart';
 import { QuotaSheet, checkAddNow, saveSong, type SaveOutcome } from '@/features/song-quota';
 import { playCustomSong, playGeneratedSong, releaseSongBuffer } from '@/features/play-custom';
 import './drop-zone.css';
@@ -33,14 +43,6 @@ type State =
   | { kind: 'ready'; song: GeneratedSong; saved: SaveOutcome; weak: boolean }
   /** The file is a song saved already (same fingerprint): it opens as it is, no second analysis. */
   | { kind: 'known'; meta: SongMeta };
-
-const STAGE_WEIGHT: Record<GenerateProgress['stage'], [number, number]> = {
-  decode: [0, 0.15],
-  onsets: [0.15, 0.7],
-  beats: [0.7, 0.8],
-  grid: [0.8, 0.9],
-  charts: [0.9, 1],
-};
 
 const PROBLEM_LINE: Record<Problem, string> = {
   format: dict.wrongFormat,
@@ -135,7 +137,8 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
           return;
         }
         const { title, artist } = songTitle(await tags, file.name);
-        const song = await chartFromBuffer(buffer, { id, title, artist }, onProgress);
+        // The ★ is fitted to the player: at most one above the hardest catalog track they have passed (★2 for a newcomer).
+        const song = await chartFromBuffer(buffer, { id, title, artist }, onProgress, { maxStars: skillStars(progressStore.get().tracks) });
         if (!live()) return;
         const saved = await saveSong(newSong({ id, chart: song.chart, audio: file, title, artist, generatorVersion: GENERATOR_VERSION, createdAt: now() }), {
           pass,
@@ -372,8 +375,7 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
 
 /** The analysis card: file name, the stage line with its percentage and the gold bar (the unlock bar inside the card). */
 function BusyCard({ name, progress }: { name: string; progress: GenerateProgress }) {
-  const [from, to] = STAGE_WEIGHT[progress.stage];
-  const value = from + (to - from) * progress.fraction;
+  const value = progressFraction(progress);
   return (
     <article className="dz-card dz-card-plain" aria-busy="true">
       <span className="dz-ph" aria-hidden="true">

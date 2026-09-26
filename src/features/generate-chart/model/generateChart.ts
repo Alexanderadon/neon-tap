@@ -1,6 +1,7 @@
 import { audioEngine } from '@/shared/lib/audio';
 import type { ChartFile } from '@/shared/types/chart';
 import type { AnalysisMessage, AnalysisRequest, AnalysisStage } from './analysis.worker';
+import type { PlayerFit } from './composeForPlayer';
 
 export type GenerateStage = 'decode' | AnalysisStage;
 
@@ -8,6 +9,21 @@ export interface GenerateProgress {
   stage: GenerateStage;
   /** 0..1 within the stage. */
   fraction: number;
+}
+
+/** Each stage's share of the whole wait (decoding is quick, finding the onsets is most of it). */
+const STAGE_SPAN: Record<GenerateStage, readonly [number, number]> = {
+  decode: [0, 0.15],
+  onsets: [0.15, 0.7],
+  beats: [0.7, 0.8],
+  grid: [0.8, 0.9],
+  charts: [0.9, 1],
+};
+
+/** The whole analysis as one 0..1 bar (the stage and its fraction). */
+export function progressFraction(p: GenerateProgress): number {
+  const [from, to] = STAGE_SPAN[p.stage];
+  return from + (to - from) * Math.max(0, Math.min(1, p.fraction));
 }
 
 export interface GeneratedSong {
@@ -20,8 +36,9 @@ export interface GeneratedSong {
 /**
  * The chart generator's version, stored with every saved song. Bump it when the analysis or the
  * composer changes the charts it makes, so old songs can be told apart (and regenerated later).
+ * 2: the ★ is capped by the player's skill (`skillStars`); version 1 took the song's energy alone.
  */
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2;
 
 /** Who the song is: the id (its file's fingerprint, see entities/custom-song) and the names shown. */
 export interface SongIdentity {
@@ -73,8 +90,17 @@ export async function decodeSongFile(file: Blob, onProgress: (p: GenerateProgres
   return audioBuffer;
 }
 
-/** Build a playable chart from decoded audio in a Worker (the analysis stages). The id and names come from the song catalog (its fingerprint and tags). */
-export async function chartFromBuffer(audioBuffer: AudioBuffer, song: SongIdentity, onProgress: (p: GenerateProgress) => void): Promise<GeneratedSong> {
+/**
+ * Build a playable chart from decoded audio in a Worker (the analysis stages). The id and names come
+ * from the song catalog (its fingerprint and tags); `fit` fits the ★ to the player (`skillStars` as
+ * the ceiling, or an exact ★ for «Сложнее»).
+ */
+export async function chartFromBuffer(
+  audioBuffer: AudioBuffer,
+  song: SongIdentity,
+  onProgress: (p: GenerateProgress) => void,
+  fit: PlayerFit = {},
+): Promise<GeneratedSong> {
   const { samples, sampleRate } = mixdown(audioBuffer);
   const worker = new Worker(new URL('./analysis.worker.ts', import.meta.url), { type: 'module' });
   try {
@@ -86,7 +112,7 @@ export async function chartFromBuffer(audioBuffer: AudioBuffer, song: SongIdenti
         else reject(new Error(m.message));
       };
       worker.onerror = (e) => reject(new Error(e.message));
-      const req: AnalysisRequest = { samples, sampleRate };
+      const req: AnalysisRequest = { samples, sampleRate, ...fit };
       worker.postMessage(req, [samples.buffer]);
     });
     const chart: ChartFile = {
