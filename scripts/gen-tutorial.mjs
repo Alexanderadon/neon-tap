@@ -3,10 +3,17 @@
 // Plain node, no deps. Run: npm run chart:tutorial   (or node scripts/gen-tutorial.mjs from anywhere)
 // The plan below is the source of truth for the tutorial chart; features/tutorial/model/chart.test.ts
 // checks the generated file against the caption script (TUTORIAL_PLAN) and the design rules.
+//
+// music/tutorial.mp3 is the song's first AUDIO_SEC seconds (the chart is over at ~37 s; the rest plays
+// under the «Готово!» frame), cut once from the full 150 s file with
+//   ffmpeg -i tutorial-full.mp3 -t 75 -af afade=t=out:st=73.5:d=1.5 -c:a libmp3lame -q:a 1 tutorial.mp3
+// The beat grid and `duration` below are cut to match.
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const CHARTS = new URL('../public/charts/', import.meta.url);
 const OUT = new URL('tutorial.json', CHARTS);
+/** Length of music/tutorial.mp3, seconds. */
+const AUDIO_SEC = 75;
 
 const src = JSON.parse(readFileSync(new URL('../assets-src/tutorial.json', import.meta.url), 'utf8'));
 const beats = src.beats;
@@ -21,39 +28,40 @@ const r3 = (x) => Math.round(x * 1000) / 1000;
 /** Duration in seconds from beat `b` for `len` beats, so the tail lands on the grid too. */
 const dur = (b, len) => r3(beatTime(b + len) - beatTime(b));
 
-// [beat, lane, lenBeats?, kind?, extra?]
+// [beat, lane, lenBeats?, kind?] — only what chapter 1 has: taps, holds, a heart, 1 → 4 lanes, no chords.
+// The first note of the steps that replay (tap, hold, lanes2) lands ≥ 3.5 beats (a whole fall) after the
+// step starts, so a rewind to the step's start shows its notes from the top of the field.
+// prettier-ignore
 const plan = [
-  // --- 1 lane: taps on beats (Magic Tiles), then holds ---
-  [10, 0], [11, 0], [12, 0], [13, 0],
-  [15, 0], [16, 0], [17, 0], [18, 0],
-  [22, 0, 2], [25, 0, 2], [28, 0, 2],
-  // --- 2 lanes (section at 32): alternating taps, then slides ---
-  [36, 0], [37, 1], [38, 0], [39, 1], [40, 0], [40.5, 1], [42, 0], [42.5, 1],
-  [46, 0, 2, 'slide', 1], [50, 1, 2, 'slide', 0],
-  // --- 3 lanes (section at 54): rolls ---
-  [60, 1, 2, 'roll', 3], [63, 0, 2, 'roll', 3], [66, 2, 2, 'roll', 4],
-  // --- 4 lanes (section at 70): circle window, then the slow spell ---
-  [76, 0, 0, 'circle'], [77, 3, 0, 'circle'], [78, 1, 0, 'circle'], [79, 2, 0, 'circle'],
-  [84, 1, 0, 'slow'], [85, 2], [86, 0], [87, 3], [88, 1], [89, 2], [90, 0], [91, 3],
-  // --- 5 lanes (section at 93): everything mixed ---
-  [98, 0], [99, 4], [100, 2], [101, 1, 2], [103.5, 3], [105, 2, 2, 'roll', 4], [108, 3, 2, 'slide', 4],
-  [111, 0], [111.5, 1], [112, 2], [113.5, 0], [113.5, 4],
-  // --- 6 lanes (section at 115.5): the spinner (4 beats of wheel on an empty field), then a short finale ---
-  [120, 0, 4, 'spin'],
-  [128, 0], [129, 5], [130, 1], [131, 4], [132, 2], [133, 3], [134.5, 2], [135, 3], [136, 0], [136, 5], [138, 2, 2],
+  // --- tap (1 lane): eight taps on the beats, Magic Tiles style ---
+  [8, 0], [9, 0], [10, 0], [11, 0], [12, 0], [13, 0], [14, 0], [15, 0],
+  // --- hold (1 lane) ---
+  [20, 0, 2], [23, 0, 2], [26, 0, 2],
+  // --- lanes2 (section at 30): left, left, right, right ---
+  [32, 0], [33, 0], [34, 1], [35, 1],
+  // --- alt: hand after hand ---
+  [38, 0], [39, 1], [40, 0], [41, 1], [42, 0], [43, 1],
+  // --- lanes3 (section at 45): across and back, a hold at the end ---
+  [47, 0], [48, 1], [49, 2], [50, 1], [51, 0, 2],
+  // --- lanes4 (section at 55): a run up and back ---
+  [57, 0], [58, 1], [59, 2], [60, 3], [61, 2], [62, 1],
+  // --- spell: the heart, then a short tail on all four lanes ---
+  [66, 1, 0, 'heart'],
+  [68, 2], [69, 3], [70, 0], [71, 1], [72, 2, 2],
 ];
 // The first section starts at song time 0 (not at the first tracked beat), so parseSections does not
 // prepend a second one-lane section before it.
-const sectionBeats = [[null, 1], [32, 2], [54, 3], [70, 4], [93, 5], [115.5, 6]];
+// prettier-ignore
+const sectionBeats = [[null, 1], [30, 2], [45, 3], [55, 4]];
 
-const notes = plan.map(([b, lane, len = 0, kind, extra]) => {
+const notes = plan.map(([b, lane, len = 0, kind]) => {
   const t = r3(beatTime(b));
-  if (len === 0 && kind === undefined) return [t, lane];
-  if (kind === undefined) return [t, lane, dur(b, len)];
-  if (extra === undefined) return [t, lane, len > 0 ? dur(b, len) : 0, kind];
-  return [t, lane, dur(b, len), kind, extra];
+  if (kind !== undefined) return [t, lane, len > 0 ? dur(b, len) : 0, kind];
+  return len === 0 ? [t, lane] : [t, lane, dur(b, len)];
 });
 const sections = sectionBeats.map(([b, lanes]) => [b === null ? 0 : r3(beatTime(b)), lanes]);
+const last = Math.max(...notes.map((n) => n[0] + (n[2] ?? 0)));
+if (last + 1.5 > AUDIO_SEC - 1.5) throw new Error(`the chart ends at ${last} s — past the fade-out of the ${AUDIO_SEC} s song`);
 
 const out = {
   id: 'tutorial',
@@ -64,10 +72,10 @@ const out = {
   audio: src.audio,
   bpm: src.bpm,
   offset: src.offset,
-  duration: src.duration,
+  duration: AUDIO_SEC,
   genre: src.genre,
-  beats: src.beats,
+  beats: beats.filter((t) => t <= AUDIO_SEC),
   chart: { stars: 1, notes, sections },
 };
 writeFileSync(OUT, JSON.stringify(out));
-console.log(`notes ${notes.length}, sections ${sections.map((s) => `${s[1]}@${s[0]}`).join(' ')}, last ${notes[notes.length - 1][0]} s`);
+console.log(`notes ${notes.length}, sections ${sections.map((s) => `${s[1]}@${s[0]}`).join(' ')}, last ends ${r3(last)} s, song ${AUDIO_SEC} s`);

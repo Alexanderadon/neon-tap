@@ -22,3 +22,81 @@
 .tutp-bottom {
   padding-top: 24px;
 }
+
+/*
+ * TutorialFinale (TutorialFinale.tsx): the «Готово!» frame over the field (the .8 veil, the first
+ * track's scene over it at z −1), the 335 column — top bar, «Обучение», headline, two lines, the
+ * crystal coin — and the action zone at the bottom. Above the pause chip (z 2) like every game frame.
+ */
+.tutp-finale {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  isolation: isolate;
+  overflow: hidden;
+  background: rgba(5, 6, 10, 0.8);
+  white-space: normal;
+}
+.tutp-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--col);
+  height: 100%;
+  margin: 0 auto;
+  padding-block: calc(var(--safe-top) + 8px) calc(var(--safe-bottom) + 24px);
+}
+.tutp-col > .topbar {
+  flex: none;
+}
+/* The middle takes the free height and centres its block; on a short screen it gives way first. */
+.tutp-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 0;
+  width: 100%;
+}
+.tutp-text {
+  margin: 0;
+  max-width: 280px;
+  font: var(--t-13);
+  color: var(--w80);
+  text-align: center;
+  animation: tutp-rise 0.4s ease-out 0.2s both;
+}
+.tutp-body .tutp-coin {
+  width: 105px;
+  margin-top: 8px;
+}
+.tutp-rise {
+  animation: tutp-rise 0.4s ease-out 0.4s both;
+}
+.tutp-rise.primary-beat {
+  animation:
+    tutp-rise 0.4s ease-out 0.5s both,
+    primary-beat 0.5s ease-in-out 0.9s infinite alternate;
+}
+.tutp-rise.primary-beat:active {
+  animation: none;
+}
+@keyframes tutp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutp-text,
+  .tutp-rise,
+  .tutp-rise.primary-beat {
+    animation: none;
+  }
+}
