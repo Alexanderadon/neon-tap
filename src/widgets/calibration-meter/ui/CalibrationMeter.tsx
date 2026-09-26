@@ -10,7 +10,7 @@ import { TapMeter } from './TapMeter';
 import './calibration.css';
 
 interface Props {
-  /** Saved or skipped: back to the menu. */
+  /** Saved or skipped: the host decides where to (the settings when opened from there, else the menu — CalibrationPage). */
   onDone: () => void;
 }
 
