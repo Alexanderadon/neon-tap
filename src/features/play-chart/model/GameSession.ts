@@ -6,7 +6,7 @@ import { FpsMeter, LowFpsDetector, themeFor, themeForMood } from '@/shared/lib/r
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type ParsedNote, type Section, type SpellKind } from '@/entities/chart';
-import type { FxMode } from '@/entities/settings';
+import type { FxMode, MeetKind } from '@/entities/settings';
 import { findTrack } from '@/entities/track';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import { NoteManager, NoteState, type JudgeEvent, type PooledNote } from './NoteManager';
@@ -15,10 +15,11 @@ import { Lives } from './Lives';
 import { JudgementTimeline } from './JudgementTimeline';
 import { pickGems, pickLoopGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
-import { songMap } from './songMap';
+import { beatSeconds, songMap } from './songMap';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
 import { OffsetProbe, type OffsetProbeMode } from './offsetProbe';
 import { gapCountLeft, gapReturns, introStart, notesFrom } from './pacing';
+import { MeetTracker, planMeetings, type Meeting } from './firstMeet';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -43,6 +44,8 @@ export type SessionEvent =
   | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
   /** The wide latency probe settled (`offsetProbe`): the player's offset in ms, already applied — the host saves it at once, before the first track. */
   | { type: 'offset'; offsetMs: number }
+  /** A mechanic met for the first time: its card rises (`card`), or the card on screen goes (null). Once per kind; the host marks it seen. */
+  | { type: 'meet'; card: Meeting | null }
   /** Paused (the host draws the pause overlay from this snapshot). */
   | { type: 'pause'; score: number; accuracy: number; level: number }
   | { type: 'resume' }
@@ -98,6 +101,12 @@ export interface SessionOptions {
    * Default on; off in the tutorial, whose captions run on song time.
    */
   pacing?: boolean;
+  /**
+   * Mechanics the player has already met (`settings.seenKinds`): the first slide, roll, circle or spinner
+   * of any other kind gets its card two beats ahead (see firstMeet.ts), without pausing. Absent = no
+   * cards (the tutorial has its own).
+   */
+  seenKinds?: readonly MeetKind[];
   /** Fixed seed for the gem picks (tests / demos); by default every run rolls its own. */
   gemSeed?: number;
   /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
@@ -222,6 +231,8 @@ export class GameSession {
   private readonly startAt: number;
   /** Notes that end a long empty stretch: the «3 · 2 · 1» counts to them. */
   private readonly gapTimes: number[];
+  /** First-meeting cards still owed to the player (null when none are). */
+  private readonly meets: MeetTracker | null;
   private readonly deltas: number[] = [];
   /** The wide latency probe, until it settles (once per session). */
   private readonly probe: OffsetProbe | null;
@@ -245,6 +256,8 @@ export class GameSession {
     const parsed = notesFrom(all, this.startAt);
     this.parsed = parsed;
     this.gapTimes = opts.pacing === false ? [] : gapReturns(parsed, this.startAt);
+    const plan = opts.seenKinds ? planMeetings(parsed, opts.seenKinds, beatSeconds(opts.chart)) : [];
+    this.meets = plan.length > 0 ? new MeetTracker(plan) : null;
     this.sections = parseSections(level);
     this.notes.load(parsed);
     this.probe = opts.offsetProbe ? new OffsetProbe(parsed, opts.offsetProbe) : null;
@@ -415,6 +428,7 @@ export class GameSession {
     this.autoDue = [];
     this.rollGems();
     this.probe?.rearm();
+    if (this.meets?.clear()) this.opts.onEvent({ type: 'meet', card: null });
     this.beatCursor.reset();
     this.renderer.setLanes(this.lanesAt(this.startAt), true);
     // The song starts at `startAt` (0, or past a skipped intro) after the count-in; the clock is anchored on that instant.
@@ -863,6 +877,8 @@ export class GameSession {
       if (this.slowUntil > 0 && songTime >= this.slowUntil) this.slowUntil = -1;
       this.notes.update(this.clock.judgeTime(), this.isHeld);
       this.trackSpin(songTime);
+      const card = this.meets?.update(songTime);
+      if (card !== undefined) this.opts.onEvent({ type: 'meet', card });
       // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
       if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > this.startAt && this.lowFps.tick(this.fps.fps, dt)) {
         this.renderer.setFxLevel('low', true);
@@ -917,6 +933,7 @@ export class GameSession {
       progress: Math.max(0, Math.min(1, (songTime - this.startAt) / Math.max(0.001, this.endTime - this.startAt))),
       start: this.startAt,
       gapLeft,
+      caption: this.meets?.showing === true,
       hearts: this.lives.hearts,
       goldHearts: this.lives.gold,
       maxHearts: this.opts.hideHearts ? 0 : MAX_HEARTS,

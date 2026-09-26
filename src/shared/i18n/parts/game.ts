@@ -29,6 +29,14 @@ export const game = {
   readFileHint: 'попробуй ещё раз или выбери другой файл',
   soundToggle: 'Звук',
   tutorialStep: '{n} / {total}',
+  /** A run's first meeting of a mechanic: the tag on the caption card, and the card per kind (`{from}` / `{to}` / `{key}` — the note's keys). */
+  meetTag: 'Новое',
+  meetCards: {
+    slide: { title: 'Веди', desktop: 'Держи {from} и зажми {to}', touch: 'Веди палец в соседнюю зону' },
+    roll: { title: 'Барабань', desktop: '{key} — столько раз, сколько на ноте', touch: 'Столько раз, сколько на ноте' },
+    circle: { title: 'Тапни по кругу', desktop: 'Пробел, когда круг заполнится', touch: 'Когда круг заполнится' },
+    spin: { title: 'Крути', desktop: 'Мышью по кругу или жми клавиши', touch: 'Пальцем по кругу — сколько успеешь' },
+  },
   // --- duel page ---
   duelInvite: '{name} вызывает тебя',
   duelFromLink: 'ссылка из сообщения друга',
