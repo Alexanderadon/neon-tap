@@ -18,6 +18,18 @@ function song(length = 120, step = 0.5): ParsedNote[] {
   return out;
 }
 
+describe('pickGems past a skipped intro', () => {
+  it('keeps the first seconds of the level free, not of the song: a level starting at 34 s gets no gem before 39 s', () => {
+    const notes = Array.from({ length: 60 }, (_, i) => tap(38 + i * 0.5));
+    for (let seed = 1; seed <= 20; seed++) {
+      for (const p of pickGems(notes, seed, 90, 34)) expect(notes[p.index].time).toBeGreaterThanOrEqual(34 + GEM_MIN_TIME);
+      for (const p of pickLoopGems(notes, seed, 34)) expect(notes[p.index].time).toBeGreaterThanOrEqual(34 + GEM_MIN_TIME);
+    }
+    expect(isGemCandidate(tap(38), 34)).toBe(false);
+    expect(isGemCandidate(tap(39), 34)).toBe(true);
+  });
+});
+
 describe('pickGems', () => {
   it('is deterministic per seed and differs across seeds', () => {
     const notes = song();
