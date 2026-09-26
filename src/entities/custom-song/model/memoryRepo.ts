@@ -1,5 +1,5 @@
 import type { ChartFile } from '@/shared/types/chart';
-import type { AddOutcome, NewSong, SongMeta, SongPatch, SongRepo } from './types';
+import type { AddOutcome, ChartPatch, NewSong, SongMeta, SongPatch, SongRepo } from './types';
 
 interface MemoryOptions {
   /** Total audio bytes the "disk" holds; an add beyond it throws `QuotaExceededError` like a full IndexedDB. */
@@ -60,6 +60,15 @@ export function memoryRepo(initial: readonly NewSong[] = [], opts: MemoryOptions
         if (!prev) return undefined;
         const next: SongMeta = { ...prev, ...copy(patch), id };
         metas.set(id, next);
+        return copy(next);
+      }),
+    replaceChart: (id, chart, patch: ChartPatch) =>
+      step(() => {
+        const prev = metas.get(id);
+        if (!prev) return undefined;
+        const next: SongMeta = { ...prev, ...patch, id };
+        metas.set(id, next);
+        charts.set(id, copy(chart));
         return copy(next);
       }),
     remove: (id) =>

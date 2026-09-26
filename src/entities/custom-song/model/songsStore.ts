@@ -166,6 +166,23 @@ export async function renameSong(id: string, title: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * A new chart for a saved song («Сложнее»): the chart (with the song's id, title and artist) and the meta's
+ * stars, note count and generator version are written in one transaction, then the list shows them.
+ * False when the song is gone (deleted in another tab). Throws on storage errors.
+ */
+export async function replaceSongChart(id: string, chart: ChartFile, generatorVersion: number): Promise<boolean> {
+  const current = findSong(id);
+  const stored: ChartFile = { ...chart, id, title: current?.title ?? chart.title, artist: current?.artist ?? chart.artist };
+  const saved = await storage().replaceChart(id, stored, { stars: chart.chart.stars, notes: chart.chart.notes.length, generatorVersion });
+  if (!saved) {
+    dropSong(id);
+    return false;
+  }
+  replaceSong(saved);
+  return true;
+}
+
 /** Remember that the song was just played (the «Недавние» order). */
 export function touchPlayed(id: string, at: number = now()): void {
   const current = findSong(id);

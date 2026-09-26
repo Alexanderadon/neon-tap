@@ -55,6 +55,9 @@ export type AddOutcome = 'ok' | 'duplicate' | 'limit';
 /** The fields a saved song may change. */
 export type SongPatch = Partial<Pick<SongMeta, 'title' | 'artist' | 'titleKey' | 'lastPlayedAt' | 'best'>>;
 
+/** What a new chart of a saved song changes in its meta («Сложнее»). */
+export type ChartPatch = Pick<SongMeta, 'stars' | 'notes' | 'generatorVersion'>;
+
 /**
  * Storage of the player's songs. `idbRepo` keeps them in IndexedDB, `memoryRepo` in a map (tests).
  * Every method is one transaction; `add` checks the duplicate and the slot count and writes in the
@@ -71,5 +74,7 @@ export interface SongRepo {
   audio(id: string): Promise<Blob | undefined>;
   /** Merge the patch into a saved song; `undefined` when the song is gone (deleted in another tab) — nothing is written then. */
   update(id: string, patch: SongPatch): Promise<SongMeta | undefined>;
+  /** Store a new chart for a saved song and its meta's stars / notes / generator in the same transaction; `undefined` (nothing written) when the song is gone. */
+  replaceChart(id: string, chart: ChartFile, patch: ChartPatch): Promise<SongMeta | undefined>;
   remove(id: string): Promise<void>;
 }

@@ -33,6 +33,7 @@ export {
   addSong,
   removeSong,
   renameSong,
+  replaceSongChart,
   touchPlayed,
   saveBest,
   loadSongData,
@@ -43,4 +44,4 @@ export {
 export type { SongsState, SongsStatus } from './model/songsStore';
 export { idbRepo, SONGS_DB } from './model/idbRepo';
 export { memoryRepo } from './model/memoryRepo';
-export type { SongMeta, SongBest, NewSong, AddOutcome, SongPatch, SongRepo } from './model/types';
+export type { SongMeta, SongBest, NewSong, AddOutcome, SongPatch, ChartPatch, SongRepo } from './model/types';
