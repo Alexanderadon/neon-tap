@@ -214,9 +214,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           setMeet(e.card);
           if (e.card) {
             setMeetTime(e.card.from);
-            // Once per kind, ever: marked the moment the card rises.
+            // Once per kind, ever: marked the moment the card rises — not by the review autoplayer (`?auto=1`), which only shows it.
             const seen = getSettings().seenKinds;
-            if (!seen.includes(e.card.kind)) updateSettings({ seenKinds: [...seen, e.card.kind] });
+            if (!hasDevFlag('auto') && !seen.includes(e.card.kind)) updateSettings({ seenKinds: [...seen, e.card.kind] });
           }
           break;
         case 'fx-low':
