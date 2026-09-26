@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { KEY_LABELS } from '@/shared/config/constants';
-import { SPELL_LANE, TUTORIAL_PLAN, beatIndex, beatTime, buildScript, captionAt, keyHint, laneKey, stepProgress, zoneHint } from './script';
+import { KEY_LABELS, MAX_LANES } from '@/shared/config/constants';
+import {
+  REPLAY_STEPS,
+  SPELL_LANE,
+  TUTORIAL_PLAN,
+  beatIndex,
+  beatTime,
+  buildScript,
+  captionAt,
+  keyHint,
+  laneKey,
+  replayDue,
+  stepProgress,
+  zoneHint,
+  type TutorialStep,
+} from './script';
 
 /** A perfectly even 120 BPM grid starting at 1.0 s. */
 const BEATS = Array.from({ length: 200 }, (_, i) => 1 + i * 0.5);
@@ -25,6 +39,15 @@ describe('tutorial script', () => {
     expect(beatIndex([2], 3)).toBe(2);
   });
 
+  it('is nine steps in the reviewed order, never past four lanes', () => {
+    expect(TUTORIAL_PLAN.map((p) => p.id)).toEqual(['intro', 'tap', 'hold', 'lanes2', 'alt', 'lanes3', 'lanes4', 'spell', 'finale']);
+    expect(Math.max(...TUTORIAL_PLAN.map((p) => p.lanes))).toBe(4);
+    expect(Math.max(...TUTORIAL_PLAN.map((p) => p.lanes))).toBeLessThanOrEqual(MAX_LANES);
+    expect(TUTORIAL_PLAN.find((p) => p.id === 'spell')!.kind).toBe('heart');
+    // Only the first mechanics replay: a player who hit nothing there has not got the idea yet.
+    expect([...REPLAY_STEPS].sort()).toEqual(['hold', 'lanes2', 'tap']);
+  });
+
   it('builds contiguous, sorted steps with copy, lane counts and key caps for every plan entry', () => {
     const script = buildScript(BEATS);
     expect(script).toHaveLength(TUTORIAL_PLAN.length);
@@ -45,8 +68,8 @@ describe('tutorial script', () => {
       expect(s.keys).toEqual(KEY_LABELS[s.lanes]);
     }
     expect(script[0].lanes).toBe(1);
-    expect(script[script.length - 1].lanes).toBe(6);
-    expect(script.filter((s) => s.kind === 'lanes').map((s) => s.lanes)).toEqual([2, 3, 4, 5, 6]);
+    expect(script[script.length - 1].lanes).toBe(4);
+    expect(script.filter((s) => s.kind === 'lanes').map((s) => s.lanes)).toEqual([2, 3, 4]);
   });
 
   it('fills key and zone placeholders per lane count', () => {
@@ -64,18 +87,21 @@ describe('tutorial script', () => {
     expect(zoneHint(5)).toBe('5 зон внизу');
     const script = buildScript(BEATS);
     const four = script.find((s) => s.id === 'lanes4')!;
-    expect(four.title).toBe('Полосы: 4');
-    // The spell caption names only the spell lane's key, not the whole 4-key row.
+    expect(four.title).toBe('Четыре полосы');
+    expect(four.hintDesktop).toBe('Клавиши D F J K');
+    expect(four.hintTouch).toBe('Четыре зоны внизу');
+    // The heart caption names only the heart lane's key, not the whole 4-key row.
     const spell = script.find((s) => s.id === 'spell')!;
-    expect(spell.hintDesktop).toBe(`${KEY_LABELS[4][SPELL_LANE]} — и всё замедлится`);
+    expect(spell.title).toBe('Поймай сердце');
+    expect(spell.hintDesktop).toBe(`${KEY_LABELS[4][SPELL_LANE]} — это ещё одна жизнь`);
     expect(spell.hintDesktop).not.toContain(keyHint(4));
     // On one lane either key works; the tap hint says so instead of reading as a chord.
     const tap = script.find((s) => s.id === 'tap')!;
     expect(tap.hintDesktop).toBe('Когда нота на линии — F J');
-    expect(four.hintDesktop).toBe('Клавиши D F J K');
-    expect(four.hintTouch).toBe('Четыре зоны');
-    const one = script.find((s) => s.id === 'tap')!;
-    expect(one.hintDesktop).toContain('F J');
+    for (const s of script) {
+      expect(s.hintDesktop).not.toMatch(/\{\w+\}/);
+      expect(s.hintTouch).not.toMatch(/\{\w+\}/);
+    }
   });
 
   it('finds the caption for any song time, including the lead-in', () => {
@@ -100,5 +126,50 @@ describe('tutorial script', () => {
     expect(stepProgress(script[0], -5)).toBe(0);
     expect(stepProgress(script[0], script[0].to)).toBe(1);
     expect(stepProgress(script[script.length - 1], 1e9)).toBe(0);
+  });
+});
+
+describe('the replay rule', () => {
+  const script = buildScript(BEATS);
+  const at = (id: string) => script.findIndex((s) => s.id === id);
+  const step = (id: string): TutorialStep => script[at(id)];
+  const bit = (id: string) => 1 << at(id);
+
+  it('rewinds a tap, hold or two-lane step with no hit to its start once the song has left it', () => {
+    for (const id of ['tap', 'hold', 'lanes2']) {
+      const s = step(id);
+      // The steps before this one are dealt with (replayed already).
+      const others = ~bit(id);
+      // Still inside the step: nothing yet — the last note may still be hit.
+      expect(replayDue(script, s.to - 0.01, 0, others), id).toBeNull();
+      expect(replayDue(script, s.to, 0, others), id).toEqual({ index: at(id), at: s.from });
+      expect(replayDue(script, s.to + 0.5, 0, others), id).toEqual({ index: at(id), at: s.from });
+    }
+  });
+
+  it('does not replay a step with a hit in it', () => {
+    expect(replayDue(script, step('tap').to, bit('tap'), 0)).toBeNull();
+    // A hit in another step does not count for this one.
+    expect(replayDue(script, step('hold').to, bit('tap'), 0)).toEqual({ index: at('hold'), at: step('hold').from });
+  });
+
+  it('replays a step once, however the second time goes', () => {
+    expect(replayDue(script, step('tap').to, 0, bit('tap'))).toBeNull();
+    expect(replayDue(script, step('lanes2').to, 0, bit('tap') | bit('hold'))).not.toBeNull();
+    expect(replayDue(script, step('lanes2').to, 0, bit('lanes2'))).toBeNull();
+  });
+
+  it('never replays the intro, the later mechanics or the finale', () => {
+    for (const id of ['alt', 'lanes3', 'lanes4', 'spell']) expect(replayDue(script, step(id).to, 0, 0), id).toBeNull();
+    // Deep in the finale (the previous step is the spell) and before the first caption.
+    expect(replayDue(script, 10_000, 0, 0)).toBeNull();
+    expect(replayDue(script, -5, 0, 0)).toBeNull();
+    expect(replayDue(script, step('tap').from, 0, 0)).toBeNull(); // the intro is over, nothing to learn from it
+    expect(replayDue([], 3, 0, 0)).toBeNull();
+  });
+
+  it('only looks at the step just left: a missed step two captions back is not replayed later', () => {
+    expect(replayDue(script, step('alt').from + 0.1, 0, 0)).toEqual({ index: at('lanes2'), at: step('lanes2').from });
+    expect(replayDue(script, step('lanes3').from + 0.1, 0, 0)).toBeNull();
   });
 });
