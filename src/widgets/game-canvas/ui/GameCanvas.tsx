@@ -188,9 +188,13 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           setPaused(null);
           stepRevive({ type: 'resumed' });
           break;
+        case 'offset':
+          // The wide probe settled (tutorial, or a run before the offset was learned): saved now, before any result.
+          updateSettings({ audioOffsetMs: e.offsetMs, offsetLearned: true });
+          break;
         case 'finish':
-          if (tutorial) break; // the tutorial page decides what happens next
           if (e.autoOffsetMs !== null) updateSettings({ audioOffsetMs: e.autoOffsetMs });
+          if (tutorial) break; // the tutorial page decides what happens next
           saveResult(e.result, source);
           navigate('result');
           break;
@@ -224,7 +228,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           userOffset: settings.audioOffsetMs / 1000,
           touch: isTouchDevice(),
           touchAssist: true,
-          autoOffset: !tutorial,
+          autoOffset: true,
+          // The latency is learned from the first taps: in the tutorial's single-lane steps, and in runs until it has settled once. A calibration is the player's own word.
+          offsetProbe: settings.calibrated ? undefined : tutorial ? 'single-lane' : settings.offsetLearned ? undefined : 'all-lanes',
           noFail: noFailFlag || tutorial,
           autoplay: autoFlag && !tutorial,
           hideHearts: tutorial,
