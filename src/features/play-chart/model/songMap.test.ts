@@ -26,6 +26,15 @@ describe('songMap', () => {
     expect(map.map((s) => s.level)).toEqual([0, 1, 2, 1, 0]);
   });
 
+  it('maps only the played span when the level skips a long intro: the phrase it starts in begins at 0', () => {
+    // Eight 8 s phrases; the level starts at 20 s (inside phrase 2) and runs to 64 s.
+    const map = songMap(chartWith([6, 6, 0, 1, 2, 2, 8, 8]), 64, 20);
+    expect(map.map((s) => s.from)).toEqual([0, 4 / 44, 12 / 44, 20 / 44, 28 / 44, 36 / 44]);
+    // The taps before the start are not counted: the first played phrase is the quietest.
+    expect(map[0].level).toBe(0);
+    expect(map.slice(-2).map((s) => s.level)).toEqual([2, 2]);
+  });
+
   it('counts a drum roll by its taps', () => {
     const chart = chartWith([1, 1, 1, 1]);
     chart.chart.notes.push([8.5, 1, 1, 'roll', 6]);
