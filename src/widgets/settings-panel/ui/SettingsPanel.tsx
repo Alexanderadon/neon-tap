@@ -12,19 +12,6 @@ const VOICE_OPTIONS: VoiceSetting[] = ['svetlana', 'off'];
 const VOICE_ICON: Record<VoiceSetting, IconName> = { svetlana: 'bubble', off: 'sound-off' };
 const FX_ICON: Record<FxMode, IconName> = { auto: 'gauge', on: 'battery', off: 'bolt' };
 
-/**
- * `?debug` in the page address. The dev flags (shared/config/devFlags) take it off the address bar
- * once it is one of theirs; until then it stays there for the session and is read here.
- */
-function debugRequested(): boolean {
-  if (hasDevFlag('debug')) return true;
-  try {
-    return typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
-  } catch {
-    return false;
-  }
-}
-
 interface Props {
   /** The wide «Подстройка» row (the latency screen); no row without it. */
   onCalibrate?: () => void;
@@ -39,7 +26,8 @@ interface Props {
  */
 export function SettingsPanel({ onCalibrate }: Props) {
   const s = useSettings((x) => x);
-  const [debug] = useState(debugRequested);
+  // `?debug` in the page address when it loaded (a dev flag: it holds for the session, the address bar loses it).
+  const [debug] = useState(() => hasDevFlag('debug'));
 
   const setVolume = (key: 'musicVolume' | 'sfxVolume' | 'voiceVolume', v: number) => {
     updateSettings({ [key]: v });
