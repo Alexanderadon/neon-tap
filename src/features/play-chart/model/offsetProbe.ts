@@ -6,9 +6,9 @@ import type { NoteKind } from '@/shared/types/chart';
  * The wide latency probe (review 26.09, «Доделать» 2). Without calibration, Safari reports no
  * output latency and Bluetooth adds 150–250 ms: every tap lands outside the hit windows, so the
  * in-run learner (hits within ±150 ms only) never gets a sample and the first run fails at 0:03.
- * The probe takes every press within ±300 ms of the nearest note of its lane — one press per note —
- * and once there are PROBE_MIN_SAMPLES of them that agree (median absolute deviation ≤ PROBE_MAX_MAD)
- * their median is the player's offset.
+ * The probe takes every press within ±300 ms of a note of its lane — one press per note, given to the
+ * earliest note in reach that has not had one yet — and once there are PROBE_MIN_SAMPLES of them that
+ * agree (median absolute deviation ≤ PROBE_MAX_MAD) their median is the player's offset.
  *
  * - `single-lane`: only notes of single-lane sections (the tutorial's first steps — a press there
  *   can only mean that one lane's note).
@@ -25,7 +25,7 @@ export interface ProbeNote {
   kind: NoteKind | null;
 }
 
-/** A press this far (real seconds) from the nearest note of its lane still says something about the player's timing. */
+/** A press this far (real seconds) from a note of its lane still says something about the player's timing. */
 export const PROBE_WINDOW = 0.3;
 export const PROBE_MIN_SAMPLES = 8;
 /** Samples agree when their median absolute deviation is at most this (seconds). */
@@ -90,14 +90,16 @@ export class OffsetProbe {
   press(lane: number, t: number, rate: number, offset: number): boolean {
     if (lane < 0 || lane >= MAX_LANES) return false;
     const times = this.laneTimes[lane];
-    if (times.length === 0) return false;
-    const k = lowerBound(times, t);
-    const near = k >= times.length || (k > 0 && t - times[k - 1] <= times[k] - t) ? k - 1 : k;
-    const i = this.laneIdx[lane][near];
-    const delta = (t - times[near]) / Math.max(0.1, rate);
-    if (Math.abs(delta) > this.window || !this.eligible[i] || this.taken[i]) return false;
-    this.taken[i] = 1;
-    this.samples.push(offset + delta);
+    const idx = this.laneIdx[lane];
+    const r = Math.max(0.1, rate);
+    const span = this.window * r;
+    // The earliest note in reach that has not given a sample yet: with taps half a second apart a press
+    // 260 ms late is nearer the next tile, but it is this one's — the one before took its own press.
+    let k = lowerBound(times, t - span);
+    while (k < times.length && times[k] <= t + span && this.taken[idx[k]]) k++;
+    if (k >= times.length || times[k] > t + span || !this.eligible[idx[k]]) return false;
+    this.taken[idx[k]] = 1;
+    this.samples.push(offset + (t - times[k]) / r);
     if (this.samples.length > PROBE_MAX_SAMPLES) this.samples.shift();
     return true;
   }
