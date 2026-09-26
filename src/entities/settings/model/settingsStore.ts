@@ -7,6 +7,11 @@ import { createStore, useStore } from '@/shared/lib/store/createStore';
 export type VoiceSetting = 'svetlana' | 'off';
 /** "Economy mode": auto = switch to the low FX level when FPS drops below 45 for 3 s; on = always low; off = always full. */
 export type FxMode = 'auto' | 'on' | 'off';
+/** Where "auto" starts: full, or low once the FPS watchdog has dropped it on this device (remembered, see `fxAuto`). */
+export type FxAuto = 'full' | 'low';
+/** Mechanics a normal run introduces with a card the first time the player meets them (the tutorial keeps to taps and holds). */
+export const MEET_KINDS = ['slide', 'roll', 'circle', 'spin'] as const;
+export type MeetKind = (typeof MEET_KINDS)[number];
 
 export interface Settings {
   version: 1;
@@ -27,6 +32,12 @@ export interface Settings {
   /** The chosen avatar — an id from `shared/config/avatars`; '' = the first letter of the nickname. */
   avatar: string;
   fxMode: FxMode;
+  /** "auto" economy mode starts low: the FPS watchdog dropped the FX level in an earlier run. Choosing a mode again resets it. */
+  fxAuto: FxAuto;
+  /** Mechanics already introduced by their first-meeting card (once per kind, ever). */
+  seenKinds: MeetKind[];
+  /** The wide latency probe settled once (tutorial or run): the offset is learned, runs only fine-tune it. */
+  offsetLearned: boolean;
 }
 
 const KEY = 'neon-tap:settings';
@@ -61,11 +72,20 @@ const DEFAULTS: Settings = {
   nickname: '',
   avatar: '',
   fxMode: 'auto',
+  fxAuto: 'full',
+  seenKinds: [],
+  offsetLearned: false,
 };
 
 /** Anything else — the retired 'dmitry' included — is sanitised to the default voice. */
 const VOICES: VoiceSetting[] = ['svetlana', 'off'];
 export const FX_MODES: FxMode[] = ['auto', 'on', 'off'];
+
+/** Known kinds only, each once, in MEET_KINDS order. */
+function sanitizeKinds(raw: unknown): MeetKind[] {
+  const list: readonly unknown[] = Array.isArray(raw) ? raw : [];
+  return MEET_KINDS.filter((k) => list.includes(k));
+}
 
 /** Saved settings from their JSON: missing fields (older builds) take the defaults, bad values are sanitised, garbage is the defaults. */
 export function settingsFromJson(raw: string | null): Settings {
@@ -73,6 +93,8 @@ export function settingsFromJson(raw: string | null): Settings {
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
     const merged = { ...DEFAULTS, ...parsed, version: 1 as const };
+    // A save from before the first-meeting cards: the old tutorial showed slides, rolls, circles and the spinner.
+    if (!('seenKinds' in parsed) && parsed.tutorialDone === true) merged.seenKinds = [...MEET_KINDS];
     return sanitize(merged);
   } catch {
     return DEFAULTS;
@@ -102,6 +124,9 @@ function sanitize(s: Settings): Settings {
     nickname: typeof s.nickname === 'string' ? sanitizeNickname(s.nickname) : '',
     avatar: sanitizeAvatar(s.avatar),
     fxMode: FX_MODES.includes(s.fxMode) ? s.fxMode : DEFAULTS.fxMode,
+    fxAuto: s.fxAuto === 'low' ? 'low' : 'full',
+    seenKinds: sanitizeKinds(s.seenKinds),
+    offsetLearned: s.offsetLearned === true,
   };
 }
 
@@ -116,7 +141,9 @@ settingsStore.subscribe(() => {
 });
 
 export function updateSettings(patch: Partial<Omit<Settings, 'version'>>): void {
-  settingsStore.set((prev) => sanitize({ ...prev, ...patch }));
+  // Choosing an economy mode again is the way back from a remembered drop: "auto" measures afresh.
+  const fx = patch.fxMode !== undefined && patch.fxAuto === undefined ? { fxAuto: 'full' as const } : null;
+  settingsStore.set((prev) => sanitize({ ...prev, ...patch, ...fx }));
 }
 
 export function useSettings<R>(selector: (s: Settings) => R): R {

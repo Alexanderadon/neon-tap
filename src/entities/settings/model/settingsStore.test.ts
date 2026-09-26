@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NICKNAME_MAX, getSettings, isValidNickname, sanitizeNickname, settingsFromJson, updateSettings } from './settingsStore';
+import { MEET_KINDS, NICKNAME_MAX, getSettings, isValidNickname, sanitizeNickname, settingsFromJson, updateSettings } from './settingsStore';
 
 describe('settingsStore', () => {
   it('starts with the tutorial not done', () => {
@@ -31,6 +31,23 @@ describe('settingsStore', () => {
     updateSettings({ nickname: 'Neo' });
     expect(getSettings().avatar).toBe('panda');
     updateSettings({ avatar: '', nickname: '' });
+  });
+
+  it('remembers the FX drop until an economy mode is chosen again', () => {
+    updateSettings({ fxAuto: 'low' });
+    expect(getSettings().fxAuto).toBe('low');
+    updateSettings({ musicVolume: 0.5 });
+    expect(getSettings().fxAuto).toBe('low');
+    updateSettings({ fxMode: 'auto' });
+    expect(getSettings().fxAuto).toBe('full');
+    updateSettings({ musicVolume: 0.9 });
+  });
+
+  it('adds met mechanics once each', () => {
+    updateSettings({ seenKinds: ['circle'] });
+    updateSettings({ seenKinds: [...getSettings().seenKinds, 'slide', 'circle'] });
+    expect(getSettings().seenKinds).toEqual(['slide', 'circle']);
+    updateSettings({ seenKinds: [] });
   });
 
   it('keeps the other fields intact when marking the tutorial done', () => {
@@ -84,6 +101,29 @@ describe('settingsFromJson', () => {
     expect(settingsFromJson(JSON.stringify({ voice: 'dmitry' })).voice).toBe('svetlana');
     expect(settingsFromJson(JSON.stringify({ voice: 'off' })).voice).toBe('off');
     expect(settingsFromJson(JSON.stringify({ voice: 42 })).voice).toBe('svetlana');
+  });
+
+  it('gives a new install no met mechanics, no remembered FX drop and an unlearned offset', () => {
+    expect(settingsFromJson(null)).toMatchObject({ seenKinds: [], fxAuto: 'full', offsetLearned: false });
+  });
+
+  it('counts the old tutorial: a save from before the cards with the tutorial done has met all four mechanics', () => {
+    expect(settingsFromJson(JSON.stringify({ tutorialDone: true })).seenKinds).toEqual([...MEET_KINDS]);
+    expect(settingsFromJson(JSON.stringify({ tutorialDone: false })).seenKinds).toEqual([]);
+    // Once the field is saved it is taken as it is.
+    expect(settingsFromJson(JSON.stringify({ tutorialDone: true, seenKinds: ['roll'] })).seenKinds).toEqual(['roll']);
+  });
+
+  it('keeps only known mechanic kinds, each once, and strict values for fxAuto and offsetLearned', () => {
+    const s = settingsFromJson(JSON.stringify({ seenKinds: ['spin', 'tap', 'spin', 3, 'slide'], fxAuto: 'max', offsetLearned: 'yes' }));
+    expect(s.seenKinds).toEqual(['slide', 'spin']);
+    expect(s.fxAuto).toBe('full');
+    expect(s.offsetLearned).toBe(false);
+    expect(settingsFromJson(JSON.stringify({ seenKinds: 'slide', fxAuto: 'low', offsetLearned: true }))).toMatchObject({
+      seenKinds: [],
+      fxAuto: 'low',
+      offsetLearned: true,
+    });
   });
 
   it('falls back to the defaults on garbage', () => {
