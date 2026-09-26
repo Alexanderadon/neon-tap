@@ -17,6 +17,7 @@ import { pickGems, pickLoopGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
 import { songMap } from './songMap';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
+import { OffsetProbe, type OffsetProbeMode } from './offsetProbe';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -39,6 +40,8 @@ export type SessionEvent =
   /** Out of hearts and the run cannot be revived: the fail frame shows `stars` kept (0 = «ПРОВАЛ», else «СТОП»). */
   | { type: 'fail'; stars: number; crowns: number; finale: boolean }
   | { type: 'finish'; result: PlayResult; autoOffsetMs: number | null }
+  /** The wide latency probe settled (`offsetProbe`): the player's offset in ms, already applied — the host saves it at once, before the first track. */
+  | { type: 'offset'; offsetMs: number }
   /** Paused (the host draws the pause overlay from this snapshot). */
   | { type: 'pause'; score: number; accuracy: number; level: number }
   | { type: 'resume' }
@@ -62,6 +65,12 @@ export interface SessionOptions {
   touchAssist: boolean;
   /** Learn the player's latency from their hits and nudge the offset while playing. */
   autoOffset: boolean;
+  /**
+   * The wide latency probe (see OffsetProbe): presses within ±300 ms of a note settle the offset in one
+   * go once they agree — 'single-lane' on the single-lane sections (the tutorial), 'all-lanes' on every
+   * lane (a run while the offset is still unsettled). Reported once through the `offset` event. Absent = off.
+   */
+  offsetProbe?: OffsetProbeMode;
   /** Dev/demo flag (`?nofail=1`): hearts still drain but the run never fails. */
   noFail?: boolean;
   /** Dev/review flag (`?auto=1`): the session hits every tile itself — watch and listen to a chart without playing it. */
@@ -121,7 +130,7 @@ const APPROACH_BEATS = 3.5;
 const APPROACH_MIN = 0.9;
 const APPROACH_MAX = 2.4;
 /** The saved offset (calibration + everything learned) never leaves this range: a tap bias, not a drift. */
-const AUTO_TOTAL_MAX = 0.15;
+const AUTO_TOTAL_MAX = 0.25;
 /** The learned offset glides towards its target at this many seconds per second (80 ms in ~1.3 s). */
 const OFFSET_SLEW = 0.06;
 /** Auto-offset: window of recent timing errors and the max correction it may apply, seconds. */
@@ -203,6 +212,9 @@ export class GameSession {
   /** When each section's lane count takes over: as soon as the previous section's last note is gone, but no later than one approach before the section starts. */
   private readonly switchTimes: number[];
   private readonly deltas: number[] = [];
+  /** The wide latency probe, until it settles (once per session). */
+  private readonly probe: OffsetProbe | null;
+  private probeSettled = false;
   private autoAdjust = 0;
   private hitsSeen = 0;
   private bassEnv = 0;
@@ -221,6 +233,7 @@ export class GameSession {
     this.parsed = parsed;
     this.sections = parseSections(level);
     this.notes.load(parsed);
+    this.probe = opts.offsetProbe ? new OffsetProbe(parsed, opts.offsetProbe) : null;
     this.switchTimes = this.sections.map((sec, i) => {
       if (i === 0) return 0;
       let lastEnd = -Infinity;
@@ -382,6 +395,7 @@ export class GameSession {
     this.autoNext = 0;
     this.autoDue = [];
     this.rollGems();
+    this.probe?.rearm();
     this.beatCursor.reset();
     this.renderer.setLanes(this.sections[0].lanes, true);
     const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => (this.audioEnded = true), LEAD_IN);
@@ -573,8 +587,22 @@ export class GameSession {
       this.syncSpin(songTime);
       return;
     }
+    // Every press near a note — a hit or an empty one — tells the probe how late this player hears the music.
+    if (this.probe && !this.probeSettled && this.probe.press(lane, songTime, this.clock.rateAt(audioTime), this.clock.userOffset)) this.settleProbe();
     this.notes.press(lane, songTime);
   };
+
+  /** The probe's samples agree: its median becomes the offset at once (it glides in, see frame()), and the host saves it. */
+  private settleProbe(): void {
+    const offset = this.probe?.settled() ?? null;
+    if (offset === null) return;
+    this.probeSettled = true;
+    this.offsetTarget = clamp(offset, -AUTO_TOTAL_MAX, AUTO_TOTAL_MAX);
+    // The in-run learner's half-steps start over from the probe's value.
+    this.autoAdjust = 0;
+    this.deltas.length = 0;
+    this.opts.onEvent({ type: 'offset', offsetMs: Math.round(this.offsetTarget * 1000) });
+  }
 
   /** A pointer down / move / up: while a spinner is on screen it turns the wheel. */
   private spinPointer(phase: 'down' | 'move' | 'up', e: { pointerId: number; x: number; y: number; audioTime: number }): void {
