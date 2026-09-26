@@ -241,6 +241,8 @@ const LANE_TAG_SEC = 1.4;
 const GAP_COUNT_ABOVE = 140;
 const GAP_COUNT_MIN_TOP = 200;
 const GAP_COUNT_STEP = 48;
+/** The row fades out over its last this many seconds: the note it counts to is falling through it then. */
+const GAP_COUNT_FADE = 0.5;
 /** Flying crystals (note → HUD counter) in flight at once. */
 const FLY_POOL = 4;
 const FLY_SEC = 0.55;
@@ -1370,8 +1372,9 @@ export class Renderer {
 
   /**
    * After a long empty stretch: «3 · 2 · 1» over the hit line, a digit per real second to the note that
-   * ends it. The current digit pops in the verdict material, the ones gone are dim, the ones to come
-   * half-lit. No veil, no field change — the notes keep falling through it.
+   * ends it. The current digit pops in the verdict material (no pop with reduced motion), the ones gone are dim,
+   * the ones to come half-lit. No veil, no field change — the notes keep falling through it, and the row fades
+   * out over the last GAP_COUNT_FADE s: the note it counts to passes this height just then.
    */
   private drawGapCount(left: number): void {
     const ctx = this.ctx;
@@ -1380,7 +1383,7 @@ export class Renderer {
     const y = Math.max(this.safeTop + GAP_COUNT_MIN_TOP, hitY - GAP_COUNT_ABOVE);
     const digit = Math.min(3, Math.max(1, Math.ceil(left)));
     const into = digit - left;
-    const alpha = Math.min(1, (3 - left) / 0.2, left / 0.15);
+    const alpha = Math.min(1, (3 - left) / 0.2, left / GAP_COUNT_FADE);
     if (alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -1394,7 +1397,7 @@ export class Renderer {
       const d = 3 - k;
       const x = cx + (k - 1) * GAP_COUNT_STEP;
       if (d === digit) {
-        const pop = 0.4 + 0.6 * popEase(Math.min(1, into / 0.35));
+        const pop = this.calm ? 1 : 0.4 + 0.6 * popEase(Math.min(1, into / 0.35));
         ctx.save();
         ctx.translate(x, y);
         ctx.scale(pop, pop);
