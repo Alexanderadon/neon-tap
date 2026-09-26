@@ -75,7 +75,7 @@
   },
   {
     "id": "elevate-instrument-tracks",
-    "title": "Elevate (+ instrument tracks)",
+    "title": "Elevate (+ Instrument Tracks)",
     "artist": "fupi",
     "genre": "electronic",
     "raw": "elevate-instrument-tracks.ogg",
@@ -84,7 +84,7 @@
   },
   {
     "id": "8-bit-mechanical-complex",
-    "title": "8-bit Mechanical Complex",
+    "title": "8-Bit Mechanical Complex",
     "artist": "HydroGene",
     "genre": "chiptune",
     "raw": "8-bit-mechanical-complex.mp3",
@@ -223,7 +223,7 @@
   },
   {
     "id": "espelhar",
-    "title": "Espelhar - LOUD Melodic EDM",
+    "title": "Espelhar - Loud Melodic EDM",
     "artist": "Fupi",
     "genre": "electronic",
     "raw": "espelhar.ogg",
@@ -232,7 +232,7 @@
   },
   {
     "id": "technomania101",
-    "title": "Technomania101 - 2000's europop electronic dance music",
+    "title": "Technomania101 - 2000's Europop Electronic Dance Music",
     "artist": "Fupi",
     "genre": "eurobeat",
     "raw": "technomania101.ogg",
@@ -319,7 +319,7 @@
   },
   {
     "id": "chiptuned-rock",
-    "title": "Ciptuned Rock tune",
+    "title": "Chiptuned Rock Tune",
     "artist": "bertsz",
     "genre": "chiptune",
     "raw": "chiptuned-rock.flac",
@@ -329,7 +329,7 @@
   },
   {
     "id": "hardcore-chiptune-theme",
-    "title": "hardcore chiptune theme",
+    "title": "Hardcore Chiptune Theme",
     "artist": "obscure music",
     "genre": "chiptune",
     "raw": "hardcore-chiptune-theme.mp3",
@@ -349,7 +349,7 @@
   {
     "id": "tech-rave",
     "loops": 2,
-    "title": "Tech rave",
+    "title": "Tech Rave",
     "artist": "Frenchyboy",
     "genre": "techno",
     "raw": "tech-rave.wav",
@@ -359,7 +359,7 @@
   },
   {
     "id": "chill-lofi-inspired",
-    "title": "Chill lofi inspired",
+    "title": "Chill Lofi Inspired",
     "artist": "omfgdude",
     "genre": "lofi",
     "raw": "chill-lofi-inspired.mp3",
