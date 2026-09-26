@@ -4,6 +4,12 @@ import { coverImage } from './cover';
 const PARALLEL = 2;
 
 const settled = new Set<string>();
+/**
+ * The loaded pictures stay referenced for the page's life (~4 MB for the whole catalog): the browser then
+ * keeps them in its memory cache and a card paints at once, even on a first visit where the server
+ * asks to revalidate every file and the service worker is not caching yet.
+ */
+const held = new Map<string, HTMLImageElement>();
 const running = new Map<string, Promise<void>>();
 let queue: string[] = [];
 
@@ -28,6 +34,7 @@ export function preloadCover(id: string): Promise<void> {
   // The decode is still started, in the background, so the card paints at once when it mounts.
   const loaded = new Promise((resolve, reject) => {
     img.onload = () => {
+      held.set(id, img);
       if (typeof img.decode === 'function') void img.decode().catch(() => undefined);
       resolve(undefined);
     };

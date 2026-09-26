@@ -1,7 +1,11 @@
 import { audioEngine } from './AudioEngine';
+import { fetchBytes } from '@/shared/lib/net';
 
-/** Decoded songs are big (about 10 MB of memory per stereo minute): only the latest one is kept. */
-const KEEP = 1;
+/**
+ * Decoded songs are big (about 10 MB of memory per stereo minute): only the two latest are kept —
+ * the splash decodes the first track and, on a first launch, the tutorial's song.
+ */
+const KEEP = 2;
 /** The download is most of the wait; decoding takes the last stretch of the bar. */
 const DOWNLOAD_SHARE = 0.95;
 
@@ -77,4 +81,16 @@ export function cancelBackgroundLoad(url: string): void {
   if (!entry?.background) return;
   entry.ctrl.abort();
   pending.delete(url);
+}
+
+/**
+ * Fetch a song's bytes into the browser (and, in production, the service worker's media) cache
+ * without decoding it — the next cards after the splash: when one is chosen, only the decode is
+ * left. Low priority where supported; never rejects.
+ */
+export function prefetchSong(url: string): Promise<void> {
+  if (decoded.has(url) || pending.has(url)) return Promise.resolve();
+  return fetchBytes(url, { retries: 1 })
+    .then(() => undefined)
+    .catch(() => undefined);
 }
