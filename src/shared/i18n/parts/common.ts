@@ -85,22 +85,27 @@ export const common = {
   dailyTrack: 'ТРЕК ДНЯ',
   goalsTitle: 'Достижения',
   achEarned: 'получено',
+  /**
+   * One template for every badge title: «Что: N» — the thing counted in the nominative plural (as the
+   * wallet, the HUD and the records name it) and the target. The goals row shows only the title and
+   * «64 / 100», so the word must say what is counted on its own; `desc` adds how it counts.
+   */
   achievements: {
-    pass: { title: 'Пройди {n} {noun}', desc: 'Встроенные треки с рангом C и выше', noun: ['трек', 'трека', 'треков'] },
-    combo: { title: 'Комбо {n}', desc: 'Попаданий подряд в одном заходе' },
-    rankS: { title: 'S на {n} {noun}', desc: 'Точность 95 % и выше', noun: ['треке', 'треках', 'треках'] },
-    fullCombo: { title: 'Полное комбо ×{n}', desc: 'Без единого промаха от первой ноты до последней' },
-    stars: { title: 'Собери {n} ★', desc: 'Звёзды за треки и трек дня' },
-    slow: { title: 'Замедлений: {n}', desc: 'Поймай спелл «часы»' },
-    heart: { title: 'Сердец: {n}', desc: 'Поймай спелл «сердце»' },
-    crystals: { title: 'Кристаллов: {n}', desc: 'Собрано за всё время' },
-    daily: { title: 'Трек дня ×{n}', desc: 'Пройди трек дня в разные дни' },
-    hardest: { title: 'Сложность {n}', desc: 'Пройди трек без провала' },
-    genres: { title: 'Жанров: {n}', desc: 'Пройди треки разных жанров' },
-    bought: { title: 'Покупок: {n}', desc: 'Треки, купленные за кристаллы' },
-    perfects: { title: 'Точных нот: {n}', desc: 'Идеальных попаданий за всё время' },
-    attempts: { title: 'Заходов: {n}', desc: 'Любые попытки, даже провальные' },
-    custom: { title: 'Моя музыка ×{n}', desc: 'Пройди свои песни' },
+    pass: { title: 'Треки: {n}', desc: 'Пройди встроенные треки с рангом C и выше' },
+    combo: { title: 'Комбо: {n}', desc: 'Попадания подряд в одном заходе' },
+    rankS: { title: 'Ранг S: {n}', desc: 'Треки с точностью 95 % и выше' },
+    fullCombo: { title: 'Полное комбо: {n}', desc: 'Треки без единого промаха от первой ноты до последней' },
+    stars: { title: 'Звёзды: {n}', desc: 'Звёзды за треки и трек дня' },
+    slow: { title: 'Замедления: {n}', desc: 'Поймай спелл «часы»' },
+    heart: { title: 'Сердца: {n}', desc: 'Поймай спелл «сердце»' },
+    crystals: { title: 'Кристаллы: {n}', desc: 'Собрано за всё время' },
+    daily: { title: 'Трек дня: {n}', desc: 'Пройди трек дня в разные дни' },
+    hardest: { title: 'Сложность: {n}', desc: 'Пройди трек такой сложности без провала' },
+    genres: { title: 'Жанры: {n}', desc: 'Пройди треки разных жанров' },
+    bought: { title: 'Покупки: {n}', desc: 'Треки, купленные за кристаллы' },
+    perfects: { title: 'Идеально: {n}', desc: 'Попадания «Идеально» за всё время' },
+    attempts: { title: 'Попытки: {n}', desc: 'Любые попытки, даже провальные' },
+    custom: { title: 'Моя музыка: {n}', desc: 'Пройди свои песни' },
   },
   // --- tutorial ---
   tutorial: 'Обучение',
