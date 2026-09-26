@@ -697,7 +697,7 @@ export class GameSession {
       const dead = this.lives.miss();
       if (!this.opts.hideHearts) {
         this.heartLostAt = this.lastJudgementAt;
-        this.renderer.heartLost(this.lives.hearts);
+        this.renderer.heartLost(this.lives.hearts, MAX_HEARTS);
         this.opts.onEvent({ type: 'life-lost', hearts: this.lives.hearts });
       }
       this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
