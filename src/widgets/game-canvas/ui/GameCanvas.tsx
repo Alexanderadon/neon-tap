@@ -246,6 +246,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         await audioEngine.ensureContext();
         const settings = getSettings();
         audioEngine.setVolumes({ music: settings.musicVolume, sfx: settings.sfxVolume, voice: settings.voiceVolume });
+        setMuted(false); // the volumes are the settings' again
         voice.setVoice(settings.voice);
         const song = audioBuffer ?? loadSong(`${import.meta.env.BASE_URL}${chart.audio}`, { onProgress: (f) => !cancelled && setLoadPct(Math.round(f * 100)) });
         const [buffer] = await Promise.all([song, preloadSfx(), voice.preload()]);
@@ -368,12 +369,23 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
   const exit = useCallback(() => (hostRef.current.onExit ? hostRef.current.onExit() : navigate('menu')), []);
 
+  /** «Звук выкл» means all of it — the music, the hit sounds and the voice (a child reads the label literally); «Звук вкл» brings the settings' volumes back. */
   const toggleSound = () => {
-    sfxUi();
     const next = !muted;
     setMuted(next);
-    audioEngine.setVolumes({ music: next ? 0 : getSettings().musicVolume });
+    if (next) sfxUi(); // the click is heard before the silence, and after it on the way back
+    const s = getSettings();
+    audioEngine.setVolumes(next ? { music: 0, sfx: 0, voice: 0 } : { music: s.musicVolume, sfx: s.sfxVolume, voice: s.voiceVolume });
+    if (!next) sfxUi();
   };
+  // Left the game muted: the menu's radio and buttons play at the settings' volumes again.
+  useEffect(
+    () => () => {
+      const s = getSettings();
+      audioEngine.setVolumes({ music: s.musicVolume, sfx: s.sfxVolume, voice: s.voiceVolume });
+    },
+    [],
+  );
 
   // --- second chance: the 5 s offer; NEON PASS gives the hearts at once, otherwise a rewarded ad plays first ---
   const acceptRevive = () => {
