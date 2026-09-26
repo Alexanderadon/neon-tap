@@ -223,7 +223,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           updateSettings({ fxAuto: 'low' }); // the next runs start on the economy level
           break;
         case 'offset':
-          // The wide probe settled (tutorial, or a run before the offset was learned): saved now, before any result.
+          // The wide probe settled on a new offset (the first time, or far from the learned one): saved now, before any result.
           updateSettings({ audioOffsetMs: e.offsetMs, offsetLearned: true });
           break;
         case 'finish':
@@ -268,8 +268,10 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           touch: isTouchDevice(),
           touchAssist: true,
           autoOffset: true,
-          // The latency is learned from the first taps: in the tutorial's single-lane steps, and in runs until it has settled once. A calibration is the player's own word.
-          offsetProbe: settings.calibrated ? undefined : tutorial ? 'single-lane' : settings.offsetLearned ? undefined : 'all-lanes',
+          // The latency is learned from the taps: in the tutorial's single-lane steps and in every run (once learned, only a big
+          // disagreement moves it). A saved calibration is the player's own word — «Пропустить» is not one.
+          offsetProbe: settings.offsetManual ? undefined : tutorial ? 'single-lane' : 'all-lanes',
+          offsetKnown: settings.offsetLearned,
           noFail: noFailFlag || tutorial,
           autoplay: autoFlag && !tutorial,
           hideHearts: tutorial,

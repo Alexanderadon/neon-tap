@@ -22,6 +22,11 @@ export interface Settings {
   voiceVolume: number;
   voice: VoiceSetting;
   calibrated: boolean;
+  /**
+   * The player saved a measured calibration (the «Подстройка» screen's «Сохранить»): the game's own latency probe
+   * stays off. `calibrated` alone does not say so — «Пропустить», the old first-launch flow and a dropped stale offset set it too.
+   */
+  offsetManual: boolean;
   /** The calibration version the saved offset was made with; an older one is dropped on load (see CALIBRATION_VERSION). */
   calibrationVersion: number;
   debugOverlay: boolean;
@@ -36,7 +41,7 @@ export interface Settings {
   fxAuto: FxAuto;
   /** Mechanics already introduced by their first-meeting card (once per kind, ever). */
   seenKinds: MeetKind[];
-  /** The wide latency probe settled once (tutorial or run): the offset is learned, runs only fine-tune it. */
+  /** The wide latency probe settled once (tutorial or run): the offset is learned — later a probe moves it only when it disagrees by 40 ms or more. */
   offsetLearned: boolean;
 }
 
@@ -66,6 +71,7 @@ const DEFAULTS: Settings = {
   voiceVolume: 0.6,
   voice: 'svetlana',
   calibrated: false,
+  offsetManual: false,
   calibrationVersion: CALIBRATION_VERSION, // a fresh install has no stale offset to drop
   debugOverlay: false,
   tutorialDone: false,
@@ -116,6 +122,7 @@ function sanitize(s: Settings): Settings {
     ...s,
     audioOffsetMs: stale ? 0 : clamp(Math.round(s.audioOffsetMs), OFFSET_RANGE_MS.min, OFFSET_RANGE_MS.max),
     calibrationVersion: stale ? CALIBRATION_VERSION : s.calibrationVersion,
+    offsetManual: !stale && s.offsetManual === true,
     musicVolume: clamp(s.musicVolume, 0, 1),
     sfxVolume: clamp(s.sfxVolume, 0, 1),
     voiceVolume: clamp(s.voiceVolume, 0, 1),

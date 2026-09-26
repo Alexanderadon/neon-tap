@@ -126,6 +126,21 @@ describe('settingsFromJson', () => {
     });
   });
 
+  it('lets the latency probe run for everyone but a saved measured calibration', () => {
+    expect(settingsFromJson(null).offsetManual).toBe(false);
+    // «Пропустить» and the old first-launch flow set `calibrated` without measuring anything.
+    expect(settingsFromJson(JSON.stringify({ calibrated: true, calibrationVersion: 3 })).offsetManual).toBe(false);
+    expect(settingsFromJson(JSON.stringify({ calibrated: true, offsetManual: true, calibrationVersion: 3, audioOffsetMs: 180 }))).toMatchObject({
+      offsetManual: true,
+      audioOffsetMs: 180,
+    });
+    // A stale calibration's offset is dropped, and with it the word that it was measured.
+    expect(settingsFromJson(JSON.stringify({ calibrated: true, offsetManual: true, calibrationVersion: 2, audioOffsetMs: 180 }))).toMatchObject({
+      offsetManual: false,
+      audioOffsetMs: 0,
+    });
+  });
+
   it('falls back to the defaults on garbage', () => {
     expect(settingsFromJson('{not json').avatar).toBe('');
     expect(settingsFromJson(null).nickname).toBe('');

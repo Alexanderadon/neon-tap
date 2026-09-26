@@ -17,7 +17,7 @@ import { pickGems, pickLoopGems } from './gems';
 import { LEVELS, levelOutcome, levelRate } from './levels';
 import { beatSeconds, songMap } from './songMap';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
-import { OffsetProbe, type OffsetProbeMode } from './offsetProbe';
+import { OffsetProbe, PROBE_MIN_SHIFT, type OffsetProbeMode } from './offsetProbe';
 import { gapCountLeft, gapReturns, introStart, notesFrom } from './pacing';
 import { MeetTracker, planMeetings, type Meeting } from './firstMeet';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
@@ -75,9 +75,14 @@ export interface SessionOptions {
   /**
    * The wide latency probe (see OffsetProbe): presses within ±300 ms of a note settle the offset in one
    * go once they agree — 'single-lane' on the single-lane sections (the tutorial), 'all-lanes' on every
-   * lane (a run while the offset is still unsettled). Reported once through the `offset` event. Absent = off.
+   * lane (every run without a calibration). Reported once through the `offset` event. Absent = off.
    */
   offsetProbe?: OffsetProbeMode;
+  /**
+   * The probe settled in an earlier session (`settings.offsetLearned`): now it moves the offset only when it
+   * disagrees by PROBE_MIN_SHIFT or more — Bluetooth swapped for a cable, a first tutorial learned on reaction time.
+   */
+  offsetKnown?: boolean;
   /** Dev/demo flag (`?nofail=1`): hearts still drain but the run never fails. */
   noFail?: boolean;
   /** Dev/review flag (`?auto=1`): the session hits every tile itself — watch and listen to a chart without playing it. */
@@ -659,12 +664,17 @@ export class GameSession {
     this.notes.press(lane, songTime);
   };
 
-  /** The probe's samples agree: its median becomes the offset at once (it glides in, see frame()), and the host saves it. */
+  /**
+   * The probe's samples agree: its median becomes the offset at once (it glides in, see frame()), and the host saves it.
+   * An offset learned before stays when they nearly agree — fine-tuning is the in-run learner's.
+   */
   private settleProbe(): void {
     const offset = this.probe?.settled() ?? null;
     if (offset === null) return;
     this.probeSettled = true;
-    this.offsetTarget = clamp(offset, -AUTO_TOTAL_MAX, AUTO_TOTAL_MAX);
+    const target = clamp(offset, -AUTO_TOTAL_MAX, AUTO_TOTAL_MAX);
+    if (this.opts.offsetKnown && Math.abs(target - this.offsetTarget) < PROBE_MIN_SHIFT) return;
+    this.offsetTarget = target;
     // The in-run learner's half-steps start over from the probe's value.
     this.autoAdjust = 0;
     this.deltas.length = 0;
