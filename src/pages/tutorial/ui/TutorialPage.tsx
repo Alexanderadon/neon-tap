@@ -36,15 +36,12 @@ export function TutorialPage() {
   const hitsRef = useRef(0);
   /** Bitmask of steps already replayed (once each). */
   const replayedRef = useRef(0);
-  /**
-   * Jumps the song back to a song time with the notes from there on armed again. GameCanvas does not
-   * hand one out yet (a rewind is GameSession / NoteManager work); until it does, a step due for a
-   * replay is only marked as replayed and the tutorial runs on.
-   */
+  /** The step playing its second time (its tag says «Ещё разок» instead of «n / 9»), or -1. */
+  const [replaying, setReplaying] = useState(-1);
+  /** Jumps the song back to a song time with the notes from there on armed again: GameCanvas fills it while the run plays (GameSession.rewind). */
   const rewindRef = useRef<((songTime: number) => void) | null>(null);
   /** The «Готово!» frame: what this finish credited. */
   const [finale, setFinale] = useState<{ crystals: number } | null>(null);
-  const timeRef = useRef(-Infinity);
   const leftRef = useRef(false);
   const first = CATALOG[0];
   /** A friend's duel link opened the game: its challenge comes right after the tutorial (App), so the finale leads there instead. */
@@ -78,12 +75,14 @@ export function TutorialPage() {
 
   const onTime = useCallback(
     (t: number) => {
-      timeRef.current = t;
       setSongTime(t);
       const due = replayDue(script, t, hitsRef.current, replayedRef.current);
       if (due) {
         replayedRef.current |= 1 << due.index;
-        rewindRef.current?.(due.at);
+        if (rewindRef.current) {
+          rewindRef.current(due.at);
+          setReplaying(due.index);
+        }
       }
     },
     [script],
@@ -95,10 +94,13 @@ export function TutorialPage() {
         // A fresh run (R restarts it): every step may be hit and replayed again.
         hitsRef.current = 0;
         replayedRef.current = 0;
+        setReplaying(-1);
         setSucceeded(0);
         setFinale(null);
-      } else if (e.type === 'judge' && e.judgement !== 'miss') {
-        const i = captionAt(script, timeRef.current);
+      } else if (e.type === 'judge' && e.judgement !== 'miss' && !e.tail) {
+        // By the note's own time, not the clock: a verdict arrives up to a window (and the player's offset) after its note —
+        // a hold's tail ends right on the next step's start. Tails are the head's hit once more and count for nothing.
+        const i = captionAt(script, e.time);
         if (i >= 0) {
           hitsRef.current |= 1 << i;
           setSucceeded(hitsRef.current);
@@ -184,6 +186,7 @@ export function TutorialPage() {
       onEvent={onEvent}
       onTime={onTime}
       onExit={skip}
+      rewindRef={rewindRef}
       header={<TopBar />}
       overlay={
         finale ? (
@@ -209,6 +212,7 @@ export function TutorialPage() {
             total={script.length}
             progress={step ? stepProgress(step, songTime) : 0}
             succeeded={step !== null && (succeeded & (1 << index)) !== 0}
+            again={step !== null && index === replaying}
             touch={isTouchDevice()}
           />
         )

@@ -9,9 +9,11 @@ export const tutorial = {
     alt: { title: 'По очереди', desktop: '{keys} — по очереди', touch: 'Левый, правый, левый…' },
     lanes3: { title: 'Три полосы', desktop: 'Клавиши {keys}', touch: 'Три зоны внизу' },
     lanes4: { title: 'Четыре полосы', desktop: 'Клавиши {keys}', touch: 'Четыре зоны внизу' },
-    spell: { title: 'Поймай сердце', desktop: '{key} — это ещё одна жизнь', touch: 'Тапни — это ещё одна жизнь' },
+    spell: { title: 'Поймай сердце', desktop: '{key} — и у тебя ещё одна жизнь', touch: 'Тапни — и будет ещё одна жизнь' },
     finale: { title: 'Готово!', desktop: 'Дальше — настоящий трек', touch: 'Дальше — настоящий трек' },
   },
+  /** The step tag while a step with no hit plays its second time (instead of «2 / 9»). */
+  tutorialAgain: 'Ещё разок',
   /** The «Готово!» frame: what a real track adds. */
   tutorialFinaleLine: 'В треке три уровня, каждый быстрее, за каждый — звезда',
 } as const;

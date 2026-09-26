@@ -93,7 +93,7 @@ describe('tutorial script', () => {
     // The heart caption names only the heart lane's key, not the whole 4-key row.
     const spell = script.find((s) => s.id === 'spell')!;
     expect(spell.title).toBe('Поймай сердце');
-    expect(spell.hintDesktop).toBe(`${KEY_LABELS[4][SPELL_LANE]} — это ещё одна жизнь`);
+    expect(spell.hintDesktop).toBe(`${KEY_LABELS[4][SPELL_LANE]} — и у тебя ещё одна жизнь`);
     expect(spell.hintDesktop).not.toContain(keyHint(4));
     // On one lane either key works; the tap hint says so instead of reading as a chord.
     const tap = script.find((s) => s.id === 'tap')!;

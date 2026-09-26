@@ -25,7 +25,8 @@ import { laneAtPoint } from '../lib/layout';
 
 export type SessionEvent =
   | { type: 'start' }
-  | { type: 'judge'; judgement: Judgement; combo: number }
+  /** A verdict: `time` — the note's song time, `tail` — the end of a long note (not its head). */
+  | { type: 'judge'; judgement: Judgement; combo: number; time: number; tail: boolean }
   | { type: 'combo-milestone'; combo: number }
   | { type: 'combo-break'; combo: number }
   | { type: 'perfect-streak'; streak: number }
@@ -758,7 +759,7 @@ export class GameSession {
     this.timeline.record(this.lastJudgementAt + (this.level - 1) * this.opts.audioBuffer.duration, judgement, this.scoring.combo);
     // An untouched long note misses twice (head, tail) for accuracy, but costs one heart and one effect.
     if (judgement === 'miss' && tail && note.judgement === 'miss') {
-      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
+      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo, time: note.time, tail });
       return;
     }
     if (note.kind === 'spin') {
@@ -772,7 +773,7 @@ export class GameSession {
         sfxHit(judgement === 'perfect' ? 0 : 1);
         this.comboGrewAt = this.lastJudgementAt;
       }
-      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
+      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo, time: note.time, tail });
       return;
     }
     this.renderer.hitFeedback(note.lane, note.lanes, judgement, note.kind === 'circle' ? note.seq : 0);
@@ -794,7 +795,7 @@ export class GameSession {
         this.renderer.heartLost(this.lives.hearts, MAX_HEARTS);
         this.opts.onEvent({ type: 'life-lost', hearts: this.lives.hearts });
       }
-      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo });
+      this.opts.onEvent({ type: 'judge', judgement, combo: this.scoring.combo, time: note.time, tail });
       if (dead && !this.opts.noFail && !this.opts.hideHearts) {
         // No NEON PASS and no ad to show: the run simply ends, nothing is dangled.
         if (canOfferRevive(this.reviveUsed, this.opts.revive !== false) && (this.opts.canRevive?.() ?? true)) this.freezeHeartsOut();
@@ -826,7 +827,7 @@ export class GameSession {
       this.renderer.comboMilestone(combo);
       this.opts.onEvent({ type: 'combo-milestone', combo });
     }
-    this.opts.onEvent({ type: 'judge', judgement, combo });
+    this.opts.onEvent({ type: 'judge', judgement, combo, time: note.time, tail });
   };
 
   /**
