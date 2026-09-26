@@ -44,6 +44,10 @@ export const menu = {
     dino: 'Дино',
   },
 
+  // --- records ---
+  /** The records header's arrows: through the tracks the player has played, in deck order. */
+  recordsPrevAria: 'Предыдущий сыгранный трек',
+  recordsNextAria: 'Следующий сыгранный трек',
   // --- achievements ---
   goalsGot: 'получено {done} из {total}',
   goalLevelsAria: 'уровень {n} из {total}',

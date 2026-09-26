@@ -86,3 +86,49 @@
 .history-trend-flat {
   color: var(--w55);
 }
+
+/* RecordsHeader (RecordsHeader.tsx): ‹ › at the sub-header's edges — 24 visual, 44 to the finger — and the centred line between them. */
+.records-head-arrows {
+  position: relative;
+  box-sizing: border-box;
+  padding: 0 36px;
+}
+.records-arrow {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-999);
+  background: none;
+  color: var(--w80);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.records-arrow::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+.records-arrow-prev {
+  left: 0;
+}
+.records-arrow-next {
+  right: 0;
+}
+.records-arrow-prev > svg {
+  transform: scaleX(-1);
+}
+.records-arrow:disabled {
+  color: var(--w30);
+  cursor: default;
+}
+.records-arrow:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}

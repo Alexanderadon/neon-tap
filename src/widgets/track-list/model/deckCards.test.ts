@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { CATALOG } from '@/entities/track';
-import { CUSTOM_CARD, DECK_SIZE, SLOT_CARD, SLOT_WEEK, deckLayout, isCustomCard, isSlotCard, slotCoverId, trackIndexOf } from './deckCards';
-import { readDeckIndex } from './deckPosition';
+import {
+  CUSTOM_CARD,
+  DECK_SIZE,
+  SLOT_CARD,
+  SLOT_WEEK,
+  cardIndexOf,
+  cardRefOf,
+  deckLayout,
+  isCustomCard,
+  isSlotCard,
+  isTrackCard,
+  slotCoverId,
+  trackIndexOf,
+} from './deckCards';
 import { releaseTarget, rubberBand } from './deckMotion';
 
 describe('the deck layout', () => {
@@ -44,8 +56,17 @@ describe('the custom card', () => {
     expect(rubberBand(CUSTOM_CARD + 0.9, DECK_SIZE)).toBeCloseTo(CUSTOM_CARD + 0.3);
   });
 
-  it('is never where the deck reopens, nor is the empty-week card', () => {
-    expect(readDeckIndex({ getItem: () => String(CUSTOM_CARD) }, CATALOG.length)).toBeNull();
-    expect(readDeckIndex({ getItem: () => String(CATALOG.length) }, CATALOG.length)).toBeNull();
+  it('is remembered by what it shows: tracks by id, «Моя музыка» and the empty-week card by kind', () => {
+    expect(cardRefOf(CUSTOM_CARD)).toEqual({ kind: 'custom' });
+    expect(cardIndexOf({ kind: 'custom' })).toBe(CUSTOM_CARD);
+    expect(cardRefOf(2)).toEqual({ kind: 'track', id: CATALOG[2].id });
+    expect(cardIndexOf({ kind: 'track', id: CATALOG[2].id })).toBe(2);
+    expect(cardIndexOf({ kind: 'track', id: 'gone-for-good' })).toBeNull();
+    expect(cardIndexOf({ kind: 'slot' })).toBe(SLOT_CARD >= 0 ? SLOT_CARD : null);
+    for (let i = 0; i < DECK_SIZE; i++) expect(cardIndexOf(cardRefOf(i))).toBe(i);
+    expect(isTrackCard(0)).toBe(true);
+    expect(isTrackCard(CATALOG.length - 1)).toBe(true);
+    expect(isTrackCard(CUSTOM_CARD)).toBe(false);
+    expect(isTrackCard(-1)).toBe(false);
   });
 });

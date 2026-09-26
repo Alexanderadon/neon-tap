@@ -7,7 +7,6 @@ import { CATALOG, TrackCover, chapterAt, chapterTitle, coverImage, idsAround, pr
 import { starsForTrack } from '@/entities/progress';
 import { useSongCount } from '@/entities/custom-song';
 import { lockFor, useCatalogState, type LockState } from '../model/useCatalogState';
-import { writeDeckIndex } from '../model/deckPosition';
 import { DECK_SIZE, SLOT_WEEK, isCustomCard, isSlotCard, slotCoverId, trackIndexOf } from '../model/deckCards';
 import { DeckMotion, WINDOW, cardStyle, releaseTarget, rubberBand } from '../model/deckMotion';
 import { markDropSeen, unseenDrop } from '../model/dropSeen';
@@ -94,7 +93,6 @@ export function TrackDeck({ index, onIndexChange, onPlay }: Props) {
     sfxSwipe(1 + 0.03 * Math.min(8, passes.current++));
     setDetails(false);
     changeRef.current(i);
-    writeDeckIndex(storage(), i);
   }, []);
 
   const tick = useCallback(
