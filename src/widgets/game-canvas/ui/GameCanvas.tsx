@@ -28,6 +28,7 @@ import { getSettings, updateSettings } from '@/entities/settings';
 import { CoverScene, TrackCover, trackTint } from '@/entities/track';
 import { isPassActive } from '@/entities/pass';
 import {
+  CaptionCard,
   GameSession,
   LEVELS,
   REFILL_AT,
@@ -38,6 +39,7 @@ import {
   reviveKeysLocked,
   reviveStep,
   watchReviveAd,
+  type Meeting,
   type ReviveAction,
   type ReviveState,
   type SessionEvent,
@@ -47,6 +49,7 @@ import { trackSpell } from '@/features/track-progress';
 import { voice, praise } from '@/features/voice-feedback';
 import type { ChartSource } from '@/entities/play-session';
 import { reviveButton } from '../model/reviveButton';
+import { meetCard, meetProgress } from '../model/meetCard';
 import './game-canvas.css';
 
 export type GameCanvasMode = 'play' | 'tutorial';
@@ -118,10 +121,15 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
     else if (effect === 'fail') s?.declineRevive(); // a no-op once the session has failed on its own
   }, []);
   const [muted, setMuted] = useState(false);
+  /** A mechanic met for the first time: its card over the HUD (the song does not stop) and the song time for its bar. */
+  const [meet, setMeet] = useState<Meeting | null>(null);
+  const meetRef = useRef<Meeting | null>(null);
+  const [meetTime, setMeetTime] = useState(0);
   // Latest host callbacks without re-creating the session when the parent re-renders.
   const hostRef = useRef({ onEvent, onTime, onExit });
   hostRef.current = { onEvent, onTime, onExit };
   const tutorial = mode === 'tutorial';
+  const touchRef = useRef(isTouchDevice());
   // The review autoplayer (`?auto=1` on this page load): named in the pause panel so nobody wonders who is playing.
   const autoRun = hasDevFlag('auto');
 
@@ -188,6 +196,16 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           setPaused(null);
           stepRevive({ type: 'resumed' });
           break;
+        case 'meet':
+          meetRef.current = e.card;
+          setMeet(e.card);
+          if (e.card) {
+            setMeetTime(e.card.from);
+            // Once per kind, ever: marked the moment the card rises.
+            const seen = getSettings().seenKinds;
+            if (!seen.includes(e.card.kind)) updateSettings({ seenKinds: [...seen, e.card.kind] });
+          }
+          break;
         case 'offset':
           // The wide probe settled (tutorial, or a run before the offset was learned): saved now, before any result.
           updateSettings({ audioOffsetMs: e.offsetMs, offsetLearned: true });
@@ -203,6 +221,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
     setStatus('loading');
     setLoadPct(0);
+    meetRef.current = null;
+    setMeet(null);
     (async () => {
       try {
         await audioEngine.ensureContext();
@@ -237,6 +257,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           gems: !tutorial,
           levels: !tutorial,
           endless: !tutorial,
+          // The first slide, roll, circle and spinner a player meets get a card; the tutorial has its own.
+          seenKinds: tutorial ? undefined : settings.seenKinds,
           // Long intros skipped, «3 · 2 · 1» after long silences; the tutorial's captions run on song time.
           pacing: !tutorial,
           // The second chance: free with NEON PASS (no ad), otherwise for a rewarded ad; neither PASS nor an ad provider (the web build) — not offered.
@@ -245,7 +267,10 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           fxMode: settings.fxMode,
           debug: settings.debugOverlay,
           onEvent: handleEvent,
-          onTime: tutorial ? (t) => hostRef.current.onTime?.(t) : undefined,
+          onTime: (t) => {
+            hostRef.current.onTime?.(t);
+            if (meetRef.current) setMeetTime(t);
+          },
         });
         sessionRef.current = session;
         setStatus('ready');
@@ -419,6 +444,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         />
       )}
       {hudVisible && overlay}
+      {hudVisible && meet && !tutorial && (
+        <CaptionCard step={meetCard(meet)} tag={dict.meetTag} progress={meetProgress(meet, meetTime)} touch={touchRef.current} />
+      )}
 
       {(status === 'loading' || status === 'tap') &&
         skeleton(

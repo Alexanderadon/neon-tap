@@ -9,3 +9,7 @@ export { LEVELS } from './model/levels';
 // The second chance: only what the canvas host (widgets/game-canvas) drives it with; the rest stays inside the feature.
 export { reviveStep, REVIVE_IDLE, REVIVE_OFFER_SEC, REFILL_AT, reviveAvailable, reviveArmed, reviveKeysLocked, watchReviveAd } from './model/revive';
 export type { ReviveState, ReviveAction } from './model/revive';
+// The caption card: the tutorial's steps (widgets/tutorial-overlay) and a run's first meeting of a mechanic (widgets/game-canvas).
+export { CaptionCard } from './ui/CaptionCard';
+export type { CaptionStep } from './ui/CaptionCard';
+export type { Meeting } from './model/firstMeet';

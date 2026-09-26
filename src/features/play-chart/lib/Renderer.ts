@@ -131,6 +131,8 @@ export interface FrameState {
   start: number;
   /** Real seconds left to the note that ends a long empty stretch while its «3 · 2 · 1» runs, else -1. */
   gapLeft: number;
+  /** A caption card (DOM) covers the state row: the combo steps down to its tutorial place under the card. */
+  caption: boolean;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
@@ -2160,7 +2162,7 @@ export class Renderer {
     }
 
     // Combo: 44/900 in the score material (white; gold only while it burns, from COMBO_HEAT_AT[0]), «КОМБО» 11 under it. Pop 1 → 1.1 → 1 on a hit; on a break the number ticks out.
-    const comboTop = this.comboTop(tutorial);
+    const comboTop = this.comboTop(tutorial || s.caption);
     if (s.combo >= 2 && !this.starShow) {
       const pop = s.comboAge < 0.35 ? Math.sin((Math.PI * s.comboAge) / 0.35) : 0;
       // A milestone: the number leaps to 1.6× and settles with a bounce.
