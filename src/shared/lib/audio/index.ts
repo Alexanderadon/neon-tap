@@ -9,7 +9,7 @@ export { SampleBank } from './SampleBank';
 export type { PlayOptions } from './SampleBank';
 export { preloadSfx, sfxBank, sfxHit, sfxMiss, sfxComboBreak, sfxClick, sfxMilestone, sfxGem, sfxTick, sfxRank, sfxUi, sfxLanes, sfxSwipe } from './sfx';
 export { unlockAudio, useAudioUnlocked, audioUnlockStore, installGestureUnlock, waitForAudioUnlock } from './unlock';
-export { loadSong } from './songCache';
+export { loadSong, cancelBackgroundLoad } from './songCache';
 export { probeDuration, PROBE_TIMEOUT_MS } from './probeDuration';
 export type { ProbeElement, ProbeOptions } from './probeDuration';
 export type { SongLoadOptions } from './songCache';

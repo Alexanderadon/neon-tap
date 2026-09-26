@@ -66,3 +66,15 @@ export function loadSong(url: string, opts: SongLoadOptions = {}): Promise<Audio
   if (opts.onProgress) entry.listeners.add(opts.onProgress);
   return entry.promise;
 }
+
+/**
+ * Drop the download of `url` if it is still a background one (the radio moved on to another card):
+ * the phone's bandwidth goes to what the player looks at now. A load someone waits for in the
+ * foreground (the game, the shop preview) is never cancelled; its waiters see nothing change.
+ */
+export function cancelBackgroundLoad(url: string): void {
+  const entry = pending.get(url);
+  if (!entry?.background) return;
+  entry.ctrl.abort();
+  pending.delete(url);
+}
