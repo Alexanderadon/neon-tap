@@ -18,6 +18,18 @@ describe('OffsetProbe', () => {
     expect(probe.settled()).toBeCloseTo(0.22, 3);
   });
 
+  it('gives a press to its own tile, not the nearer next one: 270 ms late on taps half a second apart is +270 ms', () => {
+    const notes = taps(10);
+    const probe = new OffsetProbe(notes, 'single-lane');
+    notes.forEach((n) => probe.press(0, n.time + 0.27, 1, 0));
+    expect(probe.count).toBe(10);
+    expect(probe.settled()).toBeCloseTo(0.27, 3);
+    // Early presses work the same way round.
+    const early = new OffsetProbe(notes, 'single-lane');
+    notes.forEach((n) => early.press(0, n.time - 0.27, 1, 0));
+    expect(early.settled()).toBeCloseTo(-0.27, 3);
+  });
+
   it('takes one press per note and nothing beyond ±300 ms', () => {
     const notes = taps(3, 1);
     const probe = new OffsetProbe(notes, 'single-lane');
