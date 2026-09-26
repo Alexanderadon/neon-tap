@@ -3,9 +3,9 @@ import { UNLOCK_ALL } from './constants';
 /**
  * Review and test switches taken from the page URL: `?auto=1` (the run plays itself), `?nofail=1`, `?unlock=1`,
  * `?ads=fast` (the stub ad in a production build), `?iap=stub` (the stub store in a production build), `?iap=off`
- * (no store even in development), `?pass=1` (NEON PASS on, before payments exist).
+ * (no store even in development), `?pass=1` (NEON PASS on, before payments exist), `?debug` (the «Показывать FPS» switch in the settings).
  */
-const DEV_FLAGS = ['auto', 'nofail', 'unlock', 'ads', 'iap', 'pass'] as const;
+const DEV_FLAGS = ['auto', 'nofail', 'unlock', 'ads', 'iap', 'pass', 'debug'] as const;
 
 /**
  * The dev flags of this page load, read once. They are then removed from the address bar: they hold
