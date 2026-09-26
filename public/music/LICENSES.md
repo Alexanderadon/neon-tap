@@ -17,8 +17,8 @@ track card); for CC0 it is listed out of respect for the authors.
 | `the-rift.mp3` | The Rift | vitalezzz | [OpenGameArt](https://opengameart.org/content/the-rift) | CC0 1.0 |
 | `silver-bullet.mp3` | Silver Bullet | vitalezzz | [OpenGameArt](https://opengameart.org/content/silver-bullet) | CC0 1.0 |
 | `virtual-rush.mp3` | Virtual Rush | vitalezzz | [OpenGameArt](https://opengameart.org/content/virtual-rush) | CC0 1.0 |
-| `elevate-instrument-tracks.mp3` | Elevate (+ instrument tracks) | fupi | [OpenGameArt](https://opengameart.org/content/elevate-instrument-tracks) | CC0 1.0 |
-| `8-bit-mechanical-complex.mp3` | 8-bit Mechanical Complex | HydroGene | [OpenGameArt](https://opengameart.org/content/8-bit-mechanical-complex) | CC0 1.0 |
+| `elevate-instrument-tracks.mp3` | Elevate (+ Instrument Tracks) | fupi | [OpenGameArt](https://opengameart.org/content/elevate-instrument-tracks) | CC0 1.0 |
+| `8-bit-mechanical-complex.mp3` | 8-Bit Mechanical Complex | HydroGene | [OpenGameArt](https://opengameart.org/content/8-bit-mechanical-complex) | CC0 1.0 |
 | `space-cadet-training-montage.mp3` | Space Cadet Training Montage | Zane Little Music | [OpenGameArt](https://opengameart.org/content/space-cadet-training-montage) | CC0 1.0 |
 | `since-2-am.mp3` | Since 2 A.M. | TAD | [OpenGameArt](https://opengameart.org/content/since-2-am) | CC0 1.0 |
 | `metal-song-energetic.mp3` | Metal Song - Energetic | The Real Monoton Artist | [OpenGameArt](https://opengameart.org/content/metal-song-energetic) | CC0 1.0 |
@@ -33,8 +33,8 @@ track card); for CC0 it is listed out of respect for the authors.
 | `bouncer.mp3` | Bouncer | Of Far Different Nature | [OpenGameArt](https://opengameart.org/content/bouncer-0) | CC0 1.0 |
 | `vengeance-electro.mp3` | Vengeance Electro | Of Far Different Nature | [OpenGameArt](https://opengameart.org/content/vengeance-electro) | CC0 1.0 |
 | `slampe.mp3` | Slampe - Synthwave House | Fupi | [OpenGameArt](https://opengameart.org/content/slampe-synthwave-house) | CC0 1.0 |
-| `espelhar.mp3` | Espelhar - LOUD Melodic EDM | Fupi | [OpenGameArt](https://opengameart.org/content/espelhar-loud-melodic-edm) | CC0 1.0 |
-| `technomania101.mp3` | Technomania101 - 2000's europop electronic dance music | Fupi | [OpenGameArt](https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music) | CC0 1.0 |
+| `espelhar.mp3` | Espelhar - Loud Melodic EDM | Fupi | [OpenGameArt](https://opengameart.org/content/espelhar-loud-melodic-edm) | CC0 1.0 |
+| `technomania101.mp3` | Technomania101 - 2000's Europop Electronic Dance Music | Fupi | [OpenGameArt](https://opengameart.org/content/technomania101-2000s-europop-electronic-dance-music) | CC0 1.0 |
 | `fever-stadium.mp3` | Fever Stadium | MintoDog | [OpenGameArt](https://opengameart.org/content/fever-stadium) | CC0 1.0 |
 | `lucid-trigger.mp3` | Lucid Trigger | khtlrpzvgm | [OpenGameArt](https://opengameart.org/content/lucid-trigger) | CC0 1.0 |
 | `hard-boss-battle-2.mp3` | Hard Boss Battle 2 | MintoDog | [OpenGameArt](https://opengameart.org/content/hard-boss-battle-2) | CC0 1.0 |
@@ -43,11 +43,11 @@ track card); for CC0 it is listed out of respect for the authors.
 | `boss-battle-9-metal.mp3` | Boss Battle #9 [Metal] | nene | [OpenGameArt](https://opengameart.org/content/boss-battle-9-metal) | CC0 1.0 |
 | `fight-for-better-future.mp3` | Fight for Better Future [Rock/Metal] | nene | [OpenGameArt](https://opengameart.org/content/fight-for-better-future-rockmetal) | CC0 1.0 |
 | `race-of-the-wasp.mp3` | Race of the Wasp | OwlishMedia | [OpenGameArt](https://opengameart.org/content/race-of-the-wasp) | CC0 1.0 |
-| `chiptuned-rock.mp3` | Ciptuned Rock tune | bertsz | [OpenGameArt](https://opengameart.org/content/ciptuned-rock-tune) | CC0 1.0 |
-| `hardcore-chiptune-theme.mp3` | hardcore chiptune theme | obscure music | [OpenGameArt](https://opengameart.org/content/hardcore-chiptune-theme) | CC0 1.0 |
+| `chiptuned-rock.mp3` | Chiptuned Rock Tune | bertsz | [OpenGameArt](https://opengameart.org/content/ciptuned-rock-tune) | CC0 1.0 |
+| `hardcore-chiptune-theme.mp3` | Hardcore Chiptune Theme | obscure music | [OpenGameArt](https://opengameart.org/content/hardcore-chiptune-theme) | CC0 1.0 |
 | `polygons-n-light.mp3` | Polygons N' Light | Umplix | [OpenGameArt](https://opengameart.org/content/polygons-n-light) | CC0 1.0 |
-| `tech-rave.mp3` | Tech rave | Frenchyboy | [OpenGameArt](https://opengameart.org/content/tech-rave) | CC0 1.0 |
-| `chill-lofi-inspired.mp3` | Chill lofi inspired | omfgdude | [OpenGameArt](https://opengameart.org/content/chill-lofi-inspired) | CC0 1.0 |
+| `tech-rave.mp3` | Tech Rave | Frenchyboy | [OpenGameArt](https://opengameart.org/content/tech-rave) | CC0 1.0 |
+| `chill-lofi-inspired.mp3` | Chill Lofi Inspired | omfgdude | [OpenGameArt](https://opengameart.org/content/chill-lofi-inspired) | CC0 1.0 |
 | `november-snow.mp3` | November Snow | cynicmusic | [OpenGameArt](https://opengameart.org/content/november-snow) | CC0 1.0 |
 | `red-moon.mp3` | Red Moon | Pro Sensory | [OpenGameArt](https://opengameart.org/content/red-moon) | CC0 1.0 |
 | `call-of-the-north.mp3` | Call of the North | Mr Smith | [Free Music Archive](https://freemusicarchive.org/music/mr-smith/synchromatic/call-of-the-north/) | CC BY 4.0 |
@@ -94,3 +94,9 @@ Russian voice lines in `public/voice/svetlana/` were synthesised with the Micros
 **ru-RU-SvetlanaNeural** through the open-source `msedge-tts` client (`scripts/generate-voice.ts`),
 then silence-trimmed and loudness-normalised. The voice belongs to Microsoft; the generated clips are used here
 in a non-commercial portfolio project. A Web Speech API fallback is used when the clips cannot be loaded.
+
+## Font
+
+The game font is **Unbounded** — Copyright 2022 The Unbounded Project Authors ([github.com/googlefonts/unbounded](https://github.com/googlefonts/unbounded)),
+licensed under the **SIL Open Font License 1.1** (full text: `/fonts/OFL.txt`). The variable WOFF2 files (Cyrillic, Latin,
+Latin Extended subsets as served by Google Fonts) ship with the game unchanged.
