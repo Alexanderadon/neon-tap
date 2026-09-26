@@ -94,6 +94,8 @@ interface Snapshot {
 const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
 /** «Коснись экрана, чтобы начать»: the song is in, the bar stands full and still — waiting for the player, not loading. */
 const READY_SEGMENTS: readonly SegmentState[] = Array.from({ length: 10 }, () => 'current');
+/** The tutorial's «Пропуск» shows up only for a load this slow (ms): the first launch preloads its song, and a child told to touch the screen must not find a skip button there. */
+const TUTORIAL_EXIT_AFTER_MS = 4500;
 
 /**
  * Hosts the canvas, owns the GameSession lifecycle and routes session events to voice/save.
@@ -107,6 +109,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
   const [status, setStatus] = useState<'loading' | 'tap' | 'ready' | 'error'>('loading');
   /** The song's download and decode, 0–100 (the loading tag's number). */
   const [loadPct, setLoadPct] = useState(0);
+  /** The load has taken TUTORIAL_EXIT_AFTER_MS: the tutorial's way out appears. */
+  const [slowLoad, setSlowLoad] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [paused, setPaused] = useState<Snapshot | null>(null);
   const [fail, setFail] = useState<{ stars: number; crowns: number; finale: boolean } | null>(null);
@@ -233,6 +237,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
     setStatus('loading');
     setLoadPct(0);
+    setSlowLoad(false);
+    const slowTimer = window.setTimeout(() => !cancelled && setSlowLoad(true), TUTORIAL_EXIT_AFTER_MS);
     meetRef.current = null;
     setMeet(null);
     (async () => {
@@ -345,6 +351,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
 
     return () => {
       cancelled = true;
+      window.clearTimeout(slowTimer);
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('freeze', onHidden);
@@ -474,14 +481,18 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
             </div>
             {status === 'tap' ? <Segments states={READY_SEGMENTS} className="game-segs" /> : <SegmentsPulse count={10} className="game-segs" />}
           </>,
-          // A slow connection must not trap the player: the way out is there while the song loads (the tutorial's is «Пропуск»).
-          <Trio one className="game-trio">
-            {tutorial ? (
-              <ObjButton icon={<Icon name="chevron" />} label={dict.tutorialSkip} onClick={exit} />
-            ) : (
-              <ObjButton icon={<Icon name="home" />} label={dict.toMenu} onClick={exit} />
-            )}
-          </Trio>,
+          // A slow connection must not trap the player: the way out is there while the song loads — the tutorial's «Пропуск» only
+          // once the load is slow. Never under «Коснись экрана»: the song is in, and the first touch of a child (the first launch opens
+          // the tutorial on its own) would land on the one button there and throw the tutorial and its crystals away.
+          status === 'loading' && (!tutorial || slowLoad) ? (
+            <Trio one className="game-trio">
+              {tutorial ? (
+                <ObjButton icon={<Icon name="chevron" />} label={dict.tutorialSkip} onClick={exit} />
+              ) : (
+                <ObjButton icon={<Icon name="home" />} label={dict.toMenu} onClick={exit} />
+              )}
+            </Trio>
+          ) : undefined,
         )}
 
       {status === 'error' &&
