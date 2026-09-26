@@ -1,7 +1,9 @@
 /*
  * CaptionCard (CaptionCard.tsx) — the tutorial's step card and a run's first-meeting card: the Panel
- * 335 × 112 under the HUD chip line (safe top + 70), the tag on its top edge (safe top + 58). Pointer
- * events pass through; it is HUD-level chrome inside `.game-root` (z 2), so the pause / fail frames (z 3) cover it.
+ * 335 × 112 under the HUD chip line (safe top + 70), the tag on its top edge (safe top + 58); in a run
+ * (`.tut-run`) 42 px lower, under the state row (hearts, stars, crystals at + 66, the slow bar at + 86) —
+ * the combo steps down under it (Renderer HUD_COMBO_TOP_MEET). Pointer events pass through; it is HUD-level
+ * chrome inside `.game-root` (z 2), so the pause / fail frames (z 3) cover it.
  */
 .tut {
   position: fixed;
@@ -14,6 +16,9 @@
   z-index: 2;
   font-family: var(--font);
   white-space: nowrap;
+}
+.tut-run {
+  top: calc(var(--safe-top) + 100px);
 }
 .tut-wrap {
   position: relative;
