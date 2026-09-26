@@ -174,7 +174,9 @@ export function TutorialPage() {
     );
   }
 
-  const index = captionAt(script, songTime);
+  const current = captionAt(script, songTime);
+  // A rewind lands a short lead before the replayed step: its card («Ещё разок») shows already, not the step before it.
+  const index = replaying >= 0 && current < replaying && songTime >= script[replaying].from - 1 ? replaying : current;
   // The finale is the frame, not a card: after the last note the field stays clear until the run ends.
   const step = index >= 0 && script[index].id !== 'finale' ? script[index] : null;
   return (
