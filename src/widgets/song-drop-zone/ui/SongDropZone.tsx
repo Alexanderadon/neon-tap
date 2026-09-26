@@ -299,7 +299,7 @@ export function SongDropZone({ onBack, onFreeSpace }: Props) {
             <ObjButton icon={<Icon name="back" />} label={dict.back} onClick={onBack} />
           )}
           <ObjButton
-            icon={<Icon name="sun" />}
+            icon={<Icon name="cap" />}
             label={dict.tutorial}
             disabled={starting}
             onClick={() => {
@@ -379,7 +379,7 @@ function BusyCard({ name, progress }: { name: string; progress: GenerateProgress
       <span className="dz-ph" aria-hidden="true">
         <Icon name="note" size={96} strokeWidth={0.5} />
       </span>
-      <Tag shape="flush" className="dz-flush" icon={<Icon name="sun" />}>
+      <Tag shape="flush" className="dz-flush" icon={<Icon name="hourglass" />}>
         {dict.customAnalyzing}
       </Tag>
       <div className="dz-text">
