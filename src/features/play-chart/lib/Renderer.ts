@@ -97,7 +97,7 @@ export interface FrameState {
   accuracy: number;
   progress: number;
   hearts: number;
-  /** Lives beyond the shown five: «+N» after the fifth heart. */
+  /** Lives beyond the shown five: that many shown hearts are drawn gold, from the left. */
   goldHearts: number;
   maxHearts: number;
   /** Seconds since a heart was lost (Infinity when none). */
@@ -223,9 +223,6 @@ const HUD_VERDICT_CENTER = 284;
 const HUD_TAGS_TOP = 316;
 const HEART_PX = 20;
 const HEART_STEP = 24;
-/** Lives past five: «+N» at the fifth heart's shoulder — raised, so a 360 px column still has room before the first level star. */
-const HEART_BONUS_DX = 8;
-const HEART_BONUS_RISE = 8;
 const STAR_PX = 20;
 const STAR_STEP = 28;
 const STAR_BIG_PX = 120;
@@ -314,6 +311,7 @@ export class Renderer {
   // HUD chrome sprites (hudSprites.ts): glossy hearts / stars, the crystal, the chip faces, cached tags.
   private heartOn!: NoteSprite;
   private heartOff!: NoteSprite;
+  private heartGold!: NoteSprite;
   private starOn!: NoteSprite;
   private starOff!: NoteSprite;
   private starBig!: NoteSprite;
@@ -506,6 +504,7 @@ export class Renderer {
     this.hudGem = crystalSprite(16, this.dpr);
     this.heartOn = heartSprite('on', HEART_PX, this.dpr);
     this.heartOff = heartSprite('off', HEART_PX, this.dpr);
+    this.heartGold = heartSprite('gold', HEART_PX, this.dpr);
     this.chipScore = chipSprite(CHIP_SCORE_W, this.dpr);
     this.chipAcc = chipSprite(CHIP_ACC_W, this.dpr);
     this.tags.clear();
@@ -863,9 +862,11 @@ export class Renderer {
     this.starShow = null;
   }
 
-  heartLost(index: number): void {
-    const { x, y } = this.heartPos(index);
-    this.particles.emit(x, y, 14, 1, 220, 4, 0.6);
+  /** A heart was lost with `hearts` left: a gilded one turns white (gold sparks), otherwise the slot goes grey. */
+  heartLost(hearts: number, shown: number): void {
+    const gold = hearts >= shown;
+    const { x, y } = this.heartPos(gold ? hearts - shown : hearts);
+    this.particles.emit(x, y, 14, gold ? STAR_DOT : 1, 220, 4, 0.6);
     this.shake.trigger(4);
   }
 
@@ -2039,7 +2040,8 @@ export class Renderer {
       for (let i = 0; i < s.maxHearts; i++) {
         const { x, y } = this.heartPos(i);
         const on = i < shown;
-        const sp = on ? this.heartOn : this.heartOff;
+        // Lives past five gild the shown hearts from the left.
+        const sp = on && i < s.goldHearts ? this.heartGold : on ? this.heartOn : this.heartOff;
         let k = 1;
         if (refilling && on) {
           const age = s.revive - REFILL_AT[i];
@@ -2050,13 +2052,6 @@ export class Renderer {
           }
         }
         ctx.drawImage(sp.canvas, x - (sp.width * k) / 2 + dx, y - (sp.height * k) / 2, sp.width * k, sp.height * k);
-      }
-      if (s.goldHearts > 0) {
-        const { x, y } = this.heartPos(s.maxHearts - 1);
-        ctx.font = `700 11px ${FONT}`;
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`+${s.goldHearts}`, x + HEART_BONUS_DX + dx, y - HEART_BONUS_RISE);
       }
     }
 
