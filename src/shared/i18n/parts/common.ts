@@ -15,6 +15,8 @@ export const common = {
   restart: 'Заново',
   exit: 'Выйти',
   loading: 'Загрузка…',
+  /** Under the logo on the loading screen. */
+  splashTagline: 'ритм-плитки под свою музыку',
   /** The game's loading tag while the song downloads. */
   loadingPercent: 'Загрузка {n} %',
   totalStars: 'Всего звёзд',

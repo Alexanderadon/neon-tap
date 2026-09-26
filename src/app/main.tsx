@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { bootAssets } from './boot';
+import { dict } from '@/shared/i18n';
 import { installGestureUnlock } from '@/shared/lib/audio';
 import { initInstallPrompt, installStandaloneGuards, registerServiceWorker } from '@/shared/lib/pwa';
 import { installAppViewport } from '@/shared/lib/viewport';
@@ -33,6 +34,9 @@ function hideSplash(): void {
   window.setTimeout(() => splash.remove(), 600);
 }
 const bar = document.getElementById('splash-bar');
+// The splash tagline is static HTML (it shows before the bundle); the dictionary owns its wording.
+const tagline = document.getElementById('splash-tagline');
+if (tagline) tagline.textContent = dict.splashTagline;
 void bootAssets((f) => bar?.style.setProperty('--p', f.toFixed(3))).then(hideSplash);
 window.setTimeout(hideSplash, 12_000);
 
