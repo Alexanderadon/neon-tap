@@ -5,7 +5,7 @@ import './caption-card.css';
 export interface CaptionStep {
   /** A new id re-runs the card's rise. */
   id: string;
-  /** 'tap' · 'hold' · 'slide' · 'roll' · 'circle' · 'spell' · 'spin' · 'lanes' · 'free' · 'intro' — anything else gets the wave. */
+  /** 'tap' · 'hold' · 'slide' · 'roll' · 'circle' · 'spell' · 'heart' · 'spin' · 'lanes' · 'free' · 'intro' — anything else gets the wave. */
   kind: string;
   /** Lane count (the lanes icon). */
   lanes: number;
@@ -55,6 +55,9 @@ export function CaptionCard({ step, tag, gold = false, progress, touch }: Props)
     </div>
   );
 }
+
+/** The heart glyph of shared/ui/Heart (24-unit box). */
+const HEART = 'M12 21.2 4.6 14A5.2 5.2 0 0 1 12 6.6a5.2 5.2 0 0 1 7.4 7.4Z';
 
 /** Mechanic icons 40 px: cyan and white only, stroke 2, transform-only motion (CSS keyframes on the classed parts). */
 function MechanicIcon({ kind, lanes }: { kind: string; lanes: number }) {
@@ -117,6 +120,18 @@ function MechanicIcon({ kind, lanes }: { kind: string; lanes: number }) {
           <line x1="24" y1="24" x2="24" y2="12" className="ic-hand ic-hand-spin" />
           <line x1="24" y1="24" x2="31" y2="24" className="ic-hand" />
           <circle cx="24" cy="24" r="2" className="ic-finger" />
+        </svg>
+      );
+    case 'heart':
+      // The heart note falls to the line and the finger catches it: white with a cyan edge (gold is the bonus life, not this).
+      return (
+        <svg {...props}>
+          <rect x="16" y="2" width="16" height="44" rx="8" className="ic-lane" />
+          <line x1="12" y1="36" x2="36" y2="36" className="ic-line" />
+          <g className="ic-fall">
+            <path d={HEART} transform="translate(12 6)" className="ic-heart" />
+          </g>
+          <circle cx="24" cy="36" r="5" className="ic-finger ic-press" />
         </svg>
       );
     case 'spin':
