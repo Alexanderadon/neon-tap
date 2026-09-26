@@ -11,7 +11,8 @@ export const PRECACHE_PLACEHOLDER = /\/\*\s*__NEON_PRECACHE__\s*\*\/\s*\[\]/g;
 export const BUILD_PLACEHOLDER = /__NEON_BUILD__/g;
 
 const SHELL_ROOT_FILES = new Set(['manifest.webmanifest', 'privacy.html']);
-const SHELL_ASSET_RE = /^assets\/[^/]+\.(js|css|woff2?|ttf|otf|svg)$/;
+// webp: the loading screen's key art and logo (hashed by Vite from index.html) must be there offline too.
+const SHELL_ASSET_RE = /^assets\/[^/]+\.(js|css|woff2?|ttf|otf|svg|webp)$/;
 
 /** Normalise a dist path: backslashes → slashes, leading `./` dropped. */
 export function normalizeDistPath(p: string): string {
