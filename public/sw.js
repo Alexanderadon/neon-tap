@@ -11,8 +11,8 @@
  *   /assets/*  (hashed)          cache-first (precached; anything missing is fetched and kept)
  *   /music /sfx /voice /icons /covers    cache-first, runtime cache with a 260 MB cap (MEDIA_CAP), evicted oldest-first
  *   /charts                      network-first (charts are regenerated often; a fresh deploy must play fresh), offline → cache
- *   Google Fonts                 cache-first
  *   /api/* and everything else   untouched (network)
+ * The font is part of the app shell (hashed assets from src/app/fonts); the old Google Fonts cache is dropped on activate.
  *
  * Updates: a new worker waits until the page sends SKIP_WAITING (update toast) — except on the
  * very first install, when it activates immediately and claims the open pages.
@@ -21,17 +21,16 @@ const BUILD = '__NEON_BUILD__';
 const PRECACHE = /* __NEON_PRECACHE__ */ [];
 
 const SHELL_CACHE = `neon-shell-${BUILD}`;
-// Bump when a shipped music file changes under the same URL (media is cache-first, never re-fetched): v2 = the 225 kbps re-encode, v3 = tutorial.mp3 cut to 75 s.
+// Bump when a shipped media file changes under the same URL (media is cache-first, never re-fetched): v2 = the 225 kbps re-encode,
+// v3 = tutorial.mp3 cut to 75 s and music/LICENSES.md regenerated (track titles, the font).
 const MEDIA_CACHE = 'neon-media-v3';
-const FONT_CACHE = 'neon-fonts-v1';
-const KEEP_CACHES = new Set([SHELL_CACHE, MEDIA_CACHE, FONT_CACHE]);
+const KEEP_CACHES = new Set([SHELL_CACHE, MEDIA_CACHE]);
 /** Synthetic entry inside MEDIA_CACHE holding `{ entries: [{ url, size, at }] }` in insertion order. */
 const INDEX_KEY = '/__neon-media-index__';
 /** 44 tracks and their covers plus 13 weekly ones as they come out; the weekly tracks are never pre-cached. */
 const MEDIA_CAP = 260 * 1024 * 1024;
 const MEDIA_PREFIXES = ['/music/', '/sfx/', '/voice/', '/icons/', '/covers/'];
 const CHART_PREFIXES = ['/charts/'];
-const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -80,9 +79,7 @@ self.addEventListener('fetch', (event) => {
       if (req.headers.has('range')) return;
       event.respondWith(mediaCache(event, req));
     }
-    return;
   }
-  if (FONT_HOSTS.includes(url.hostname)) event.respondWith(cacheFirst(event, req, FONT_CACHE));
 });
 
 /* ---------- strategies ---------- */

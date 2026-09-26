@@ -57,6 +57,12 @@ const md: string[] = [
   'then silence-trimmed and loudness-normalised. The voice belongs to Microsoft; the generated clips are used here',
   'in a non-commercial portfolio project. A Web Speech API fallback is used when the clips cannot be loaded.',
   '',
+  '## Font',
+  '',
+  'The game font is **Unbounded** — Copyright 2022 The Unbounded Project Authors ([github.com/googlefonts/unbounded](https://github.com/googlefonts/unbounded)),',
+  'licensed under the **SIL Open Font License 1.1** (full text: `/fonts/OFL.txt`). The variable WOFF2 files (Cyrillic, Latin,',
+  'Latin Extended subsets as served by Google Fonts) ship with the game unchanged.',
+  '',
 ];
 writeFileSync(join(ROOT, 'public', 'music', 'LICENSES.md'), md.join('\n'));
 console.log('public/music/LICENSES.md written');
