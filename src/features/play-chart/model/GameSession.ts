@@ -1107,6 +1107,7 @@ export class GameSession {
       hearts: this.lives.hearts,
       timeline: this.timeline.toResult(),
       duration: this.opts.audioBuffer.duration * this.level,
+      startSec: this.startAt,
       crystals: this.crystals,
     };
     if (looped) result.endlessScore = s.score;

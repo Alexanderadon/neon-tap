@@ -149,11 +149,15 @@ export function ResultBreakdown({
   const timeline = result.timeline;
   const duration = result.duration > 0 ? result.duration : (chart?.duration ?? 0);
   const failedAt = failed && timeline.t.length > 0 ? timeline.t[timeline.t.length - 1] : null;
+  // A failed run is one level: «Дошёл до 0:05 из 2:36» counts from where the level started (a skipped intro), as the run's progress did.
+  const startSec = Math.max(0, Math.min(result.startSec ?? 0, duration));
   let tag: ReactNode = null;
   if (failed) {
     tag = (
       <Tag variant="dark">
-        {failedAt !== null && duration > 0 ? fmt(dict.resultReachedAt, { at: formatClock(failedAt), total: formatClock(duration) }) : dict.tagFailedHearts}
+        {failedAt !== null && duration > startSec
+          ? fmt(dict.resultReachedAt, { at: formatClock(Math.max(0, failedAt - startSec)), total: formatClock(duration - startSec) })
+          : dict.tagFailedHearts}
       </Tag>
     );
   } else if (record?.newRecord) {
