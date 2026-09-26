@@ -237,6 +237,8 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           gems: !tutorial,
           levels: !tutorial,
           endless: !tutorial,
+          // Long intros skipped, «3 · 2 · 1» after long silences; the tutorial's captions run on song time.
+          pacing: !tutorial,
           // The second chance: free with NEON PASS (no ad), otherwise for a rewarded ad; neither PASS nor an ad provider (the web build) — not offered.
           revive: !tutorial && !noFailFlag,
           canRevive: () => reviveAvailable(isPassActive(), ads.available()),

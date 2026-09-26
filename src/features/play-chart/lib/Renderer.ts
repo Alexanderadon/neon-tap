@@ -127,6 +127,10 @@ export interface FrameState {
   revive: number;
   /** The run has stopped and its DOM frame («ПРОВАЛ», «СТОП», «ФИНИШ») is up: the canvas HUD steps aside. */
   hudHidden: boolean;
+  /** Song second the level starts at (0, or past a skipped intro): before it the count-in runs. */
+  start: number;
+  /** Real seconds left to the note that ends a long empty stretch while its «3 · 2 · 1» runs, else -1. */
+  gapLeft: number;
   debug: { fps: number; worstMs: number; latencyMs: number; visibleNotes: number; offsetMs: number; rate: number } | null;
 }
 
@@ -229,6 +233,10 @@ const STAR_BIG_PX = 120;
 const CHIP_SCORE_W = 112;
 const CHIP_ACC_W = 96;
 const LANE_TAG_SEC = 1.4;
+/** «3 · 2 · 1» after a long silence: this far over the hit line (px), never above the combo block; digits this far apart. */
+const GAP_COUNT_ABOVE = 140;
+const GAP_COUNT_MIN_TOP = 200;
+const GAP_COUNT_STEP = 48;
 /** Flying crystals (note → HUD counter) in flight at once. */
 const FLY_POOL = 4;
 const FLY_SEC = 0.55;
@@ -1347,6 +1355,48 @@ export class Renderer {
     this.drawTagCentred(this.tag(dict.getReady, 'gold'), this.safeTop + HUD_READY_TOP + (1 - rise) * 8, rise);
   }
 
+  /**
+   * After a long empty stretch: «3 · 2 · 1» over the hit line, a digit per real second to the note that
+   * ends it. The current digit pops in the verdict material, the ones gone are dim, the ones to come
+   * half-lit. No veil, no field change — the notes keep falling through it.
+   */
+  private drawGapCount(left: number): void {
+    const ctx = this.ctx;
+    const { width, hitY } = this.layout;
+    const cx = width / 2;
+    const y = Math.max(this.safeTop + GAP_COUNT_MIN_TOP, hitY - GAP_COUNT_ABOVE);
+    const digit = Math.min(3, Math.max(1, Math.ceil(left)));
+    const into = digit - left;
+    const alpha = Math.min(1, (3 - left) / 0.2, left / 0.15);
+    if (alpha <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 16px ${FONT}`;
+    ctx.fillStyle = HUD.w30;
+    ctx.fillText('·', cx - GAP_COUNT_STEP / 2, y);
+    ctx.fillText('·', cx + GAP_COUNT_STEP / 2, y);
+    for (let k = 0; k < 3; k++) {
+      const d = 3 - k;
+      const x = cx + (k - 1) * GAP_COUNT_STEP;
+      if (d === digit) {
+        const pop = 0.4 + 0.6 * popEase(Math.min(1, into / 0.35));
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(pop, pop);
+        embossText(ctx, String(d), 0, 0, 36, EMBOSS_GOLD);
+        ctx.restore();
+      } else {
+        ctx.font = `900 22px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = d > digit ? HUD.w30 : HUD.w55;
+        ctx.fillText(String(d), x, y);
+      }
+    }
+    ctx.restore();
+  }
+
   /** One 96 px digit in the hero slot, scaled by `k`, faded by `alpha`. */
   private drawBigDigit(text: string, k: number, alpha: number): void {
     const ctx = this.ctx;
@@ -2015,7 +2065,7 @@ export class Renderer {
     const colW = this.colW;
     const cx = width / 2;
     const tutorial = s.maxHearts === 0 && s.levels === 0;
-    if (s.songTime >= 0) this.countdownMax = 0;
+    if (s.songTime >= s.start) this.countdownMax = 0;
     ctx.textBaseline = 'middle';
 
     // Row 0: the song map.
@@ -2180,6 +2230,8 @@ export class Renderer {
       ctx.drawImage(tag.canvas, cx - tag.width / 2 + dx, top + HUD_MILESTONE_TOP, tag.width, tag.height);
       ctx.globalAlpha = 1;
     }
+
+    if (s.gapLeft > 0 && !this.starShow) this.drawGapCount(s.gapLeft);
 
     // Lane-count change: «5» 44/900 and the dark «5 ПОЛОС · ШИРЕ» tag, pop in, hold, fade.
     if (this.laneTag) {

@@ -12,19 +12,24 @@ type ChartGrid = Pick<ChartFile, 'beats' | 'bpm' | 'offset'> & { chart: { notes:
  * The HUD's song map: the song in 4-bar phrases, each rated by how many hits it asks for — the
  * densest quarter of the phrases is the drop (2), the sparsest quarter the quiet parts (0), the rest 1.
  * Density is what the player will feel under the thumbs; the chart's own loudness levels would paint
- * most of a loud song as one long drop. Positions are fractions of `endTime` — the length the head
- * runs on. A song without a beat grid, or one that is flat all through, gets one plain segment.
+ * most of a loud song as one long drop. Positions are fractions of the played span `start`..`endTime` —
+ * what the head runs on (a level whose long intro is skipped starts at `start`, and the phrase it
+ * starts in begins there). A song without a beat grid, or one that is flat all through, gets one plain segment.
  */
-export function songMap(chart: ChartGrid, endTime: number): SongMapSegment[] {
+export function songMap(chart: ChartGrid, endTime: number, start = 0): SongMapSegment[] {
   const flat: SongMapSegment[] = [{ from: 0, level: 1 }];
-  if (!(endTime > 0)) return flat;
-  const starts = phraseStarts(chart, endTime);
+  const span = endTime - start;
+  if (!(endTime > 0) || !(span > 0)) return flat;
+  const all = phraseStarts(chart, endTime);
+  let first = 0;
+  while (first + 1 < all.length && all[first + 1] <= start) first++;
+  const starts = all.slice(first).map((t, p) => (p === 0 ? start : t));
   if (starts.length < 3) return flat;
   const hits = starts.map(() => 0);
   for (const note of chart.chart.notes) {
     const n: readonly (number | NoteKind | undefined)[] = note;
     const t = n[0] as number;
-    if (t < 0 || t >= endTime) continue;
+    if (t < start || t >= endTime) continue;
     let p = 0;
     while (p + 1 < starts.length && starts[p + 1] <= t) p++;
     hits[p] += n[3] === 'roll' ? Math.max(1, (n[4] as number | undefined) ?? 1) : 1;
@@ -38,7 +43,7 @@ export function songMap(chart: ChartGrid, endTime: number): SongMapSegment[] {
   const hi = sorted[sorted.length - quarter];
   const levels = density.map((d): 0 | 1 | 2 => (d >= hi && d > lo ? 2 : d <= lo && d < hi ? 0 : 1));
   if (levels.every((l) => l === levels[0])) return flat;
-  return starts.map((t, p) => ({ from: t / endTime, level: levels[p] }));
+  return starts.map((t, p) => ({ from: (t - start) / span, level: levels[p] }));
 }
 
 /** One beat in seconds — from the beat grid when the chart has one, else from the tempo (0.5 s when it has neither). */

@@ -18,6 +18,7 @@ import { LEVELS, levelOutcome, levelRate } from './levels';
 import { songMap } from './songMap';
 import { REVIVE_HEARTS, REVIVE_RESUME_AT, canOfferRevive } from './revive';
 import { OffsetProbe, type OffsetProbeMode } from './offsetProbe';
+import { gapCountLeft, gapReturns, introStart, notesFrom } from './pacing';
 import { Renderer, circlePos, circleRadius, spinGeometry, type SpinFrame } from '../lib/Renderer';
 import { laneAtPoint } from '../lib/layout';
 
@@ -91,6 +92,12 @@ export interface SessionOptions {
   levels?: boolean;
   /** Endless mode: after the third level the song keeps looping, faster every loop, hearts not refilled, a crown per loop. */
   endless?: boolean;
+  /**
+   * Silence (pacing.ts): a long intro is skipped — every level starts 4 s before the playing, lone notes
+   * earlier than that are left out — and a «3 · 2 · 1» counts back in after every long empty stretch.
+   * Default on; off in the tutorial, whose captions run on song time.
+   */
+  pacing?: boolean;
   /** Fixed seed for the gem picks (tests / demos); by default every run rolls its own. */
   gemSeed?: number;
   /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
@@ -211,6 +218,10 @@ export class GameSession {
   private autoDue: { bucket: number; at: number; press: boolean }[] = [];
   /** When each section's lane count takes over: as soon as the previous section's last note is gone, but no later than one approach before the section starts. */
   private readonly switchTimes: number[];
+  /** Where every level starts (song seconds): 0, or a little before the playing when the intro is long. */
+  private readonly startAt: number;
+  /** Notes that end a long empty stretch: the «3 · 2 · 1» counts to them. */
+  private readonly gapTimes: number[];
   private readonly deltas: number[] = [];
   /** The wide latency probe, until it settles (once per session). */
   private readonly probe: OffsetProbe | null;
@@ -229,8 +240,11 @@ export class GameSession {
     this.offsetTarget = opts.userOffset;
     this.notes = new NoteManager(undefined, { assistWindow: opts.touch && opts.touchAssist ? ASSIST_WINDOW : 0, approachTime: this.approachTime });
     const level = opts.chart.chart;
-    const parsed = parseChartLevel(level);
+    const all = parseChartLevel(level);
+    this.startAt = opts.pacing === false ? 0 : introStart(all);
+    const parsed = notesFrom(all, this.startAt);
     this.parsed = parsed;
+    this.gapTimes = opts.pacing === false ? [] : gapReturns(parsed, this.startAt);
     this.sections = parseSections(level);
     this.notes.load(parsed);
     this.probe = opts.offsetProbe ? new OffsetProbe(parsed, opts.offsetProbe) : null;
@@ -256,8 +270,8 @@ export class GameSession {
       this.sections.map((s) => s.lanes),
       theme,
     );
-    this.renderer.setLanes(this.sections[0].lanes, true);
-    this.renderer.setSongMap(songMap(opts.chart, this.endTime));
+    this.renderer.setLanes(this.lanesAt(this.startAt), true);
+    this.renderer.setSongMap(songMap(opts.chart, this.endTime, this.startAt));
     this.beatCursor = new BeatCursor(opts.chart.beats, opts.chart.bpm, opts.chart.offset, opts.chart.duration);
     if (opts.fxMode === 'on') this.renderer.setFxLevel('low');
     this.input = new Input({
@@ -295,6 +309,11 @@ export class GameSession {
     }
     const seed = this.opts.gemSeed ?? (Math.random() * 0x100000000) >>> 0;
     this.notes.setGems(this.level > LEVELS ? pickLoopGems(this.parsed, seed) : pickGems(this.parsed, seed, this.opts.audioBuffer.duration));
+  }
+
+  /** The lane count at song time `t` (sections take over at their switch times). */
+  private lanesAt(t: number): number {
+    return this.sections[Math.max(0, lowerBound(this.switchTimes, t + 1e-9) - 1)].lanes;
   }
 
   /** Levels in a run: three, or one when levels are off (the tutorial). */
@@ -397,11 +416,12 @@ export class GameSession {
     this.rollGems();
     this.probe?.rearm();
     this.beatCursor.reset();
-    this.renderer.setLanes(this.sections[0].lanes, true);
-    const startTime = audioEngine.play(this.opts.audioBuffer, 0, () => (this.audioEnded = true), LEAD_IN);
-    this.clock.start(startTime, 0, this.baseRate);
+    this.renderer.setLanes(this.lanesAt(this.startAt), true);
+    // The song starts at `startAt` (0, or past a skipped intro) after the count-in; the clock is anchored on that instant.
+    const begin = audioEngine.play(this.opts.audioBuffer, this.startAt, () => (this.audioEnded = true), LEAD_IN) + this.startAt;
+    this.clock.start(begin, this.startAt, this.baseRate);
     audioEngine.setPlaybackRate(this.baseRate);
-    if (level > 1) audioEngine.fadeIn(FADE_IN_SEC, startTime);
+    if (level > 1) audioEngine.fadeIn(FADE_IN_SEC, begin);
     this.opts.onEvent(level === 1 ? { type: 'start' } : { type: 'level', level });
     cancelAnimationFrame(this.raf);
     this.lastFrame = performance.now();
@@ -537,15 +557,15 @@ export class GameSession {
   seek(songTime: number): void {
     if (!this.started || this.finished) return;
     if (!this.paused) this.pause();
-    this.resumeAt(Math.max(0, songTime));
+    this.resumeAt(Math.max(this.startAt, songTime));
   }
 
   private resumeAt(pos: number): void {
     // play() returns the audio-clock instant of song position 0 at rate 1; the clock is anchored on the
     // instant the source actually starts (`startTime + from`) at that position, so a faster level resumes in
-    // step. A negative position (paused in the count-in) keeps its lead so the first tiles still fall the whole way.
-    const from = Math.max(0, pos);
-    const startTime = audioEngine.play(this.opts.audioBuffer, from, () => (this.audioEnded = true), 0.3 + Math.max(0, -pos) / this.baseRate);
+    // step. A position before the level's start (paused in the count-in) keeps its lead so the first tiles still fall the whole way.
+    const from = Math.max(this.startAt, pos);
+    const startTime = audioEngine.play(this.opts.audioBuffer, from, () => (this.audioEnded = true), 0.3 + Math.max(0, this.startAt - pos) / this.baseRate);
     this.clock.start(startTime + from, from, this.baseRate);
     audioEngine.setPlaybackRate(this.baseRate);
     this.slowUntil = -1;
@@ -827,11 +847,10 @@ export class GameSession {
     const songTime = this.clock.songTime();
     if (this.opts.autoplay && !this.paused && !this.finished) this.autoplay(songTime);
     if (!this.paused && !this.finished) {
-      const si = Math.max(0, lowerBound(this.switchTimes, songTime + 1e-9) - 1);
-      const lanes = this.sections[si].lanes;
+      const lanes = this.lanesAt(songTime);
       if (lanes !== this.renderer.lanes) {
-        if (songTime > 0) sfxLanes(lanes > this.renderer.lanes);
-        this.renderer.setLanes(lanes, songTime <= 0);
+        if (songTime > this.startAt) sfxLanes(lanes > this.renderer.lanes);
+        this.renderer.setLanes(lanes, songTime <= this.startAt);
         this.opts.onEvent({ type: 'lanes', lanes });
       }
       if (this.slowUntil > 0 && !this.slowReleasing && songTime >= this.slowUntil - SLOW_RAMP_OUT * SLOW_RATE * this.baseRate) {
@@ -845,7 +864,7 @@ export class GameSession {
       this.notes.update(this.clock.judgeTime(), this.isHeld);
       this.trackSpin(songTime);
       // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
-      if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > 0 && this.lowFps.tick(this.fps.fps, dt)) {
+      if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > this.startAt && this.lowFps.tick(this.fps.fps, dt)) {
         this.renderer.setFxLevel('low', true);
         if (this.opts.debug) console.info('[neon-tap] fps < 45 for 3 s → fx level "low" (economy mode: auto)');
       }
@@ -884,6 +903,8 @@ export class GameSession {
 
     const s = this.scoring;
     const slowLeft = this.slowUntil > 0 ? this.slowUntil - songTime : 0;
+    // After a long empty stretch: «3 · 2 · 1» to the note that ends it (real seconds, the slow spell included).
+    const gapLeft = this.gapTimes.length > 0 && !this.paused && !this.finished ? gapCountLeft(this.gapTimes, songTime, this.clock.rateAt()) : -1;
     this.renderer.draw(this.notes, {
       songTime,
       approachTime: this.approachTime,
@@ -893,7 +914,9 @@ export class GameSession {
       comboAge: this.comboGrewAt < 0 ? Infinity : songTime - this.comboGrewAt,
       score: s.score,
       accuracy: s.accuracy,
-      progress: Math.max(0, Math.min(1, songTime / this.endTime)),
+      progress: Math.max(0, Math.min(1, (songTime - this.startAt) / Math.max(0.001, this.endTime - this.startAt))),
+      start: this.startAt,
+      gapLeft,
       hearts: this.lives.hearts,
       goldHearts: this.lives.gold,
       maxHearts: this.opts.hideHearts ? 0 : MAX_HEARTS,
@@ -928,7 +951,7 @@ export class GameSession {
 
     // The fail frame, the pause menu and the revive offer are DOM overlays (GameCanvas); the canvas
     // keeps the frozen field under them. The count-in is drawn here, over the first falling tiles.
-    if (!this.failed && !this.paused && songTime < 0) this.renderer.drawCountdown(-songTime);
+    if (!this.failed && !this.paused && songTime < this.startAt) this.renderer.drawCountdown(this.startAt - songTime);
     this.raf = requestAnimationFrame(this.frame);
   };
 
