@@ -11,7 +11,7 @@ export const onboard = {
   /** «ноты засчитаем на <b>38 мс</b> позже» — the number sits between the two halves. */
   calibShiftLate: ['ноты засчитаем на', 'позже'],
   calibShiftEarly: ['ноты засчитаем на', 'раньше'],
-  calibShiftNone: 'задержки нет · ноты на месте',
+  calibShiftNone: 'подстройка не нужна · ноты на месте',
   calibTapScreen: 'тапай в любом месте экрана',
   // --- settings ---
   appliesNow: 'применяется сразу',
