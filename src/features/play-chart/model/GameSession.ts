@@ -332,7 +332,9 @@ export class GameSession {
       return;
     }
     const seed = this.opts.gemSeed ?? (Math.random() * 0x100000000) >>> 0;
-    this.notes.setGems(this.level > LEVELS ? pickLoopGems(this.parsed, seed) : pickGems(this.parsed, seed, this.opts.audioBuffer.duration));
+    this.notes.setGems(
+      this.level > LEVELS ? pickLoopGems(this.parsed, seed, this.startAt) : pickGems(this.parsed, seed, this.opts.audioBuffer.duration, this.startAt),
+    );
   }
 
   /** The lane count at song time `t` (sections take over at their switch times). */
