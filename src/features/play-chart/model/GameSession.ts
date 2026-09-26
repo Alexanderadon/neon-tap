@@ -575,6 +575,35 @@ export class GameSession {
   }
 
   private resumeAt(pos: number): void {
+    this.playFrom(pos);
+    this.paused = false;
+    this.opts.onEvent({ type: 'resume' });
+  }
+
+  /**
+   * Rewind the song to `songTime` while it plays (a tutorial step plays once more): the notes from there
+   * on are armed again, the ones before put away unjudged, and the music goes on from there after a
+   * short lead. Nothing happens while paused, frozen, between levels or once the run is over.
+   */
+  rewind(songTime: number): void {
+    if (!this.started || this.paused || this.finished || this.destroyed) return;
+    const t = Math.max(this.startAt, songTime);
+    this.notes.rearmFrom(t);
+    this.probe?.rearm();
+    this.spinNote = null;
+    this.spin.reset();
+    this.spinBonus = 0;
+    this.spinBonusAt = -1;
+    this.spinStarted = false;
+    this.autoNext = this.parsed.findIndex((n) => n.time >= t);
+    if (this.autoNext < 0) this.autoNext = this.parsed.length;
+    this.autoDue = [];
+    this.audioEnded = false;
+    this.playFrom(t);
+  }
+
+  /** Start the song at position `pos` (a short lead; before the level's start, the count-in's) with the clock on it and the slow spell off. */
+  private playFrom(pos: number): void {
     // play() returns the audio-clock instant of song position 0 at rate 1; the clock is anchored on the
     // instant the source actually starts (`startTime + from`) at that position, so a faster level resumes in
     // step. A position before the level's start (paused in the count-in) keeps its lead so the first tiles still fall the whole way.
@@ -585,8 +614,6 @@ export class GameSession {
     this.slowUntil = -1;
     this.slowReleasing = false;
     audioEngine.tapeEffect(false, 0.01);
-    this.paused = false;
-    this.opts.onEvent({ type: 'resume' });
   }
 
   get isPaused(): boolean {
