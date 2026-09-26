@@ -50,6 +50,8 @@ export interface PlayResult {
   timeline: ResultTimeline;
   /** Song length in seconds — the time axis of `timeline`. */
   duration: number;
+  /** Where every level started (song seconds): past a skipped long intro, else 0 (absent in older results). What the player heard counts from here. */
+  startSec?: number;
   /** Crystals collected during the run (gem notes hit); credited to the wallet unless the run failed. */
   crystals: number;
 }
