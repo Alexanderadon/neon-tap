@@ -401,6 +401,8 @@ export class Renderer {
   private fxLevel: FxLevel = 'full';
   /** The current level was chosen by the FPS watchdog (shown in the debug overlay). */
   private fxAuto = false;
+  /** prefers-reduced-motion: the field never shakes (nor the hearts row, nor the bass zoom) and half the particles fly. */
+  private readonly calm: boolean;
   /** Safe-area insets (notch / home indicator) read from CSS env() — the HUD keeps clear of them. */
   private safeTop = 0;
   private safeBottom = 0;
@@ -441,6 +443,8 @@ export class Renderer {
     this.laneColors = Array.from({ length: MAX_LANES }, (_, i) => theme.laneColors[i % theme.laneColors.length]);
     this.inkColor = theme.bg[0];
     this.discColor = hexToRgba(theme.bg[1], 0.92);
+    this.calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.particles.emitScale = this.calm ? 0.5 : 1;
     this.resize();
   }
 
@@ -476,7 +480,7 @@ export class Renderer {
   setFxLevel(level: FxLevel, auto = false): void {
     this.fxLevel = level;
     this.fxAuto = auto;
-    this.particles.emitScale = level === 'low' ? 0.5 : 1;
+    this.particles.emitScale = (level === 'low' ? 0.5 : 1) * (this.calm ? 0.5 : 1);
     if (level !== 'full') {
       // The background effects stop feeding; leave them in their resting state.
       this.beatAge = 1;
@@ -542,9 +546,14 @@ export class Renderer {
       return;
     }
     this.transition = { from, to: n, start: performance.now() / 1000 };
-    this.shake.trigger(2);
+    this.bump(2);
     // HUD: «5» + «5 ПОЛОС · ШИРЕ» under the combo (frame 4).
     this.laneTag = { n, tag: this.tag(fmt(n > from ? dict.lanesWider : dict.lanesNarrower, { n }), 'dark'), age: 0 };
+  }
+
+  /** Screen shake — none for a player who asked for reduced motion. */
+  private bump(amount: number): void {
+    if (!this.calm) this.shake.trigger(amount);
   }
 
   /** A cached 24 px tag sprite (gold / dark, pill or a half of a pair). */
@@ -742,7 +751,7 @@ export class Renderer {
     const y = pos ? pos.y : L.hitY;
     const cx = pos ? pos.x : laneX + (lane + 0.5) * laneWidth;
     if (judgement === 'miss') {
-      this.shake.trigger(3);
+      this.bump(3);
       return;
     }
     this.flash.trigger(lane);
@@ -785,7 +794,7 @@ export class Renderer {
     const { laneX, laneWidth, hitY } = this.set(lanes).layout;
     const cx = laneX + (lane + 0.5) * laneWidth;
     this.particles.emit(cx, hitY, 40, kind === 'slow' ? 0 : 1, 460, 7, 0.9);
-    this.shake.trigger(2);
+    this.bump(2);
   }
 
   /** A gem note was hit: burst at the hit line and the crystal takes off towards the HUD counter. */
@@ -795,7 +804,7 @@ export class Renderer {
     const big = value > 1;
     this.particles.emit(cx, hitY, big ? 30 : 16, GEM_DOT, big ? 420 : 300, 5, 0.7);
     this.ring(cx, hitY, GEM_DOT);
-    if (big) this.shake.trigger(2);
+    if (big) this.bump(2);
     const i = this.flyCursor;
     this.flyCursor = (this.flyCursor + 1) % FLY_POOL;
     this.flyX[i] = cx;
@@ -810,7 +819,7 @@ export class Renderer {
   }
 
   comboMilestone(combo: number): void {
-    this.shake.trigger(2.5);
+    this.bump(2.5);
     this.milestoneAge = 0;
     const cx = this.colX + this.colW / 2;
     for (let i = 0; i < 28; i++) this.spawnEmber(cx + (Math.random() - 0.5) * 120, this.comboAnchorY, this.heatTier(combo), 1);
@@ -853,7 +862,7 @@ export class Renderer {
       sparked: false,
     };
     this.starAge = 0;
-    this.shake.trigger(3);
+    this.bump(3);
   }
 
   /** The song map for this run (set once per session). */
@@ -877,7 +886,7 @@ export class Renderer {
     const gold = hearts >= shown;
     const { x, y } = this.heartPos(gold ? hearts - shown : hearts);
     this.particles.emit(x, y, 14, gold ? STAR_DOT : 1, 220, 4, 0.6);
-    this.shake.trigger(4);
+    this.bump(4);
   }
 
   update(dt: number): void {
@@ -1019,7 +1028,7 @@ export class Renderer {
     const { width, height, laneX, laneWidth, hitY } = L;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     // Bass "camera punch": a tiny zoom around the centre on every hit of the track.
-    const zoom = this.fxLevel === 'low' ? 1 : 1 + 0.012 * s.pulse;
+    const zoom = this.fxLevel === 'low' || this.calm ? 1 : 1 + 0.012 * s.pulse;
     ctx.translate(width / 2 + this.shake.offsetX, height / 2 + this.shake.offsetY);
     ctx.scale(zoom, zoom);
     ctx.translate(-width / 2, -height / 2);
@@ -1866,7 +1875,7 @@ export class Renderer {
     if (judgement === 'miss') return;
     this.ring(x, y, 1);
     this.particles.emit(x, y, judgement === 'perfect' ? 28 : 14, 1, 460, 5, 0.6);
-    if (this.fxLevel === 'full') this.shake.trigger(judgement === 'perfect' ? 6 : 3);
+    if (this.fxLevel === 'full') this.bump(judgement === 'perfect' ? 6 : 3);
   }
 
   /** Lane-count change, part 1: a short white flash and the new count fading in above the field. */
@@ -1986,7 +1995,7 @@ export class Renderer {
       this.particles.emit(laneX + (i + 0.5) * laneWidth, hitY, 9, i % this.laneColors.length, 320, 5, 0.6);
       this.flash.trigger(i);
     }
-    this.shake.trigger(1.5);
+    this.bump(1.5);
   }
 
   /**
@@ -2085,7 +2094,7 @@ export class Renderer {
 
     // Row 2: hearts · level stars · crystals.
     if (s.maxHearts > 0) {
-      const lostShake = s.heartLostAge < 0.35 ? (1 - s.heartLostAge / 0.35) * 4 : 0;
+      const lostShake = s.heartLostAge < 0.35 && !this.calm ? (1 - s.heartLostAge / 0.35) * 4 : 0;
       const dx = lostShake ? (Math.random() * 2 - 1) * lostShake : 0;
       const refilling = s.revive >= 0;
       const shown = refilling ? heartsRefilled(s.revive) : s.hearts;
