@@ -18,10 +18,12 @@ import {
   Panel,
   PrimaryAction,
   RingCountdown,
+  Segments,
   SegmentsPulse,
   Stars,
   Tag,
   Trio,
+  type SegmentState,
 } from '@/shared/ui';
 import type { ChartFile } from '@/shared/types/chart';
 import { getSettings, updateSettings } from '@/entities/settings';
@@ -90,6 +92,8 @@ interface Snapshot {
 }
 
 const isTouchDevice = () => matchMedia('(pointer: coarse)').matches;
+/** «Коснись экрана, чтобы начать»: the song is in, the bar stands full and still — waiting for the player, not loading. */
+const READY_SEGMENTS: readonly SegmentState[] = Array.from({ length: 10 }, () => 'current');
 
 /**
  * Hosts the canvas, owns the GameSession lifecycle and routes session events to voice/save.
@@ -211,6 +215,9 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
             if (!seen.includes(e.card.kind)) updateSettings({ seenKinds: [...seen, e.card.kind] });
           }
           break;
+        case 'fx-low':
+          updateSettings({ fxAuto: 'low' }); // the next runs start on the economy level
+          break;
         case 'offset':
           // The wide probe settled (tutorial, or a run before the offset was learned): saved now, before any result.
           updateSettings({ audioOffsetMs: e.offsetMs, offsetLearned: true });
@@ -270,6 +277,7 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
           revive: !tutorial && !noFailFlag,
           canRevive: () => reviveAvailable(isPassActive(), ads.available()),
           fxMode: settings.fxMode,
+          fxAuto: settings.fxAuto,
           debug: settings.debugOverlay,
           onEvent: handleEvent,
           onTime: (t) => {
@@ -460,12 +468,20 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
         skeleton(
           <>
             <div className="game-tabline">
-              <Tag variant="dark" shine className="game-tag-loading">
+              <Tag variant="dark" shine={status === 'loading'} className="game-tag-loading">
                 {status === 'tap' ? dict.tapToStart : loadPct > 0 ? fmt(dict.loadingPercent, { n: loadPct }) : dict.loading}
               </Tag>
             </div>
-            <SegmentsPulse count={10} className="game-segs" />
+            {status === 'tap' ? <Segments states={READY_SEGMENTS} className="game-segs" /> : <SegmentsPulse count={10} className="game-segs" />}
           </>,
+          // A slow connection must not trap the player: the way out is there while the song loads (the tutorial's is «Пропуск»).
+          <Trio one className="game-trio">
+            {tutorial ? (
+              <ObjButton icon={<Icon name="chevron" />} label={dict.tutorialSkip} onClick={exit} />
+            ) : (
+              <ObjButton icon={<Icon name="home" />} label={dict.toMenu} onClick={exit} />
+            )}
+          </Trio>,
         )}
 
       {status === 'error' &&
@@ -537,7 +553,12 @@ export function GameCanvas({ chart, source, audioBuffer, mode = 'play', onEvent,
                   sessionRef.current?.restart();
                 }}
               />
-              <ObjButton icon={<Icon name="sound" />} label={dict.soundToggle} className={muted ? 'game-muted' : undefined} onClick={toggleSound} />
+              <ObjButton
+                icon={<Icon name={muted ? 'sound-off' : 'sound'} />}
+                label={muted ? dict.soundOff : dict.soundOn}
+                className={muted ? 'game-muted' : undefined}
+                onClick={toggleSound}
+              />
               {tutorial ? (
                 <ObjButton icon={<Icon name="chevron" />} label={dict.tutorialSkip} onClick={exit} />
               ) : paused.level > 1 ? (

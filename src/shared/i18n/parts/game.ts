@@ -19,15 +19,17 @@ export const game = {
   endlessMode: 'Бесконечный режим',
   /** The pause panel while the review autoplayer (`?auto=1`) is playing. */
   autoTag: 'Автопрогон',
-  /** The game's loading tag when the page has not had a single tap yet (sound needs one). */
-  tapToStart: 'Коснись экрана',
+  /** The game's loading tag when the page has not had a single tap yet (sound needs one): a request, not a loading state. */
+  tapToStart: 'Коснись экрана, чтобы начать',
   heartsOut: 'Сердца кончились',
   loadFailed: 'Не удалось загрузить',
   checkConnection: 'проверь связь и попробуй ещё раз',
   /** An own song that failed to start: the file is local, so nothing about the connection. */
   readFileFailed: 'Не удалось прочитать файл',
   readFileHint: 'попробуй ещё раз или выбери другой файл',
-  soundToggle: 'Звук',
+  /** The pause panel's music toggle says what it is now. */
+  soundOn: 'Звук вкл',
+  soundOff: 'Звук выкл',
   tutorialStep: '{n} / {total}',
   /** A run's first meeting of a mechanic: the tag on the caption card, and the card per kind (`{from}` / `{to}` / `{key}` — the note's keys). */
   meetTag: 'Новое',

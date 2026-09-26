@@ -6,7 +6,7 @@ import { FpsMeter, LowFpsDetector, themeFor, themeForMood } from '@/shared/lib/r
 import type { ChartFile } from '@/shared/types/chart';
 import type { PlayResult } from '@/shared/types/result';
 import { countJudgements, parseChartLevel, parseSections, type ParsedNote, type Section, type SpellKind } from '@/entities/chart';
-import type { FxMode, MeetKind } from '@/entities/settings';
+import type { FxAuto, FxMode, MeetKind } from '@/entities/settings';
 import { findTrack } from '@/entities/track';
 import { Scoring, notesToReach, type Judgement } from '@/entities/score';
 import { NoteManager, NoteState, type JudgeEvent, type PooledNote } from './NoteManager';
@@ -46,6 +46,8 @@ export type SessionEvent =
   | { type: 'offset'; offsetMs: number }
   /** A mechanic met for the first time: its card rises (`card`), or the card on screen goes (null). Once per kind; the host marks it seen. */
   | { type: 'meet'; card: Meeting | null }
+  /** The FPS watchdog dropped the FX level (economy mode 'auto'): the host remembers it, the next runs start low. */
+  | { type: 'fx-low' }
   /** Paused (the host draws the pause overlay from this snapshot). */
   | { type: 'pause'; score: number; accuracy: number; level: number }
   | { type: 'resume' }
@@ -111,6 +113,8 @@ export interface SessionOptions {
   gemSeed?: number;
   /** FX budget: 'auto' (default) drops to the low level once FPS < 45 for 3 s; 'on' = low from the start; 'off' = always full. */
   fxMode?: FxMode;
+  /** Economy mode 'auto' starts low: an earlier run's watchdog dropped the FX level on this device (`settings.fxAuto`). */
+  fxAuto?: FxAuto;
   debug: boolean;
   onEvent: (e: SessionEvent) => void;
   /** Song-time reporter for a host overlay, called at ~10 Hz from the frame loop. */
@@ -287,6 +291,7 @@ export class GameSession {
     this.renderer.setSongMap(songMap(opts.chart, this.endTime, this.startAt));
     this.beatCursor = new BeatCursor(opts.chart.beats, opts.chart.bpm, opts.chart.offset, opts.chart.duration);
     if (opts.fxMode === 'on') this.renderer.setFxLevel('low');
+    else if ((opts.fxMode ?? 'auto') === 'auto' && opts.fxAuto === 'low') this.renderer.setFxLevel('low', true);
     this.input = new Input({
       audioNow: () => audioEngine.now(),
       laneForKey: (code) => (code === CIRCLE_KEY ? CIRCLE_BUCKET : (KEY_LAYOUTS[this.renderer.lanes]?.[code] ?? -1)),
@@ -907,8 +912,9 @@ export class GameSession {
       const card = this.meets?.update(songTime);
       if (card !== undefined) this.opts.onEvent({ type: 'meet', card });
       // FPS watchdog (economy mode "auto"): sustained < 45 fps after the count-in → low FX level, once.
-      if ((this.opts.fxMode ?? 'auto') === 'auto' && songTime > this.startAt && this.lowFps.tick(this.fps.fps, dt)) {
+      if ((this.opts.fxMode ?? 'auto') === 'auto' && this.renderer.fx === 'full' && songTime > this.startAt && this.lowFps.tick(this.fps.fps, dt)) {
         this.renderer.setFxLevel('low', true);
+        this.opts.onEvent({ type: 'fx-low' });
         if (this.opts.debug) console.info('[neon-tap] fps < 45 for 3 s → fx level "low" (economy mode: auto)');
       }
       // The run ends when the last window has closed — not when the buffer stops, which on a laggy
