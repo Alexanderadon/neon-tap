@@ -161,14 +161,10 @@ describe('RingCountdown', () => {
 });
 
 describe('Difficulty', () => {
-  it('maps tiers to the v3 palette: lime, cyan, gold, orange, magenta', () => {
-    expect(difficultyColor(1)).toBe('#b6ff00');
-    expect(difficultyColor(2)).toBe('#b6ff00');
-    expect(difficultyColor(3)).toBe('#00f0ff');
-    expect(difficultyColor(4)).toBe('#ffd700');
-    expect(difficultyColor(5)).toBe('#ff8a00');
-    expect(difficultyColor(6)).toBe('#ff2bd6');
-    expect(difficultyColor(42)).toBe('#ff2bd6');
+  it('maps tiers to two colours of the v3 palette: ★1–3 lime, ★4–6 orange — never gold or magenta', () => {
+    for (const stars of [1, 2, 3]) expect(difficultyColor(stars)).toBe('#b6ff00');
+    for (const stars of [4, 5, 6, 42]) expect(difficultyColor(stars)).toBe('#ff8a00');
+    for (let stars = 1; stars <= 6; stars++) expect(['#ffd700', '#ff2bd6']).not.toContain(difficultyColor(stars));
   });
 
   it('is the dark chip with a coloured flame and the number, without CSS filters', () => {
