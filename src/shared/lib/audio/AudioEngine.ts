@@ -265,8 +265,11 @@ export class AudioEngine {
     this.pausePosition = null;
   }
 
-  /** Fade the radio out and stop it (no-op when nothing ambient plays). */
-  stopAmbient(): void {
+  /**
+   * Fade the radio out over `fadeSec` and stop it (no-op when nothing ambient plays); `0` cuts it at
+   * once — for a page going to the background, where a fade would only freeze with the context.
+   */
+  stopAmbient(fadeSec: number = AMBIENT_FADE_OUT): void {
     const ctx = this.ctx;
     const fade = this.ambientFade;
     const src = this.source;
@@ -277,11 +280,30 @@ export class AudioEngine {
     this.ambientFade = null;
     this.source = null;
     src.onended = null;
+    if (fadeSec <= 0) {
+      try {
+        src.stop();
+      } catch {
+        /* already stopped */
+      }
+      return;
+    }
     const t = ctx.currentTime;
     fade.gain.cancelScheduledValues(t);
     fade.gain.setValueAtTime(Math.max(FADE_FLOOR, fade.gain.value), t);
-    fade.gain.exponentialRampToValueAtTime(FADE_FLOOR, t + AMBIENT_FADE_OUT);
-    src.stop(t + AMBIENT_FADE_OUT);
+    fade.gain.exponentialRampToValueAtTime(FADE_FLOOR, t + fadeSec);
+    src.stop(t + fadeSec);
+  }
+
+  /**
+   * Put the running context to sleep (the page went to the background: nothing may sound there — the
+   * Yandex Games rule, and a phone's battery). The next gesture anywhere resumes it
+   * (installGestureUnlock); until then the audio-unlock store reads «locked».
+   */
+  suspend(): void {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== 'running') return;
+    ctx.suspend().catch(() => undefined);
   }
 
   /** Is the menu radio the thing playing? */
