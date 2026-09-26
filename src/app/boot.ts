@@ -3,7 +3,7 @@ import { getSettings } from '@/entities/settings';
 import { CATALOG, idsAround, loadChart, preloadCover } from '@/entities/track';
 import { progressStore } from '@/entities/progress';
 import { voice } from '@/features/voice-feedback';
-import { buildCatalogState, initialDeckIndex } from '@/widgets/track-list';
+import { buildCatalogState, initialDeckIndex, trackIndexOf } from '@/widgets/track-list';
 
 /** The longest the splash waits; past it the game opens with whatever has arrived. */
 const BOOT_CAP_MS = 10_000;
@@ -33,12 +33,13 @@ function tutorialTask(): Task {
   return { promise, progress: (l) => listeners.add(l) };
 }
 
-/** The pictures around the card the deck opens on, and that card's chart. */
+/** The pictures around the card the deck opens on, and that card's chart (the nearest track's on a card without one). */
 function deckTasks(): Task[] {
   const ids = CATALOG.map((t) => t.id);
   let at = 0;
   try {
-    at = initialDeckIndex(buildCatalogState(progressStore.get()), typeof localStorage === 'undefined' ? null : localStorage);
+    // «Моя музыка» and the empty-week card sit after the tracks: their neighbours are the last covers.
+    at = trackIndexOf(initialDeckIndex(buildCatalogState(progressStore.get()), typeof localStorage === 'undefined' ? null : localStorage));
   } catch {
     // Storage blocked: the deck opens on its default card, the first pictures are still worth having.
   }

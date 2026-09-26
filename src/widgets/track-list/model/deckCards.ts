@@ -1,5 +1,6 @@
 import { now } from '@/shared/lib/time';
 import { CATALOG, DROPS, DROP_SCHEDULE, emptyNextWeek } from '@/entities/track';
+import type { DeckCardRef } from './deckPosition';
 
 /** Where the non-track cards sit in a deck of `tracks` catalog cards. */
 export interface DeckLayout {
@@ -41,3 +42,21 @@ export const slotCoverId = (week: number): string => `drop-week-${week}`;
 
 /** The catalog track a deck index stands for — the non-track cards (and anything past them) fall back to the last track. */
 export const trackIndexOf = (index: number): number => Math.max(0, Math.min(CATALOG.length - 1, index));
+
+/** A card that shows a catalog track (not the empty-week card, not «Моя музыка»). */
+export const isTrackCard = (index: number): boolean => Number.isInteger(index) && index >= 0 && index < CATALOG.length;
+
+/** What a deck index shows — how the deck position is remembered. */
+export function cardRefOf(index: number): DeckCardRef {
+  if (isCustomCard(index)) return { kind: 'custom' };
+  if (isSlotCard(index)) return { kind: 'slot' };
+  return { kind: 'track', id: CATALOG[trackIndexOf(index)].id };
+}
+
+/** Where a remembered card is in this page load's deck, or null (the track left, the empty-week card is gone). */
+export function cardIndexOf(card: DeckCardRef): number | null {
+  if (card.kind === 'custom') return CUSTOM_CARD;
+  if (card.kind === 'slot') return SLOT_CARD >= 0 ? SLOT_CARD : null;
+  const at = CATALOG.findIndex((t) => t.id === card.id);
+  return at >= 0 ? at : null;
+}

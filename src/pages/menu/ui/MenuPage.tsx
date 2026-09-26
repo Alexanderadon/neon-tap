@@ -16,22 +16,25 @@ import { OfferPopups, type OfferWalletTick } from '@/widgets/offer-popups';
 import {
   TrackDeck,
   affordableCount,
+  cardRefOf,
   focusedTrack,
   initialDeckIndex,
+  initialTrackIndex,
   isCustomCard,
   isSlotCard,
+  isTrackCard,
   passDropGrants,
   slotCoverId,
+  writeDeckCard,
   CUSTOM_CARD,
   SLOT_WEEK,
-  trackIndexOf,
   useCatalogState,
   useDeckRadio,
   usePlayTrack,
 } from '@/widgets/track-list';
 import { GoalsPanel, goalsGotLine } from '@/widgets/goals-panel';
 import { DuelList, useMyDuels } from '@/widgets/duel-list';
-import { HistoryPanel } from '@/widgets/history-panel';
+import { HistoryPanel, RecordsHeader } from '@/widgets/history-panel';
 import { NicknameDialog } from '@/features/submit-score';
 import { AvatarPicker } from '@/features/choose-avatar';
 import { grantTracks } from '@/features/buy-track';
@@ -45,6 +48,8 @@ type View = 'deck' | 'profile' | 'records' | 'goals' | 'duels';
 const storage = (): Storage | null => (typeof localStorage === 'undefined' ? null : localStorage);
 
 const VIEWS: readonly View[] = ['deck', 'profile', 'records', 'goals', 'duels'];
+/** The catalog in deck order — what the records arrows walk. */
+const TRACK_IDS_IN_DECK: readonly string[] = CATALOG.map((t) => t.id);
 /** How long a wallet tick stays on the top bar before it reads the live wallet again (flight + tick + bump). */
 const TICK_HOLD_MS = 1400;
 const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS as readonly string[]).includes(v);
@@ -53,33 +58,57 @@ const isView = (v: string | undefined): v is View => v !== undefined && (VIEWS a
  * The main screen: top bar · chapter row · the deck · three doors (shop, records, profile) · «ИГРАТЬ»
  * (on the deck's last card, «Моя музыка», the primary is «ВЫБРАТЬ ФАЙЛ» and leads to the custom-song screen).
  * Profile, records, achievements and duels are the same screen with the middle swapped: the
- * focused track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
- * nickname question and the avatar picker are the overlays (a dialog over the dimmed screen). Other screens open a
- * view or focus a track through the route params (`navigate('menu', { view: 'records', track })`).
- * The crystal packs open from the wallet's «+» (nothing rises by itself). While NEON PASS is on,
- * every weekly track in the deck is written to the player's tracks when the menu opens.
+ * chosen track's cover tints all of them and the primary button stays «ИГРАТЬ / track». The
+ * chosen track is kept apart from the deck card: on a card without a track («Моя музыка», the
+ * empty-week card) it is the last track the player stood on, and the records show it — with ‹ ›
+ * through the played tracks, and the primary playing the track on screen. Both are remembered
+ * (writeDeckCard), so coming back from the shop, the profile or «Моя музыка» never lands on another
+ * track. The nickname question and the avatar picker are the overlays (a dialog over the dimmed
+ * screen). Other screens open a view or focus a track through the route params (`navigate('menu',
+ * { view: 'records', track })`). The crystal packs open from the wallet's «+» (nothing rises by
+ * itself). While NEON PASS is on, every weekly track in the deck is written to the player's tracks
+ * when the menu opens.
  */
 export function MenuPage() {
   const state = useCatalogState();
   const songs = useSongCount();
   const params = useRouteParams();
-  const [index, setIndex] = useState(() => {
-    // Back from the custom-song screen: the deck opens on its «Моя музыка» card.
-    if (params.track === 'custom') return CUSTOM_CARD;
+  const [start] = useState(() => {
     const wanted = params.track ? CATALOG.findIndex((t) => t.id === params.track) : -1;
-    return wanted >= 0 ? wanted : initialDeckIndex(state, storage());
+    // Back from the custom-song screen: the deck opens on its «Моя музыка» card.
+    const card = params.track === 'custom' ? CUSTOM_CARD : wanted >= 0 ? wanted : initialDeckIndex(state, storage());
+    return { card, track: initialTrackIndex(state, storage(), card) };
   });
+  const [index, setIndex] = useState(start.card);
+  /** The chosen track (a catalog index): follows the deck on track cards, stays put on the others. */
+  const [trackAt, setTrackAt] = useState(start.track);
+  const selectCard = useCallback((i: number) => {
+    setIndex(i);
+    if (isTrackCard(i)) setTrackAt(i);
+  }, []);
+  useEffect(() => writeDeckCard(storage(), cardRefOf(index)), [index]);
+  const goTrack = useCallback(
+    (id: string) => {
+      const at = TRACK_IDS_IN_DECK.indexOf(id);
+      if (at >= 0) selectCard(at);
+    },
+    [selectCard],
+  );
   const [view, setView] = useState<View>(() => (isView(params.view) ? params.view : 'deck'));
   const [askName, setAskName] = useState(false);
   const [askAvatar, setAskAvatar] = useState(false);
   const { busy, play } = usePlayTrack();
-  // The deck's last card is «Моя музыка» and the empty-week card is a promise, not a track: the views that need one show the last track.
   const custom = isCustomCard(index);
   const slot = isSlotCard(index);
-  const { track, lock } = focusedTrack(state, index);
+  const selected = isTrackCard(index) ? index : trackAt;
+  const { track, lock } = focusedTrack(state, selected);
+  // The records are about one track: there the scene and the primary are that track's even on a card without one.
+  const trackView = view === 'records';
+  const showCustom = custom && !trackView;
+  const showSlot = slot && !trackView;
   const badge = affordableCount(state);
-  // The radio: the focused song, quietly, while the menu is up and no song is being started (silent on the custom and empty-week cards).
-  useDeckRadio(custom || slot ? undefined : track.id, busy === null);
+  // The radio: the chosen song, quietly, while the menu is up and no song is being started (silent where the primary is «Моя музыка» or the empty week).
+  useDeckRadio(showCustom || showSlot ? undefined : track.id, busy === null);
   // NEON PASS: the weekly tracks in the deck become the player's for good (price 0 — they stay after the pass).
   const passGrants = passDropGrants(CATALOG, state.save.purchased, state.pass).join(' ');
   // The last own song's decoded buffer (up to ≈280 MB) is not needed here — «Повторить» lives on the result screen —
@@ -132,11 +161,11 @@ export function MenuPage() {
    */
   const onPlay = (id?: string) => {
     if (busy) return;
-    if (id === undefined && custom) {
+    if (id === undefined && showCustom) {
       open('custom');
       return;
     }
-    if (id === undefined && slot) return;
+    if (id === undefined && showSlot) return;
     sfxUi();
     const target = id ?? track.id;
     const l = target === track.id ? lock : null;
@@ -156,17 +185,17 @@ export function MenuPage() {
     duels: [shopDoor, { key: 'menu', onTap: () => goTo('deck') }, { key: 'profile', onTap: () => goTo('profile') }],
   };
 
-  const chapter = chapterAt(trackIndexOf(index)) ?? { start: 0, end: CATALOG.length, number: 1 };
+  const chapter = chapterAt(selected) ?? { start: 0, end: CATALOG.length, number: 1 };
   const chapterTracks = CATALOG.slice(chapter.start, chapter.end);
   const chapterDone = chapterTracks.filter((t) => starsForTrack(state.save.tracks[t.id]) > 0).length;
   const chapterLine = `${chapterTitle(chapter)} · ${fmt(dict.deckChapterProgress, { done: chapterDone, total: chapterTracks.length })}`;
 
   return (
     <Screen frame className="menu">
-      <CoverScene id={custom ? undefined : slot ? slotCoverId(SLOT_WEEK ?? 0) : track.id} genre={custom || slot ? undefined : track.genre} />
+      <CoverScene id={showCustom ? undefined : showSlot ? slotCoverId(SLOT_WEEK ?? 0) : track.id} genre={showCustom || showSlot ? undefined : track.genre} />
       <TopBar onCrystalsTap={() => open('shop')} onTopUp={packsVisible() ? topUp : undefined} crystalsRef={crystalsRef} crystals={tick ?? undefined} />
 
-      {view === 'deck' && <TrackDeck index={index} onIndexChange={setIndex} onPlay={() => onPlay()} />}
+      {view === 'deck' && <TrackDeck index={index} onIndexChange={selectCard} onPlay={() => onPlay()} />}
 
       {view === 'profile' && (
         <>
@@ -185,11 +214,11 @@ export function MenuPage() {
 
       {view === 'records' && (
         <>
-          <SubHeader center>
+          <RecordsHeader ids={TRACK_IDS_IN_DECK} trackId={track.id} onGo={goTrack} keys={!askName && !askAvatar && offer === null}>
             <b>{track.title}</b>
             <span>·</span>
             {chapterTitle(chapter)}
-          </SubHeader>
+          </RecordsHeader>
           <FrameBody scroll>
             <HistoryPanel trackId={track.id} />
           </FrameBody>
@@ -211,8 +240,8 @@ export function MenuPage() {
         doors={doors[view]}
         track={track}
         lock={lock}
-        custom={custom}
-        slot={slot}
+        custom={showCustom}
+        slot={showSlot}
         songs={songs}
         nowMs={state.nowMs}
         stars={state.stars}
