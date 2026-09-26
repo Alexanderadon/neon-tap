@@ -21,8 +21,8 @@ const BUILD = '__NEON_BUILD__';
 const PRECACHE = /* __NEON_PRECACHE__ */ [];
 
 const SHELL_CACHE = `neon-shell-${BUILD}`;
-// Bump when a shipped music file changes under the same URL (media is cache-first, never re-fetched): v2 = the 225 kbps re-encode.
-const MEDIA_CACHE = 'neon-media-v2';
+// Bump when a shipped music file changes under the same URL (media is cache-first, never re-fetched): v2 = the 225 kbps re-encode, v3 = tutorial.mp3 cut to 75 s.
+const MEDIA_CACHE = 'neon-media-v3';
 const FONT_CACHE = 'neon-fonts-v1';
 const KEEP_CACHES = new Set([SHELL_CACHE, MEDIA_CACHE, FONT_CACHE]);
 /** Synthetic entry inside MEDIA_CACHE holding `{ entries: [{ url, size, at }] }` in insertion order. */
