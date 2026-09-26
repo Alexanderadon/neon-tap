@@ -11,10 +11,17 @@ import './settings-page.css';
 
 const toMenu = () => navigate('menu');
 
+/** «Подстройка» remembers it was opened from here: saved or skipped, it comes back to the settings. */
+const toCalibration = () => {
+  sfxUi();
+  navigate('calibration', { from: 'settings' });
+};
+
 /**
  * Settings (screens-onboard C6): the top bar, «НАСТРОЙКИ · применяется сразу», the scrolling column
- * of panels with a 32 px fade at both ends, and the action zone — Задержка · Обучение · Сброс
- * over «ГОТОВО / в меню». The reset opens the dialog instead of a system confirm.
+ * of panels with a 32 px fade at both ends (the latency screen is its wide «Подстройка» row — the
+ * word does not fit a trio cell), and the action zone — Профиль · Обучение · Сброс over «ГОТОВО /
+ * в меню» (the settings are opened from the profile). The reset opens the dialog instead of a system confirm.
  */
 export function SettingsPage() {
   useSwipeBack(toMenu);
@@ -48,12 +55,19 @@ export function SettingsPage() {
       </SubHeader>
       <div className={['settings-scroll', more.up && 'is-more-up', more.down && 'is-more-down'].filter(Boolean).join(' ')}>
         <div ref={scrollRef} className="settings-scroll-in" onScroll={measure}>
-          <SettingsPanel />
+          <SettingsPanel onCalibrate={toCalibration} />
         </div>
       </div>
       <ActionZone className="settings-actions">
         <Trio>
-          <ObjButton icon={<Icon name="metro" />} label={dict.calibShort} onClick={go('calibration')} />
+          <ObjButton
+            icon={<Icon name="user" />}
+            label={dict.profile}
+            onClick={() => {
+              sfxUi();
+              navigate('menu', { view: 'profile' });
+            }}
+          />
           <ObjButton icon={<Icon name="cap" />} label={dict.tutorial} onClick={go('tutorial')} />
           <ObjButton
             danger

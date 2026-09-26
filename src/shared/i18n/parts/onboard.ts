@@ -22,8 +22,12 @@ export const onboard = {
   toMenuShort: 'в меню',
   /** Object-button captions in the settings action row (11 px caps: at most 12 characters). */
   resetShort: 'Сброс',
-  /** «Калибровка» is 114 px in 11 px caps — wider than the 105 cell; the latency is what it calibrates. */
-  calibShort: 'Задержка',
+  /**
+   * The latency screen's name: its tag and the wide settings row. Not «Задержка» — a child reads it
+   * literally, as «the game lags». In 11 px caps «ПОДСТРОЙКА» is 116 px, wider than a trio cell
+   * (105 at 390, 103 at 360), so it lives in a 335 row, not in the trio.
+   */
+  calibShort: 'Подстройка',
   passed: 'Пройдено',
   notPassed: 'Не пройдено',
   resetTitle: 'Сбросить прогресс?',
